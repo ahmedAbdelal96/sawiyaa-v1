@@ -23,6 +23,7 @@ export const arAuthCatalog = {
     adminLoggedOut: 'تم تسجيل خروج الإدارة بنجاح',
     practitionerAuthLockoutCleared:
       'تم مسح الحظر المؤقت لحساب المعالج بنجاح',
+    passwordChanged: 'تم تغيير كلمة المرور بنجاح. يرجى تسجيل الدخول مجدداً.',
   },
   notifications: {
     practitionerLoginOtpTitle: 'رمز دخول المعالج',
@@ -53,6 +54,9 @@ export const arAuthCatalog = {
     passwordResetPatientOnly:
       'هذا البريد مسجل كحساب معالج. استخدم صفحة استعادة كلمة مرور المعالج.',
     passwordResetAccountNotFound: 'لا يوجد حساب مسجل بهذا البريد الإلكتروني.',
+    emailNotRegistered: 'تعذر إرسال رمز التحقق. تأكد من صحة البريد الإلكتروني وحاول مرة أخرى.',
+    accountEmailUnavailable: 'لا يوجد بريد إلكتروني صالح مرتبط بهذا الحساب.',
+    accountNotEligible: 'هذا الحساب غير متاح لتسجيل الدخول حالياً.',
     passwordResetTokenInvalid:
       'رمز جلسة إعادة التعيين غير صالح أو منتهي الصلاحية',
     refreshTokenRequired: 'رمز التحديث مطلوب',
@@ -70,6 +74,9 @@ export const arAuthCatalog = {
     authenticationRequired: 'يتطلب هذا المسار تسجيل الدخول',
     csrfTokenRequired:
       'ÙŠØªØ·Ù„Ø¨ Ù‡Ø°Ø§ Ø§Ù„Ù…Ø³Ø§Ø± Ø±Ù…Ø² CSRF Ù„Ù„Ø·Ù„Ø¨Ø§Øª Ø§Ù„Ù…ØµØ§Ø¯Ù‚Ø© Ø¹Ø¨Ø± Ø§Ù„ÙƒÙˆÙƒÙŠØ²',
+    currentPasswordInvalid: 'كلمة المرور الحالية غير صحيحة',
+    newPasswordMustDiffer: 'يجب أن تختلف كلمة المرور الجديدة عن الحالية',
+    passwordChangeUnavailable: 'تغيير كلمة المرور غير متاح لهذا الحساب',
     loginTemporarilyLocked:
       'تم قفل تسجيل الدخول مؤقتًا. حاول مرة أخرى لاحقًا.',
   },

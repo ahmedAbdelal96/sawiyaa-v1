@@ -86,6 +86,8 @@
     }
   },
   "fields": {
+    "name": "الاسم الكامل",
+    "displayName": "الاسم الكامل",
     "userId": "معرّف المستخدم",
     "createdAt": "تاريخ الإنشاء",
     "email": "البريد الإلكتروني",
@@ -102,6 +104,7 @@
     "subtitle": "عرض كامل لحساب المريض: المحفظة، الجلسات، المدفوعات، والاختبارات.",
     "back": "العودة لقائمة المرضى",
     "tabs": {
+      "profile": "البيانات الأساسية",
       "overview": "نظرة عامة",
       "wallet": "المحفظة",
       "sessions": "الجلسات",
@@ -170,6 +173,32 @@
       "loadError": "تعذر تحميل سجل الاختبارات.",
       "emptyTitle": "لا توجد اختبارات",
       "emptyDescription": "لا توجد محاولات اختبارات لهذا المريض حتى الآن."
+    },
+    "sessionStatus": {
+      "SCHEDULED": "مجدولة",
+      "CONFIRMED": "مؤكدة",
+      "IN_PROGRESS": "جارية الآن",
+      "AWAITING_COMPLETION_CONFIRMATION": "بانتظار تأكيد الإتمام",
+      "COMPLETED": "مكتملة",
+      "CANCELLED": "ملغاة",
+      "EXPIRED": "منتهية"
+    },
+    "paymentStatus": {
+      "CAPTURED": "ناجحة / مكتملة",
+      "PENDING": "قيد الانتظار",
+      "EXPIRED": "منتهية الصلاحية",
+      "REFUNDED": "مستردة",
+      "FAILED": "فاشلة"
+    },
+    "gender": {
+      "MALE": "ذكر",
+      "FEMALE": "أنثى"
+    },
+    "quickActions": {
+      "copyId": "نسخ المعرّف",
+      "copied": "تم النسخ",
+      "changeCountry": "تعديل الدولة",
+      "yearsOld": "{age} سنة"
     }
   }
 }

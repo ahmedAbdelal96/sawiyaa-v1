@@ -1,8 +1,295 @@
-# Sawiyaa Web Design System
+# Sawiyaa Web Design System & Product Direction
 
-## 1. Brand Identity & Positioning
+> **Repository:** `D:\Web\full-projects\sawiyaa\sawiyaa-frontend-v1`
+>
+> This document defines the permanent design system, visual language, customer copy standards, and architectural conventions for the Sawiyaa Web frontend.
 
-Sawiyaa (**سويّة**) is a warm, premium, and human wellbeing ecosystem, care marketplace, and wellness coaching platform.
+---
+
+## 1. Product Experience North Star
+
+Sawiyaa should feel like a calm, trusted human service.
+
+The customer should feel:
+- **I can talk comfortably.**
+- **I understand what to do next.**
+- **I can find someone suitable for me.**
+- **My privacy is respected.**
+- **Booking is easy.**
+- **I am dealing with real trusted professionals.**
+- **I am not navigating a complicated healthcare system.**
+
+The experience should **NOT** feel like:
+- hospital software
+- ERP software
+- an administrative healthcare portal
+- a technical workflow engine
+- a collection of disconnected features
+
+**Ease and speed are core product principles.** The shortest safe path should normally win.
+
+---
+
+## 2. Primary Benchmark — Shezlong
+
+**Shezlong** (https://www.shezlong.com/ar?target=%2Far%2Fhome) is the primary benchmark for:
+- customer-facing language
+- emotional warmth
+- page hierarchy
+- human-centered presentation
+- simple CTAs
+- early practitioner visibility
+- trust-building
+- helping uncertain users choose
+- low cognitive load
+- supportive Arabic wording
+
+Sawiyaa should strongly learn from Shezlong's product communication model.
+
+This does **NOT** mean copying their proprietary:
+- logo
+- illustrations
+- photographs
+- exact text
+- exact assets
+- pixel-for-pixel layouts
+
+Use the same UX/copy school and product psychology while building a distinct, modern Sawiyaa identity. Sawiyaa should ultimately feel more modern and refined while preserving the human warmth that makes Shezlong effective.
+
+**Secondary Reference:** **Esaal** (https://esaal.me/home) serves as a secondary reference for conversion clarity and rapid decision pathways.
+
+---
+
+## 3. Customer Language
+
+Never design customer-facing content around the internal word:
+❌ `"مريض"`
+
+Speak directly to the person (second-person language):
+- Prefer: `"اختار المختص المناسب لك"` instead of `"اختيار المختص المناسب للمريض"`
+- Prefer: `"جلساتك"` instead of `"جلسات المريض"`
+- Prefer: `"رسائلك"` instead of `"رسائل المريض"`
+- Prefer: `"حسابك"` instead of `"حساب المريض"`
+- Prefer: `"مواعيدك"` instead of `"مواعيد المريض"`
+- Prefer: `"محتاج مساعدة تختار؟"` instead of `"مسار توجيه المريض إلى المختص المناسب"`
+
+---
+
+## 4. Arabic Voice
+
+Arabic should feel:
+- **human**
+- **calm**
+- **warm**
+- **simple**
+- **respectful**
+- **reassuring**
+- **conversational without becoming slang-heavy**
+
+Use clear Arabic close to everyday Egyptian/Arabic speech.
+- Avoid overly formal institutional Arabic.
+- Avoid technical product language.
+- Avoid robotic wording.
+- Avoid unnecessarily long explanations.
+
+### Examples of Target Voice:
+- `"مش عارف تبدأ منين؟ نساعدك."`
+- `"اختار المختص المناسب لك."`
+- `"اتكلم براحتك."`
+- `"احجز في الوقت المناسب لك."`
+- `"خصوصيتك محفوظة."`
+- `"شوف الخبرة والتخصص والمواعيد قبل ما تحجز."`
+- `"محتاج تتكلم دلوقتي؟ شوف المختصين المتاحين."`
+
+*(These are style examples, not mandatory hardcoded strings. All final wording must fit the actual screen and business purpose.)*
+
+---
+
+## 5. Words & Patterns to Avoid
+
+Avoid repeating product/technical concepts such as:
+- ❌ `"مسار واضح"`
+- ❌ `"رحلة واضحة"`
+- ❌ `"سياق واضح"`
+- ❌ `"قواعد واضحة"`
+- ❌ `"حالة الدفع واضحة"`
+- ❌ `"المعاينات الشكلية"`
+- ❌ `"إدارة رحلة الرعاية"`
+- ❌ `"مسار الرعاية"`
+- ❌ `"تجربة متكاملة"`
+
+unless the context genuinely requires them.
+
+**Do not tell customers that the platform is "clear". Make the experience clear.**
+
+Do not expose implementation details or failure-state terminology in marketing copy (e.g., payment state machine internals, runtime rules, chat eligibility constraints, system states, backend terminology).
+
+---
+
+## 6. Do Not Diagnose the Customer
+
+Customer copy must not assume diagnoses.
+
+- Prefer: `"إيه اللي محتاج مساعدة فيه؟"` over language that assumes the customer knows a clinical diagnosis.
+- A customer understands: **قلق، نوم، ضغط، علاقات، مشاكل أسرية، مشاكل أطفال، توتر، مزاج** before knowing the clinical specialty.
+- Clinical taxonomy can still exist underneath the UI.
+
+---
+
+## 7. Visual Direction & Quality Bar
+
+The Sawiyaa visual system should be:
+- **modern**
+- **calm**
+- **premium but approachable**
+- **highly readable**
+- **spacious**
+- **human-centered**
+- **emotionally safe**
+
+Key visual rules:
+- Use strong hierarchy and intentional whitespace.
+- Avoid excessive small cards and card walls.
+- Avoid dashboard-like public pages.
+- Avoid clutter and excessive competing CTAs.
+- Practitioner faces and human imagery should have meaningful visual importance.
+- Trust signals should feel integrated into the experience.
+- Use the **Taste Skill** (`.agents/skills/taste-skill/SKILL.md`) as the implementation quality bar.
+
+---
+
+## 8. CTA Hierarchy
+
+Each screen should have a clear primary action.
+- Avoid three or four competing primary buttons.
+- For discovery/public experiences, common decision paths are:
+  - **Primary:** `"اختار مختص"`
+  - **Secondary:** `"ساعدني أختار"`
+- Do not place unrelated personas such as `"دخول المختصين"` as a competing hero CTA for customers. Practitioner access belongs in secondary navigation / footer / topbar utility.
+
+---
+
+## 9. Public Experience Philosophy
+
+Public pages should answer the customer's questions in roughly this order:
+1. **هل المكان ده ممكن يساعدني؟** (Can this place help me?)
+2. **أبدأ منين؟** (Where do I start?)
+3. **مين الناس اللي ممكن أتكلم معاهم؟** (Who are the specialists I can talk to?)
+4. **هل هم مناسبين وموثوقين؟** (Are they qualified and trustworthy?)
+5. **الموضوع بيشتغل إزاي؟** (How does it work?)
+6. **هل خصوصيتي محفوظة؟** (Is my privacy safe?)
+7. **بكام وإمتى أقدر أحجز؟** (How much does it cost and when can I book?)
+8. **ماذا أفعل إذا لم أعرف من أختار؟** (What if I don't know who to choose?)
+
+Do not organize public pages around internal product modules. Organize them around customer concerns.
+
+---
+
+## 10. Customer Application Philosophy
+
+After authentication, the experience may become more functional but must stay human:
+- Avoid turning the customer area into an ops dashboard.
+- Prefer `"جلستك القادمة"` over `"Session status: READY_TO_JOIN"`.
+- Prefer `"ادخل الجلسة"` over exposing technical state names.
+- Customer screens should translate system state into human meaning.
+
+---
+
+## 11. Business Preservation Rule
+
+> **"Before redesigning an existing Sawiyaa screen, preserve the screen's BUSINESS CONTRACT, not its current VISUAL IMPLEMENTATION."**
+
+Every redesign begins with a business-function audit. Identify before changing:
+- current APIs and hooks
+- existing and hidden user actions
+- query parameters & route state
+- permissions & auth guards
+- backend states & transitions
+- loading, error, and empty states
+- booking, pricing, payment, session, and messaging rules
+
+Do not remove functionality just because the current UI is visually poor. Business behavior is authoritative; frontend presentation may change radically around it.
+
+---
+
+## 12. Transformation Level
+
+For customer/public redesign tasks:
+- **DO NOT default to minimum-change frontend edits.**
+- The expected transformation is substantial.
+- Old UI structures may be replaced when necessary.
+- The agent should preserve business capabilities, NOT old visual architecture.
+- *"Smallest coherent change"* refers to avoiding unrelated code churn. It does NOT mean keeping a weak UX.
+
+The agent may:
+- change page composition
+- change hierarchy
+- change component structure
+- change visual language
+- move information
+- simplify presentation
+- replace old cards/sections
+- rewrite customer-facing copy
+- reduce unnecessary UI noise
+- create new frontend components
+
+as long as the business capability remains intact.
+
+---
+
+## 13. No Fake UI
+
+Never create controls that look functional but are not connected to real behavior. Do NOT add:
+- fake filters
+- fake reviews
+- fake ratings
+- fake availability
+- fake practitioner counts
+- fake statistics
+- fake trust logos
+- fake testimonials
+- fake online status
+
+If data is unavailable, design honestly around the available data.
+
+---
+
+## 14. Localization & RTL/LTR
+
+- Never solve Arabic redesign problems by hardcoding Arabic strings inside components.
+- Use the localization infrastructure (`messages/ar/` and `messages/en/`).
+- Respect both **Arabic (RTL)** and **English (LTR)**. Both languages must remain functional.
+- Arabic is the primary design review language for this redesign.
+- Use CSS logical properties (`margin-inline-start`, `padding-inline`, `ms-*`, `me-*`, `ps-*`, `pe-*`, `start`/`end`).
+- Interactive directional indicators (arrows, chevrons) must mirror correctly (LTR: point right `→`, RTL: point left `←`).
+
+---
+
+## 15. Responsive Design
+
+Web must be designed deliberately for:
+- **Desktop** (spacious, multi-column when appropriate, comfortable reading line lengths)
+- **Tablet** (balanced layouts, touch-friendly targets)
+- **Mobile Browser** (drawer navigation, full-width cards, thumb-friendly CTAs, no horizontal overflow)
+
+Do not merely shrink desktop UI — compose responsive viewports deliberately.
+
+---
+
+## 16. Cross-Platform Consistency
+
+Web and Mobile share:
+- voice and Arabic copywriting tone
+- terminology (no "مريض" in customer UI)
+- emotional tone (calm, trusted, warm)
+- CTA philosophy and mental model
+- core color palette and brand identity
+
+Web leverages full desktop viewports and browser capabilities; Mobile follows native interaction patterns.
+
+---
+
+## 17. Brand Identity & Official Palette
 
 * **Arabic Name:** سويّة
 * **English Name:** Sawiyaa
@@ -10,238 +297,36 @@ Sawiyaa (**سويّة**) is a warm, premium, and human wellbeing ecosystem, care
 * **Core Tagline EN:** *Care for mind, body, and balance*
 * **Core Tagline AR:** *رعاية للعقل والجسم والتوازن*
 
-### Positioning Tone
-Sawiyaa is **not** a cold, clinical hospital portal, nor is it a biometrics dashboard or a commercial fitness tracker. It is a premium space for guided care, mental health coaching, nutrition, and personal balance. 
-The visual and user experience of the web application must feel:
-* **Calm & Warm:** Soft, organic backgrounds and generous spacing instead of sterile clinic gray or harsh SaaS interfaces.
-* **Premium & Trustworthy:** Refined typography, subtle shadows, and intentional gold details.
-* **Human-Centered:** Readable microcopy, clean layouts for patients under stress, and clear next steps.
-* **Arabic-First:** Fully native right-to-left alignment, typographic balance, and mirrored visuals that feel natural rather than simply translated.
+### Official Color Palette
 
----
-
-## 2. Official Web Palette
-
-The web app uses the official Sawiyaa brand palette to maintain consistency with the mobile application:
-
-| Variable Token | Color Name | HEX Code | Primary Web Usage |
+| Variable Token | Color Name | HEX Code | Usage |
 | :--- | :--- | :--- | :--- |
-| `primary` | Deep Teal | `#24564F` | Main brand identity, logo accents, primary buttons, major headings, active menu highlights. |
-| `secondary` | Soft Sage | `#A7BFAE` | Supportive icons, secondary decorative elements, quiet border highlights. |
-| `background` | Warm Ivory | `#F7F4EE` | Main page background (default web app backdrop). |
-| `background-light`| Soft Page Background| `#FBF9F5` | Secondary landing sections or lighter public marketing areas. |
-| `card` | Pure White | `#FFFFFF` | Core panels, active modals, elevated grid surfaces. |
-| `card-warm` | Warm Card | `#FCFAF6` | Secondary panels, info boards, sidebars, and read-only content segments. |
+| `primary` | Deep Teal | `#24564F` | Main brand identity, primary CTAs, major headings, active menu states. |
+| `secondary` | Soft Sage | `#A7BFAE` | Supportive icons, secondary highlights, soft borders. |
+| `background` | Warm Ivory | `#F7F4EE` | Main page background (default backdrop). |
+| `background-light` | Soft Background | `#FBF9F5` | Secondary landing sections or lighter marketing areas. |
+| `card` | Pure White | `#FFFFFF` | Core panels, active modals, elevated surfaces. |
+| `card-warm` | Warm Card | `#FCFAF6` | Secondary panels, sidebars, info modules. |
 | `sand` | Muted Sand | `#E6D6B8` | Structural separators, borders, outline treatments. |
-| `accent` | Warm Gold | `#C8A979` | Restrained high-end accents (dots, indicators, small rating stars, focus highlights). |
-| `green-light` | Green Tint Light | `#D9E4DB` | Light green surfaces, alert backdrops, and active soft buttons. |
-| `green-surface` | Green Surface | `#EEF4EF` | Badges, filter pills, hover states, and background highlights. |
-| `text-main` | Main Text | `#1C2F2B` | Body copy, dark buttons labels, primary field values. |
+| `accent` | Warm Gold | `#C8A979` | Restrained high-end accents (rating stars, focus rings, subtle badges). |
+| `green-light` | Green Tint Light | `#D9E4DB` | Light green surfaces, alert backdrops. |
+| `green-surface` | Green Surface | `#EEF4EF` | Badges, filter pills, hover states. |
+| `text-main` | Main Text | `#1C2F2B` | Body copy, dark button labels, primary field values. |
 | `text-muted` | Muted Text | `#61716C` | Descriptions, timestamps, field labels, placeholder values. |
 | `border-soft` | Soft Border | `#E6D6B8` | Card outlines, input borders, panel separators. |
 
 ---
 
-## 3. Current Web Theme Gap (globals.css)
+## 18. Web Platform Specifics & Technical Architecture
 
-The current CSS configuration in [globals.css](file:///d:/Web/full-projects/sawiyaa/sawiyaa-frontend-v1/src/app/globals.css) utilizes legacy Fayed theme variables that are cold and out of sync with the new visual identity:
+- **Framework:** Next.js 16 (App Router), React 19, TypeScript.
+- **Styling:** Tailwind CSS v4, PostCSS, `@tailwindcss/postcss`.
+- **Fonts:** `@fontsource-variable/cairo` (Arabic) and `@fontsource-variable/outfit` (Latin).
+- **Internationalization:** `next-intl` (`messages/ar/`, `messages/en/`).
+- **State Management:** Zustand (`src/stores/`), TanStack React Query (`@tanstack/react-query`).
+- **Icons:** `lucide-react`.
+- **UI Components:** `src/components/ui/` (primitives), `src/features/` (domain feature modules), `src/layout/` (app shells).
+- **Currency Support:** EGP and USD only (never hardcode currency strings; resolve via localization / backend formatting).
+- **Brand Lock:** Strictly **Sawiyaa** / **سويّة** (never expose legacy "Fayed" in customer UI).
 
-### Gaps to Rectify in Next Phases:
-1. **Primary Palette:** `--primary` is currently `#44a194` (a bright, digital teal) and must be updated to the premium brand Deep Teal `#24564F`.
-2. **Background Color:** `--background` is currently `#edf1f5` (a cold, gray-blue) and must be aligned to the Warm Ivory `#F7F4EE`.
-3. **Typography Colors:** The text parameters (`--text-primary` at `#1f2a2d` and `--text-secondary` at `#56656b`) are cold slate tones. They must be updated to the warm slate-greens `#1C2F2B` (Main Text) and `#61716C` (Muted Text).
-4. **Card system & borders:** Borders currently utilize gray shades (`#d9e0e6` / `#c5ced6`) which must be replaced with warm Muted Sand (`#E6D6B8`) and soft Warm Ivory borders (`#E8DED0`).
-
-> [!WARNING]
-> Do NOT modify `globals.css` in Phase Web-0. Only record this gap analysis for Phase Web-1 execution.
-
----
-
-## 4. Web Layout Principles
-
-* **Responsive Adaptation:** Layouts are desktop-first (with grid systems and generous side margins) but must gracefully collapse into tablet and mobile viewports.
-* **Auth Layout:** Keep these views extremely clean and centered. Surfaces must utilize Warm Card backgrounds (`#FCFAF6`) and soft borders to instill calmness and security during registration/login.
-* **Patient Portal Shell:** The dashboard must resemble a wellness care center, not an ops console. Avoid heavy sidebar boxes, neon metric graphs, or tabular gray boxes. Leverage clean spacing, round avatars, and soft badge components.
-* **Warmth over Slate:** Cards must stay pure white (`#FFFFFF`) with warm outlines (`#E8DED0`), sitting over Warm Ivory (`#F7F4EE`) background. Never use cold blue-gray panels.
-* **No SaaS Clichés:** Do not use heavy black dropshadows, dense borders, or bright neon gradients. All depth must use the soft brand shadow: `0 8px 24px rgba(36, 86, 79, 0.08)`.
-
----
-
-## 5. RTL/LTR Design & Mirroring Rules
-
-Both Arabic (RTL) and English (LTR) layouts are treated as first-class citizens. To avoid hardcoded layout biases, the web app must follow logical CSS spacing properties:
-
-### CSS Logical Properties Strategy
-* **Margins:** Use `margin-inline-start` and `margin-inline-end` (or Tailwind `ms-*` / `me-*`) instead of `margin-left` / `margin-right`.
-* **Padding:** Use `padding-inline` (or Tailwind `px-*` / `ps-*` / `pe-*`) instead of `padding-left` / `padding-right`.
-* **Borders:** Use `border-inline-start` and `border-inline-end` instead of `border-left` / `border-right`.
-* **Alignment:** Use `text-align: start` and `text-align: end` instead of `left` / `right`.
-
-### Direction-Aware Elements
-* **Chevrons & Arrows:** Interactive directional indicators (e.g., pagination, slide controls, CTA arrows, breadcrumbs) must mirror:
-  * LTR: Point right (`→`, chevron-right).
-  * RTL: Point left (`←`, chevron-left).
-* **Sidebar Layout:** The navigation sidebar is pinned to the **left** in English (LTR) and to the **right** in Arabic (RTL).
-* **Form Alignment:** Labels must sit directly above inputs, aligned to the start of the field (left in LTR, right in RTL).
-* **Rhythm:** Arabic text requires slightly larger line-heights (`leading-relaxed` or `leading-loose`) to prevent diacritics from colliding.
-
----
-
-## 6. Web Components Rules
-
-### A. App Shell & Layout
-* **Patient Sidebar:** Warm Card surface (`#FCFAF6`), Soft Border (`#E8DED0`). Active link states must use Deep Teal text (`#24564F`) with Green Surface backdrop (`#EEF4EF`).
-* **Header/Topbar:** Minimal height, frosted glass backdrop (`backdrop-filter`) with Warm Ivory undertones. Show logo, translation switcher, and user avatar.
-
-### B. Cards & Panels
-* White background (`#FFFFFF`), generous rounded corners (`rounded-[20px]`), and soft tonal brand shadow (`shadow-sawiyaa-card`).
-* Accent lines (if used) must be a subtle Warm Gold (`#C8A979`) line (maximum 3px thick) on the leading edge (left in LTR, right in RTL).
-
-### C. Buttons
-* **Primary:** Deep Teal background (`#24564F`), white text (`#FFFFFF`). Hover state: Slightly darker teal (`#1F4A44`).
-* **Secondary:** Transparent background, Deep Teal border (`#24564F`), Deep Teal text (`#24564F`). Hover state: Green Surface background (`#EEF4EF`).
-* **Interactive States:** Active/focused buttons must have an accent gold border (`#C8A979`) or soft outer ring shadow (`focus:ring-2 focus:ring-sawiyaa-primary/20`).
-
-### D. Inputs & Forms
-* Soft border (`#E8DED0`), white background, text-main input color. On focus, border must animate to Deep Teal (`#24564F`) with a subtle ring.
-
-### E. Tabs & Filters
-* Pill-shaped filters: Active pills use Deep Teal (`#24564F`) with white text. Inactive pills use Green Surface (`#EEF4EF`) or Warm Card (`#FCFAF6`) with text-muted.
-
-### F. Loading, Empty, & Error States
-* **Loading:** Use calm skeleton indicators with soft gray-sage pulsing, not raw spinners.
-* **Empty:** A single clear heading, a desaturated illustration or icon, a 1-line friendly description, and a single primary action button.
-* **Error:** Soft warning card using error-soft backdrop (`#F8E8E6`), explaining the issue clearly with a "Retry" CTA.
-
-### G. Avatars & Fallbacks
-* Circular avatar. If image loading fails, fall back to assets `/images/user.avif` or initial-less placeholder graphic. Never output bare initials like "U" or "P".
-
----
-
-## 7. Business Correctness Guardrails
-
-To protect the application from data anomalies and compliance bugs, we strictly enforce these rules:
-
-* **Source of Truth:** All content (doctor names, slots, profile data) must come directly from backend endpoints/hooks.
-* **Zero Dummy Data:** Never invent prices, reviews, names, or addresses.
-* **Raw Enum Safety:** Translate all backend status keys (e.g. `PENDING`, `BOOKED`, `COMPLETED`) via localization files (`ar.json`, `en.json`) before rendering. Never show raw strings to the user.
-* **Strict Currency Constraint:**
-  * Supported currencies are **EGP** and **USD** only.
-  * Render currency using backend formatting or regional configuration helpers (never hardcode `ج.م`, `EGP`, `$`, or `USD` in JSX).
-  * Do **NOT** mention SAR, `ريال`, `ر.س`, or any Saudi Arabian currencies anywhere in the code or mockups.
-* **Brand Lock:** The brand is strictly **Sawiyaa** / **سويّة**. The old name **Fayed** / **فايد** must not be shown in any patient-facing header, copy, or page text.
-
----
-
-## 8. Web Implementation Phases
-
-We break down the visual restructuring of the web front-end into 10 structured phases:
-
-* **Phase Web-0:** Establish `DESIGN.md` (Current Phase).
-* **Phase Web-1:** Update `src/app/globals.css` with the new Sawiyaa CSS color variables and Tailwind configurations.
-* **Phase Web-2:** Restructure common primitive components (Buttons, Cards, Inputs, Avatar, Badges).
-* **Phase Web-3:** Update authentication screens (login, signup) and public pages (landing, search).
-* **Phase Web-4:** Restructure patient app shell layout, top headers, dynamic sidebar, and translation selectors.
-* **Phase Web-5:** Restructure Patient Home dashboard page (Hero banner, quick actions rail, list cards).
-* **Phase Web-6:** Patient Session timelines, calendars, booking flows, and appointment summaries.
-* **Phase Web-7:** Patient Wallet, payments flow, Packages, and Academy views.
-* **Phase Web-8:** Support ticket page, chat thread interfaces, message indicators.
-* **Phase Web-9:** Full translation pass, keyboard focus verification, and responsiveness checking.
-
----
-
-## 9. Phase QA Checklist
-
-Every phase of the web visual enhancement must be validated against the following criteria:
-
-* [ ] **Arabic RTL:** Layout, margins, paddings, borders, icons, navigation, form alignments mirror correctly.
-* [ ] **English LTR:** Alignment and readable fonts render correctly.
-* [ ] **Brand Lock:** Brand is strictly `Sawiyaa` / `سويّة`. No occurrences of `Fayed` or `فايد` in copy.
-* [ ] **Data Safety:** Zero exposure of raw enum values, undefined fields, null objects, or `[object Object]` strings.
-* [ ] **Currency Compliance:** Currency is only resolved to EGP or USD. No references to SAR (`ر.س` / `ريال`).
-* [ ] **Responsive Design:** Visually correct on Large Desktop, Small Desktop, Tablet, and Mobile devices.
-* [ ] **Accessibility:** Clean keyboard focus rings, readable contrast ratios, logical component focus orders.
-* [ ] **State Integrity:** Component accounts for Loading states, Empty states, and Error/Failure states.
-* [ ] **Business Safety:** Underlying backend routes, API contracts, hooks, and routing behavior are left unchanged.
-
----
-
-## 10. Motion, Loading, & Accessibility Principles
-
-To maintain a calm, premium, and human wellbeing ecosystem, all visual feedback and screen transitions must follow these styling rules:
-
-### A. Motion Personality
-* Movement in **Sawiyaa** must feel quiet, soft, premium, and comfortable.
-* **Never** use bouncy, flashy, or elastic animation properties.
-* Avoid large, dramatic scale changes or distracting translations.
-* Animations should serve purely to explain system states and actions, never for showcase or style over function.
-
-### B. Loading Skeleton Rules
-* All Skeletons must match the exact dimensions, spacing, and shapes of the real content they replace to avoid visual layout shifts.
-* **No generic gray blocks**: Avoid cold gray surfaces. Instead, utilize warm brand color variables:
-  * Base backgrounds: `Warm Card` (`--surface-tertiary`) / `Green Surface` (`--primary-light`) / `Warm Ivory` (`--background`).
-  * Shimmer overlay: `Soft Sage` (`--secondary`) or light green tint overlays.
-* **Zero Dummy Timers**: Skeletons must only render during genuine hook-driven loading states. Never introduce simulated delays or `setTimeout` calls to show skeletons.
-
-### C. Reusable Motion Utilities
-The following classes are exposed in `globals.css` for app-wide consistency:
-* `sawiyaa-skeleton`: Shimmering gradient indicator mapping warm card and primary light states.
-* `sawiyaa-hover-lift`: Gentle upward card translations with soft brand borders and light Deep Teal shadows.
-* `sawiyaa-btn-press`: Visual active feedback scale-down for clickable elements.
-* `sawiyaa-animate-fade-in`: Tonal opacity and slight translation entrance effect.
-
-### D. Timing & Easing
-* Micro-interactions (hover, click, focus) must execute within **150ms to 240ms**.
-* Page and card entrance animation must remain extremely subtle (e.g. opacity transition combined with small vertical translation).
-* Easing functions must favor a natural deceleration curve (such as out-quintic `cubic-bezier(0.16, 1, 0.3, 1)`).
-
-### E. Reduced Motion Support
-Respect the browser's Accessibility preferences through media queries. If `prefers-reduced-motion: reduce` is enabled:
-* The shimmer animation on `.sawiyaa-skeleton` must stop immediately and display a static background.
-* The translation and shadow expansion on `.sawiyaa-hover-lift` must be disabled.
-* The scaling effect on `.sawiyaa-btn-press` active states must be disabled.
-* Page entrance animations (`.sawiyaa-animate-fade-in`) must instantly display at full opacity without movement.
-
-### F. Accessibility & Focus States
-* Focus rings must remain fully visible and distinct (`focus:ring-2 focus:ring-primary/20`) to support keyboard navigation.
-* Interactive motions must never overlay, hide, or block content from interactive users.
-* Loading state wrappers must remain clear and understandable.
-
-### G. Patient Home Pilot
-The first pilot application of these principles is implemented on the patient portal screen:
-* [PatientJourneyScreen.tsx](file:///d:/Web/full-projects/sawiyaa/sawiyaa-frontend-v1/src/features/patient-journey/components/PatientJourneyScreen.tsx)
-* Uses a custom `<PatientJourneySkeleton />` mapping the exact layout block-by-block.
-* Appends `sawiyaa-hover-lift` on cards and `sawiyaa-btn-press` on CTAs.
-* Wraps the loaded template in a `sawiyaa-animate-fade-in` container.
-
----
-
-## 11. Copywriting, Font Sizes, and Space Optimization Rules
-
-To deliver a premium experience that matches user expectations, all layouts and texts must follow these guidelines:
-
-### A. Copywriting & Wording (طريقة الكلام)
-* **Keep Wording Simple & Natural**: Use straightforward, clean, and conversational phrasing. Avoid clinical jargon, legalistic terminology, or exaggerated labels.
-* **No Exaggerated Terminology**: Never use words like `"مؤمنة"` (secured) for normal payment statuses. Instead, use simple confirmation terms like:
-  * `"تم استلام الدفع وتأكيد الجلسة بنجاح."` (Payment received and session confirmed successfully.)
-  * `"تم استلام الدفع وتأكيد الجلسة بالفعل."` (Payment received and session confirmed already.)
-* **Zero Text Redundancy**: Do not duplicate descriptions or labels. Every note or state message should be rendered exactly once.
-
-### B. Presentation Layout (طريقة العرض)
-* **Above-the-Fold Priority**: Design page elements compactly so that all key actions, dates, and information fit above the fold without forcing the user to scroll.
-* **Unified Horizontal Profile Cards**: Instead of rendering multiple separate nested cards, group profile and status information horizontally.
-* **Non-Card Text Grids**: Display parameters (dates, codes, duration) in simple text grids (`grid grid-cols-2 md:grid-cols-3`) with muted labels and bold values, avoiding legacy borders and nested card boxes.
-* **Merged Operations**: Group communication buttons and live session actions (e.g. Chat and Join Room) inside a unified section inside a single card.
-
-### C. Fonts & Typography (الخطوط)
-* **Balanced Sizes**: Avoid tiny fonts (`text-xs` or `text-[10px]`) for main body text, buttons, and metadata values, which can make the screen feel empty and unreadable.
-* **Standard Size Scales**:
-  * **Metadata Labels**: `text-xs font-semibold text-text-muted` (plus tracking/uppercase for LTR).
-  * **Metadata Values**: `text-sm sm:text-base font-bold text-text-primary`.
-  * **Interactive Actions / CTAs**: `text-sm font-bold`.
-  * **Descriptions & Notes**: `text-sm text-text-secondary`.
-
-### D. Space Utilization (استغلال المساحات)
-* **Responsive Column Layout**: Use balanced desktop columns (e.g., `lg:grid-cols-[minmax(0,1.5fr)_400px]` or `xl:grid-cols-[minmax(0,1.72fr)_360px]`) to fill the screen width gracefully.
-* **Standard Card Paddings**: Use standard Tailwind responsive classes `p-4 sm:p-5` instead of arbitrary padding variables.
 

@@ -82,7 +82,7 @@ export type AcademyProgramItem = {
 
 export type AcademyProgramEnrollmentStatus =
   | "PENDING_PAYMENT"
-  | "UPCOMING"
+  | "CONFIRMED"
   | "CANCELLED"
   | "EXPIRED"
   | string;
@@ -110,7 +110,7 @@ export type AcademyProgramEnrollmentAttendanceSummary = {
 };
 
 export type AcademyProgramEnrollmentCertificate = {
-  status: "NOT_ISSUED" | "ISSUED" | "REISSUED";
+  status: "NOT_UPLOADED" | "UPLOADED" | "NOT_ISSUED" | "ISSUED" | "REISSUED";
   issuedAt: string | null;
   uploadedAt: string | null;
   fileName: string | null;
@@ -189,6 +189,16 @@ export type AcademyProgramEnrollmentItem = {
     | null;
   attendanceSummary: AcademyProgramEnrollmentAttendanceSummary;
   certificate: AcademyProgramEnrollmentCertificate;
+};
+
+export type AcademyAdminEnrollmentAccountStatus = {
+  account: { type: "NONE" | "PATIENT" | "TRAINEE" | string; name: string | null; email: string | null };
+  canCreate: boolean;
+  canLink: boolean;
+};
+
+export type AcademyAdminEnrollmentAccountResponse = {
+  account: { type: string; name: string | null; email: string | null };
 };
 
 export type AcademyProgramAttendanceItem = AcademyProgramEnrollmentItem & {

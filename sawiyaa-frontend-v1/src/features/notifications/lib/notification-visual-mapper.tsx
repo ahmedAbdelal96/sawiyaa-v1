@@ -81,9 +81,9 @@ export function getNotificationVisualProps(
   const fallbackTitleKey = (namespace === "admin" ? "notifications.slugs.fallback.title" : "slugs.fallback.title");
   const fallbackSubtitleKey = (namespace === "admin" ? "notifications.slugs.fallback.subtitle" : "slugs.fallback.subtitle");
 
-  const tryTranslate = (key: string) => {
+  const tryTranslate = (key: string, values?: Record<string, string>) => {
     try {
-      const res = t(key as any);
+      const res = t(key as any, values as any);
       if (res && !(res.startsWith("[") && res.endsWith("]"))) {
         return res;
       }
@@ -91,14 +91,17 @@ export function getNotificationVisualProps(
     return "";
   };
 
+  const userCopy = (key: string, values?: Record<string, string>) =>
+    namespace === "user" ? tryTranslate(`visual.${key}`, values) : "";
+
   title = tryTranslate(titleKey1) || tryTranslate(titleKey2);
   subtitle = tryTranslate(subtitleKey1) || tryTranslate(subtitleKey2);
 
   if (!title) {
-    title = tryTranslate(fallbackTitleKey) || (locale === "ar" ? "إشعار نظام" : "System notification");
+    title = tryTranslate(fallbackTitleKey) || userCopy("fallbackTitle") || (locale === "ar" ? "إشعار نظام" : "System notification");
   }
   if (!subtitle) {
-    subtitle = tryTranslate(fallbackSubtitleKey) || (locale === "ar" ? "نظام" : "System");
+    subtitle = tryTranslate(fallbackSubtitleKey) || userCopy("fallbackSubtitle") || (locale === "ar" ? "نظام" : "System");
   }
 
   // Enrichment formatting (contextLine and actionLabel)
@@ -121,9 +124,12 @@ export function getNotificationVisualProps(
     const entityIdToUse = context.relatedEntityId || primaryAction?.id;
     const eId = entityIdToUse ? maskId(entityIdToUse) : "";
 
-    const fallbackLine = isAr
+    const fallbackLine = userCopy("fallbackContext", {
+      userId: rId || (isAr ? "النظام" : "System"),
+      sessionId: eId || (isAr ? "مجهولة" : "unknown"),
+    }) || (isAr
       ? `مستخدم ...${rId || "النظام"} · جلسة ...${eId || "مجهولة"}`
-      : `User ...${rId || "System"} · Session ...${eId || "unknown"}`;
+      : `User ...${rId || "System"} · Session ...${eId || "unknown"}`);
 
     const pName = context.patientName;
     const docName = context.practitionerName;
@@ -132,36 +138,45 @@ export function getNotificationVisualProps(
 
     if (slug.startsWith("sessions.")) {
       if (pName && docName) {
-        contextLine = isAr
+        contextLine = userCopy("sessionBetween", {
+          patient: pName,
+          specialist: docName,
+          time: timeFormatted ? ` · ${timeFormatted}` : "",
+        }) || (isAr
           ? `جلسة بين ${pName} و ${docName}${timeFormatted ? ` · ${timeFormatted}` : ""}`
-          : `Session between ${pName} and ${docName}${timeFormatted ? ` · ${timeFormatted}` : ""}`;
+          : `Session between ${pName} and ${docName}${timeFormatted ? ` · ${timeFormatted}` : ""}`);
       } else {
         contextLine = fallbackLine;
       }
     } else if (slug.startsWith("messages.") || slug === "GENERAL_CHAT_MESSAGE") {
       if (sender) {
-        const otherParticipant = context.recipientRole === "PATIENT" ? (docName || (isAr ? "الممارس" : "Practitioner")) : (pName || (isAr ? "المستفيد" : "Patient"));
-        contextLine = isAr
+        const otherParticipant = context.recipientRole === "PATIENT"
+          ? (docName || userCopy("specialist") || (isAr ? "المختص" : "Specialist"))
+          : (pName || userCopy("patient") || (isAr ? "المريض" : "Patient"));
+        contextLine = userCopy("messageContext", {
+          sender,
+          participant: otherParticipant,
+        }) || (isAr
           ? `من ${sender} · جلسة مع ${otherParticipant}`
-          : `From ${sender} · Session with ${otherParticipant}`;
+          : `From ${sender} · Session with ${otherParticipant}`);
       } else {
         contextLine = fallbackLine;
       }
     } else if (slug.startsWith("support.") || slug.includes("support")) {
       if (context.supportTicketSubject) {
-        contextLine = isAr
+        contextLine = userCopy("supportContext", { subject: context.supportTicketSubject }) || (isAr
           ? `تذكرة: ${context.supportTicketSubject}`
-          : `Ticket: ${context.supportTicketSubject}`;
+          : `Ticket: ${context.supportTicketSubject}`);
       } else {
-        contextLine = isAr
+        contextLine = userCopy("supportFallback", { id: eId || (isAr ? "مجهولة" : "unknown") }) || (isAr
           ? `تذكرة ...${eId || "مجهولة"}`
-          : `Ticket ...${eId || "unknown"}`;
+          : `Ticket ...${eId || "unknown"}`);
       }
     } else if (slug.startsWith("payments.")) {
       if (docName) {
-        contextLine = isAr
+        contextLine = userCopy("paymentContext", { specialist: docName }) || (isAr
           ? `جلسة مع ${docName} · راجع حالة الدفع`
-          : `Session with ${docName} · Review payment status`;
+          : `Session with ${docName} · Review payment status`);
       } else {
         contextLine = fallbackLine;
       }
@@ -174,13 +189,13 @@ export function getNotificationVisualProps(
 
   if (primaryAction) {
     if (primaryAction.kind === "messages") {
-      actionLabel = isAr ? "فتح المحادثة" : "Open conversation";
+      actionLabel = userCopy("openConversation") || (isAr ? "فتح المحادثة" : "Open conversation");
     } else if (primaryAction.kind === "session") {
-      actionLabel = isAr ? "فتح الجلسة" : "Open session";
+      actionLabel = userCopy("openSession") || (isAr ? "فتح الجلسة" : "Open session");
     } else if (primaryAction.kind === "support") {
-      actionLabel = isAr ? "فتح تذكرة الدعم" : "Open support ticket";
+      actionLabel = userCopy("openSupport") || (isAr ? "فتح تذكرة الدعم" : "Open support ticket");
     } else if (primaryAction.kind === "details") {
-      actionLabel = isAr ? "عرض التفاصيل" : "View details";
+      actionLabel = userCopy("viewDetails") || (isAr ? "عرض التفاصيل" : "View details");
     }
   }
 

@@ -29,6 +29,9 @@ export type AdminSessionRuntimeInspectionItem = {
   status: AdminSessionStatus;
   sessionMode: AdminSessionMode;
   paymentCoverageType: "DIRECT_PAYMENT" | "PACKAGE";
+  fundingSource?: string | null;
+  earningEntitlementId?: string | null;
+  payment?: { amount: string; currency: string; status: string } | null;
   scheduledStartAt: string | null;
   scheduledEndAt: string | null;
   provider: AdminSessionProvider;
@@ -37,6 +40,7 @@ export type AdminSessionRuntimeInspectionItem = {
   packageSessionIndex: number | null;
   packageSessionCount: number | null;
   packagePurchaseId: string | null;
+  originalSessionId?: string | null;
   canPrepareRuntime: boolean;
   canJoin: boolean;
   blockedReason: AdminSessionJoinBlockedReason | null;
@@ -186,6 +190,13 @@ export type AdminSessionInspectorRecommendation = {
   requiresAdminReview: boolean;
 };
 
+export type AdminSessionReviewDecision = {
+  canApproveNormally: boolean;
+  requiresResolution: boolean;
+  reasonCode: string;
+  recommendation: string;
+};
+
 export type AdminSessionInspectorSessionTiming = {
   scheduledStartAt: string | null;
   scheduledEndAt: string | null;
@@ -202,6 +213,7 @@ export type AdminSessionInspectorExtendedSummary = {
   overlap: AdminSessionInspectorOverlapSummary;
   evidence: AdminSessionInspectorEvidenceFlags;
   recommendation: AdminSessionInspectorRecommendation;
+  reviewDecision?: AdminSessionReviewDecision;
 };
 
 export type AdminSessionAttendanceResponseData = {

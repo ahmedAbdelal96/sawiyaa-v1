@@ -45,6 +45,7 @@ describe('ResolveSessionJoinContractUseCase', () => {
     provider?: SessionProvider;
     hasPriorJoinEvidence?: boolean;
     finalManualDecision?: SessionAdminDecisionType | null;
+    promotionOutcome?: 'transitioned' | 'skipped' | 'idempotent';
   }) {
     const createdEvents: Array<{ eventType: string; actorUserId: string }> = [];
     const prisma = {
@@ -85,6 +86,9 @@ describe('ResolveSessionJoinContractUseCase', () => {
         canPrepareRuntime: true,
         canJoin: overrides?.canJoin ?? true,
         blockedReason: overrides?.blockedReason ?? null,
+        prepareOpensAt: new Date('2026-04-01T10:30:00.000Z'),
+        joinOpensAt: new Date(expectedAvailableAt),
+        joinClosesAt: new Date(expectedExpiresAt),
       }),
     };
     const sessionVideoProviderRegistryService = {
@@ -105,9 +109,22 @@ describe('ResolveSessionJoinContractUseCase', () => {
     };
     const validateSessionStatusTransitionService = {
       transition: jest.fn().mockImplementation(async ({ session, to }: any) => ({ ...session, status: to })),
+      transitionIfCurrentStatus: jest.fn().mockImplementation(async ({ to }: any) => ({
+        outcome: overrides?.promotionOutcome ?? 'transitioned',
+        session: { ...baseSession, status: to },
+      })),
     };
     const prepareSessionRuntimeUseCase = {
       execute: jest.fn().mockResolvedValue({}),
+    };
+    const sessionSchedulePolicyService = {
+      parseSnapshot: jest.fn().mockReturnValue({
+        join: { joinEarlyMinutes: 15, joinAfterEndGraceMinutes: 10 },
+      }),
+      resolve: jest.fn().mockResolvedValue({
+        join: { joinEarlyMinutes: 15, joinAfterEndGraceMinutes: 10 },
+      }),
+      withScheduleRevision: jest.fn((policy) => policy),
     };
 
     const useCase = new ResolveSessionJoinContractUseCase(
@@ -120,6 +137,7 @@ describe('ResolveSessionJoinContractUseCase', () => {
       sessionVideoProviderResolverService as never,
       validateSessionStatusTransitionService as never,
       prepareSessionRuntimeUseCase as never,
+      sessionSchedulePolicyService as never,
     );
 
     return {
@@ -128,6 +146,7 @@ describe('ResolveSessionJoinContractUseCase', () => {
       sessionVideoProviderRegistryService,
       sessionVideoProviderResolverService,
       sessionRepository,
+      sessionLifecycleService: validateSessionStatusTransitionService,
       createdEvents,
     };
   }
@@ -371,6 +390,25 @@ describe('ResolveSessionJoinContractUseCase', () => {
     expect(result.item.canJoin).toBe(false);
     expect(result.item.joinToken).toBeNull();
     expect(result.item.blockedReason).toBe('SESSION_NOT_JOINABLE_STATUS');
-    expect(setup.sessionVideoProviderRegistryService.get).not.toHaveBeenCalled();
+      expect(setup.sessionVideoProviderRegistryService.get).not.toHaveBeenCalled();
+  });
+
+  it('uses a locked conditional promotion so a concurrent attendance transition cannot regress the session', async () => {
+    const setup = buildUseCase({ promotionOutcome: 'skipped' });
+
+    const result = await setup.useCase.execute({
+      userId: 'user_1',
+      actorType: 'PATIENT',
+      sessionId: 'session_1',
+    });
+
+    expect(result.item.canJoin).toBe(true);
+    expect(setup.sessionLifecycleService.transitionIfCurrentStatus).toHaveBeenCalledWith(
+      expect.objectContaining({
+        expectedStatuses: [SessionStatus.UPCOMING],
+        to: SessionStatus.READY_TO_JOIN,
+      }),
+    );
+    expect(setup.sessionLifecycleService.transition).not.toHaveBeenCalled();
   });
 });

@@ -140,31 +140,41 @@ describe("resolvePatientNotificationRoute", () => {
     ).toBe("/(patient)/care-chat/conv-1");
   });
 
-  it("routes message notifications to the patient messages inbox tabs", () => {
+  it("routes message notifications to an exact canonical thread when available", () => {
     expect(
       resolvePatientNotificationRoute(
-        "/patient/support/conv-1",
+        "/patient/messages/conv-1",
         "messages.support-message-received",
       ),
-    ).toBe("/(patient)/messages?tab=support");
+    ).toBe("/(patient)/messages/conv-1");
     expect(
       resolvePatientNotificationRoute(
-        "/patient/care-chat/conv-1",
+        "/",
         "messages.follow-up-message-received",
+        { payload: { conversationId: "conv-2" } },
       ),
-    ).toBe("/(patient)/messages?tab=followup");
+    ).toBe("/(patient)/messages/conv-2");
     expect(
       resolvePatientNotificationRoute(
-        "/patient/messages/session-1",
+        "/patient/support/conv-3",
         "messages.session-message-received",
       ),
-    ).toBe("/(patient)/messages?tab=sessions");
+    ).toBeNull();
   });
 
   it("routes assessments deep-link to assessments screen", () => {
     expect(resolvePatientNotificationRoute("/patient/assessments")).toBe(
       "/(patient)/assessments",
     );
+  });
+
+  it("preserves an instant booking request id from a notification deep-link", () => {
+    expect(
+      resolvePatientNotificationRoute(
+        "/patient/instant-booking?requestId=req-123",
+        "instant-booking.request-accepted",
+      ),
+    ).toBe("/(patient)/instant-booking?requestId=req-123");
   });
 
   it("returns null for non-patient href (unsupported notification target)", () => {
@@ -193,25 +203,34 @@ describe("resolvePatientNotificationRoute", () => {
 // ---------------------------------------------------------------------------
 
 describe("resolvePractitionerNotificationRoute", () => {
+  it("routes instant booking request notifications to the practitioner queue", () => {
+    expect(
+      resolvePractitionerNotificationRoute(
+        "/practitioner/instant-booking",
+        "instant-booking.request-created",
+      ),
+    ).toBe("/(practitioner)/instant-booking");
+  });
+
   it("routes message notifications to the practitioner messages inbox tabs", () => {
     expect(
       resolvePractitionerNotificationRoute(
         "/practitioner/support/conv-1",
         "messages.support-message-received",
       ),
-    ).toBe("/(practitioner)/messages?tab=support");
+    ).toBe("/(practitioner)/support/conv-1");
     expect(
       resolvePractitionerNotificationRoute(
         "/practitioner/care-chat/conv-1",
         "messages.follow-up-message-received",
       ),
-    ).toBe("/(practitioner)/messages?tab=followup");
+    ).toBe("/(practitioner)/care-chat/conv-1");
     expect(
       resolvePractitionerNotificationRoute(
         "/practitioner/messages/session-1",
         "messages.session-message-received",
       ),
-    ).toBe("/(practitioner)/messages?tab=sessions");
+    ).toBe("/(practitioner)/messages/session-1");
   });
 });
 

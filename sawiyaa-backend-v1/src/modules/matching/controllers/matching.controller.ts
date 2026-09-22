@@ -92,11 +92,13 @@ export class MatchingController {
   })
   async getById(
     @CurrentUser() currentUser: AuthenticatedUser,
+    @CurrentLocale() locale: SupportedLocale,
     @Param('id') sessionId: string,
   ) {
     const result = await this.getMatchingSessionUseCase.execute({
       userId: currentUser.id,
       sessionId,
+      locale,
     });
 
     return {

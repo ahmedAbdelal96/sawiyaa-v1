@@ -35,7 +35,7 @@ export class SessionOutcomeEvaluator {
       this.result(input, evidenceSummary, policySnapshot, {
         classification: 'NOT_READY_FOR_EVALUATION',
         confidence: 'LOW',
-        eligibleForAutomaticFinalization: false,
+        eligibleForAdminApproval: false,
         recommendedTerminalStatus: null,
         reasonCodes,
       });
@@ -119,7 +119,7 @@ export class SessionOutcomeEvaluator {
         return this.result(input, evidenceSummary, policySnapshot, {
           classification: 'NOT_READY_FOR_EVALUATION',
           confidence: 'LOW',
-          eligibleForAutomaticFinalization: false,
+          eligibleForAdminApproval: false,
           recommendedTerminalStatus: null,
           reasonCodes: noShowReasons,
         });
@@ -152,7 +152,7 @@ export class SessionOutcomeEvaluator {
         return this.result(input, evidenceSummary, policySnapshot, {
           classification: 'NOT_READY_FOR_EVALUATION',
           confidence: 'LOW',
-          eligibleForAutomaticFinalization: false,
+          eligibleForAdminApproval: false,
           recommendedTerminalStatus: null,
           reasonCodes: [...noShowReasons, 'PATIENT_NO_SHOW_GRACE_NOT_ELAPSED'],
         });
@@ -174,7 +174,7 @@ export class SessionOutcomeEvaluator {
         return this.result(input, evidenceSummary, policySnapshot, {
           classification: 'NOT_READY_FOR_EVALUATION',
           confidence: 'LOW',
-          eligibleForAutomaticFinalization: false,
+          eligibleForAdminApproval: false,
           recommendedTerminalStatus: null,
           reasonCodes: [
             ...noShowReasons,
@@ -213,11 +213,11 @@ export class SessionOutcomeEvaluator {
       input.attendance.overlapSeconds >=
         input.policy.minimumOverlapMinutes * 60;
     if (completionPassed) {
-      return this.auto(
+      return this.candidate(
         input,
         evidenceSummary,
         policySnapshot,
-        'AUTO_COMPLETABLE',
+        'COMPLETION_CANDIDATE',
         'COMPLETED',
         completionReasons,
       );
@@ -281,14 +281,11 @@ export class SessionOutcomeEvaluator {
     );
   }
 
-  private auto(
+  private candidate(
     input: SessionOutcomeEvaluationInput,
     evidenceSummary: SessionOutcomeEvaluationResult['evidenceSummary'],
     policySnapshot: SessionOutcomeEvaluationResult['policySnapshot'],
-    classification: Extract<
-      SessionOutcomeEvaluationResult['classification'],
-      `AUTO_${string}`
-    >,
+    classification: SessionOutcomeEvaluationResult['classification'],
     recommendedTerminalStatus: NonNullable<
       SessionOutcomeEvaluationResult['recommendedTerminalStatus']
     >,
@@ -297,20 +294,17 @@ export class SessionOutcomeEvaluator {
     return this.result(input, evidenceSummary, policySnapshot, {
       classification,
       confidence: 'HIGH',
-      eligibleForAutomaticFinalization: true,
+      eligibleForAdminApproval: true,
       recommendedTerminalStatus,
       reasonCodes,
     });
   }
 
-  private autoNoShow(
+  private noShowCandidate(
     input: SessionOutcomeEvaluationInput,
     evidenceSummary: SessionOutcomeEvaluationResult['evidenceSummary'],
     policySnapshot: SessionOutcomeEvaluationResult['policySnapshot'],
-    classification: Extract<
-      SessionOutcomeEvaluationResult['classification'],
-      `AUTO_${string}`
-    >,
+    classification: SessionOutcomeEvaluationResult['classification'],
     recommendedTerminalStatus: NonNullable<
       SessionOutcomeEvaluationResult['recommendedTerminalStatus']
     >,
@@ -321,7 +315,7 @@ export class SessionOutcomeEvaluator {
     return this.result(input, evidenceSummary, policySnapshot, {
       classification,
       confidence: reconciliationConfirmed ? 'HIGH' : 'MEDIUM',
-      eligibleForAutomaticFinalization: reconciliationConfirmed,
+      eligibleForAdminApproval: reconciliationConfirmed,
       recommendedTerminalStatus,
       reasonCodes: reconciliationConfirmed
         ? reasonCodes
@@ -341,7 +335,7 @@ export class SessionOutcomeEvaluator {
       ...this.result(input, evidenceSummary, policySnapshot, {
         classification: 'NEEDS_ADMIN_REVIEW',
         confidence,
-        eligibleForAutomaticFinalization: false,
+        eligibleForAdminApproval: false,
         recommendedTerminalStatus,
         reasonCodes,
       }),
@@ -358,7 +352,7 @@ export class SessionOutcomeEvaluator {
     return this.result(input, evidenceSummary, policySnapshot, {
       classification: 'NEEDS_ADMIN_REVIEW',
       confidence,
-      eligibleForAutomaticFinalization: false,
+        eligibleForAdminApproval: false,
       recommendedTerminalStatus: null,
       reasonCodes,
     });
@@ -372,7 +366,7 @@ export class SessionOutcomeEvaluator {
       SessionOutcomeEvaluationResult,
       | 'classification'
       | 'confidence'
-      | 'eligibleForAutomaticFinalization'
+      | 'eligibleForAdminApproval'
       | 'recommendedTerminalStatus'
       | 'reasonCodes'
     >,

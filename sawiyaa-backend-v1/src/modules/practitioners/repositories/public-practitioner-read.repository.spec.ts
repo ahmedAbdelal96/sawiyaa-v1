@@ -1,5 +1,4 @@
 import type { PrismaService } from '@common/prisma/prisma.service';
-import { AvailabilityWeekStatus } from '@prisma/client';
 import {
   PublicPractitionerSessionDuration,
 } from '../dto/list-public-practitioners.dto';
@@ -106,7 +105,7 @@ describe('PublicPractitionerReadRepository', () => {
     );
   });
 
-  it('filters availableToday using published availability weeks that cover the current day', async () => {
+  it('leaves availableToday evaluation to the concrete public-window evaluator', async () => {
     await repository.listPublic({
       locale: 'en',
       currencyCode: 'EGP',
@@ -115,25 +114,12 @@ describe('PublicPractitionerReadRepository', () => {
 
     expect(prisma.practitionerProfile.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: expect.objectContaining({
-          availabilityWeeks: {
-            some: expect.objectContaining({
-              status: AvailabilityWeekStatus.PUBLISHED,
-              weekStartDate: expect.objectContaining({ lte: expect.any(Date) }),
-              weekEndDate: expect.objectContaining({ gte: expect.any(Date) }),
-              slots: {
-                some: expect.objectContaining({
-                  weekday: expect.any(String),
-                }),
-              },
-            }),
-          },
-        }),
+        where: expect.not.objectContaining({ availabilityWeeks: expect.anything() }),
       }),
     );
   });
 
-  it('filters availableThisWeek using published availability weeks with slots only', async () => {
+  it('leaves availableThisWeek evaluation to the concrete public-window evaluator', async () => {
     await repository.listPublic({
       locale: 'en',
       currencyCode: 'EGP',
@@ -142,15 +128,112 @@ describe('PublicPractitionerReadRepository', () => {
 
     expect(prisma.practitionerProfile.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
+        where: expect.not.objectContaining({ availabilityWeeks: expect.anything() }),
+      }),
+    );
+  });
+
+  it('combines online-now and instant-booking-enabled presence filters', async () => {
+    await repository.listPublic({
+      locale: 'ar',
+      onlineNow: true,
+      instantBookingEnabled: true,
+    });
+
+    expect(prisma.practitionerProfile.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
         where: expect.objectContaining({
-          availabilityWeeks: {
-            some: {
-              status: AvailabilityWeekStatus.PUBLISHED,
-              slots: {
-                some: {},
-              },
+          presence: {
+            is: expect.objectContaining({
+              status: 'ONLINE',
+              isInstantBookingEnabled: true,
+              lastSeenAtUtc: expect.objectContaining({ gte: expect.any(Date) }),
+            }),
+          },
+        }),
+      }),
+    );
+  });
+
+  it('adds bilingual live professional-content matching without changing legacy or specialty branches', async () => {
+    await repository.listPublic({
+      locale: 'ar',
+      search: 'family',
+      currencyCode: 'USD',
+    });
+
+    const call = (
+      prisma.practitionerProfile.findMany as unknown as jest.Mock
+    ).mock.calls[0][0] as {
+      where: { OR: Array<Record<string, unknown>> };
+    };
+
+    expect(call.where.OR).toEqual(
+      expect.arrayContaining([
+        {
+          user: {
+            displayName: {
+              contains: 'family',
+              mode: 'insensitive',
             },
           },
+        },
+        {
+          professionalTitle: {
+            contains: 'family',
+            mode: 'insensitive',
+          },
+        },
+        {
+          bio: {
+            contains: 'family',
+            mode: 'insensitive',
+          },
+        },
+        {
+          professionalContentTranslations: {
+            some: {
+              locale: { in: ['ar', 'en'] },
+              OR: [
+                {
+                  professionalTitle: {
+                    contains: 'family',
+                    mode: 'insensitive',
+                  },
+                },
+                {
+                  bio: {
+                    contains: 'family',
+                    mode: 'insensitive',
+                  },
+                },
+              ],
+            },
+          },
+        },
+      ]),
+    );
+  });
+
+  it('keeps the requested locale first while allowing the supported fallback locale', async () => {
+    await repository.listPublic({
+      locale: 'en',
+      search: 'family',
+    });
+
+    const where = (
+      prisma.practitionerProfile.findMany as unknown as jest.Mock
+    ).mock.calls[0][0].where as {
+      OR: Array<Record<string, unknown>>;
+    };
+    const translatedBranch = where.OR.find(
+      (branch) => 'professionalContentTranslations' in branch,
+    );
+
+    expect(translatedBranch).toEqual(
+      expect.objectContaining({
+        professionalContentTranslations: expect.objectContaining({
+          some: expect.objectContaining({ locale: { in: ['en', 'ar'] } }),
         }),
       }),
     );

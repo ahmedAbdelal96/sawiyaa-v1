@@ -61,6 +61,9 @@ import {
   usePractitionerProfile,
   usePractitionerReadiness,
   useSubmitPractitionerApplication,
+  useUpdatePractitionerProfile,
+  useUpdatePractitionerAvatar,
+  useRemovePractitionerAvatar,
 } from "../hooks/use-practitioners";
 import type {
   PractitionerGender,
@@ -68,6 +71,7 @@ import type {
   PractitionerProfile,
   PractitionerType,
   SubmitPractitionerApplicationRequest,
+  UpdatePractitionerProfileRequest,
 } from "../types/practitioners.types";
 
 type ProfileRequestFormData = {
@@ -75,14 +79,6 @@ type ProfileRequestFormData = {
   professionalTitle?: string;
   bio?: string;
   yearsOfExperience?: string;
-  sessionPrice30Egp?: string;
-  sessionPrice30Usd?: string;
-  sessionPrice60Egp?: string;
-  sessionPrice60Usd?: string;
-  instantBookingPrice30Egp?: string;
-  instantBookingPrice30Usd?: string;
-  instantBookingPrice60Egp?: string;
-  instantBookingPrice60Usd?: string;
   practitionerType?: PractitionerType | "";
   practitionerGender?: PractitionerGender | "";
   countryCode?: string;
@@ -120,20 +116,6 @@ type ApplicationSnapshot = {
     yearsOfExperience?: number | null;
     countryCode?: string | null;
     avatarUrl?: string | null;
-    pricing?: {
-      session30?: {
-        egp?: number | null;
-        usd?: number | null;
-      } | null;
-      session60?: {
-        egp?: number | null;
-        usd?: number | null;
-      } | null;
-    } | null;
-    instantBookingPrice30Egp?: number | null;
-    instantBookingPrice30Usd?: number | null;
-    instantBookingPrice60Egp?: number | null;
-    instantBookingPrice60Usd?: number | null;
   };
   payoutDestination?: {
     methodType?: string | null;
@@ -208,14 +190,6 @@ function formatMoneyValue(value: number | string | null | undefined, locale: str
   }
 }
 
-function parseOptionalMoneyInput(value: string | undefined): number | null | undefined {
-  if (value === undefined) return undefined;
-  const trimmed = value.trim();
-  if (!trimmed) return null;
-  const parsed = Number(trimmed);
-  return Number.isFinite(parsed) ? parsed : null;
-}
-
 function getErrorMessage(error: unknown, fallback: string): string {
   if (error && typeof error === "object" && "message" in error) {
     const message = (error as { message?: unknown }).message;
@@ -254,7 +228,6 @@ function buildSnapshotChanges(
   const applicant = snapshot.applicant ?? {};
   const requestedProfile = snapshot.profile ?? {};
   const requestedPayoutDestination = snapshot.payoutDestination ?? null;
-  const requestedPricing = requestedProfile.pricing ?? null;
 
   const addChange = (label: string, currentValue: string | number | null | undefined, requestedValue: string | number | null | undefined) => {
     if (requestedValue === undefined) return;
@@ -281,62 +254,6 @@ function buildSnapshotChanges(
     t("profile.fields.yearsOfExperience.label"),
     profile.yearsOfExperience,
     requestedProfile.yearsOfExperience,
-  );
-  addChange(
-    t("profile.fields.sessionPrice30Egp.label"),
-    formatMoneyValue(profile.pricing.session30.egp, locale),
-    requestedPricing?.session30?.egp === undefined
-      ? undefined
-      : formatMoneyValue(requestedPricing.session30?.egp, locale),
-  );
-  addChange(
-    t("profile.fields.sessionPrice30Usd.label"),
-    formatMoneyValue(profile.pricing.session30.usd, locale),
-    requestedPricing?.session30?.usd === undefined
-      ? undefined
-      : formatMoneyValue(requestedPricing.session30?.usd, locale),
-  );
-  addChange(
-    t("profile.fields.sessionPrice60Egp.label"),
-    formatMoneyValue(profile.pricing.session60.egp, locale),
-    requestedPricing?.session60?.egp === undefined
-      ? undefined
-      : formatMoneyValue(requestedPricing.session60?.egp, locale),
-  );
-  addChange(
-    t("profile.fields.sessionPrice60Usd.label"),
-    formatMoneyValue(profile.pricing.session60.usd, locale),
-    requestedPricing?.session60?.usd === undefined
-      ? undefined
-      : formatMoneyValue(requestedPricing.session60?.usd, locale),
-  );
-  addChange(
-    t("profile.fields.instantBookingPrice30Egp.label"),
-    formatMoneyValue(profile.instantBookingPrice30Egp, locale),
-    requestedProfile.instantBookingPrice30Egp === undefined
-      ? undefined
-      : formatMoneyValue(requestedProfile.instantBookingPrice30Egp, locale),
-  );
-  addChange(
-    t("profile.fields.instantBookingPrice30Usd.label"),
-    formatMoneyValue(profile.instantBookingPrice30Usd, locale),
-    requestedProfile.instantBookingPrice30Usd === undefined
-      ? undefined
-      : formatMoneyValue(requestedProfile.instantBookingPrice30Usd, locale),
-  );
-  addChange(
-    t("profile.fields.instantBookingPrice60Egp.label"),
-    formatMoneyValue(profile.instantBookingPrice60Egp, locale),
-    requestedProfile.instantBookingPrice60Egp === undefined
-      ? undefined
-      : formatMoneyValue(requestedProfile.instantBookingPrice60Egp, locale),
-  );
-  addChange(
-    t("profile.fields.instantBookingPrice60Usd.label"),
-    formatMoneyValue(profile.instantBookingPrice60Usd, locale),
-    requestedProfile.instantBookingPrice60Usd === undefined
-      ? undefined
-      : formatMoneyValue(requestedProfile.instantBookingPrice60Usd, locale),
   );
   addChange(
     t("profile.fields.practitionerType.label"),
@@ -497,8 +414,12 @@ export default function PractitionerProfileWorkspace() {
   const { data, isLoading, isError, refetch } = usePractitionerProfile();
   const readinessQuery = usePractitionerReadiness();
   const submitApplication = useSubmitPractitionerApplication();
+  const updateProfile = useUpdatePractitionerProfile();
+  const updateAvatar = useUpdatePractitionerAvatar();
+  const removeAvatar = useRemovePractitionerAvatar();
 
   const profile = data?.profile;
+  const isApprovedProfile = profile?.profileStatus === "APPROVED";
   const fallbackProfile = useMemo(() => ({
     displayName: "",
     avatarUrl: "",
@@ -550,78 +471,6 @@ export default function PractitionerProfileWorkspace() {
           .refine((value) => !value || Number(value) <= 80, {
             message: t("profile.validation.yearsMax"),
           }),
-        sessionPrice30Egp: z.string().optional().refine(
-          (value) => {
-            if (!value) return true;
-            const trimmed = value.trim();
-            if (!trimmed) return true;
-            return /^(\d+)(\.\d{1,2})?$/.test(trimmed) && Number(trimmed) > 0;
-          },
-          { message: t("profile.validation.sessionPriceInvalid") },
-        ),
-        sessionPrice30Usd: z.string().optional().refine(
-          (value) => {
-            if (!value) return true;
-            const trimmed = value.trim();
-            if (!trimmed) return true;
-            return /^(\d+)(\.\d{1,2})?$/.test(trimmed) && Number(trimmed) > 0;
-          },
-          { message: t("profile.validation.sessionPriceInvalid") },
-        ),
-        sessionPrice60Egp: z.string().optional().refine(
-          (value) => {
-            if (!value) return true;
-            const trimmed = value.trim();
-            if (!trimmed) return true;
-            return /^(\d+)(\.\d{1,2})?$/.test(trimmed) && Number(trimmed) > 0;
-          },
-          { message: t("profile.validation.sessionPriceInvalid") },
-        ),
-        sessionPrice60Usd: z.string().optional().refine(
-          (value) => {
-            if (!value) return true;
-            const trimmed = value.trim();
-            if (!trimmed) return true;
-            return /^(\d+)(\.\d{1,2})?$/.test(trimmed) && Number(trimmed) > 0;
-          },
-          { message: t("profile.validation.sessionPriceInvalid") },
-        ),
-        instantBookingPrice30Egp: z.string().optional().refine(
-          (value) => {
-            if (!value) return true;
-            const trimmed = value.trim();
-            if (!trimmed) return true;
-            return /^(\d+)(\.\d{1,2})?$/.test(trimmed) && Number(trimmed) > 0;
-          },
-          { message: t("profile.validation.instantBookingPriceInvalid") },
-        ),
-        instantBookingPrice30Usd: z.string().optional().refine(
-          (value) => {
-            if (!value) return true;
-            const trimmed = value.trim();
-            if (!trimmed) return true;
-            return /^(\d+)(\.\d{1,2})?$/.test(trimmed) && Number(trimmed) > 0;
-          },
-          { message: t("profile.validation.instantBookingPriceInvalid") },
-        ),
-        instantBookingPrice60Egp: z.string().optional().refine(
-          (value) => {
-            if (!value) return true;
-            const trimmed = value.trim();
-            if (!trimmed) return true;
-            return /^(\d+)(\.\d{1,2})?$/.test(trimmed) && Number(trimmed) > 0;
-          },
-          { message: t("profile.validation.instantBookingPriceInvalid") },
-        ),
-        instantBookingPrice60Usd: z.string().optional().refine(
-          (value) => {
-            if (!value) return true;
-            const trimmed = value.trim();
-            if (!trimmed) return true;
-            return /^(\d+)(\.\d{1,2})?$/.test(trimmed) && Number(trimmed) > 0;
-          },
-          { message: t("profile.validation.instantBookingPriceInvalid") },
-        ),
         practitionerType: z.string().optional(),
         practitionerGender: z.string().optional(),
         countryCode: z.string().max(3, { message: t("profile.validation.countryCodeMax") }).optional(),
@@ -636,6 +485,7 @@ export default function PractitionerProfileWorkspace() {
         payoutWalletIdentifier: z.string().max(191, { message: t("profile.validation.payoutWalletIdentifierMax") }).optional(),
         payoutOtherDetails: z.string().max(1000, { message: t("profile.validation.payoutOtherDetailsMax") }).optional(),
       }).superRefine((value, ctx) => {
+        if (isApprovedProfile) return;
         const methodType = value.payoutMethodType?.trim() ?? "";
         const hasText = (input: string | undefined) => Boolean(input?.trim().length);
 
@@ -715,7 +565,7 @@ export default function PractitionerProfileWorkspace() {
             });
         }
       }),
-    [t],
+    [isApprovedProfile, t],
   );
 
   const {
@@ -733,14 +583,6 @@ export default function PractitionerProfileWorkspace() {
       professionalTitle: "",
       bio: "",
       yearsOfExperience: "",
-      sessionPrice30Egp: "",
-      sessionPrice30Usd: "",
-      sessionPrice60Egp: "",
-      sessionPrice60Usd: "",
-      instantBookingPrice30Egp: "",
-      instantBookingPrice30Usd: "",
-      instantBookingPrice60Egp: "",
-      instantBookingPrice60Usd: "",
       practitionerType: "",
       practitionerGender: "",
       countryCode: "",
@@ -913,7 +755,14 @@ export default function PractitionerProfileWorkspace() {
   const currentApplicationStatus = application?.status ?? null;
   const readinessMissingRequirements = readiness?.missingRequirements ?? [];
   const hasFormErrors = Object.keys(errors).length > 0;
-  const submitDisabled = !hasPrimarySpecialty || payoutValidation.hasIssue || hasFormErrors;
+  const submitDisabled =
+    (!isApprovedProfile && (!hasPrimarySpecialty || payoutValidation.hasIssue)) ||
+    hasFormErrors;
+  const isSavingRequest =
+    submitApplication.isPending ||
+    updateProfile.isPending ||
+    updateAvatar.isPending ||
+    removeAvatar.isPending;
   const specialtiesHelpRoute = `/${locale}/practitioner/specialties`;
 
   const openRequestModal = () => {
@@ -925,18 +774,6 @@ export default function PractitionerProfileWorkspace() {
       professionalTitle: profile.professionalTitle ?? "",
       bio: profile.bio ?? "",
       yearsOfExperience: profile.yearsOfExperience != null ? String(profile.yearsOfExperience) : "",
-      sessionPrice30Egp: profile.pricing.session30.egp != null ? String(profile.pricing.session30.egp) : "",
-      sessionPrice30Usd: profile.pricing.session30.usd != null ? String(profile.pricing.session30.usd) : "",
-      sessionPrice60Egp: profile.pricing.session60.egp != null ? String(profile.pricing.session60.egp) : "",
-      sessionPrice60Usd: profile.pricing.session60.usd != null ? String(profile.pricing.session60.usd) : "",
-      instantBookingPrice30Egp:
-        profile.instantBookingPrice30Egp != null ? String(profile.instantBookingPrice30Egp) : "",
-      instantBookingPrice30Usd:
-        profile.instantBookingPrice30Usd != null ? String(profile.instantBookingPrice30Usd) : "",
-      instantBookingPrice60Egp:
-        profile.instantBookingPrice60Egp != null ? String(profile.instantBookingPrice60Egp) : "",
-      instantBookingPrice60Usd:
-        profile.instantBookingPrice60Usd != null ? String(profile.instantBookingPrice60Usd) : "",
       practitionerType: profile.practitionerType ?? "",
       practitionerGender: profile.practitionerGender ?? "",
       countryCode: profile.countryCode ?? "",
@@ -973,7 +810,7 @@ export default function PractitionerProfileWorkspace() {
 
   const onSubmitRequest = async (formData: ProfileRequestFormData) => {
     if (!profile) return;
-    if (!hasPrimarySpecialty) {
+    if (!isApprovedProfile && !hasPrimarySpecialty) {
       setFeedback({
         tone: "error",
         message: t("profile.request.feedback.primarySpecialtyRequired"),
@@ -1029,14 +866,6 @@ export default function PractitionerProfileWorkspace() {
           : formData.timezone.trim().length > 0
             ? formData.timezone.trim()
             : undefined,
-      sessionPrice30Egp: parseOptionalMoneyInput(formData.sessionPrice30Egp),
-      sessionPrice30Usd: parseOptionalMoneyInput(formData.sessionPrice30Usd),
-      sessionPrice60Egp: parseOptionalMoneyInput(formData.sessionPrice60Egp),
-      sessionPrice60Usd: parseOptionalMoneyInput(formData.sessionPrice60Usd),
-      instantBookingPrice30Egp: parseOptionalMoneyInput(formData.instantBookingPrice30Egp),
-      instantBookingPrice30Usd: parseOptionalMoneyInput(formData.instantBookingPrice30Usd),
-      instantBookingPrice60Egp: parseOptionalMoneyInput(formData.instantBookingPrice60Egp),
-      instantBookingPrice60Usd: parseOptionalMoneyInput(formData.instantBookingPrice60Usd),
       payoutDestination:
         formData.payoutMethodType && formData.payoutMethodType.length > 0
           ? {
@@ -1054,7 +883,34 @@ export default function PractitionerProfileWorkspace() {
     };
 
     try {
-      await submitApplication.mutateAsync(payload);
+      if (profile.profileStatus === "APPROVED") {
+        // Approved practitioners use the baseline profile endpoint. The
+        // backend stages trust-sensitive fields in the existing change-review
+        // snapshot while prices/settlement remain immediate.
+        const {
+          avatarUrl: _avatarUrl,
+          countryCode: _countryCode,
+          locale: _locale,
+          timezone: _timezone,
+          payoutDestination: _payoutDestination,
+          yearsOfExperience: _yearsOfExperience,
+          practitionerType: _practitionerType,
+          practitionerGender: _practitionerGender,
+          ...profilePayload
+        } = payload;
+        await updateProfile.mutateAsync(
+          profilePayload as UpdatePractitionerProfileRequest,
+        );
+        if (requestedAvatarUrl !== undefined) {
+          if (requestedAvatarUrl === null) {
+            await removeAvatar.mutateAsync();
+          } else {
+            await updateAvatar.mutateAsync({ avatarUrl: requestedAvatarUrl });
+          }
+        }
+      } else {
+        await submitApplication.mutateAsync(payload);
+      }
       setFeedback({
         tone: "success",
         message: t("profile.request.feedback.success"),
@@ -1067,6 +923,13 @@ export default function PractitionerProfileWorkspace() {
       });
     }
   };
+
+  const formattedLanguages = useMemo(() => {
+    if (!profileOrFallback.languages || profileOrFallback.languages.length === 0) return null;
+    return profileOrFallback.languages
+      .map((l) => getLocalizedLanguageLabel(l, locale))
+      .join(locale === "ar" ? "، " : ", ");
+  }, [profileOrFallback.languages, locale]);
 
   if (!isLoading && (isError || !profile)) {
     return (
@@ -1106,12 +969,6 @@ export default function PractitionerProfileWorkspace() {
   const displaySpecialties = profileOrFallback.specialties.slice(0, 4);
   const payoutSummary = formatPayoutDestinationLabel(profileOrFallback.payoutDestination, t);
   const credentialSummary = profileOrFallback.credentialSummary;
-  const formattedLanguages = useMemo(() => {
-    if (!profileOrFallback.languages || profileOrFallback.languages.length === 0) return null;
-    return profileOrFallback.languages
-      .map((l) => getLocalizedLanguageLabel(l, locale))
-      .join(locale === "ar" ? "، " : ", ");
-  }, [profileOrFallback.languages, locale]);
 
   const tabLabels = {
     ar: {
@@ -1153,6 +1010,60 @@ export default function PractitionerProfileWorkspace() {
         title={t("profile.page.title")}
         description={t("profile.page.subtitle")}
       />
+
+      <section aria-labelledby="profile-editing-split" className="space-y-3">
+        <h2 id="profile-editing-split" className="text-sm font-bold text-text-primary dark:text-white/90">
+          {t("profile.editingSplit.title")}
+        </h2>
+        <div className="grid gap-4 lg:grid-cols-2">
+          <PractitionerSectionCard className="border-emerald-200/70 bg-emerald-50/30 dark:border-emerald-500/20 dark:bg-emerald-500/5">
+            <h3 className="text-base font-bold text-text-primary dark:text-white/95">
+              {t("profile.editingSplit.quickTitle")}
+            </h3>
+            <p className="mt-1 text-sm leading-6 text-text-secondary dark:text-white/65">
+              {t("profile.editingSplit.quickDescription")}
+            </p>
+            <div className="mt-4 flex flex-wrap gap-2">
+              {[
+                ["profile.editingSplit.prices", `/${locale}/practitioner/application`],
+                ["profile.editingSplit.instantBooking", `/${locale}/practitioner/instant-booking`],
+                ["profile.editingSplit.settlement", `/${locale}/practitioner/settlements`],
+                ["profile.editingSplit.availability", `/${locale}/practitioner/availability`],
+                ["profile.editingSplit.presence", `/${locale}/practitioner/dashboard`],
+              ].map(([label, href]) => (
+                <Button key={label} type="button" size="sm" variant="outline" onClick={() => router.push(href)}>
+                  {t(label as Parameters<typeof t>[0])}
+                </Button>
+              ))}
+            </div>
+          </PractitionerSectionCard>
+
+          <PractitionerSectionCard className="border-primary/20 bg-primary-light/20 dark:border-primary/20">
+            <h3 className="text-base font-bold text-text-primary dark:text-white/95">
+              {t("profile.editingSplit.requestTitle")}
+            </h3>
+            <p className="mt-1 text-sm leading-6 text-text-secondary dark:text-white/65">
+              {t("profile.editingSplit.requestDescription")}
+            </p>
+            <div className="mt-4 flex flex-wrap items-center gap-2">
+              <Button type="button" size="sm" onClick={openRequestModal} disabled={!canRequestChanges} startIcon={<FilePenLine className="h-4 w-4" />}>
+                {t("profile.editingSplit.openRequest")}
+              </Button>
+              <Button type="button" size="sm" variant="outline" onClick={() => router.push(`/${locale}/practitioner/specialties`)}>
+                {t("profile.editingSplit.specialties")}
+              </Button>
+              <Button type="button" size="sm" variant="outline" onClick={() => router.push(`/${locale}/practitioner/credentials`)}>
+                {t("profile.editingSplit.credentials")}
+              </Button>
+              {isPendingReview ? (
+                <span className="text-xs font-medium text-warning-700 dark:text-warning-300">
+                  {t("profile.editingSplit.pendingNotice")}
+                </span>
+              ) : null}
+            </div>
+          </PractitionerSectionCard>
+        </div>
+      </section>
 
       <PractitionerSectionCard className="p-0 overflow-hidden border-slate-200/80 shadow-sm">
         {/* Tabs row at the top inside the card */}
@@ -1869,7 +1780,7 @@ export default function PractitionerProfileWorkspace() {
         title={t("profile.request.modalTitle")}
         description={t("profile.request.modalDescription")}
         submitLabel={
-          submitApplication.isPending ? (
+          isSavingRequest ? (
             <span className="inline-flex items-center gap-2">
               <Loader2 className="h-4 w-4 animate-spin" />
               {t("profile.actions.submitting")}
@@ -1881,7 +1792,7 @@ export default function PractitionerProfileWorkspace() {
         cancelLabel={t("profile.actions.cancelRequest")}
         onSubmit={handleSubmit(onSubmitRequest)}
         submitDisabled={submitDisabled}
-        loading={submitApplication.isPending}
+        loading={isSavingRequest}
       >
         <div className="space-y-4">
           <div className="rounded-2xl border border-primary/15 bg-primary-light/30 p-4 text-sm leading-6 text-text-primary">
@@ -1904,7 +1815,7 @@ export default function PractitionerProfileWorkspace() {
             </div>
           ) : null}
 
-          {!canSubmitApplication ? (
+          {!isApprovedProfile && !canSubmitApplication ? (
             <div className="rounded-2xl border border-warning-200 bg-warning-50 p-4 text-sm leading-6 text-warning-800">
               <p>{t("profile.readiness.notReadyNote")}</p>
               {readinessMissingRequirements.length > 0 ? (
@@ -1927,26 +1838,28 @@ export default function PractitionerProfileWorkspace() {
                   {errors.displayName ? <p className="mt-1.5 text-xs text-error-500">{errors.displayName.message}</p> : null}
                 </div>
 
-                <div>
-                  <Label htmlFor="countryCode">{t("profile.fields.countryCode.label")}</Label>
-                  <Input id="countryCode" type="text" placeholder={t("profile.fields.countryCode.placeholder")} error={!!errors.countryCode} {...register("countryCode")} />
-                  {errors.countryCode ? <p className="mt-1.5 text-xs text-error-500">{errors.countryCode.message}</p> : null}
-                </div>
-
-                <div>
-                  <Label htmlFor="locale">{locale === "ar" ? "لغة الواجهة" : "Interface language"}</Label>
-                  <select id="locale" className={selectClasses} {...register("locale")}>
-                    <option value="">{locale === "ar" ? "اختر لغة الواجهة" : "Choose interface language"}</option>
-                    <option value="ar">{t("profile.locale.ar")}</option>
-                    <option value="en">{t("profile.locale.en")}</option>
-                  </select>
-                </div>
-
-                <div>
-                  <Label htmlFor="timezone">{t("profile.fields.timezone.label")}</Label>
-                  <Input id="timezone" type="text" placeholder={t("profile.fields.timezone.placeholder")} error={!!errors.timezone} {...register("timezone")} />
-                  {errors.timezone ? <p className="mt-1.5 text-xs text-error-500">{errors.timezone.message}</p> : null}
-                </div>
+                {!isApprovedProfile ? (
+                  <>
+                    <div>
+                      <Label htmlFor="countryCode">{t("profile.fields.countryCode.label")}</Label>
+                      <Input id="countryCode" type="text" placeholder={t("profile.fields.countryCode.placeholder")} error={!!errors.countryCode} {...register("countryCode")} />
+                      {errors.countryCode ? <p className="mt-1.5 text-xs text-error-500">{errors.countryCode.message}</p> : null}
+                    </div>
+                    <div>
+                      <Label htmlFor="locale">{locale === "ar" ? "لغة الواجهة" : "Interface language"}</Label>
+                      <select id="locale" className={selectClasses} {...register("locale")}>
+                        <option value="">{locale === "ar" ? "اختر لغة الواجهة" : "Choose interface language"}</option>
+                        <option value="ar">{t("profile.locale.ar")}</option>
+                        <option value="en">{t("profile.locale.en")}</option>
+                      </select>
+                    </div>
+                    <div>
+                      <Label htmlFor="timezone">{t("profile.fields.timezone.label")}</Label>
+                      <Input id="timezone" type="text" placeholder={t("profile.fields.timezone.placeholder")} error={!!errors.timezone} {...register("timezone")} />
+                      {errors.timezone ? <p className="mt-1.5 text-xs text-error-500">{errors.timezone.message}</p> : null}
+                    </div>
+                  </>
+                ) : null}
               </div>
             </section>
 
@@ -1973,175 +1886,36 @@ export default function PractitionerProfileWorkspace() {
                   {errors.professionalTitle ? <p className="mt-1.5 text-xs text-error-500">{errors.professionalTitle.message}</p> : null}
                 </div>
 
-                <div>
-                  <Label htmlFor="practitionerType">{t("profile.fields.practitionerType.label")}</Label>
-                  <select id="practitionerType" className={selectClasses} {...register("practitionerType")}>
-                    <option value="">{t("profile.fields.practitionerType.placeholder")}</option>
-                    {(["PSYCHOLOGIST", "PSYCHIATRIST", "NUTRITIONIST", "WEIGHT_LOSS_SPECIALIST", "COUNSELOR", "OTHER"] as PractitionerType[]).map((type) => (
-                      <option key={type} value={type}>
-                        {t(`profile.practitionerType.${type}` as Parameters<typeof t>[0])}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+                {!isApprovedProfile ? (
+                  <>
+                    <div>
+                      <Label htmlFor="practitionerType">{t("profile.fields.practitionerType.label")}</Label>
+                      <select id="practitionerType" className={selectClasses} {...register("practitionerType")}>
+                        <option value="">{t("profile.fields.practitionerType.placeholder")}</option>
+                        {(["PSYCHOLOGIST", "PSYCHIATRIST", "NUTRITIONIST", "WEIGHT_LOSS_SPECIALIST", "COUNSELOR", "OTHER"] as PractitionerType[]).map((type) => (
+                          <option key={type} value={type}>
+                            {t(`profile.practitionerType.${type}` as Parameters<typeof t>[0])}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
 
-                <div>
-                  <Label htmlFor="practitionerGender">{t("profile.fields.practitionerGender.label")}</Label>
-                  <select id="practitionerGender" className={selectClasses} {...register("practitionerGender")}>
-                    <option value="">{t("profile.fields.practitionerGender.placeholder")}</option>
-                    <option value="MALE">{t("profile.practitionerGender.MALE")}</option>
-                    <option value="FEMALE">{t("profile.practitionerGender.FEMALE")}</option>
-                  </select>
-                </div>
+                    <div>
+                      <Label htmlFor="practitionerGender">{t("profile.fields.practitionerGender.label")}</Label>
+                      <select id="practitionerGender" className={selectClasses} {...register("practitionerGender")}>
+                        <option value="">{t("profile.fields.practitionerGender.placeholder")}</option>
+                        <option value="MALE">{t("profile.practitionerGender.MALE")}</option>
+                        <option value="FEMALE">{t("profile.practitionerGender.FEMALE")}</option>
+                      </select>
+                    </div>
 
-                <div>
-                  <Label htmlFor="yearsOfExperience">{t("profile.fields.yearsOfExperience.label")}</Label>
-                  <Input id="yearsOfExperience" type="number" placeholder={t("profile.fields.yearsOfExperience.placeholder")} error={!!errors.yearsOfExperience} {...register("yearsOfExperience")} />
-                  {errors.yearsOfExperience ? <p className="mt-1.5 text-xs text-error-500">{errors.yearsOfExperience.message}</p> : null}
-                </div>
-              </div>
-            </section>
-
-            <section className={`${SOFT_CARD} lg:col-span-2`}>
-              <h3 className="text-sm font-semibold text-text-primary">{t("profile.sections.sessionPricing")}</h3>
-              <div className="mt-3 grid gap-3 sm:grid-cols-2">
-                <div>
-                  <Label htmlFor="sessionPrice30Egp">{t("profile.fields.sessionPrice30Egp.label")}</Label>
-                  <Input
-                    id="sessionPrice30Egp"
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    placeholder={t("profile.fields.sessionPrice30Egp.placeholder")}
-                    error={!!errors.sessionPrice30Egp}
-                    {...register("sessionPrice30Egp")}
-                  />
-                  {errors.sessionPrice30Egp ? (
-                    <p className="mt-1.5 text-xs text-error-500">{errors.sessionPrice30Egp.message}</p>
-                  ) : null}
-                </div>
-
-                <div>
-                  <Label htmlFor="sessionPrice30Usd">{t("profile.fields.sessionPrice30Usd.label")}</Label>
-                  <Input
-                    id="sessionPrice30Usd"
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    placeholder={t("profile.fields.sessionPrice30Usd.placeholder")}
-                    error={!!errors.sessionPrice30Usd}
-                    {...register("sessionPrice30Usd")}
-                  />
-                  {errors.sessionPrice30Usd ? (
-                    <p className="mt-1.5 text-xs text-error-500">{errors.sessionPrice30Usd.message}</p>
-                  ) : null}
-                </div>
-
-                <div>
-                  <Label htmlFor="sessionPrice60Egp">{t("profile.fields.sessionPrice60Egp.label")}</Label>
-                  <Input
-                    id="sessionPrice60Egp"
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    placeholder={t("profile.fields.sessionPrice60Egp.placeholder")}
-                    error={!!errors.sessionPrice60Egp}
-                    {...register("sessionPrice60Egp")}
-                  />
-                  {errors.sessionPrice60Egp ? (
-                    <p className="mt-1.5 text-xs text-error-500">{errors.sessionPrice60Egp.message}</p>
-                  ) : null}
-                </div>
-
-                <div>
-                  <Label htmlFor="sessionPrice60Usd">{t("profile.fields.sessionPrice60Usd.label")}</Label>
-                  <Input
-                    id="sessionPrice60Usd"
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    placeholder={t("profile.fields.sessionPrice60Usd.placeholder")}
-                    error={!!errors.sessionPrice60Usd}
-                    {...register("sessionPrice60Usd")}
-                  />
-                  {errors.sessionPrice60Usd ? (
-                    <p className="mt-1.5 text-xs text-error-500">{errors.sessionPrice60Usd.message}</p>
-                  ) : null}
-                </div>
-              </div>
-            </section>
-
-            <section className={`${SOFT_CARD} lg:col-span-2`}>
-              <h3 className="text-sm font-semibold text-text-primary">
-                {t("profile.sections.instantBookingPricing")}
-              </h3>
-              <p className="mt-1 text-xs text-text-muted">
-                {t("profile.instantBooking.pricingNote")}
-              </p>
-              <div className="mt-3 grid gap-3 sm:grid-cols-2">
-                <div>
-                  <Label htmlFor="instantBookingPrice30Egp">{t("profile.fields.instantBookingPrice30Egp.label")}</Label>
-                  <Input
-                    id="instantBookingPrice30Egp"
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    placeholder={t("profile.fields.instantBookingPrice30Egp.placeholder")}
-                    error={!!errors.instantBookingPrice30Egp}
-                    {...register("instantBookingPrice30Egp")}
-                  />
-                  {errors.instantBookingPrice30Egp ? (
-                    <p className="mt-1.5 text-xs text-error-500">{errors.instantBookingPrice30Egp.message}</p>
-                  ) : null}
-                </div>
-
-                <div>
-                  <Label htmlFor="instantBookingPrice30Usd">{t("profile.fields.instantBookingPrice30Usd.label")}</Label>
-                  <Input
-                    id="instantBookingPrice30Usd"
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    placeholder={t("profile.fields.instantBookingPrice30Usd.placeholder")}
-                    error={!!errors.instantBookingPrice30Usd}
-                    {...register("instantBookingPrice30Usd")}
-                  />
-                  {errors.instantBookingPrice30Usd ? (
-                    <p className="mt-1.5 text-xs text-error-500">{errors.instantBookingPrice30Usd.message}</p>
-                  ) : null}
-                </div>
-
-                <div>
-                  <Label htmlFor="instantBookingPrice60Egp">{t("profile.fields.instantBookingPrice60Egp.label")}</Label>
-                  <Input
-                    id="instantBookingPrice60Egp"
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    placeholder={t("profile.fields.instantBookingPrice60Egp.placeholder")}
-                    error={!!errors.instantBookingPrice60Egp}
-                    {...register("instantBookingPrice60Egp")}
-                  />
-                  {errors.instantBookingPrice60Egp ? (
-                    <p className="mt-1.5 text-xs text-error-500">{errors.instantBookingPrice60Egp.message}</p>
-                  ) : null}
-                </div>
-
-                <div>
-                  <Label htmlFor="instantBookingPrice60Usd">{t("profile.fields.instantBookingPrice60Usd.label")}</Label>
-                  <Input
-                    id="instantBookingPrice60Usd"
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    placeholder={t("profile.fields.instantBookingPrice60Usd.placeholder")}
-                    error={!!errors.instantBookingPrice60Usd}
-                    {...register("instantBookingPrice60Usd")}
-                  />
-                  {errors.instantBookingPrice60Usd ? (
-                    <p className="mt-1.5 text-xs text-error-500">{errors.instantBookingPrice60Usd.message}</p>
-                  ) : null}
-                </div>
+                    <div>
+                      <Label htmlFor="yearsOfExperience">{t("profile.fields.yearsOfExperience.label")}</Label>
+                      <Input id="yearsOfExperience" type="number" placeholder={t("profile.fields.yearsOfExperience.placeholder")} error={!!errors.yearsOfExperience} {...register("yearsOfExperience")} />
+                      {errors.yearsOfExperience ? <p className="mt-1.5 text-xs text-error-500">{errors.yearsOfExperience.message}</p> : null}
+                    </div>
+                  </>
+                ) : null}
               </div>
             </section>
 
@@ -2156,6 +1930,7 @@ export default function PractitionerProfileWorkspace() {
               </div>
             </section>
 
+            {!isApprovedProfile ? (
             <section className={payoutSectionClassName}>
               <h3 className="text-sm font-semibold text-text-primary">{t("profile.sections.payoutDestination")}</h3>
               <div className="mt-3 grid gap-3 sm:grid-cols-2">
@@ -2288,6 +2063,7 @@ export default function PractitionerProfileWorkspace() {
                 </div>
               </div>
             </section>
+            ) : null}
 
             <section className={SOFT_CARD}>
               <div className="flex items-center justify-between gap-3">
@@ -2363,7 +2139,7 @@ export default function PractitionerProfileWorkspace() {
           </div>
         </div>
 
-        {submitApplication.isError ? (
+        {submitApplication.isError || updateProfile.isError || updateAvatar.isError || removeAvatar.isError ? (
           <div className="mt-4 rounded-2xl border border-error-200 bg-error-50 px-4 py-3 text-sm text-error-700">
             {t("profile.request.feedback.error")}
           </div>

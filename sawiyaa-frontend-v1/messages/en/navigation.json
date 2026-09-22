@@ -12,6 +12,7 @@
     "articles": "Articles",
     "academy": "Training",
     "sessions": "Sessions",
+    "instantBooking": "Instant booking",
     "wallet": "Wallet",
     "ledger": "Ledger",
     "promoCodes": "Promo codes",
@@ -82,7 +83,7 @@
     "title": "Sessions"
   },
   "practitionerAvailability": {
-    "title": "Availability"
+    "title": "Schedule"
   },
   "practitionerMessagesSupport": {
     "title": "Messages & Support"
@@ -106,7 +107,27 @@
     "title": "Messages"
   },
   "practitionerFinance": {
-    "title": "Finance"
+    "title": "Earnings"
+  },
+  "practitionerNavigation": {
+    "home": "Home",
+    "sessions": "Sessions",
+    "instantBooking": "Instant booking",
+    "schedule": "Schedule",
+    "messages": "Messages",
+    "helpCenter": "Help center",
+    "earnings": "Earnings",
+    "transactions": "Transactions",
+    "promoCodes": "Promo codes",
+    "transfers": "Transfers",
+    "profile": "Profile",
+    "specialties": "Specialties",
+    "credentials": "Credentials",
+    "packageAvailability": "Accept package bookings",
+    "application": "Application"
+  },
+  "patientNavigation": {
+    "practitioners": "Specialists"
   },
   "practitionerProfile": {
     "title": "Profile & readiness"

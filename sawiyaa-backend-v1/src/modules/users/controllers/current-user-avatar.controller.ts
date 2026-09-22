@@ -132,6 +132,7 @@ export class CurrentUserAvatarController {
     });
 
     response.setHeader('Content-Type', avatar.mimeType);
+    response.setHeader('X-Content-Type-Options', 'nosniff');
     response.setHeader('Cache-Control', 'private, max-age=300');
     return new StreamableFile(createReadStream(avatar.absolutePath));
   }

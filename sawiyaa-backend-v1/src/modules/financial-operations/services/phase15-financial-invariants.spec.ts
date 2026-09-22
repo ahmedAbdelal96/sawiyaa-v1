@@ -54,6 +54,7 @@ describe('Phase 1.5 financial invariants', () => {
 
   it('does not double credit when the same approved review is retried', async () => {
     const db = {
+      $executeRaw: jest.fn().mockResolvedValue(1),
       ledgerEntry: {
         findFirst: jest.fn().mockResolvedValue({ settlementId: 'settlement-1' }),
       },
@@ -62,6 +63,7 @@ describe('Phase 1.5 financial invariants', () => {
         findUniqueOrThrow: jest.fn().mockResolvedValue({ id: 'settlement-1' }),
         findUnique: jest.fn(),
         upsert: jest.fn(),
+        create: jest.fn(),
         update: jest.fn(),
       },
       settlementBatch: { upsert: jest.fn() },
@@ -89,12 +91,13 @@ describe('Phase 1.5 financial invariants', () => {
       description: 'approved',
     });
 
-    expect(db.practitionerSettlement.upsert).not.toHaveBeenCalled();
+    expect(db.practitionerSettlement.create).not.toHaveBeenCalled();
     expect(ledgerRepository.createManyLedgerEntries).not.toHaveBeenCalled();
   });
 
   it('preserves original and converted currency snapshots on approval', async () => {
     const db = {
+      $executeRaw: jest.fn().mockResolvedValue(1),
       ledgerEntry: { findFirst: jest.fn().mockResolvedValue(null) },
       practitionerProfile: {
         findUnique: jest.fn().mockResolvedValue({
@@ -116,7 +119,7 @@ describe('Phase 1.5 financial invariants', () => {
       },
       practitionerSettlement: {
         findUnique: jest.fn().mockResolvedValue(null),
-        upsert: jest.fn().mockResolvedValue({ id: 'settlement-1' }),
+        create: jest.fn().mockResolvedValue({ id: 'settlement-1' }),
         update: jest.fn().mockResolvedValue({}),
         findUniqueOrThrow: jest.fn().mockResolvedValue({ id: 'settlement-1' }),
       },
@@ -149,9 +152,9 @@ describe('Phase 1.5 financial invariants', () => {
       description: 'approved',
     });
 
-    expect(db.practitionerSettlement.upsert).toHaveBeenCalledWith(
+    expect(db.practitionerSettlement.create).toHaveBeenCalledWith(
       expect.objectContaining({
-        create: expect.objectContaining({
+        data: expect.objectContaining({
           originalAmount: new Prisma.Decimal('100'),
           originalCurrencyCode: 'USD',
           walletCurrencyCode: 'EGP',
@@ -165,6 +168,7 @@ describe('Phase 1.5 financial invariants', () => {
 
   it('closes an empty active wallet before changing currency', async () => {
     const db = {
+      $executeRaw: jest.fn().mockResolvedValue(1),
       practitionerWallet: {
         findFirst: jest.fn().mockResolvedValue({
           id: 'wallet-egp',
@@ -191,6 +195,7 @@ describe('Phase 1.5 financial invariants', () => {
 
   it('rejects currency change while the active wallet has unsettled balance', async () => {
     const db = {
+      $executeRaw: jest.fn().mockResolvedValue(1),
       practitionerWallet: {
         findFirst: jest.fn().mockResolvedValue({
           id: 'wallet-egp',
@@ -210,6 +215,7 @@ describe('Phase 1.5 financial invariants', () => {
 
   it('blocks direct mutation of an approved settlement amount', async () => {
     const db = {
+      $executeRaw: jest.fn().mockResolvedValue(1),
       practitionerSettlement: {
         findUnique: jest.fn().mockResolvedValue({ status: 'CREDITED' }),
         update: jest.fn(),

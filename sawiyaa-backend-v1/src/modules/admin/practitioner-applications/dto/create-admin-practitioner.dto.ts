@@ -25,6 +25,7 @@ import {
 } from 'class-validator';
 import { PractitionerPayoutDestinationInputDto } from '@modules/practitioners/dto/practitioner-payout-destination.dto';
 import { PractitionerSpecialtySelectionInputDto } from '@modules/practitioners/dto/practitioner-specialty-selection.dto';
+import { PractitionerProfessionalContentDto } from '@modules/practitioners/dto/practitioner-professional-content.dto';
 
 export class CreateAdminPractitionerCredentialDto {
   @ApiProperty({ enum: CredentialType })
@@ -56,7 +57,7 @@ export class CreateAdminPractitionerCredentialDto {
  * This bypasses practitioner self-submission and creates an approved baseline practitioner account.
  */
 export class CreateAdminPractitionerDto {
-  @ApiProperty({
+  @ApiPropertyOptional({
     example: 'new.practitioner@example.com',
   })
   @IsEmail()
@@ -111,18 +112,34 @@ export class CreateAdminPractitionerDto {
   @ApiProperty({
     example: 'Clinical Psychologist',
   })
+  @IsOptional()
   @IsString()
   @MinLength(2)
   @MaxLength(191)
-  professionalTitle!: string;
+  professionalTitle?: string;
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     example: 'Short professional bio',
   })
+  @IsOptional()
   @IsString()
   @MinLength(10)
   @MaxLength(4000)
-  bio!: string;
+  bio?: string;
+
+  @ApiPropertyOptional({
+    type: PractitionerProfessionalContentDto,
+    nullable: true,
+  })
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => PractitionerProfessionalContentDto)
+  professionalContent?: PractitionerProfessionalContentDto | null;
+
+  @ApiPropertyOptional({ enum: ['ar', 'en'], nullable: true })
+  @IsOptional()
+  @IsEnum(['ar', 'en'])
+  primaryContentLocale?: 'ar' | 'en' | null;
 
   @ApiProperty({
     example: 6,

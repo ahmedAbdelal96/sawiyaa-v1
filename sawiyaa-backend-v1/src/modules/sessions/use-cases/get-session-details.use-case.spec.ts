@@ -1,6 +1,7 @@
 import { ForbiddenException, NotFoundException } from '@nestjs/common';
 import { SessionAccessPolicy } from '../policies/session-access.policy';
 import { GetSessionDetailsUseCase } from './get-session-details.use-case';
+import { PractitionerProfessionalContentResolver } from '@modules/practitioners/services/practitioner-professional-content-resolver.service';
 
 describe('GetSessionDetailsUseCase — ownership', () => {
   const session = {
@@ -32,6 +33,9 @@ describe('GetSessionDetailsUseCase — ownership', () => {
     const sessionMapper = {
       toDetails: jest.fn().mockReturnValue({ id: session.id }),
     };
+    const professionalContentRepository = {
+      findByPractitionerProfileId: jest.fn().mockResolvedValue(null),
+    };
     const resolvePatientSessionActionsService = {
       resolveOne: jest.fn().mockResolvedValue({
         canCancel: false,
@@ -42,6 +46,9 @@ describe('GetSessionDetailsUseCase — ownership', () => {
       }),
     };
 
+    const resolveSessionChatAvailability = {
+      resolve: jest.fn().mockReturnValue({ available: true }),
+    };
     const useCase = new GetSessionDetailsUseCase(
       sessionRepository as never,
       sessionPatientRepository as never,
@@ -49,9 +56,14 @@ describe('GetSessionDetailsUseCase — ownership', () => {
       sessionMapper as never,
       new SessionAccessPolicy(),
       resolvePatientSessionActionsService as never,
+      { interpret: jest.fn().mockResolvedValue({ state: 'UPCOMING' }) } as never,
+      { resolve: jest.fn().mockResolvedValue({ canMarkPatientNoShow: false, noShowReasonCode: null }) } as never,
+      resolveSessionChatAvailability as never,
+      professionalContentRepository as never,
+      new PractitionerProfessionalContentResolver(),
     );
 
-    return { useCase };
+    return { useCase, resolveSessionChatAvailability };
   }
 
   it('patient owner can retrieve session details', async () => {
@@ -64,6 +76,15 @@ describe('GetSessionDetailsUseCase — ownership', () => {
         actorType: 'PATIENT',
       }),
     ).resolves.toMatchObject({ item: { id: 'session_1' } });
+  });
+
+  it('fails closed in the Patient details projection when Chat policy denies', async () => {
+    const { useCase, resolveSessionChatAvailability } = buildUseCase();
+    resolveSessionChatAvailability.resolve.mockReturnValue({ available: false });
+
+    await expect(useCase.execute({
+      userId: 'user_1', locale: 'ar', sessionId: 'session_1', actorType: 'PATIENT',
+    })).resolves.toMatchObject({ item: { sessionChat: { available: false } } });
   });
 
   it('patient A cannot read patient B session (ForbiddenException)', async () => {
@@ -119,8 +140,13 @@ describe('GetSessionDetailsUseCase — ownership', () => {
         {} as never,
         {} as never,
         {} as never,
+        {} as never,
+        {} as never,
         new SessionAccessPolicy(),
         {} as never,
+        {} as never,
+        {} as never,
+        new PractitionerProfessionalContentResolver(),
       );
       return { useCase: uc };
     })();

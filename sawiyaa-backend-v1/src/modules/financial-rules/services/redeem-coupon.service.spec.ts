@@ -24,6 +24,7 @@ describe('RedeemCouponService', () => {
   } as unknown as CouponRedemptionRepository;
 
   const securityAuditService = {
+    recordRequired: jest.fn().mockResolvedValue(undefined),
     logAsync: jest.fn(),
   } as unknown as SecurityAuditService;
 
@@ -105,6 +106,6 @@ describe('RedeemCouponService', () => {
       expect.anything(),
     );
     expect(result).toEqual({ id: 'redemption-1' });
-    expect(securityAuditService.logAsync).toHaveBeenCalledTimes(1);
+    expect(securityAuditService.recordRequired).toHaveBeenCalledTimes(1);
   });
 });

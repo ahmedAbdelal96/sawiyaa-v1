@@ -3,13 +3,12 @@
 import { useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { Link, useRouter } from "@/i18n/navigation";
-import {
-  BadgeDollarSign,
-  ChevronLeft,
-  ClipboardList,
-} from "lucide-react";
+import { BadgeDollarSign, ChevronLeft, ClipboardList } from "lucide-react";
 import { toast } from "sonner";
-import { ListStateSkeleton, StateCard } from "@/components/shared/ContentStates";
+import {
+  ListStateSkeleton,
+  StateCard,
+} from "@/components/shared/ContentStates";
 import { SurfaceCard } from "@/components/shared/SurfaceShell";
 import Button from "@/components/ui/button/Button";
 import { useAuthState } from "@/stores/auth-store";
@@ -22,11 +21,17 @@ import {
 } from "../lib/admin-package-settlement-status";
 import {
   useAdminPackageSettlement,
+  useAdminPackageRefundPreview,
+  useFinalizeAdminPackageRefund,
   useReleaseAdminPackageSettlement,
 } from "../hooks/use-admin-package-settlements";
 import type { AdminPackageSettlementDetail } from "../types/admin-package-settlements.types";
-import { formatSettlementDateTime, formatSettlementMoney } from "@/features/admin/finance/lib/finance-formatters";
+import {
+  formatSettlementDateTime,
+  formatSettlementMoney,
+} from "@/features/admin/finance/lib/finance-formatters";
 import AdminPackageSettlementReleaseModal from "./AdminPackageSettlementReleaseModal";
+import AdminPackageRefundModal from "./AdminPackageRefundModal";
 
 type Props = {
   id: string;
@@ -42,10 +47,10 @@ function DetailRow({
   mono?: boolean;
 }) {
   return (
-    <div className="flex items-start justify-between gap-4 border-b border-border-light py-3 last:border-b-0 dark:border-white/8">
-      <span className="text-xs font-medium text-text-muted">{label}</span>
+    <div className="border-border-light flex items-start justify-between gap-4 border-b py-3 last:border-b-0 dark:border-white/8">
+      <span className="text-text-muted text-xs font-medium">{label}</span>
       <span
-        className={`text-sm text-text-primary dark:text-white/90 ${
+        className={`text-text-primary text-sm dark:text-white/90 ${
           mono ? "font-mono text-xs sm:text-sm" : ""
         }`}
       >
@@ -66,26 +71,26 @@ function SectionCard({
 }) {
   return (
     <SurfaceCard variant="section" className="rounded-[28px] p-5 sm:p-6">
-      <h2 className="text-base font-semibold text-text-primary dark:text-white/95">{title}</h2>
-      {note ? <p className="mt-1 text-sm leading-6 text-text-secondary">{note}</p> : null}
+      <h2 className="text-text-primary text-base font-semibold dark:text-white/95">
+        {title}
+      </h2>
+      {note ? (
+        <p className="text-text-secondary mt-1 text-sm leading-6">{note}</p>
+      ) : null}
       <div className="mt-4">{children}</div>
     </SurfaceCard>
   );
 }
 
-function SummaryTile({
-  title,
-  value,
-}: {
-  title: string;
-  value: string;
-}) {
+function SummaryTile({ title, value }: { title: string; value: string }) {
   return (
     <SurfaceCard variant="compact" className="rounded-[24px]">
-      <p className="text-xs font-semibold uppercase tracking-[0.16em] text-text-muted">
+      <p className="text-text-muted text-xs font-semibold tracking-[0.16em] uppercase">
         {title}
       </p>
-      <p className="mt-2 text-sm font-semibold text-text-primary dark:text-white/95">{value}</p>
+      <p className="text-text-primary mt-2 text-sm font-semibold dark:text-white/95">
+        {value}
+      </p>
     </SurfaceCard>
   );
 }
@@ -102,7 +107,9 @@ function StatusChip({
     "bg-surface-tertiary text-text-secondary dark:bg-white/8 dark:text-white/70";
 
   return (
-    <span className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${className}`}>
+    <span
+      className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${className}`}
+    >
       {t(`statuses.${status}` as Parameters<typeof t>[0])}
     </span>
   );
@@ -116,11 +123,17 @@ export default function AdminPackageSettlementDetailScreen({ id }: Props) {
   const canOperate = user?.role === "ADMIN" || user?.role === "SUPER_ADMIN";
 
   const settlementQuery = useAdminPackageSettlement(id);
-  const releaseMutation = useReleaseAdminPackageSettlement();
-  const [feedback, setFeedback] = useState<{ tone: "success" | "warning" | "error"; message: string } | null>(null);
-  const [isReleaseOpen, setIsReleaseOpen] = useState(false);
-
   const item = settlementQuery.data?.item;
+  const releaseMutation = useReleaseAdminPackageSettlement();
+  const refundPreviewQuery = useAdminPackageRefundPreview(item?.payment?.id);
+  const refundMutation = useFinalizeAdminPackageRefund();
+  const [feedback, setFeedback] = useState<{
+    tone: "success" | "warning" | "error";
+    message: string;
+  } | null>(null);
+  const [isReleaseOpen, setIsReleaseOpen] = useState(false);
+  const [isRefundOpen, setIsRefundOpen] = useState(false);
+
   const canRelease = Boolean(item && canReleasePackageSettlement(item.status));
 
   const handleConfirmRelease = async () => {
@@ -146,8 +159,28 @@ export default function AdminPackageSettlementDetailScreen({ id }: Props) {
     }
   };
 
+  const handleConfirmRefund = async (input: { finalAmount?: number; reason: string; evidenceReference?: string }) => {
+    if (!item?.payment?.id) return;
+    try {
+      await refundMutation.mutateAsync({ paymentId: item.payment.id, ...input });
+      setIsRefundOpen(false);
+      setFeedback({ tone: "success", message: t("refund.success") });
+      toast.success(t("refund.success"));
+      await settlementQuery.refetch();
+      await refundPreviewQuery.refetch();
+    } catch (error) {
+      const safeMessage = t("errors.generic");
+      setFeedback({ tone: "error", message: safeMessage });
+      toast.error(safeMessage);
+    }
+  };
+
   const decisionLabel = item?.decision
-    ? t(getPackageSettlementDecisionKey(item.decision) as Parameters<typeof t>[0])
+    ? t(
+        getPackageSettlementDecisionKey(item.decision) as Parameters<
+          typeof t
+        >[0],
+      )
     : "-";
 
   if (settlementQuery.isLoading) {
@@ -169,7 +202,9 @@ export default function AdminPackageSettlementDetailScreen({ id }: Props) {
   }
 
   if (settlementQuery.isError || !item) {
-    const error = settlementQuery.error ? toAppError(settlementQuery.error) : null;
+    const error = settlementQuery.error
+      ? toAppError(settlementQuery.error)
+      : null;
     const isNotFound =
       error?.statusCode === 404 ||
       error?.code === "FINANCIAL_OPERATIONS_PACKAGE_SETTLEMENT_NOT_FOUND";
@@ -177,9 +212,17 @@ export default function AdminPackageSettlementDetailScreen({ id }: Props) {
     return (
       <div className="mx-auto max-w-2xl">
         <StateCard
-          icon={<ClipboardList className="h-8 w-8 text-text-muted" />}
-          title={isNotFound ? t("states.notFound.heading") : t("states.detailError.heading")}
-          note={isNotFound ? t("states.notFound.note") : t("states.detailError.note")}
+          icon={<ClipboardList className="text-text-muted h-8 w-8" />}
+          title={
+            isNotFound
+              ? t("states.notFound.heading")
+              : t("states.detailError.heading")
+          }
+          note={
+            isNotFound
+              ? t("states.notFound.note")
+              : t("states.detailError.note")
+          }
           action={{
             label: t("states.detailError.back"),
             href: (
@@ -188,14 +231,14 @@ export default function AdminPackageSettlementDetailScreen({ id }: Props) {
                   <button
                     type="button"
                     onClick={() => settlementQuery.refetch()}
-                    className="inline-flex items-center justify-center rounded-2xl border border-border-light px-5 py-2 text-sm text-text-secondary transition hover:bg-surface-tertiary dark:hover:bg-white/5"
+                    className="border-border-light text-text-secondary hover:bg-surface-tertiary inline-flex items-center justify-center rounded-2xl border px-5 py-2 text-sm transition dark:hover:bg-white/5"
                   >
                     {t("states.detailError.retry")}
                   </button>
                 ) : null}
                 <Link
                   href="/admin/package-settlements"
-                  className="inline-flex items-center justify-center rounded-2xl bg-primary px-5 py-2 text-sm font-semibold text-white transition hover:bg-primary-hover"
+                  className="bg-primary hover:bg-primary-hover inline-flex items-center justify-center rounded-2xl px-5 py-2 text-sm font-semibold text-white transition"
                 >
                   {t("states.detailError.back")}
                 </Link>
@@ -222,25 +265,26 @@ export default function AdminPackageSettlementDetailScreen({ id }: Props) {
 
           <div className="mt-4 flex flex-wrap items-start justify-between gap-4">
             <div className="min-w-0">
-              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">
+              <p className="text-primary text-xs font-semibold tracking-[0.18em] uppercase">
                 {t("detail.eyebrow")}
               </p>
-              <h1 className="mt-2 text-2xl font-semibold tracking-tight text-text-primary dark:text-white/95 sm:text-3xl">
+              <h1 className="text-text-primary mt-2 text-2xl font-semibold tracking-tight sm:text-3xl dark:text-white/95">
                 {t("detail.title")}
               </h1>
-              <p className="mt-2 max-w-3xl text-sm leading-6 text-text-secondary">
+              <p className="text-text-secondary mt-2 max-w-3xl text-sm leading-6">
                 {t("detail.note")}
               </p>
             </div>
 
             <div className="flex flex-wrap items-center gap-2">
               <StatusChip status={item.status} t={t} />
-              <span className="inline-flex items-center gap-2 rounded-full bg-surface-tertiary px-3 py-1 text-xs font-semibold text-text-secondary dark:bg-white/10 dark:text-white/70">
+              <span className="bg-surface-tertiary text-text-secondary inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold dark:bg-white/10 dark:text-white/70">
                 <BadgeDollarSign className="h-3.5 w-3.5" />
                 {item.currency}
               </span>
-              <span className="inline-flex items-center gap-2 rounded-full bg-primary-light px-3 py-1 text-xs font-semibold text-text-brand dark:bg-primary/12 dark:text-primary-light">
-                {t("detail.fields.sessions")}: {item.completedSessionsCount} / {item.sessionCount}
+              <span className="bg-primary-light text-text-brand dark:bg-primary/12 dark:text-primary-light inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold">
+                {t("detail.fields.sessions")}: {item.completedSessionsCount} /{" "}
+                {item.sessionCount}
               </span>
             </div>
           </div>
@@ -265,15 +309,27 @@ export default function AdminPackageSettlementDetailScreen({ id }: Props) {
             <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
               <SummaryTile
                 title={t("detail.totals.heldPractitioner")}
-                value={formatSettlementMoney(locale, item.heldPractitionerAmount, item.currency)}
+                value={formatSettlementMoney(
+                  locale,
+                  item.heldPractitionerAmount,
+                  item.currency,
+                )}
               />
               <SummaryTile
                 title={t("detail.totals.releasablePractitioner")}
-                value={formatSettlementMoney(locale, item.releasablePractitionerAmount, item.currency)}
+                value={formatSettlementMoney(
+                  locale,
+                  item.releasablePractitionerAmount,
+                  item.currency,
+                )}
               />
               <SummaryTile
                 title={t("detail.totals.releasedPractitioner")}
-                value={formatSettlementMoney(locale, item.releasedPractitionerAmount, item.currency)}
+                value={formatSettlementMoney(
+                  locale,
+                  item.releasedPractitionerAmount,
+                  item.currency,
+                )}
               />
               <SummaryTile
                 title={t("detail.totals.sessions")}
@@ -284,17 +340,32 @@ export default function AdminPackageSettlementDetailScreen({ id }: Props) {
               />
             </div>
 
-            <SectionCard title={t("detail.sections.overview")} note={t("detail.sections.overviewNote")}>
-              <div className="rounded-[24px] border border-border-light px-4 dark:border-white/8">
-                <DetailRow label={t("detail.fields.settlementId")} value={item.id} mono />
-                <DetailRow label={t("detail.fields.purchaseId")} value={item.purchaseId} mono />
+            <SectionCard
+              title={t("detail.sections.overview")}
+              note={t("detail.sections.overviewNote")}
+            >
+              <div className="border-border-light rounded-[24px] border px-4 dark:border-white/8">
+                <DetailRow
+                  label={t("detail.fields.settlementId")}
+                  value={item.id}
+                  mono
+                />
+                <DetailRow
+                  label={t("detail.fields.purchaseId")}
+                  value={item.purchaseId}
+                  mono
+                />
                 <DetailRow
                   label={t("detail.fields.packagePlan")}
                   value={item.packagePlanTitle ?? item.packagePlanCode ?? "-"}
                 />
                 <DetailRow
                   label={t("detail.fields.practitioner")}
-                  value={item.practitionerDisplayName ?? item.practitionerSlug ?? item.practitionerId}
+                  value={
+                    item.practitionerDisplayName ??
+                    item.practitionerSlug ??
+                    item.practitionerId
+                  }
                 />
                 <DetailRow
                   label={t("detail.fields.patient")}
@@ -302,9 +373,16 @@ export default function AdminPackageSettlementDetailScreen({ id }: Props) {
                 />
                 <DetailRow
                   label={t("detail.fields.purchaseStatus")}
-                  value={t(`purchaseStatuses.${item.purchaseStatus}` as Parameters<typeof t>[0])}
+                  value={t(
+                    `purchaseStatuses.${item.purchaseStatus}` as Parameters<
+                      typeof t
+                    >[0],
+                  )}
                 />
-                <DetailRow label={t("detail.fields.currency")} value={item.currency} />
+                <DetailRow
+                  label={t("detail.fields.currency")}
+                  value={item.currency}
+                />
                 <DetailRow
                   label={t("detail.fields.sessions")}
                   value={t("detail.fields.sessionsValue", {
@@ -313,44 +391,175 @@ export default function AdminPackageSettlementDetailScreen({ id }: Props) {
                   })}
                 />
                 <DetailRow
+                  label={t("detail.fields.availableSessions")}
+                  value={String(item.availableSessions)}
+                />
+                <DetailRow
+                  label={t("detail.fields.reservedSessions")}
+                  value={String(item.reservedSessions)}
+                />
+                <DetailRow
+                  label={t("detail.fields.consumedSessions")}
+                  value={String(item.consumedSessions)}
+                />
+                <DetailRow
+                  label={t("detail.fields.nextSession")}
+                  value={
+                    item.nextSessionStartAt
+                      ? formatSettlementDateTime(
+                          locale,
+                          item.nextSessionStartAt,
+                        )
+                      : t("detail.fields.noNextSession")
+                  }
+                />
+                <DetailRow
+                  label={t("detail.fields.paymentStatus")}
+                  value={item.payment?.status ?? "-"}
+                />
+                <DetailRow
+                  label={t("detail.fields.paymentReference")}
+                  value={item.payment?.reference ?? item.payment?.id ?? "-"}
+                  mono
+                />
+                <DetailRow
+                  label={t("detail.fields.paymentAmount")}
+                  value={
+                    item.payment
+                      ? formatSettlementMoney(
+                          locale,
+                          item.payment.amount,
+                          item.payment.currency,
+                        )
+                      : "-"
+                  }
+                />
+                <DetailRow
                   label={t("detail.fields.updatedAt")}
                   value={formatSettlementDateTime(locale, item.updatedAt)}
                 />
               </div>
             </SectionCard>
 
-            <SectionCard title={t("detail.sections.amounts")} note={t("detail.sections.amountsNote")}>
-              <div className="rounded-[24px] border border-border-light px-4 dark:border-white/8">
+            <SectionCard
+              title={t("detail.sections.sessions")}
+              note={t("detail.sections.sessionsNote")}
+            >
+              {item.sessions.length === 0 ? (
+                <p className="border-border-light text-text-secondary rounded-2xl border border-dashed px-4 py-5 text-sm dark:border-white/10">
+                  {t("detail.sections.noSessions")}
+                </p>
+              ) : (
+                <div className="space-y-2">
+                  {item.sessions.map((session) => (
+                    <div
+                      key={session.id}
+                      className="border-border-light flex flex-wrap items-center justify-between gap-3 rounded-2xl border px-4 py-3 dark:border-white/8"
+                    >
+                      <div className="min-w-0">
+                        <p className="text-text-primary text-sm font-semibold dark:text-white/90">
+                          {session.packageSessionIndex
+                            ? t("detail.fields.sessionIndex", {
+                                current: session.packageSessionIndex,
+                                total:
+                                  session.packageSessionCount ??
+                                  item.sessionCount,
+                              })
+                            : session.sessionCode}
+                        </p>
+                        <p className="text-text-muted mt-1 font-mono text-xs">
+                          {session.sessionCode}
+                        </p>
+                        <p className="text-text-secondary mt-1 text-xs">
+                          {session.scheduledStartAt
+                            ? formatSettlementDateTime(
+                                locale,
+                                session.scheduledStartAt,
+                              )
+                            : t("detail.fields.notScheduled")}
+                        </p>
+                      </div>
+                      <div className="text-end">
+                        <p className="text-text-primary text-xs font-semibold dark:text-white/90">
+                          {session.status}
+                        </p>
+                        <p className="text-text-muted mt-1 text-xs">
+                          {session.entitlementDecision
+                            ? `${session.entitlementDecision.decisionType} · ${session.entitlementDecision.reasonCode}`
+                            : t("detail.fields.noEntitlementDecision")}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </SectionCard>
+
+            <SectionCard
+              title={t("detail.sections.amounts")}
+              note={t("detail.sections.amountsNote")}
+            >
+              <div className="border-border-light rounded-[24px] border px-4 dark:border-white/8">
                 <DetailRow
                   label={t("detail.amounts.heldPractitioner")}
-                  value={formatSettlementMoney(locale, item.heldPractitionerAmount, item.currency)}
+                  value={formatSettlementMoney(
+                    locale,
+                    item.heldPractitionerAmount,
+                    item.currency,
+                  )}
                 />
                 <DetailRow
                   label={t("detail.amounts.heldPlatform")}
-                  value={formatSettlementMoney(locale, item.heldPlatformAmount, item.currency)}
+                  value={formatSettlementMoney(
+                    locale,
+                    item.heldPlatformAmount,
+                    item.currency,
+                  )}
                 />
                 <DetailRow
                   label={t("detail.amounts.releasablePractitioner")}
-                  value={formatSettlementMoney(locale, item.releasablePractitionerAmount, item.currency)}
+                  value={formatSettlementMoney(
+                    locale,
+                    item.releasablePractitionerAmount,
+                    item.currency,
+                  )}
                 />
                 <DetailRow
                   label={t("detail.amounts.releasedPractitioner")}
-                  value={formatSettlementMoney(locale, item.releasedPractitionerAmount, item.currency)}
+                  value={formatSettlementMoney(
+                    locale,
+                    item.releasedPractitionerAmount,
+                    item.currency,
+                  )}
                 />
                 <DetailRow
                   label={t("detail.amounts.normalEquivalentUsed")}
-                  value={formatSettlementMoney(locale, item.normalEquivalentUsedAmount, item.currency)}
+                  value={formatSettlementMoney(
+                    locale,
+                    item.normalEquivalentUsedAmount,
+                    item.currency,
+                  )}
                 />
                 <DetailRow
                   label={t("detail.amounts.discountApplied")}
-                  value={formatSettlementMoney(locale, item.discountAppliedAmount, item.currency)}
+                  value={formatSettlementMoney(
+                    locale,
+                    item.discountAppliedAmount,
+                    item.currency,
+                  )}
                 />
               </div>
             </SectionCard>
 
-            <SectionCard title={t("detail.sections.review")} note={t("detail.sections.reviewNote")}>
-              <div className="rounded-[24px] border border-border-light px-4 dark:border-white/8">
-                <DetailRow label={t("detail.review.decision")} value={decisionLabel} />
+            <SectionCard
+              title={t("detail.sections.review")}
+              note={t("detail.sections.reviewNote")}
+            >
+              <div className="border-border-light rounded-[24px] border px-4 dark:border-white/8">
+                <DetailRow
+                  label={t("detail.review.decision")}
+                  value={decisionLabel}
+                />
                 <DetailRow
                   label={t("detail.review.reviewedAt")}
                   value={formatSettlementDateTime(locale, item.reviewedAt)}
@@ -372,7 +581,7 @@ export default function AdminPackageSettlementDetailScreen({ id }: Props) {
               </div>
 
               {item.notes ? (
-                <div className="mt-4 rounded-[22px] border border-border-light bg-surface-secondary/60 p-4 text-sm leading-6 text-text-secondary dark:border-white/8 dark:bg-white/[0.03]">
+                <div className="border-border-light bg-surface-secondary/60 text-text-secondary mt-4 rounded-[22px] border p-4 text-sm leading-6 dark:border-white/8 dark:bg-white/[0.03]">
                   {item.notes}
                 </div>
               ) : null}
@@ -380,14 +589,19 @@ export default function AdminPackageSettlementDetailScreen({ id }: Props) {
           </div>
 
           <div className="space-y-5 xl:sticky xl:top-6 xl:self-start">
-            <SurfaceCard variant="section" className="rounded-[28px] p-5 sm:p-6">
+            <SurfaceCard
+              variant="section"
+              className="rounded-[28px] p-5 sm:p-6"
+            >
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
-                  <p className="text-xs font-semibold uppercase tracking-[0.16em] text-text-muted">
+                  <p className="text-text-muted text-xs font-semibold tracking-[0.16em] uppercase">
                     {t("detail.status")}
                   </p>
-                  <h2 className="mt-2 text-lg font-semibold text-text-primary dark:text-white/95">
-                    {item.packagePlanTitle ?? item.packagePlanCode ?? t("detail.title")}
+                  <h2 className="text-text-primary mt-2 text-lg font-semibold dark:text-white/95">
+                    {item.packagePlanTitle ??
+                      item.packagePlanCode ??
+                      t("detail.title")}
                   </h2>
                 </div>
                 <StatusChip status={item.status} t={t} />
@@ -401,7 +615,11 @@ export default function AdminPackageSettlementDetailScreen({ id }: Props) {
                 />
                 <DetailRow
                   label={t("detail.sidebar.purchaseStatus")}
-                  value={t(`purchaseStatuses.${item.purchaseStatus}` as Parameters<typeof t>[0])}
+                  value={t(
+                    `purchaseStatuses.${item.purchaseStatus}` as Parameters<
+                      typeof t
+                    >[0],
+                  )}
                 />
                 <DetailRow
                   label={t("detail.sidebar.progress")}
@@ -410,7 +628,10 @@ export default function AdminPackageSettlementDetailScreen({ id }: Props) {
                     total: item.sessionCount,
                   })}
                 />
-                <DetailRow label={t("detail.sidebar.currency")} value={item.currency} />
+                <DetailRow
+                  label={t("detail.sidebar.currency")}
+                  value={item.currency}
+                />
               </div>
 
               {canRelease ? (
@@ -421,6 +642,18 @@ export default function AdminPackageSettlementDetailScreen({ id }: Props) {
                   disabled={!canOperate || releaseMutation.isPending}
                 >
                   {t("actions.release")}
+                </Button>
+              ) : null}
+
+              {item.payment?.id && item.purchaseStatus !== "REFUNDED" ? (
+                <Button
+                  className="mt-3 w-full"
+                  variant="outline"
+                  startIcon={<BadgeDollarSign className="h-4 w-4" />}
+                  onClick={() => setIsRefundOpen(true)}
+                  disabled={refundPreviewQuery.isLoading || refundMutation.isPending}
+                >
+                  {t("actions.refund")}
                 </Button>
               ) : null}
 
@@ -446,6 +679,13 @@ export default function AdminPackageSettlementDetailScreen({ id }: Props) {
         settlement={item}
         loading={releaseMutation.isPending}
         onConfirm={handleConfirmRelease}
+      />
+      <AdminPackageRefundModal
+        isOpen={isRefundOpen}
+        onClose={() => setIsRefundOpen(false)}
+        preview={refundPreviewQuery.data?.item ?? null}
+        loading={refundMutation.isPending}
+        onConfirm={handleConfirmRefund}
       />
     </>
   );

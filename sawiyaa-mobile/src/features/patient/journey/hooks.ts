@@ -1,6 +1,7 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useAuthenticatedQueryEnabled } from "../../auth/query-auth";
 import { apiClient, extractApiData } from "../../../lib/api";
+import i18n from "../../../i18n";
 import type {
   PatientHomeResponseDto,
   PatientJourneyResponseDto,
@@ -8,7 +9,8 @@ import type {
 } from "./types";
 
 export const patientJourneyQueryKey = ["patient-journey"] as const;
-export const patientHomeQueryKey = ["patient-home"] as const;
+export const patientHomeQueryKey = (locale = i18n.language) =>
+  ["patient-home", locale] as const;
 
 async function getMyJourney() {
   const response = await apiClient.get("/patients/me/journey");
@@ -36,11 +38,12 @@ export function usePatientJourney() {
   });
 }
 
-export function usePatientHome() {
-  const enabled = useAuthenticatedQueryEnabled("patient");
+export function usePatientHome(options?: { enabled?: boolean }) {
+  const enabled =
+    useAuthenticatedQueryEnabled("patient") && options?.enabled !== false;
 
   return useQuery({
-    queryKey: patientHomeQueryKey,
+    queryKey: patientHomeQueryKey(),
     queryFn: getMyHome,
     enabled,
     staleTime: 30_000,
@@ -48,7 +51,14 @@ export function usePatientHome() {
 }
 
 export function useTrackPractitionerView() {
+  const enabled = useAuthenticatedQueryEnabled("patient");
+
   return useMutation({
-    mutationFn: trackPractitionerView,
+    mutationFn: (slug: string) => {
+      if (!enabled) {
+        return Promise.resolve(null);
+      }
+      return trackPractitionerView(slug);
+    },
   });
 }

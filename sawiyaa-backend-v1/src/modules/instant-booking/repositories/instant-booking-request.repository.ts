@@ -16,6 +16,39 @@ export class InstantBookingRequestRepository {
     return tx ?? this.prisma;
   }
 
+  lockPractitionerAvailability(
+    practitionerId: string,
+    tx: Prisma.TransactionClient,
+  ) {
+    return tx.$executeRaw`
+      SELECT pg_advisory_xact_lock(
+        hashtext(${`instant-booking:practitioner:${practitionerId}`})::bigint
+      )
+    `;
+  }
+
+  findActivePendingRequestForPractitioner(
+    input: {
+      practitionerId: string;
+      now: Date;
+      excludeRequestId?: string;
+    },
+    tx?: Prisma.TransactionClient,
+  ) {
+    return this.getDb(tx).instantBookingRequest.findFirst({
+      where: {
+        practitionerId: input.practitionerId,
+        status: InstantBookingRequestStatus.PENDING,
+        expiresAt: { gt: input.now },
+        ...(input.excludeRequestId
+          ? { id: { not: input.excludeRequestId } }
+          : {}),
+      },
+      orderBy: [{ createdAt: 'asc' }],
+      include: this.requestInclude,
+    });
+  }
+
   createRequest(
     data: {
       patientId: string;
@@ -24,6 +57,7 @@ export class InstantBookingRequestRepository {
       preferredMode: SessionMode;
       expiresAt: Date;
       metadataJson?: Prisma.InputJsonValue;
+      idempotencyKey?: string | null;
     },
     tx?: Prisma.TransactionClient,
   ) {
@@ -36,6 +70,13 @@ export class InstantBookingRequestRepository {
   findById(requestId: string, tx?: Prisma.TransactionClient) {
     return this.getDb(tx).instantBookingRequest.findUnique({
       where: { id: requestId },
+      include: this.requestInclude,
+    });
+  }
+
+  findByPatientIdempotencyKey(patientId: string, idempotencyKey: string) {
+    return this.prisma.instantBookingRequest.findUnique({
+      where: { patientId_idempotencyKey: { patientId, idempotencyKey } },
       include: this.requestInclude,
     });
   }
@@ -90,8 +131,8 @@ export class InstantBookingRequestRepository {
     patientId?: string;
     practitionerId?: string;
     now: Date;
-  }) {
-    return this.prisma.instantBookingRequest.findMany({
+  }, tx?: Prisma.TransactionClient) {
+    return this.getDb(tx).instantBookingRequest.findMany({
       where: {
         status: InstantBookingRequestStatus.PENDING,
         expiresAt: {
@@ -200,8 +241,9 @@ export class InstantBookingRequestRepository {
   markExpired(
     now: Date,
     input?: { requestId?: string; patientId?: string; practitionerId?: string },
+    tx?: Prisma.TransactionClient,
   ) {
-    return this.prisma.instantBookingRequest.updateMany({
+    return this.getDb(tx).instantBookingRequest.updateMany({
       where: {
         status: InstantBookingRequestStatus.PENDING,
         expiresAt: {

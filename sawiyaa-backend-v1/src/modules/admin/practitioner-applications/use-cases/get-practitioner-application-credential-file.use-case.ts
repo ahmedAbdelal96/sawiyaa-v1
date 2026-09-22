@@ -29,15 +29,21 @@ export class GetPractitionerApplicationCredentialFileUseCase {
     const credential = await this.credentialRepository.findById(
       input.credentialId,
     );
-    if (!credential || credential.practitionerId !== application.practitionerId) {
+    const credentialOwned = application.practitionerId
+      ? credential?.practitionerId === application.practitionerId
+      : credential?.applicationId === application.id;
+    if (!credential || !credentialOwned) {
       throw new NotFoundException({
         messageKey: 'admin.practitionerApplications.errors.credentialNotFound',
         error: 'ADMIN_PRACTITIONER_CREDENTIAL_NOT_FOUND',
       });
     }
 
+    const stored = credential.storedFileId
+      ? await this.credentialStorage.resolveStoredFile(credential.storedFileId)
+      : null;
     const absolutePath =
-      this.credentialStorage.resolveAbsolutePathFromFileUrl(credential.fileUrl);
+      stored?.absolutePath ?? this.credentialStorage.resolveAbsolutePathFromFileUrl(credential.fileUrl);
     if (!absolutePath) {
       throw new NotFoundException({
         messageKey:
@@ -56,7 +62,7 @@ export class GetPractitionerApplicationCredentialFileUseCase {
     }
 
     const mimeType =
-      this.credentialStorage.guessMimeTypeFromAbsolutePath(absolutePath) ??
+      stored?.mimeType ?? this.credentialStorage.guessMimeTypeFromAbsolutePath(absolutePath) ??
       'application/octet-stream';
 
     return { absolutePath, mimeType };

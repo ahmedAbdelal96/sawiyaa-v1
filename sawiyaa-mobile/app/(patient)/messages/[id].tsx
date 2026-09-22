@@ -2,10 +2,11 @@ import React from "react";
 import { useLocalSearchParams } from "expo-router";
 import { ErrorState, Screen } from "../../../src/components/ui";
 import { MessageThreadScreen } from "../../../src/features/messages/components/MessageThreadScreen";
+import { getFirstRouteParam } from "../../../src/lib/route-params";
 
 export default function PatientMessageThreadScreen() {
   const params = useLocalSearchParams<{ id?: string | string[] }>();
-  const conversationId = Array.isArray(params.id) ? params.id[0] : params.id;
+  const conversationId = getFirstRouteParam(params.id);
 
   if (!conversationId) {
     return (

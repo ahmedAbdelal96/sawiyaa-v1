@@ -179,6 +179,9 @@ export class PermissionResolverService {
         case AppRole.PATIENT:
           roleTypes.add(UserRoleType.PATIENT);
           break;
+        case AppRole.TRAINEE:
+          roleTypes.add(UserRoleType.TRAINEE);
+          break;
         case AppRole.PRACTITIONER:
           roleTypes.add(UserRoleType.PRACTITIONER);
           break;

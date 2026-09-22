@@ -26,6 +26,7 @@ import { CurrentLocale } from '@common/i18n/decorators/current-locale.decorator'
 import { I18nService } from '@common/i18n/services/i18n.service';
 import { SupportedLocale } from '@common/i18n/types/locale.types';
 import { JwtRefreshAuthGuard } from '@common/guards/authentication/jwt-refresh-auth.guard';
+import { JwtAccessAuthGuard } from '@common/guards/authentication/jwt-access-auth.guard';
 import { Public } from '@common/decorators/public.decorator';
 import { ThrottlePolicy } from '@common/decorators/throttle-policy.decorator';
 import { AuthenticatedRequest } from '@common/interfaces/authenticated-request.interface';
@@ -37,6 +38,7 @@ import {
   PractitionerRegistrationEnvelopeResponseDto,
 } from '../dto/auth-response.dto';
 import { ConfirmPasswordResetDto } from '../dto/confirm-password-reset.dto';
+import { ChangePasswordDto } from '../dto/change-password.dto';
 import { ForgotPasswordDto } from '../dto/forgot-password.dto';
 import { PractitionerLoginDto } from '../dto/practitioner-login.dto';
 import { PractitionerRegisterDto } from '../dto/practitioner-register.dto';
@@ -54,12 +56,13 @@ import { StartPractitionerRegistrationUseCase } from '../use-cases/start-practit
 import { VerifyPractitionerRegistrationEmailUseCase } from '../use-cases/verify-practitioner-registration-email.use-case';
 import { ResendOtpChallengeUseCase } from '../../verification/use-cases/resend-otp-challenge.use-case';
 import { OtpChallengeRepository } from '../../verification/repositories/otp-challenge.repository';
-import { OtpChannel, OtpPurpose } from '@prisma/client';
+import { OtpChannel, OtpPurpose, UserRoleType } from '@prisma/client';
 import { RequestPractitionerPasswordResetUseCase } from '../use-cases/request-practitioner-password-reset.use-case';
 import { ResetPractitionerPasswordUseCase } from '../use-cases/reset-practitioner-password.use-case';
 import { VerifyPractitionerPasswordResetOtpUseCase } from '../use-cases/verify-practitioner-password-reset-otp.use-case';
 import { VerifyPractitionerLoginOtpUseCase } from '../use-cases/verify-practitioner-login-otp.use-case';
 import { getRequestDeviceContext } from '../utils/request-device-context.util';
+import { ChangePasswordUseCase } from '../use-cases/change-password.use-case';
 
 @ApiTags('Auth - Practitioner')
 @Controller('auth/practitioner')
@@ -80,7 +83,33 @@ export class PractitionerAuthController {
     private readonly verifyPractitionerPasswordResetOtpUseCase: VerifyPractitionerPasswordResetOtpUseCase,
     private readonly confirmPractitionerPasswordResetUseCase: ConfirmPractitionerPasswordResetUseCase,
     private readonly resetPractitionerPasswordUseCase: ResetPractitionerPasswordUseCase,
+    private readonly changePasswordUseCase: ChangePasswordUseCase,
   ) {}
+
+  @UseGuards(JwtAccessAuthGuard)
+  @Post('change-password')
+  @HttpCode(200)
+  @ThrottlePolicy('auth-practitioner-change-password')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Change the authenticated practitioner password' })
+  async changePassword(
+    @Body() dto: ChangePasswordDto,
+    @Req() request: AuthenticatedRequest,
+    @CurrentLocale() locale: SupportedLocale,
+  ) {
+    await this.changePasswordUseCase.execute({
+      userId: request.user!.id,
+      role: UserRoleType.PRACTITIONER,
+      currentPassword: dto.currentPassword,
+      newPassword: dto.newPassword,
+      ipAddress: request.ip ?? null,
+      userAgent: request.headers['user-agent'] ?? null,
+    });
+    return {
+      message: this.i18nService.t('auth.success.passwordChanged', locale),
+      currentSessionInvalidated: true,
+    };
+  }
 
   /** Registration creates only the practitioner auth/account baseline and defers onboarding to the dedicated modules. */
   @Public()
@@ -108,14 +137,6 @@ export class PractitionerAuthController {
       phoneCountryCode: dto.phoneCountryCode,
       password: dto.password,
       displayName: dto.displayName,
-      practitionerType: dto.practitionerType,
-      professionalTitle: dto.professionalTitle,
-      bio: dto.bio,
-      yearsOfExperience: dto.yearsOfExperience,
-      countryCode: dto.countryCode,
-      primarySpecialtyCategoryId: dto.primarySpecialtyCategoryId,
-      specialtyIds: dto.specialtyIds,
-      initialCredential: dto.initialCredential,
       locale,
     });
 
@@ -184,6 +205,52 @@ export class PractitionerAuthController {
       channel: result.channel,
       maskedTarget: result.maskedTarget,
       expiresAt: result.expiresAt,
+      requiresOtpVerification: true,
+      nextStep: 'OTP_REQUIRED' as const,
+    };
+  }
+
+  @Public()
+  @Post('login/resend-otp')
+  @HttpCode(200)
+  @ThrottlePolicy('auth-practitioner-otp-verify')
+  @ApiOperation({ summary: 'Resend the pending practitioner login OTP' })
+  async resendLoginOtp(
+    @Body() dto: Pick<PractitionerVerifyOtpDto, 'challengeId'>,
+    @CurrentLocale() locale: SupportedLocale,
+  ) {
+    const current = await this.otpChallengeRepository.findActiveById(
+      dto.challengeId,
+    );
+    const isPractitioner = current?.user?.roles.some(
+      (role) => role.role === UserRoleType.PRACTITIONER,
+    );
+    if (
+      !current ||
+      current.purpose !== OtpPurpose.PRACTITIONER_LOGIN ||
+      !current.userId ||
+      !isPractitioner
+    ) {
+      throw new BadRequestException({
+        messageKey: 'auth.errors.otpChallengeInvalid',
+        error: 'OTP_CHALLENGE_INVALID',
+      });
+    }
+
+    const result = await this.resendOtpChallengeUseCase.execute({
+      userId: current.userId,
+      purpose: OtpPurpose.PRACTITIONER_LOGIN,
+      channel: current.channel,
+      target: current.target,
+      locale,
+    });
+    return {
+      message: this.i18nService.t('auth.success.practitionerOtpSent', locale),
+      challengeId: result.challengeId,
+      channel: result.channel,
+      maskedTarget: result.maskedTarget,
+      expiresAt: result.expiresAt,
+      resendAvailableAt: result.resendAvailableAt,
       requiresOtpVerification: true,
       nextStep: 'OTP_REQUIRED' as const,
     };
@@ -262,7 +329,10 @@ export class PractitionerAuthController {
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'strict',
         path: '/',
-        maxAge: 30 * 24 * 60 * 60,
+        maxAge: Math.max(
+          0,
+          result.tokens.refreshTokenExpiresAt.getTime() - Date.now(),
+        ),
       });
     }
 
@@ -317,7 +387,10 @@ export class PractitionerAuthController {
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'strict',
         path: '/',
-        maxAge: 30 * 24 * 60 * 60,
+        maxAge: Math.max(
+          0,
+          result.tokens.refreshTokenExpiresAt.getTime() - Date.now(),
+        ),
       });
     }
 
@@ -396,13 +469,19 @@ export class PractitionerAuthController {
   @ApiForbiddenResponse({ description: 'OTP code is invalid' })
   async verifyPasswordResetOtp(
     @Body() dto: VerifyPasswordResetOtpDto,
+    @Res({ passthrough: true }) res: Response,
     @CurrentLocale() locale: SupportedLocale,
   ) {
-    return this.verifyPractitionerPasswordResetOtpUseCase.execute({
-      email: dto.email,
-      code: dto.code,
-      locale,
-    });
+    const result = await this.verifyPractitionerPasswordResetOtpUseCase.execute(
+      {
+        email: dto.email,
+        code: dto.code,
+        locale,
+      },
+    );
+    this.setPasswordResetCookie(res, result.resetToken, result.expiresAt);
+    const { resetToken: _resetToken, ...safeResult } = result;
+    return safeResult;
   }
 
   @Public()
@@ -418,13 +497,28 @@ export class PractitionerAuthController {
   @ApiUnauthorizedResponse({ description: 'Reset token is invalid or expired' })
   async confirmPasswordReset(
     @Body() dto: ConfirmPasswordResetDto,
+    @Req() request: Request,
+    @Res({ passthrough: true }) res: Response,
     @CurrentLocale() locale: SupportedLocale,
   ) {
-    return this.confirmPractitionerPasswordResetUseCase.execute({
-      resetToken: dto.resetToken,
+    const result = await this.confirmPractitionerPasswordResetUseCase.execute({
+      resetToken: this.readPasswordResetCookie(request),
       newPassword: dto.newPassword,
       locale,
+      deviceContext: getRequestDeviceContext(request),
     });
+    res.cookie('sawiyaa_refresh_token', result.tokens.refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      path: '/',
+      maxAge: Math.max(
+        0,
+        result.tokens.refreshTokenExpiresAt.getTime() - Date.now(),
+      ),
+    });
+    this.clearPasswordResetCookie(res);
+    return result;
   }
 
   /** Reset-password consumes a reset OTP and rotates the practitioner password hash. */
@@ -452,5 +546,35 @@ export class PractitionerAuthController {
       newPassword: dto.newPassword,
       locale,
     });
+  }
+
+  private setPasswordResetCookie(
+    res: Response,
+    token: string,
+    expiresAt: string,
+  ) {
+    res.cookie('sawiyaa_password_reset', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      path: '/api/v1/auth/practitioner',
+      expires: new Date(expiresAt),
+    });
+  }
+
+  private clearPasswordResetCookie(res: Response) {
+    res.clearCookie('sawiyaa_password_reset', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      path: '/api/v1/auth/practitioner',
+    });
+  }
+
+  private readPasswordResetCookie(request: Request): string {
+    return (
+      (request as Request & { cookies?: Record<string, string> }).cookies
+        ?.sawiyaa_password_reset ?? ''
+    );
   }
 }

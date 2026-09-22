@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
-import { Alert, ScrollView, StyleSheet, View } from "react-native";
+import { Alert, ScrollView, StyleSheet, TouchableOpacity, View } from "react-native";
+import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import {
   Header,
@@ -24,6 +25,7 @@ import { extractApiErrorMessage } from "../../src/lib/api";
 import TimeZonePicker from "../../src/components/timezone/TimeZonePicker";
 
 export default function PatientProfilePreferencesScreen() {
+  const router = useRouter();
   const { theme } = useTheme();
   const { t, i18n } = useTranslation();
   const profileQuery = usePatientProfile();
@@ -37,7 +39,7 @@ export default function PatientProfilePreferencesScreen() {
   );
   const [timezone, setTimezone] = useState("");
 
-  const { rowDirection } = useAppDirection();
+  const { rowDirection, chevronForward } = useAppDirection();
 
   useEffect(() => {
     const nextLanguage = (settings?.preferences.locale ??
@@ -47,7 +49,6 @@ export default function PatientProfilePreferencesScreen() {
     setTimezone(
       settings?.preferences.timezone ??
         profile?.timezone ??
-        resolveDeviceTimeZone() ??
         "",
     );
   }, [
@@ -88,7 +89,7 @@ export default function PatientProfilePreferencesScreen() {
   };
 
   return (
-    <Screen bg="background">
+    <Screen bg="background" testID="patient-settings-screen">
       <Header title={t("profileScreen.preferences.screenTitle")} showBack />
       <ScrollView
         contentContainerStyle={styles.scrollContent}
@@ -206,42 +207,22 @@ export default function PatientProfilePreferencesScreen() {
           </View>
         </Card>
 
-        {/* Boundary Info Card - Warm Card layout */}
-        <Card
-          variant="elevated"
-          style={[styles.warmCard, { backgroundColor: theme.colors.surface }]}
-          padding="none"
-        >
-          {/* Subtle gold accent indicator line at the top */}
-          <View
-            style={[
-              styles.goldAccentLine,
-              { backgroundColor: theme.colors.tertiary },
-            ]}
-          />
-
-          <View style={styles.cardInnerPadding}>
-            <View
-              style={[styles.cardHeaderRow, { flexDirection: rowDirection }]}
-            >
-              <Ionicons
-                name="shield-checkmark-outline"
-                size={20}
-                color={theme.colors.textSecondary}
-                style={{ marginEnd: 8 }}
-              />
-              <Text
-                weight="bold"
-                style={styles.cardTitle}
-                color={theme.colors.textPrimary}
-              >
-                {t("profileScreen.preferences.boundaryTitle")}
-              </Text>
+        <Card variant="elevated" style={[styles.warmCard, { backgroundColor: theme.colors.surface }]} padding="none">
+          <TouchableOpacity
+            accessibilityRole="button"
+            accessibilityLabel={t("profileScreen.notifications.screenTitle")}
+            onPress={() => router.push("/(patient)/profile-notifications" as any)}
+            style={[styles.preferenceLink, { flexDirection: rowDirection }]}
+          >
+            <View style={[styles.preferenceLinkIcon, { backgroundColor: theme.colors.primarySoft }]}>
+              <Ionicons name="notifications-outline" size={20} color={theme.colors.primary} />
             </View>
-            <Text color={theme.colors.textSecondary} style={styles.bodyText}>
-              {t("profileScreen.preferences.boundaryBody")}
-            </Text>
-          </View>
+            <View style={styles.preferenceLinkText}>
+              <Text weight="600" color={theme.colors.textPrimary}>{t("profileScreen.notifications.screenTitle")}</Text>
+              <Text color={theme.colors.textSecondary} style={styles.linkSubtitle}>{t("profileScreen.notifications.subtitle")}</Text>
+            </View>
+            <Ionicons name={chevronForward} size={18} color={theme.colors.textMuted} />
+          </TouchableOpacity>
         </Card>
 
         <Button
@@ -319,6 +300,28 @@ const styles = StyleSheet.create({
     fontSize: 12,
     lineHeight: 18,
     flex: 1,
+  },
+  preferenceLink: {
+    minHeight: 76,
+    alignItems: "center",
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    gap: 12,
+  },
+  preferenceLinkIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  preferenceLinkText: {
+    flex: 1,
+    gap: 2,
+  },
+  linkSubtitle: {
+    fontSize: 12,
+    lineHeight: 17,
   },
   saveButton: {
     height: 52,

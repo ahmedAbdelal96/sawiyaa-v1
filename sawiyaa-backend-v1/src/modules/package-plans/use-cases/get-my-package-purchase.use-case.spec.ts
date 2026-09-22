@@ -13,15 +13,35 @@ describe('GetMyPackagePurchaseUseCase', () => {
       id: input.purchase.id,
     })),
   } as never;
+  const professionalContentRepository = {
+    findByPractitionerProfileId: jest.fn(),
+  } as never;
+  const professionalContentResolver = {
+    resolve: jest.fn(),
+  } as never;
 
   const useCase = new GetMyPackagePurchaseUseCase(
     patientProfileRepository,
     packagePurchaseRepository,
     packagePurchasePresenter,
+    professionalContentRepository,
+    professionalContentResolver,
   );
 
   beforeEach(() => {
     jest.clearAllMocks();
+    (
+      professionalContentRepository.findByPractitionerProfileId as jest.Mock
+    ).mockResolvedValue(null);
+    (professionalContentResolver.resolve as jest.Mock).mockImplementation(
+      ({
+        legacyProfessionalTitle,
+      }: {
+        legacyProfessionalTitle?: string | null;
+      }) => ({
+        professionalTitle: legacyProfessionalTitle ?? null,
+      }),
+    );
   });
 
   it('returns the patient-owned package purchase only', async () => {
@@ -32,6 +52,7 @@ describe('GetMyPackagePurchaseUseCase', () => {
       packagePurchaseRepository.findByIdForPatient as jest.Mock
     ).mockResolvedValue({
       id: 'purchase-1',
+      practitionerId: 'practitioner-1',
     });
 
     const result = await useCase.execute({
@@ -45,6 +66,9 @@ describe('GetMyPackagePurchaseUseCase', () => {
       purchaseId: 'purchase-1',
       patientId: 'patient-1',
     });
+    expect(
+      professionalContentRepository.findByPractitionerProfileId,
+    ).toHaveBeenCalledWith('practitioner-1');
   });
 
   it('fails when another patient requests the purchase', async () => {

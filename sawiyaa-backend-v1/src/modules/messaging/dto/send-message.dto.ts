@@ -1,15 +1,22 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsNotEmpty, IsOptional, IsString, Matches, MaxLength } from 'class-validator';
+import {
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  Matches,
+  MaxLength,
+} from 'class-validator';
 
 export class SendMessageDto {
-  @ApiProperty({ maxLength: 4000 })
+  @ApiProperty({ required: false, maxLength: 4000 })
   @IsString()
-  @IsNotEmpty()
+  @IsOptional()
   @MaxLength(4000)
-  message!: string;
+  message?: string;
 
   @ApiPropertyOptional({
-    description: 'Opaque client-generated id used to safely retry one logical send action.',
+    description:
+      'Opaque client-generated id used to safely retry one logical send action.',
     maxLength: 191,
   })
   @IsOptional()

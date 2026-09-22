@@ -103,6 +103,42 @@ export class PaymentItemDto {
 
   @ApiProperty()
   paymentAction!: PaymentAction;
+
+  @ApiProperty({ type: () => PatientRefundDto, isArray: true })
+  refunds!: PatientRefundDto[];
+}
+
+export class PatientRefundDto {
+  @ApiProperty()
+  id!: string;
+  @ApiProperty()
+  paymentId!: string;
+  @ApiProperty({ nullable: true })
+  sessionId!: string | null;
+  @ApiProperty({ nullable: true })
+  sessionCode!: string | null;
+  @ApiProperty({ enum: RefundType })
+  refundType!: RefundType;
+  @ApiProperty({ enum: RefundDestination })
+  destination!: RefundDestination;
+  @ApiProperty({ enum: RefundStatus })
+  status!: RefundStatus;
+  @ApiProperty()
+  amount!: string;
+  @ApiProperty()
+  currency!: string;
+  @ApiProperty({ nullable: true })
+  reason!: string | null;
+  @ApiProperty()
+  requestedAt!: string;
+  @ApiProperty({ nullable: true })
+  processedAt!: string | null;
+  @ApiProperty({ nullable: true })
+  failedAt!: string | null;
+  @ApiProperty({ nullable: true })
+  customerWalletCreditedAt!: string | null;
+  @ApiProperty()
+  createdAt!: string;
 }
 
 export class PaymentItemDataResponseDto {
@@ -246,6 +282,48 @@ export class AdminPaymentOpsSessionDto {
   providerSessionRef!: string | null;
 }
 
+export class AdminPaymentOpsSessionSummaryDto {
+  @ApiProperty() id!: string;
+  @ApiProperty() sessionCode!: string;
+  @ApiProperty() status!: string;
+  @ApiProperty({ nullable: true }) scheduledStartAt!: string | null;
+  @ApiProperty({ nullable: true }) scheduledEndAt!: string | null;
+  @ApiProperty() durationMinutes!: number;
+  @ApiProperty({ nullable: true }) practitionerName!: string | null;
+  @ApiProperty() bookingState!: string;
+  @ApiProperty() paymentState!: string;
+  @ApiProperty() cancellationState!: string;
+}
+
+export class AdminPaymentOpsFailureDiagnosisDto {
+  @ApiProperty({ nullable: true }) category!: string | null;
+  @ApiProperty({ enum: PaymentProvider }) provider!: PaymentProvider;
+  @ApiProperty() attemptNumber!: number;
+  @ApiProperty({ nullable: true }) lastAttemptAt!: string | null;
+  @ApiProperty() retryAvailable!: boolean;
+  @ApiProperty() recommendedNextAction!: string;
+}
+
+export class AdminPaymentOpsTimelineItemDto {
+  @ApiProperty() id!: string;
+  @ApiProperty() type!: string;
+  @ApiProperty() occurredAt!: string;
+  @ApiProperty({ nullable: true }) reference!: string | null;
+  @ApiProperty({ nullable: true }) reason!: string | null;
+}
+
+export class AdminPaymentOpsExceptionDto {
+  @ApiProperty() id!: string;
+  @ApiProperty() type!: string;
+  @ApiProperty() status!: string;
+  @ApiProperty() provider!: string;
+  @ApiProperty({ nullable: true }) ownerUserId!: string | null;
+  @ApiProperty() reason!: string;
+  @ApiProperty({ nullable: true }) resolutionNote!: string | null;
+  @ApiProperty() createdAt!: string;
+  @ApiProperty({ nullable: true }) resolvedAt!: string | null;
+}
+
 export class AdminPaymentOpsSummaryDto {
   @ApiProperty()
   id!: string;
@@ -300,6 +378,31 @@ export class AdminPaymentOpsSummaryDto {
 
   @ApiProperty({ nullable: true })
   expiredAt!: string | null;
+
+  @ApiProperty({ nullable: true })
+  patientId!: string | null;
+
+  @ApiProperty({ nullable: true })
+  patientName!: string | null;
+}
+
+export class AdminPaymentOpsPackagePurchaseDto {
+  @ApiProperty() id!: string;
+  @ApiProperty({ nullable: true }) title!: string | null;
+  @ApiProperty({ nullable: true }) planCode!: string | null;
+  @ApiProperty() status!: string;
+  @ApiProperty({ nullable: true }) settlementId!: string | null;
+}
+
+export class AdminPaymentOpsAcademyEnrollmentDto {
+  @ApiProperty() id!: string;
+  @ApiProperty() programId!: string;
+  @ApiProperty() programSlug!: string;
+  @ApiProperty() programTitleAr!: string;
+  @ApiProperty() programTitleEn!: string;
+  @ApiProperty() status!: string;
+  @ApiProperty() paymentStatus!: string;
+  @ApiProperty() registeredAt!: string;
 }
 
 export class AdminPaymentOpsRefundSummaryDto {
@@ -372,8 +475,20 @@ export class AdminPaymentOpsItemDto {
   @ApiProperty({ type: AdminPaymentOpsSummaryDto })
   payment!: AdminPaymentOpsSummaryDto;
 
+  @ApiProperty({ type: AdminPaymentOpsPackagePurchaseDto, nullable: true })
+  packagePurchase!: AdminPaymentOpsPackagePurchaseDto | null;
+
+  @ApiProperty({ type: AdminPaymentOpsAcademyEnrollmentDto, nullable: true })
+  academyEnrollment!: AdminPaymentOpsAcademyEnrollmentDto | null;
+
   @ApiProperty({ type: AdminPaymentOpsSessionDto, nullable: true })
   session!: AdminPaymentOpsSessionDto | null;
+
+  @ApiProperty({ type: AdminPaymentOpsSessionSummaryDto, nullable: true })
+  sessionSummary!: AdminPaymentOpsSessionSummaryDto | null;
+
+  @ApiProperty({ type: AdminPaymentOpsFailureDiagnosisDto })
+  failureDiagnosis!: AdminPaymentOpsFailureDiagnosisDto;
 
   @ApiProperty({ type: AdminPaymentOpsRefundSummaryDto })
   refundSummary!: AdminPaymentOpsRefundSummaryDto;
@@ -383,6 +498,12 @@ export class AdminPaymentOpsItemDto {
 
   @ApiProperty({ type: AdminPaymentOpsEventDto, isArray: true })
   recentEvents!: AdminPaymentOpsEventDto[];
+
+  @ApiProperty({ type: AdminPaymentOpsTimelineItemDto, isArray: true })
+  timeline!: AdminPaymentOpsTimelineItemDto[];
+
+  @ApiProperty({ type: AdminPaymentOpsExceptionDto, isArray: true })
+  exceptions!: AdminPaymentOpsExceptionDto[];
 
   @ApiProperty({ type: AdminPaymentOpsRelatedSettlementDto, nullable: true })
   relatedSettlement!: AdminPaymentOpsRelatedSettlementDto | null;

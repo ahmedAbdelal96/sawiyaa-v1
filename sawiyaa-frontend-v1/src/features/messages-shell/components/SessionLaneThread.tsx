@@ -1,14 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { useOpenSessionGeneralChat } from "@/features/chat/hooks/use-general-chat";
 import { getCanonicalConversation } from "@/features/messages-shell/api/messages-shell.api";
 import UnifiedConversationThread from "@/components/shared/chat/messages-workspace/UnifiedConversationThread";
 import type { UnifiedMessagingRole } from "../types/messages-shell.types";
 
 type Props = {
-  sessionId: string;
+  conversationId: string;
   sessionTitle: string;
   sessionStatusLabel?: string;
   role: Exclude<UnifiedMessagingRole, "admin">;
@@ -20,39 +19,16 @@ type Props = {
 };
 
 export default function SessionLaneThread({
-  sessionId,
+  conversationId,
   role,
   locale,
   onOpenFullChat,
   onThreadActive,
   isVisible = true,
 }: Props) {
-  const [conversationId, setConversationId] = useState<string | null>(null);
-  const openMutation = useOpenSessionGeneralChat(sessionId);
-
-  useEffect(() => {
-    queueMicrotask(() => {
-      setConversationId(null);
-    });
-    openMutation
-      .mutateAsync()
-      .then((result) => {
-        queueMicrotask(() => {
-          setConversationId(result.item.conversationId);
-        });
-      })
-      .catch(() => {
-        queueMicrotask(() => {
-          setConversationId(null);
-        });
-      });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sessionId]);
-
-
   const conversationQuery = useQuery({
     queryKey: ["canonical-conversation", conversationId],
-    queryFn: () => getCanonicalConversation(conversationId!),
+    queryFn: () => getCanonicalConversation(conversationId),
     enabled: Boolean(conversationId),
   });
 
@@ -74,9 +50,13 @@ export default function SessionLaneThread({
           onOpenFullChat={onOpenFullChat}
           isVisible={isVisible}
         />
-      ) : (
+      ) : conversationQuery.isLoading ? (
         <div className="flex h-full items-center justify-center p-8 text-center text-text-muted animate-pulse">
           <span>{locale.startsWith("ar") ? "جاري فتح المحادثة..." : "Opening conversation..."}</span>
+        </div>
+      ) : (
+        <div className="flex h-full items-center justify-center p-8 text-center text-text-muted">
+          <span>{locale.startsWith("ar") ? "لا توجد رسائل سابقة لهذه الجلسة." : "No previous messages for this session."}</span>
         </div>
       )}
     </div>

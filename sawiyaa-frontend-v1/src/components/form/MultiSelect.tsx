@@ -1,46 +1,61 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useMemo, useState } from "react";
 
 interface Option {
   value: string;
   text: string;
-  selected: boolean;
+  selected?: boolean;
 }
 
 interface MultiSelectProps {
-  label: string;
+  label?: string;
   options: Option[];
   placeholder?: string;
   defaultSelected?: string[];
+  value?: string[];
   onChange?: (selected: string[]) => void;
   disabled?: boolean;
   error?: boolean;
   hint?: string;
 }
 
+const EMPTY_ARRAY: string[] = [];
+
 const MultiSelect: React.FC<MultiSelectProps> = ({
   label,
   options,
   placeholder = "Select option",
-  defaultSelected = [],
+  defaultSelected = EMPTY_ARRAY,
+  value,
   onChange,
   disabled = false,
   error = false,
   hint,
 }) => {
-  const [selectedOptions, setSelectedOptions] =
-    useState<string[]>(defaultSelected);
+  const [internalSelected, setInternalSelected] = useState<string[]>(() => {
+    if (value !== undefined) return value;
+    if (defaultSelected.length > 0) return defaultSelected;
+    return options.filter((o) => o.selected).map((o) => o.value);
+  });
   const [isOpen, setIsOpen] = useState(false);
 
-  useEffect(() => {
-    setSelectedOptions(defaultSelected);
-  }, [defaultSelected]);
+  // If `value` prop is provided, treat as controlled, otherwise fallback to internal selection or derived from options
+  const activeSelected = useMemo(() => {
+    if (value !== undefined) return value;
+    if (defaultSelected.length > 0) return internalSelected;
+    // Check if any option has explicit `selected: true`
+    const optionsWithSelected = options.filter((o) => o.selected).map((o) => o.value);
+    if (optionsWithSelected.length > 0 && internalSelected.length === 0) {
+      return optionsWithSelected;
+    }
+    return internalSelected;
+  }, [value, defaultSelected, internalSelected, options]);
 
   const selectedItems = useMemo(
     () =>
-      selectedOptions
-        .map((value) => options.find((option) => option.value === value))
+      activeSelected
+        .map((val) => options.find((option) => option.value === val))
         .filter((option): option is Option => Boolean(option)),
-    [options, selectedOptions]
+    [options, activeSelected]
   );
 
   const toggleDropdown = () => {
@@ -49,25 +64,25 @@ const MultiSelect: React.FC<MultiSelectProps> = ({
   };
 
   const handleSelect = (optionValue: string) => {
-    const nextSelected = selectedOptions.includes(optionValue)
-      ? selectedOptions.filter((value) => value !== optionValue)
-      : [...selectedOptions, optionValue];
+    const nextSelected = activeSelected.includes(optionValue)
+      ? activeSelected.filter((val) => val !== optionValue)
+      : [...activeSelected, optionValue];
 
-    setSelectedOptions(nextSelected);
+    setInternalSelected(nextSelected);
     onChange?.(nextSelected);
   };
 
-  const removeOption = (value: string) => {
+  const removeOption = (val: string) => {
     if (disabled) return;
-    const nextSelected = selectedOptions.filter((option) => option !== value);
-    setSelectedOptions(nextSelected);
+    const nextSelected = activeSelected.filter((option) => option !== val);
+    setInternalSelected(nextSelected);
     onChange?.(nextSelected);
   };
 
   return (
     <div className="w-full">
       {label ? (
-        <label className="mb-1.5 block text-sm font-medium text-text-secondary">
+        <label className="mb-1 block text-xs font-bold text-text-secondary">
           {label}
         </label>
       ) : null}
@@ -77,24 +92,24 @@ const MultiSelect: React.FC<MultiSelectProps> = ({
           type="button"
           onClick={toggleDropdown}
           disabled={disabled}
-          className={`app-control flex min-h-11 w-full items-center gap-2 rounded-xl border bg-surface-tertiary px-4 py-2.5 text-start transition-colors ${
+          className={`app-control flex min-h-10 w-full items-center gap-2 rounded-xl border bg-[#FCFAF6] px-3 py-2 text-start transition-colors dark:bg-white/5 dark:border-white/10 ${
             error
               ? "border-status-danger focus-visible:border-status-danger"
-              : "border-border-light focus-visible:border-border-focus"
+              : "border-border-light/80 focus-visible:border-[#24564F]"
           } ${
             disabled
-              ? "cursor-not-allowed border-border-light bg-surface-tertiary/60 text-text-muted opacity-60"
-              : "focus-visible:outline-hidden focus-visible:ring-3 focus-visible:ring-ring-focus"
+              ? "cursor-not-allowed border-border-light bg-[#FCFAF6]/60 text-text-muted opacity-60"
+              : "focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[#24564F]/20"
           }`}
         >
-          <div className="flex min-w-0 flex-1 flex-wrap gap-2">
+          <div className="flex min-w-0 flex-1 flex-wrap gap-1.5">
             {selectedItems.length > 0 ? (
               selectedItems.map((item) => (
                 <span
                   key={item.value}
-                  className="inline-flex items-center gap-2 rounded-full bg-primary-light px-2.5 py-1 text-sm text-text-brand"
+                  className="inline-flex items-center gap-1.5 rounded-full bg-[#EEF4EF] border border-[#24564F]/15 px-2 py-0.5 text-xs font-semibold text-[#24564F] dark:bg-white/10 dark:text-[#A7BFAE]"
                 >
-                  <span className="truncate">{item.text}</span>
+                  <span className="truncate max-w-[120px]">{item.text}</span>
                   <span
                     role="button"
                     tabIndex={disabled ? -1 : 0}
@@ -108,14 +123,14 @@ const MultiSelect: React.FC<MultiSelectProps> = ({
                         removeOption(item.value);
                       }
                     }}
-                    className={disabled ? "text-text-muted" : "cursor-pointer"}
+                    className={disabled ? "text-text-muted" : "cursor-pointer hover:opacity-75"}
                   >
                     ×
                   </span>
                 </span>
               ))
             ) : (
-              <span className="text-sm text-text-muted">{placeholder}</span>
+              <span className="text-xs text-text-muted">{placeholder}</span>
             )}
           </div>
 
@@ -126,8 +141,8 @@ const MultiSelect: React.FC<MultiSelectProps> = ({
           >
             <svg
               className="stroke-current"
-              width="20"
-              height="20"
+              width="16"
+              height="16"
               viewBox="0 0 20 20"
               fill="none"
               xmlns="http://www.w3.org/2000/svg"
@@ -144,25 +159,25 @@ const MultiSelect: React.FC<MultiSelectProps> = ({
         </button>
 
         {hint ? (
-          <p className={`mt-1.5 text-xs ${error ? "text-status-danger" : "text-text-secondary"}`}>
+          <p className={`mt-1 text-xs ${error ? "text-status-danger" : "text-text-secondary"}`}>
             {hint}
           </p>
         ) : null}
 
         {isOpen ? (
-          <div className="absolute start-0 top-full z-40 mt-2 max-h-64 w-full overflow-y-auto rounded-xl border border-border-light bg-surface-secondary shadow-theme-sm">
-            <div className="flex flex-col p-1.5">
+          <div className="absolute start-0 top-full z-40 mt-1 max-h-56 w-full overflow-y-auto rounded-xl border border-border-light bg-white shadow-md dark:bg-surface-secondary dark:border-white/10">
+            <div className="flex flex-col p-1">
               {options.map((option) => {
-                const checked = selectedOptions.includes(option.value);
+                const checked = activeSelected.includes(option.value);
                 return (
                   <button
                     key={option.value}
                     type="button"
                     onClick={() => handleSelect(option.value)}
-                    className={`flex w-full items-center justify-between rounded-lg px-3 py-2 text-start text-sm transition-colors ${
+                    className={`flex w-full items-center justify-between rounded-lg px-2.5 py-1.5 text-start text-xs transition-colors ${
                       checked
-                        ? "bg-primary-light text-text-brand"
-                        : "text-text-primary hover:bg-surface-tertiary"
+                        ? "bg-[#EEF4EF] font-bold text-[#24564F] dark:bg-white/10 dark:text-[#A7BFAE]"
+                        : "text-[#1C2F2B] hover:bg-[#FCFAF6] dark:text-white/80 dark:hover:bg-white/5"
                     }`}
                   >
                     <span>{option.text}</span>

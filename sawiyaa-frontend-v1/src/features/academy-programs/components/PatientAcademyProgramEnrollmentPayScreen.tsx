@@ -41,7 +41,7 @@ function resolvePaymentStateKey(input: {
   enrollmentStatus: string;
   paymentStatus: string;
 }) {
-  if (input.enrollmentStatus === "UPCOMING" || input.paymentStatus === "CAPTURED") {
+  if (input.enrollmentStatus === "CONFIRMED" || input.paymentStatus === "CAPTURED") {
     return "confirmed";
   }
 

@@ -1,13 +1,28 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
-import { ArrowLeft, ChevronLeft, Search, Wallet } from "lucide-react";
+import {
+  ArrowLeft,
+  ArrowRight,
+  Calendar,
+  ChevronLeft,
+  ChevronRight,
+  CreditCard,
+  History,
+  RotateCcw,
+  Search,
+  Stethoscope,
+  User,
+  Wallet,
+} from "lucide-react";
 import { Link } from "@/i18n/navigation";
-import { ListStateSkeleton, StateCard } from "@/components/shared/ContentStates";
-import { groupAmountsByCurrency } from "@/lib/finance-format";
+import { StateCard } from "@/components/shared/ContentStates";
 import { formatViewerDate } from "@/lib/time-formatting";
-import { usePatientPayments } from "../hooks/use-payments";
+import {
+  usePatientPayments,
+  usePatientWalletSummary,
+} from "../hooks/use-payments";
 import { usePatientSessions } from "@/features/sessions/hooks/use-sessions";
 import { canContinuePayment, canRetryPayment } from "../lib/payment-status";
 import { formatPatientMoney } from "../lib/patient-money-format";
@@ -17,20 +32,7 @@ import type {
   PaymentStatus,
 } from "../types/payments.types";
 import SessionCodeReference from "@/components/shared/SessionCodeReference";
-
-const STATUS_STYLES: Record<PaymentStatus, string> = {
-  CREATED: "bg-surface-tertiary text-text-secondary dark:bg-white/10 dark:text-white/60",
-  PENDING: "bg-warning-light text-warning dark:bg-warning/15 dark:text-warning-300",
-  REQUIRES_ACTION: "bg-warning-light text-warning dark:bg-warning/15 dark:text-warning-300",
-  AUTHORIZED: "bg-primary-light text-text-brand dark:bg-primary/15 dark:text-primary-light",
-  CAPTURED: "bg-success-light text-success dark:bg-success/15 dark:text-success-light",
-  FAILED: "bg-error-light text-error dark:bg-error/15 dark:text-error-light",
-  CANCELLED: "bg-surface-tertiary text-text-muted dark:bg-white/10 dark:text-white/50",
-  EXPIRED: "bg-surface-tertiary text-text-muted dark:bg-white/10 dark:text-white/50",
-  REFUND_PENDING: "bg-warning-light text-warning dark:bg-warning/15 dark:text-warning-300",
-  PARTIALLY_REFUNDED: "bg-warning-light text-warning dark:bg-warning/15 dark:text-warning-300",
-  REFUNDED: "bg-surface-tertiary text-text-secondary dark:bg-white/10 dark:text-white/60",
-};
+import { Skeleton } from "@/components/shared/LoadingStates";
 
 const PAYMENT_STATUS_FILTERS: PaymentStatus[] = [
   "CAPTURED",
@@ -46,10 +48,21 @@ const PAYMENT_STATUS_FILTERS: PaymentStatus[] = [
   "EXPIRED",
 ];
 
-const PAYMENT_ROWS_PER_PAGE = 6;
+const PAYMENT_PAGE_SIZE = 20;
 
 function formatDate(isoString: string, numLocale: string): string {
-  return formatViewerDate(isoString, { locale: numLocale });
+  try {
+    const d = new Date(isoString);
+    return new Intl.DateTimeFormat(numLocale.startsWith("ar") ? "ar-EG" : "en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    }).format(d);
+  } catch {
+    return formatViewerDate(isoString, { locale: numLocale });
+  }
 }
 
 function resolveRelevantDate(
@@ -66,14 +79,6 @@ function resolveRelevantDate(
     return { labelKey: "history.expiredOn", isoString: payment.expiredAt };
   }
   return { labelKey: "history.initiatedOn", isoString: payment.createdAt };
-}
-
-function resolveProviderLabelKey(provider: PaymentProvider): string {
-  if (provider === "INTERNAL_WALLET") {
-    return "history.provider.INTERNAL_WALLET";
-  }
-
-  return `history.provider.${provider}`;
 }
 
 function resolvePaymentMethodKey(payment: PaymentItem): string {
@@ -122,325 +127,189 @@ function resolvePaymentActionHref(payment: PaymentItem): string | null {
   return `/patient/sessions/${payment.sessionId}`;
 }
 
-function SummaryCard({
-  label,
-  title,
-  amount,
-  accentTone,
-  note,
-}: {
-  label: string;
-  title: string;
-  amount: string;
-  accentTone: "teal" | "seafoam";
-  note?: string;
-}) {
-  return (
-    <article className="relative overflow-hidden rounded-[30px] border border-border-light bg-white p-6 shadow-[0_18px_38px_-30px_rgba(34,52,56,0.22)] dark:border-border-light dark:bg-surface-secondary">
-      <div className="flex items-start justify-between gap-4">
-        <div className="space-y-3">
-          <span
-            className={`inline-flex rounded-full px-3 py-1 text-xs font-medium ${
-              accentTone === "teal"
-                ? "bg-primary-light text-primary"
-                : "bg-surface-tertiary text-text-secondary dark:bg-white/10 dark:text-white/70"
-            }`}
-          >
-            {label}
-          </span>
-          <div>
-            <p className="text-sm font-medium text-text-secondary">{title}</p>
-            <p className="mt-2 text-3xl font-semibold tabular-nums text-text-primary dark:text-white/95">
-              {amount}
-            </p>
-          </div>
-        </div>
-
-        <span className="inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-primary-light text-primary dark:bg-primary/15 dark:text-primary-light">
-          <Wallet className="h-6 w-6" />
-        </span>
-      </div>
-
-      {note ? (
-        <p className="mt-5 border-t border-border-light pt-4 text-xs text-text-muted dark:border-white/10">
-          {note}
-        </p>
-      ) : null}
-    </article>
-  );
-}
-
-function PaymentRow({
-  payment,
-  sessionLabel,
-  practitionerLabel,
-}: {
-  payment: PaymentItem;
-  sessionLabel: string;
-  practitionerLabel: string;
-}) {
-  const t = useTranslations("payments");
-  const locale = useLocale();
-  const numLocale = locale === "ar" ? "ar-SA" : "en-US";
-  const { labelKey, isoString } = resolveRelevantDate(payment);
-  const actionHref = resolvePaymentActionHref(payment);
-  const canContinue = canContinuePayment(payment);
-  const canRetry = canRetryPayment(payment);
-  const methodKey = resolvePaymentMethodKey(payment);
-  const statusLabel = t(resolvePaymentStatusKey(payment.status) as Parameters<typeof t>[0]);
-  const amount = formatPatientMoney(numLocale, payment.amountTotal, payment.currency, {
-    fallbackText: "?",
-  });
-  const statusTone =
-    payment.status === "CAPTURED"
-      ? "bg-success-light text-success"
-      : payment.status === "FAILED"
-        ? "bg-error-light text-error"
-        : payment.status === "REFUNDED"
-          ? "bg-surface-tertiary text-text-secondary dark:bg-white/10 dark:text-white/60"
-          : "bg-warning-light text-warning";
-
-  return (
-    <tr className="border-b border-border-light/70 transition-colors last:border-b-0 hover:bg-surface-tertiary/40 dark:border-white/10 dark:hover:bg-white/5">
-      <td className="px-4 py-4">
-        <div className="min-w-0">
-          <p className="truncate text-sm font-semibold text-text-primary dark:text-white/95">
-            {sessionLabel}
-          </p>
-          <p className="mt-1 truncate text-xs text-text-secondary">{practitionerLabel}</p>
-        </div>
-      </td>
-      <td className="px-4 py-4 text-sm text-text-secondary">
-        {t(labelKey as Parameters<typeof t>[0])} {formatDate(isoString, numLocale)}
-      </td>
-      <td className="px-4 py-4 text-sm text-text-secondary">
-        {t(methodKey as Parameters<typeof t>[0])}
-      </td>
-      <td className="px-4 py-4 text-sm font-semibold tabular-nums text-text-primary dark:text-white/95">
-        {amount}
-      </td>
-      <td className="px-4 py-4">
-        <span
-          className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-medium ${statusTone}`}
-        >
-          {statusLabel}
-        </span>
-      </td>
-      <td className="px-4 py-4">
-        {actionHref ? (
-          <Link
-            href={actionHref as never}
-            aria-label={canRetry ? t("history.retryPayment") : canContinue ? t("history.continuePayment") : t("history.viewSession")}
-            className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-border-light bg-white text-text-secondary transition hover:border-primary/30 hover:text-primary dark:bg-white/5 dark:text-white/80"
-          >
-            <ChevronLeft className="h-4 w-4" />
-          </Link>
-        ) : (
-          <span className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-border-light bg-surface-tertiary text-text-muted dark:bg-white/10">
-            <ChevronLeft className="h-4 w-4" />
-          </span>
-        )}
-      </td>
-    </tr>
-  );
-}
-
 export default function PatientPaymentsHistoryPanel() {
   const t = useTranslations("payments");
   const locale = useLocale();
   const numLocale = locale === "ar" ? "ar-SA" : "en-US";
+  const isRtl = locale.startsWith("ar");
+
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<PaymentStatus | "ALL">("ALL");
   const [currencyFilter, setCurrencyFilter] = useState<string>("ALL");
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
   const [page, setPage] = useState(1);
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => setDebouncedSearch(search.trim()), 300);
+    return () => window.clearTimeout(timer);
+  }, [search]);
+
+  const dateFromIso = fromDate ? new Date(`${fromDate}T00:00:00`).toISOString() : undefined;
+  const dateToIso = toDate ? new Date(`${toDate}T23:59:59.999`).toISOString() : undefined;
 
   const {
     data: paymentsData,
     isLoading: paymentsLoading,
     isError: paymentsError,
     refetch: refetchPayments,
-  } = usePatientPayments({ limit: 50 });
+  } = usePatientPayments({
+    limit: PAYMENT_PAGE_SIZE,
+    page,
+    ...(debouncedSearch ? { search: debouncedSearch } : {}),
+    ...(currencyFilter === "ALL" ? {} : { currencyCode: currencyFilter as "EGP" | "USD" }),
+    ...(dateFromIso ? { dateFrom: dateFromIso } : {}),
+    ...(dateToIso ? { dateTo: dateToIso } : {}),
+    ...(statusFilter === "ALL" ? {} : { status: statusFilter }),
+  });
 
   const { data: sessionsData, isLoading: sessionsLoading } = usePatientSessions({ limit: 50 });
+  const { data: walletSummaryData } = usePatientWalletSummary();
+
+  const walletSummary = walletSummaryData?.item ?? null;
+  const availableWalletBalance = walletSummary
+    ? formatPatientMoney(numLocale, walletSummary.availableBalance, walletSummary.currencyCode, {
+        fallbackText: "0.00",
+      })
+    : null;
+
+  const payments = useMemo(() => paymentsData?.items ?? [], [paymentsData?.items]);
+  const sessionMap = useMemo(
+    () =>
+      new Map(
+        (sessionsData?.items ?? []).map((session) => [
+          session.id,
+          {
+            sessionCode: session.sessionCode,
+            practitionerName: session.practitioner?.displayName ?? session.practitioner?.slug,
+            practitionerSlug: session.practitioner?.slug,
+          },
+        ]),
+      ),
+    [sessionsData?.items],
+  );
+
+  const currencyOptions = useMemo(() => {
+    const set = new Set(["ALL"]);
+    payments.forEach((p) => {
+      if (p.currency) set.add(p.currency.toUpperCase());
+    });
+    return Array.from(set);
+  }, [payments]);
+
+  const totalPages = paymentsData?.pagination.totalPages ?? 1;
+  const safePage = Math.min(page, totalPages);
+  const visiblePayments = payments;
 
   if (paymentsLoading || sessionsLoading) {
     return (
-      <div className="space-y-6">
-        <section className="rounded-[32px] border border-border-light bg-white p-6 shadow-[0_18px_38px_-30px_rgba(34,52,56,0.22)] dark:border-border-light dark:bg-surface-secondary">
-          <ListStateSkeleton items={1} heightClass="h-28" />
-        </section>
-        <ListStateSkeleton items={3} heightClass="h-28" />
+      <div className="mx-auto max-w-5xl space-y-6 py-6 px-4">
+        <div className="space-y-2 border-b border-border-light/60 pb-4">
+          <Skeleton className="h-7 w-40 rounded-md" />
+          <Skeleton className="h-4 w-72 rounded-md" />
+        </div>
+        <Skeleton className="h-32 rounded-3xl" />
+        <div className="space-y-3">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <Skeleton key={i} className="h-28 rounded-2xl" />
+          ))}
+        </div>
       </div>
     );
   }
 
   if (paymentsError) {
     return (
-      <StateCard
-        title={t("history.errorHeading")}
-        note={t("history.errorNote")}
-        action={{ label: t("history.retry"), onClick: () => refetchPayments() }}
-      />
+      <div className="mx-auto max-w-2xl py-12 px-4 text-center">
+        <StateCard
+          title={t("history.errorHeading")}
+          note={t("history.errorNote")}
+          action={{ label: t("history.retry"), onClick: () => refetchPayments() }}
+        />
+      </div>
     );
   }
 
-  const payments = paymentsData?.items ?? [];
-  const sessionMap = new Map(
-    (sessionsData?.items ?? []).map((session) => [
-      session.id,
-      {
-        sessionCode: session.sessionCode,
-        practitionerName: session.practitioner.displayName ?? session.practitioner.slug,
-        practitionerSlug: session.practitioner.slug,
-      },
-    ]),
-  );
-
-  const currencyTotals = groupAmountsByCurrency(
-    payments,
-    (payment) => payment.currency,
-    (payment) => payment.amountTotal,
-  );
-
-  const refundCount = payments.filter((payment) =>
-    ["REFUND_PENDING", "PARTIALLY_REFUNDED", "REFUNDED"].includes(payment.status),
-  ).length;
-
-  const filteredPayments = payments.filter((payment) => {
-    const paymentCurrency = payment.currency.toUpperCase();
-    if (statusFilter !== "ALL" && payment.status !== statusFilter) return false;
-    if (currencyFilter !== "ALL" && paymentCurrency !== currencyFilter) return false;
-
-    const { isoString } = resolveRelevantDate(payment);
-    const paymentDate = new Date(isoString).getTime();
-    if (Number.isFinite(new Date(fromDate).getTime()) && paymentDate < new Date(fromDate).getTime()) {
-      return false;
-    }
-    if (Number.isFinite(new Date(toDate).getTime())) {
-      const endOfDay = new Date(toDate);
-      endOfDay.setHours(23, 59, 59, 999);
-      if (paymentDate > endOfDay.getTime()) return false;
-    }
-
-    if (!search.trim()) return true;
-
-    const session = payment.sessionId ? sessionMap.get(payment.sessionId) : null;
-    const searchable = [
-      payment.id,
-      payment.sessionId ?? "",
-      session?.sessionCode ?? "",
-      session?.practitionerName ?? "",
-      payment.provider,
-      payment.providerMethod ?? "",
-      payment.providerPaymentId ?? "",
-      payment.providerReference ?? "",
-    ]
-      .join(" ")
-      .toLowerCase();
-
-    return searchable.includes(search.trim().toLowerCase());
-  });
-
-  const totalPages = Math.max(1, Math.ceil(filteredPayments.length / PAYMENT_ROWS_PER_PAGE));
-  const safePage = Math.min(page, totalPages);
-  const visiblePayments = filteredPayments.slice(
-    (safePage - 1) * PAYMENT_ROWS_PER_PAGE,
-    safePage * PAYMENT_ROWS_PER_PAGE,
-  );
-
-  const summaryCards = currencyTotals.filter((item) => ["EGP", "USD"].includes(item.currencyCode));
-  const otherCurrencyTotals = currencyTotals.filter((item) => !["EGP", "USD"].includes(item.currencyCode));
-
-  const currencyOptions = Array.from(
-    new Set([
-      "ALL",
-      ...currencyTotals.map((item) => item.currencyCode),
-    ]),
-  );
-
   return (
-    <div className="space-y-6">
-      <section className="rounded-[32px] border border-border-light bg-white p-6 shadow-[0_18px_38px_-30px_rgba(34,52,56,0.22)] dark:border-border-light dark:bg-surface-secondary sm:p-7">
-        <div className="flex flex-wrap items-start justify-between gap-4">
-        <div className="max-w-3xl">
-            <h1 className="mt-3 text-2xl font-bold text-text-primary dark:text-white/95 md:text-3xl">
-              {t("history.heading")}
-            </h1>
-            <p className="mt-2 text-sm leading-7 text-text-secondary">
-              {t("meta.historyDescription")}
-            </p>
-          </div>
+    <div className="mx-auto max-w-5xl px-4 py-4 sm:py-6 space-y-6 text-start">
+      {/* ── Header ── */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-b border-border-light/60 pb-4">
+        <div>
+          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-text-primary dark:text-white">
+            {t("history.heading")}
+          </h1>
+          <p className="text-xs text-text-secondary mt-0.5">
+            {locale === "ar"
+              ? "متابعة سجل مدفوعات الجلسات والاستشارات، ورصيد محفظتك المتاح."
+              : t("meta.historyDescription")}
+          </p>
         </div>
-      </section>
 
-      <div className="grid gap-4 xl:grid-cols-3">
-        {summaryCards.map((item) => (
-          <SummaryCard
-            key={item.currencyCode}
-            label={t(`history.summary.${item.currencyCode.toLowerCase()}` as Parameters<typeof t>[0])}
-            title={t("history.summary.heading")}
-            amount={formatPatientMoney(numLocale, item.amount, item.currencyCode, {
-              fallbackText: "?",
-            })}
-            accentTone={item.currencyCode === "EGP" ? "teal" : "seafoam"}
-          />
-        ))}
-        {otherCurrencyTotals.map((item) => (
-          <SummaryCard
-            key={item.currencyCode}
-            label={item.currencyCode}
-            title={t("history.summary.heading")}
-            amount={formatPatientMoney(numLocale, item.amount, item.currencyCode, {
-              fallbackText: "?",
-            })}
-            accentTone="seafoam"
-          />
-        ))}
-        <article className="relative overflow-hidden rounded-[30px] border border-border-light bg-white p-6 shadow-[0_18px_38px_-30px_rgba(34,52,56,0.22)] dark:border-border-light dark:bg-surface-secondary">
-          <div className="flex items-start justify-between gap-4">
-            <div className="space-y-3">
-              <span className="inline-flex rounded-full bg-surface-tertiary px-3 py-1 text-xs font-medium text-text-secondary dark:bg-white/10 dark:text-white/70">
-                {t("history.summary.refundsLabel")}
+        <Link
+          href="/patient/wallet"
+          className="inline-flex items-center justify-center gap-2 rounded-2xl border border-primary/20 bg-primary-light/50 px-4 py-2.5 text-xs font-bold text-primary transition hover:bg-primary-light hover:shadow-2xs dark:bg-primary/20 dark:text-primary-light self-start sm:self-auto cursor-pointer"
+        >
+          <Wallet size={15} />
+          <span>{locale === "ar" ? "سجل حركة المحفظة" : t("history.actions.wallet")}</span>
+        </Link>
+      </div>
+
+      {/* ── Wallet Quick Highlight Card ── */}
+      {availableWalletBalance ? (
+        <div className="relative overflow-hidden rounded-2xl bg-linear-to-r from-[#1b433e] via-[#215a53] to-[#143934] px-4 py-2.5 text-white shadow-2xs border border-white/15">
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-white/15 text-emerald-200 backdrop-blur-md">
+                <Wallet size={13} />
               </span>
-              <div>
-                <p className="text-sm font-medium text-text-secondary">{t("history.summary.refundsHeading")}</p>
-                <p className="mt-2 text-3xl font-semibold tracking-tight tabular-nums text-text-primary dark:text-white/95">
-                  {refundCount}
-                </p>
+              <div className="min-w-0 flex items-center gap-2">
+                <span className="text-xs text-emerald-100/90 truncate">
+                  {locale === "ar" ? "الرصيد المتاح:" : "Available:"}
+                </span>
+                <span className="text-base sm:text-lg font-black font-mono tracking-tight text-white">
+                  {availableWalletBalance}
+                </span>
               </div>
             </div>
 
-            <span className="inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-primary-light text-primary dark:bg-primary/15 dark:text-primary-light">
-              <Wallet className="h-6 w-6" />
-            </span>
+            <Link
+              href="/patient/wallet"
+              className="inline-flex shrink-0 items-center gap-1 rounded-xl bg-white/15 backdrop-blur-md border border-white/20 px-3 py-1.5 text-xs font-bold text-white transition hover:bg-white/25 active:scale-[0.98] shadow-xs cursor-pointer"
+            >
+              <span>{locale === "ar" ? "تفاصيل المحفظة" : "View Wallet"}</span>
+              {isRtl ? <ArrowLeft size={12} /> : <ArrowRight size={12} />}
+            </Link>
           </div>
-        </article>
-      </div>
+        </div>
+      ) : null}
 
-      <section className="rounded-[32px] border border-border-light bg-white p-5 shadow-[0_18px_38px_-30px_rgba(34,52,56,0.22)] dark:border-border-light dark:bg-surface-secondary sm:p-6">
-        <div className="grid gap-3 lg:grid-cols-[minmax(0,1.8fr)_repeat(3,minmax(0,1fr))]">
-          <label className="flex items-center gap-2 rounded-2xl border border-border-light bg-white px-4 py-3 text-sm text-text-secondary dark:bg-white/5">
-            <Search className="h-4 w-4 text-text-muted" />
+      {/* ── Search & Filter Controls ── */}
+      <div className="rounded-3xl border border-border-light/80 bg-white p-3.5 sm:p-4 shadow-2xs dark:bg-surface-secondary dark:border-border-dark space-y-3">
+        <div className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-4">
+          {/* Search */}
+          <div className="relative flex items-center lg:col-span-2">
+            <Search className="absolute start-3 h-4 w-4 text-text-muted pointer-events-none" />
             <input
               value={search}
-              onChange={(event) => {
-                setSearch(event.target.value);
+              onChange={(e) => {
+                setSearch(e.target.value);
                 setPage(1);
               }}
-              placeholder={t("history.filters.searchPlaceholder")}
-              className="w-full bg-transparent text-sm text-text-primary outline-none placeholder:text-text-muted"
+              placeholder={locale === "ar" ? "بحث برقم المعاملة أو كود الجلسة أو المختص..." : t("history.filters.searchPlaceholder")}
+              className="w-full rounded-2xl border border-border-light bg-surface-tertiary/40 py-2 ps-9 pe-3 text-xs sm:text-sm text-text-primary placeholder:text-text-muted focus:border-primary focus:bg-white focus:outline-hidden dark:bg-surface-tertiary dark:border-border-dark"
             />
-          </label>
+          </div>
 
+          {/* Status Filter */}
           <select
             value={statusFilter}
-            onChange={(event) => {
-              setStatusFilter(event.target.value as PaymentStatus | "ALL");
+            onChange={(e) => {
+              setStatusFilter(e.target.value as PaymentStatus | "ALL");
               setPage(1);
             }}
-            className="rounded-2xl border border-border-light bg-white px-4 py-3 text-sm text-text-primary outline-none transition focus:border-primary/40 dark:bg-white/5"
+            aria-label={t("history.filters.allStatuses")}
+            className="rounded-2xl border border-border-light bg-surface-tertiary/40 px-3 py-2 text-xs sm:text-sm font-semibold text-text-primary focus:border-primary focus:bg-white focus:outline-hidden dark:bg-surface-tertiary dark:border-border-dark cursor-pointer"
           >
             <option value="ALL">{t("history.filters.allStatuses")}</option>
             {PAYMENT_STATUS_FILTERS.map((status) => (
@@ -450,227 +319,195 @@ export default function PatientPaymentsHistoryPanel() {
             ))}
           </select>
 
-          <input
-            type="date"
-            value={fromDate}
-            onChange={(event) => {
-              setFromDate(event.target.value);
-              setPage(1);
-            }}
-            className="rounded-2xl border border-border-light bg-white px-4 py-3 text-sm text-text-primary outline-none transition focus:border-primary/40 dark:bg-white/5"
-            aria-label={t("history.filters.fromDate")}
-          />
-
+          {/* Currency Filter */}
           <select
             value={currencyFilter}
-            onChange={(event) => {
-              setCurrencyFilter(event.target.value);
+            onChange={(e) => {
+              setCurrencyFilter(e.target.value);
               setPage(1);
             }}
-            className="rounded-2xl border border-border-light bg-white px-4 py-3 text-sm text-text-primary outline-none transition focus:border-primary/40 dark:bg-white/5"
+            aria-label={t("history.filters.allCurrencies")}
+            className="rounded-2xl border border-border-light bg-surface-tertiary/40 px-3 py-2 text-xs sm:text-sm font-semibold text-text-primary focus:border-primary focus:bg-white focus:outline-hidden dark:bg-surface-tertiary dark:border-border-dark cursor-pointer"
           >
             <option value="ALL">{t("history.filters.allCurrencies")}</option>
             {currencyOptions
-              .filter((currency) => currency !== "ALL")
-              .map((currency) => (
-                <option key={currency} value={currency}>
-                  {currency}
+              .filter((c) => c !== "ALL")
+              .map((c) => (
+                <option key={c} value={c}>
+                  {c}
                 </option>
               ))}
           </select>
         </div>
+      </div>
 
-        <div className="mt-3 flex flex-wrap items-center justify-between gap-3 text-xs text-text-muted">
-          <span>{t("history.filters.dateRangeLabel")}</span>
-          <label className="flex items-center gap-2 rounded-full border border-border-light bg-white px-3 py-1.5 dark:bg-white/5">
-            <span>{t("history.filters.toDate")}</span>
-            <input
-              type="date"
-              value={toDate}
-              onChange={(event) => {
-                setToDate(event.target.value);
-                setPage(1);
-              }}
-              className="bg-transparent text-xs text-text-primary outline-none"
-              aria-label={t("history.filters.toDate")}
-            />
-          </label>
-        </div>
-      </section>
+      {/* ── Payments List Cards ── */}
+      {visiblePayments.length > 0 ? (
+        <div className="space-y-3">
+          {visiblePayments.map((payment) => {
+            const session = payment.sessionId ? sessionMap.get(payment.sessionId) : null;
+            const practitionerLabel = session?.practitionerName ?? t("history.unknownPractitioner");
+            const { labelKey, isoString } = resolveRelevantDate(payment);
+            const actionHref = resolvePaymentActionHref(payment);
+            const canContinue = canContinuePayment(payment);
+            const canRetry = canRetryPayment(payment);
+            const methodKey = resolvePaymentMethodKey(payment);
+            const statusLabel = t(resolvePaymentStatusKey(payment.status) as Parameters<typeof t>[0]);
+            const amount = formatPatientMoney(numLocale, payment.amountTotal, payment.currency, {
+              fallbackText: "—",
+            });
 
-      <section className="overflow-hidden rounded-[32px] border border-border-light bg-white shadow-[0_18px_38px_-30px_rgba(34,52,56,0.22)] dark:border-border-light dark:bg-surface-secondary">
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border-light px-5 py-5 dark:border-white/10 sm:px-6">
-          <div>
-            <h2 className="text-xl font-semibold text-text-primary dark:text-white/95">
-              {t("history.table.heading")}
-            </h2>
-            <p className="mt-1 text-sm text-text-secondary">{t("history.table.note")}</p>
-          </div>
-          <Link
-            href="/patient/wallet"
-            className="inline-flex items-center justify-center rounded-2xl border border-border-light bg-white px-4 py-2.5 text-sm font-medium text-text-primary transition hover:border-primary/30 hover:text-primary dark:bg-white/5 dark:text-white/90"
-          >
-            {t("history.actions.wallet")}
-          </Link>
-        </div>
+            const isSuccess = payment.status === "CAPTURED";
+            const isPending = ["PENDING", "REQUIRES_ACTION", "AUTHORIZED"].includes(payment.status);
+            const isFailed = payment.status === "FAILED";
+            const isRefunded = ["REFUNDED", "PARTIALLY_REFUNDED", "REFUND_PENDING"].includes(payment.status);
 
-        {visiblePayments.length > 0 ? (
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-border-light text-right">
-              <thead className="bg-surface-tertiary dark:bg-white/5">
-                <tr>
-                  <th className="px-4 py-4 text-xs font-semibold uppercase tracking-[0.14em] text-text-muted">
-                    {t("history.table.columns.sessionPractitioner")}
-                  </th>
-                  <th className="px-4 py-4 text-xs font-semibold uppercase tracking-[0.14em] text-text-muted">
-                    {t("history.table.columns.date")}
-                  </th>
-                  <th className="px-4 py-4 text-xs font-semibold uppercase tracking-[0.14em] text-text-muted">
-                    {t("history.table.columns.method")}
-                  </th>
-                  <th className="px-4 py-4 text-xs font-semibold uppercase tracking-[0.14em] text-text-muted">
-                    {t("history.table.columns.amount")}
-                  </th>
-                  <th className="px-4 py-4 text-xs font-semibold uppercase tracking-[0.14em] text-text-muted">
-                    {t("history.table.columns.status")}
-                  </th>
-                  <th className="px-4 py-4 text-xs font-semibold uppercase tracking-[0.14em] text-text-muted">
-                    {t("history.table.columns.action")}
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border-light bg-white dark:divide-white/8 dark:bg-surface-secondary">
-                {visiblePayments.map((payment) => {
-                  const session = payment.sessionId ? sessionMap.get(payment.sessionId) : null;
-                  const practitionerLabel = session?.practitionerName
-                    ? session.practitionerName
-                    : t("history.unknownPractitioner");
-                  const actionHref = canContinuePayment(payment) || canRetryPayment(payment)
-                    ? `/patient/sessions/${payment.sessionId}/pay`
-                    : payment.sessionId
-                      ? `/patient/sessions/${payment.sessionId}`
-                      : null;
+            const statusClass = isSuccess
+              ? "bg-emerald-50 text-emerald-800 border-emerald-200 dark:bg-emerald-950/20 dark:text-emerald-300 dark:border-emerald-800/40"
+              : isPending
+                ? "bg-amber-50 text-amber-800 border-amber-200 dark:bg-amber-950/20 dark:text-amber-300 dark:border-amber-800/40"
+                : isFailed
+                  ? "bg-rose-50 text-rose-800 border-rose-200 dark:bg-rose-950/20 dark:text-rose-300 dark:border-rose-800/40"
+                  : isRefunded
+                    ? "bg-sky-50 text-sky-800 border-sky-200 dark:bg-sky-950/20 dark:text-sky-300 dark:border-sky-800/40"
+                    : "bg-surface-tertiary text-text-secondary border-border-light dark:bg-surface-tertiary dark:text-white/70";
 
-                  return (
-                    <tr
-                      key={payment.id}
-                      className="transition-colors hover:bg-surface-tertiary/40 dark:hover:bg-white/5"
-                    >
-                      <td className="px-4 py-4">
-                        <div className="min-w-0">
-                          <p className="truncate text-sm font-semibold text-text-primary dark:text-white/95">
-                            {payment.sessionId ? <SessionCodeReference sessionId={payment.sessionId} sessionCode={session?.sessionCode} href={`/patient/sessions/${payment.sessionId}`} copyable /> : t("history.unknownSession")}
-                          </p>
-                          <p className="mt-1 truncate text-xs text-text-secondary">
-                            {practitionerLabel}
-                          </p>
-                        </div>
-                      </td>
-                      <td className="px-4 py-4 text-sm text-text-secondary">
-                        {t(resolveRelevantDate(payment).labelKey as Parameters<typeof t>[0])}{" "}
-                        {formatDate(resolveRelevantDate(payment).isoString, numLocale)}
-                      </td>
-                      <td className="px-4 py-4 text-sm text-text-secondary">
-                        {t(resolvePaymentMethodKey(payment) as Parameters<typeof t>[0])}
-                      </td>
-                      <td className="px-4 py-4 text-sm font-semibold tabular-nums text-text-primary dark:text-white/95">
-                        {formatPatientMoney(numLocale, payment.amountTotal, payment.currency, {
-                          fallbackText: "?",
-                        })}
-                      </td>
-                      <td className="px-4 py-4">
+            return (
+              <div
+                key={payment.id}
+                className="rounded-2xl border border-border-light/80 bg-white p-4 sm:p-5 shadow-2xs transition-all hover:border-primary/30 hover:shadow-xs dark:bg-surface-secondary dark:border-border-dark"
+              >
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                  {/* Left info with doctor avatar/icon */}
+                  <div className="flex items-start gap-3 min-w-0">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary-light text-primary font-bold overflow-hidden border border-primary/20 dark:bg-primary/20">
+                      <User size={18} />
+                    </div>
+
+                    <div className="space-y-1 min-w-0">
+                      <div className="flex flex-wrap items-center gap-2">
                         <span
-                          className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-medium ${
-                            STATUS_STYLES[payment.status] ?? "bg-surface-tertiary text-text-muted"
-                          }`}
+                          dir="auto"
+                          className="text-sm font-bold text-text-primary dark:text-white truncate"
                         >
-                          {t(resolvePaymentStatusKey(payment.status) as Parameters<typeof t>[0])}
+                          {practitionerLabel}
                         </span>
-                      </td>
-                      <td className="px-4 py-4">
-                        {actionHref ? (
-                          <Link
-                            href={actionHref as never}
-                            aria-label={t("history.table.columns.action")}
-                            className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-border-light bg-white text-text-secondary transition hover:border-primary/30 hover:text-primary dark:bg-white/5 dark:text-white/80"
-                          >
-                            <ArrowLeft className="h-4 w-4" />
-                          </Link>
-                        ) : (
-                          <span className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-border-light bg-surface-tertiary text-text-muted dark:bg-white/10">
-                            <ArrowLeft className="h-4 w-4" />
+                        {session?.sessionCode ? (
+                          <SessionCodeReference
+                            sessionId={payment.sessionId!}
+                            sessionCode={session.sessionCode}
+                            href={`/patient/sessions/${payment.sessionId}`}
+                            copyable
+                          />
+                        ) : null}
+                      </div>
+
+                      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-text-secondary">
+                        <span className="inline-flex items-center gap-1 font-medium">
+                          <Calendar size={12} className="text-primary" />
+                          <span>
+                            {t(labelKey as Parameters<typeof t>[0])} {formatDate(isoString, numLocale)}
                           </span>
+                        </span>
+                        <span>•</span>
+                        <span className="inline-flex items-center gap-1 font-medium">
+                          <CreditCard size={12} className="text-primary" />
+                          <span>{t(methodKey as Parameters<typeof t>[0])}</span>
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Right: Amount, Status & Actions */}
+                  <div className="flex items-center justify-between sm:justify-end gap-3 pt-2 sm:pt-0 border-t sm:border-t-0 border-border-light/60">
+                    <div className="text-start sm:text-end">
+                      <p className="text-base sm:text-lg font-black font-mono text-text-primary dark:text-white">
+                        {amount}
+                      </p>
+                      <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-bold ${statusClass}`}>
+                        {statusLabel}
+                      </span>
+                    </div>
+
+                    {actionHref ? (
+                      <Link
+                        href={actionHref as never}
+                        className={`inline-flex items-center justify-center gap-1.5 rounded-xl px-4 py-2 text-xs font-bold transition cursor-pointer ${
+                          canRetry || canContinue
+                            ? "bg-primary text-white shadow-xs hover:bg-primary-hover active:scale-[0.98]"
+                            : "border border-border-light bg-white text-text-secondary hover:border-primary/40 hover:text-primary transition dark:bg-surface-secondary dark:border-border-dark"
+                        }`}
+                      >
+                        {canRetry ? (
+                          <>
+                            <RotateCcw size={12} />
+                            <span>{t("history.retryPayment")}</span>
+                          </>
+                        ) : canContinue ? (
+                          <span>{t("history.continuePayment")}</span>
+                        ) : (
+                          <>
+                            <span>{t("history.viewSession")}</span>
+                            {isRtl ? <ChevronLeft size={13} /> : <ChevronRight size={13} />}
+                          </>
                         )}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        ) : (
-          <div className="px-5 py-10 sm:px-6">
-            <StateCard
-              icon={<Wallet className="h-6 w-6 text-primary" />}
-              title={t("history.emptyHeading")}
-              note={t("history.emptyNote")}
-              action={{
-                label: t("history.emptyAction"),
-                href: (
-                  <Link
-                    href="/patient/sessions"
-                    className="inline-flex items-center justify-center rounded-2xl bg-primary px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-primary-hover"
-                  >
-                    {t("history.emptyAction")}
-                  </Link>
-                ),
-              }}
-              className="rounded-[28px]"
-            />
-          </div>
-        )}
+                      </Link>
+                    ) : null}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
 
-        {visiblePayments.length > 0 ? (
-          <div className="flex items-center justify-between gap-3 border-t border-border-light px-5 py-4 text-sm text-text-secondary dark:border-white/10 sm:px-6">
-            <button
-              type="button"
-              onClick={() => setPage((current) => Math.max(1, current - 1))}
-              disabled={safePage === 1}
-              className="inline-flex items-center gap-2 rounded-2xl border border-border-light bg-white px-3 py-2 text-xs font-medium text-text-primary transition disabled:cursor-not-allowed disabled:opacity-50 dark:bg-white/5 dark:text-white/90"
-            >
-              <ChevronLeft className="h-4 w-4 rotate-180 rtl:rotate-0" />
-              {t("history.pagination.previous")}
-            </button>
-
-            <div className="flex items-center gap-2">
-              {Array.from({ length: totalPages }, (_, index) => index + 1).map((pageNumber) => (
+          {/* Pagination */}
+          {totalPages > 1 ? (
+            <div className="flex items-center justify-between border-t border-border-light/60 px-2 pt-4">
+              <p className="text-xs text-text-secondary">
+                {locale === "ar"
+                  ? `صفحة ${safePage} من ${totalPages}`
+                  : `Page ${safePage} of ${totalPages}`}
+              </p>
+              <div className="flex items-center gap-2">
                 <button
-                  key={pageNumber}
                   type="button"
-                  onClick={() => setPage(pageNumber)}
-                  className={`inline-flex h-10 min-w-10 items-center justify-center rounded-2xl px-3 text-sm font-medium transition ${
-                    pageNumber === safePage
-                      ? "bg-primary text-white shadow-sm"
-                      : "bg-transparent text-text-secondary hover:bg-surface-tertiary dark:hover:bg-white/5"
-                  }`}
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  disabled={safePage <= 1}
+                  className="inline-flex h-8 items-center gap-1 rounded-xl border border-border-light bg-white px-3 text-xs font-semibold text-text-primary transition hover:border-primary/40 disabled:opacity-40 dark:bg-surface-secondary cursor-pointer"
                 >
-                  {pageNumber}
+                  {isRtl ? <ArrowRight size={12} /> : <ArrowLeft size={12} />}
+                  <span>{locale === "ar" ? "السابق" : "Prev"}</span>
                 </button>
-              ))}
+                <button
+                  type="button"
+                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                  disabled={safePage >= totalPages}
+                  className="inline-flex h-8 items-center gap-1 rounded-xl border border-border-light bg-white px-3 text-xs font-semibold text-text-primary transition hover:border-primary/40 disabled:opacity-40 dark:bg-surface-secondary cursor-pointer"
+                >
+                  <span>{locale === "ar" ? "التالي" : "Next"}</span>
+                  {isRtl ? <ArrowLeft size={12} /> : <ArrowRight size={12} />}
+                </button>
+              </div>
             </div>
-
-            <button
-              type="button"
-              onClick={() => setPage((current) => Math.min(totalPages, current + 1))}
-              disabled={safePage === totalPages}
-              className="inline-flex items-center gap-2 rounded-2xl border border-border-light bg-white px-3 py-2 text-xs font-medium text-text-primary transition disabled:cursor-not-allowed disabled:opacity-50 dark:bg-white/5 dark:text-white/90"
-            >
-              {t("history.pagination.next")}
-              <ChevronLeft className="h-4 w-4 rtl:rotate-180" />
-            </button>
+          ) : null}
+        </div>
+      ) : (
+        /* Empty State */
+        <div className="rounded-3xl border border-border-light/80 bg-white p-8 text-center shadow-xs dark:bg-surface-secondary dark:border-border-dark max-w-md mx-auto space-y-3">
+          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-primary-light text-primary dark:bg-primary/20">
+            <History size={22} />
           </div>
-        ) : null}
-      </section>
+          <div className="space-y-1">
+            <h3 className="text-sm font-bold text-text-primary dark:text-white">
+              {locale === "ar" ? "لا توجد معاملات دفع مطابقة" : "No matching payments"}
+            </h3>
+            <p className="text-xs text-text-secondary">
+              {locale === "ar"
+                ? "ستظهر هنا جميع مدفوعاتك وعمليات الاسترداد وتفاصيل جلساتك."
+                : "All your session payments and refund activities will appear here."}
+            </p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

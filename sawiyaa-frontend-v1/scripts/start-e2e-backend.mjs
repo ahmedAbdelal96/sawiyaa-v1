@@ -12,7 +12,12 @@ if (!(databaseUrl.includes("localhost") || databaseUrl.includes("127.0.0.1"))) {
   throw new Error("E2E_DATABASE_URL must point to a local database host");
 }
 
-const child = spawn(process.platform === "win32" ? "npm.cmd" : "npm", ["run", "start"], {
+// Windows Node 24 in the local runner rejects direct .cmd spawning with EINVAL;
+// invoke npm through cmd.exe while keeping the command and working directory bounded
+// to this test backend process.
+const command = process.platform === "win32" ? "cmd.exe" : "npm";
+const args = process.platform === "win32" ? ["/d", "/s", "/c", "npm run start"] : ["run", "start"];
+const child = spawn(command, args, {
   cwd: process.cwd(),
   stdio: "inherit",
   env: {

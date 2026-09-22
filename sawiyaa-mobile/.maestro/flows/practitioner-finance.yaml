@@ -1,0 +1,11 @@
+appId: com.sawiyaa.mobile
+---
+- runFlow: practitioner-login.yaml
+- tapOn:
+    text: "More|المزيد"
+- tapOn:
+    text: "Wallet|المحفظة"
+- assertVisible:
+    id: "practitioner-wallet-screen"
+- assertNotVisible:
+    text: "FATAL EXCEPTION"

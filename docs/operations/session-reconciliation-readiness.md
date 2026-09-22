@@ -2,8 +2,8 @@
 
 ## Worker contract
 
-The existing completion-confirmation sweeper runs every 60 seconds when
-`SESSION_COMPLETION_CONFIRMATION_SWEEPER_ENABLED=true`, with a default batch of
+The existing completion-confirmation sweeper runs every 60 seconds in every
+production backend instance, with a default batch of
 50 and a default maximum of 5,000 rows per run. It claims candidates with a
 row lock and `SKIP LOCKED`, and moves ended `UPCOMING`, `READY_TO_JOIN`, and
 `IN_PROGRESS` sessions only to `AWAITING_COMPLETION_CONFIRMATION`.
@@ -26,7 +26,7 @@ This phase does not install a production reconciliation scheduler. The
 bounded by the provider adapter timeout, and writes only sanitized evidence.
 Deployment must provide a multi-instance worker with bounded retries,
 backoff, metrics, provider failure classification, and an explicit readiness
-signal when disabled before Phase 3 enables automatic finalization.
+signal when the Admin-only completion authority is unavailable.
 
 Required checks before Phase 3:
 

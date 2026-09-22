@@ -17,6 +17,20 @@ describe('ConfirmPatientPasswordResetUseCase', () => {
   };
   const authIdentityRepository = { updatePasswordHash: jest.fn() };
   const invalidateUserTokensUseCase = { execute: jest.fn() };
+  const issueAuthTokensUseCase = {
+    execute: jest.fn().mockResolvedValue({
+      accessToken: 'access-token',
+      refreshToken: 'refresh-token',
+      refreshTokenExpiresAt: new Date(),
+    }),
+  };
+  const userRepository = {
+    findByIdWithAuthContext: jest.fn().mockResolvedValue({
+      id: 'u1',
+      status: 'ACTIVE',
+      roles: [{ role: UserRoleType.PATIENT }],
+    }),
+  };
 
   const useCase = new ConfirmPatientPasswordResetUseCase(
     prisma as any,
@@ -26,6 +40,8 @@ describe('ConfirmPatientPasswordResetUseCase', () => {
     hashPasswordUseCase as any,
     authIdentityRepository as any,
     invalidateUserTokensUseCase as any,
+    issueAuthTokensUseCase as any,
+    userRepository as any,
   );
 
   beforeEach(() => {

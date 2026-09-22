@@ -22,7 +22,9 @@ import {
   useSubmitAssessment,
 } from "../../../../src/features/patient/assessments/api";
 import { getAssessmentCompatibility } from "../../../../src/features/patient/assessments/compatibility";
+import type { AssessmentQuestion } from "../../../../src/features/patient/assessments/types";
 import { extractApiErrorMessage } from "../../../../src/lib/api";
+import { getDirectionalIcon } from "../../../../src/i18n/direction";
 
 export default function AssessmentQuestionsScreen() {
   const router = useRouter();
@@ -37,7 +39,7 @@ export default function AssessmentQuestionsScreen() {
   const [errorText, setErrorText] = useState<string | null>(null);
 
   const definition = definitionQuery.data?.data.item;
-  const questions = definition?.questions ?? [];
+  const questions: AssessmentQuestion[] = definition?.questions ?? [];
   const question = questions[currentIndex];
   const isRTL = I18nManager.isRTL;
   const progress = questions.length
@@ -276,7 +278,7 @@ export default function AssessmentQuestionsScreen() {
           disabled={submitMutation.isPending}
         >
           <Ionicons
-            name={isRTL ? "arrow-forward" : "arrow-back"}
+            name={getDirectionalIcon("back", isRTL)}
             size={18}
             color={theme.colors.primary}
           />

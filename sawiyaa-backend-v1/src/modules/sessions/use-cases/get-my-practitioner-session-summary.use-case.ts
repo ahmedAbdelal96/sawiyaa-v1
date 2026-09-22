@@ -1,13 +1,16 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { SessionPractitionerRepository } from '../repositories/session-practitioner.repository';
 import { SessionRepository } from '../repositories/session.repository';
-import { summarizeSessionPresentations } from '../utils/session-join-policy.util';
+import { SessionStatus } from '@prisma/client';
+import { SessionOperationalInterpreterService } from '../services/session-operational-interpreter.service';
+import { summarizeOperationalStates } from '../utils/session-operational-summary.util';
 
 @Injectable()
 export class GetMyPractitionerSessionSummaryUseCase {
   constructor(
     private readonly sessionPractitionerRepository: SessionPractitionerRepository,
     private readonly sessionRepository: SessionRepository,
+    private readonly operationalInterpreter: SessionOperationalInterpreterService,
   ) {}
 
   async execute(input: { userId: string }) {
@@ -27,19 +30,23 @@ export class GetMyPractitionerSessionSummaryUseCase {
         practitioner.id,
       );
 
-    const presentationSummary = summarizeSessionPresentations(sessions);
+    const now = new Date();
+    const operational = await Promise.all(sessions.map((session) =>
+      this.operationalInterpreter.interpret({ session, actor: 'ADMIN', now }),
+    ));
+    const { counts } = summarizeOperationalStates(operational.map((item) => item.state));
 
     return {
-      totalItems: presentationSummary.totalItems,
-      upcoming: presentationSummary.upcoming + presentationSummary.unavailable,
-      ready: presentationSummary.joinable,
-      live: presentationSummary.inProgress,
+      totalItems: sessions.length,
+      upcoming: counts[SessionStatus.UPCOMING] ?? 0,
+      ready: counts[SessionStatus.READY_TO_JOIN] ?? 0,
+      live: counts[SessionStatus.IN_PROGRESS] ?? 0,
       closed:
-        presentationSummary.completed +
-        presentationSummary.cancelled +
-        presentationSummary.awaitingConfirmation,
-      actionRequired: presentationSummary.joinable,
-      unavailable: presentationSummary.unavailable,
+        (counts[SessionStatus.COMPLETED] ?? 0) +
+        (counts[SessionStatus.CANCELLED] ?? 0) +
+        (counts[SessionStatus.AWAITING_COMPLETION_CONFIRMATION] ?? 0),
+      actionRequired: counts[SessionStatus.READY_TO_JOIN] ?? 0,
+      unavailable: 0,
     };
   }
 }

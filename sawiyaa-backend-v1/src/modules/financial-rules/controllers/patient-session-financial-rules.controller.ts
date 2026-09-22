@@ -1,4 +1,5 @@
-import { Body, Controller, Param, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Param, Post, Req, UseGuards } from '@nestjs/common';
+import { Request } from 'express';
 import {
   ApiBadRequestResponse,
   ApiBearerAuth,
@@ -27,6 +28,7 @@ import {
 import { ValidateCouponDto } from '../dto/validate-coupon.dto';
 import { CalculateSessionFinancialBreakdownUseCase } from '../use-cases/calculate-session-financial-breakdown.use-case';
 import { ValidateCouponUseCase } from '../use-cases/validate-coupon.use-case';
+import { resolveCountryFromRequest } from '@modules/auth/utils/request-country-context.util';
 
 @ApiTags('Financial Rules')
 @ApiBearerAuth()
@@ -90,11 +92,13 @@ export class PatientSessionFinancialRulesController {
     @CurrentUser() currentUser: AuthenticatedUser,
     @Param('id') sessionId: string,
     @Body() body: CalculateSessionFinancialBreakdownDto,
+    @Req() request: Request,
   ) {
     return this.calculateSessionFinancialBreakdownUseCase.execute({
       userId: currentUser.id,
       sessionId,
       couponCode: body.couponCode ?? null,
+      requestCountryIsoCode: resolveCountryFromRequest(request).countryCode,
     });
   }
 }

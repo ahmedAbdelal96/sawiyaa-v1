@@ -18,6 +18,7 @@ import type { UserNotificationItem } from "../types/user-notifications.types";
 import { usePatientProfile } from "@/features/patients/hooks/use-patients";
 import { usePractitionerProfile } from "@/features/practitioners/hooks/use-practitioners";
 import { useMySettings } from "@/features/settings/hooks/use-settings";
+import { useAuthState } from "@/stores/auth-store";
 
 const TONE_CLASSES: Record<string, string> = {
   message: "bg-teal-50/50 text-teal-700 border border-teal-100 dark:bg-teal-500/5 dark:text-teal-300 dark:border-teal-500/10",
@@ -47,8 +48,11 @@ export default function UserNotificationDropdown({
   const locale = useLocale();
   const isRtl = locale.startsWith("ar");
   const t = useTranslations("notifications");
+  const { user } = useAuthState();
   const patientProfileQuery = usePatientProfile(role === "patient");
-  const practitionerProfileQuery = usePractitionerProfile(role === "practitioner");
+  const practitionerProfileQuery = usePractitionerProfile(
+    role === "practitioner" && user?.practitionerStatus === "APPROVED",
+  );
   const settingsQuery = useMySettings(role === "admin");
   const viewerTimeZone =
     role === "patient"
@@ -170,6 +174,10 @@ export default function UserNotificationDropdown({
                    viewerTimeZone,
                  );
                  const toneClass = TONE_CLASSES[visual.tone] || TONE_CLASSES.system;
+                 const notificationBody =
+                   visual.tone === "payment" && visual.contextLine
+                     ? `${visual.contextLine} · ${item.body}`
+                     : visual.contextLine || item.body;
 
                  const content = (
                    <div className="flex items-start gap-3 w-full py-3 px-2 transition hover:bg-surface-tertiary/60 dark:hover:bg-white/5">
@@ -194,7 +202,7 @@ export default function UserNotificationDropdown({
                          </p>
                        )}
                        <p className="text-xs leading-relaxed text-text-secondary line-clamp-2">
-                         {visual.contextLine || item.body}
+                         {notificationBody}
                        </p>
                        <div className="flex items-center justify-between gap-3 pt-1">
                          <span className="text-[10px] font-semibold text-text-muted uppercase tracking-wider">

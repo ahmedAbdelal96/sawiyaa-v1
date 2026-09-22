@@ -11,6 +11,10 @@ import {
 } from '@prisma/client';
 import { PractitionerApplicationCompletionResponseDto } from '@modules/practitioners/dto/practitioner-application-completion-response.dto';
 import { AdminPractitionerApplicationKind } from '../types/practitioner-applications-admin.types';
+import {
+  AdminProfessionalContentReadinessResponseDto,
+  AdminProfessionalContentReviewResponseDto,
+} from './admin-professional-content-response.dto';
 
 export class AdminSpecialtySummaryResponseDto {
   @ApiProperty()
@@ -77,7 +81,7 @@ export class PractitionerApplicationListItemResponseDto {
   applicationId!: string;
 
   @ApiProperty()
-  practitionerProfileId!: string;
+  practitionerProfileId!: string | null;
 
   @ApiProperty()
   userId!: string;
@@ -170,7 +174,7 @@ export class AdminApplicantBasicsResponseDto {
   userId!: string;
 
   @ApiProperty()
-  practitionerProfileId!: string;
+  practitionerProfileId!: string | null;
 
   @ApiProperty({ nullable: true })
   displayName!: string | null;
@@ -383,6 +387,12 @@ export class PractitionerApplicationDetailsResponseDto {
 
   @ApiProperty({ type: AdminPractitionerApplicationCompletionResponseDto })
   completion!: AdminPractitionerApplicationCompletionResponseDto;
+
+  @ApiProperty({ type: AdminProfessionalContentReadinessResponseDto })
+  professionalContentReadiness!: AdminProfessionalContentReadinessResponseDto;
+
+  @ApiProperty({ type: AdminProfessionalContentReviewResponseDto })
+  professionalContentReview!: AdminProfessionalContentReviewResponseDto;
 }
 
 export class PractitionerApplicationDetailsSuccessResponseDto {

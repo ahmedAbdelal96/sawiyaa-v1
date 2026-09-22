@@ -19,6 +19,7 @@ export interface AuthUser {
   role: string;
   avatar?: string;
   timezone?: string | null;
+  practitionerStatus?: string | null;
 }
 
 export interface AuthTenant {
@@ -106,6 +107,7 @@ export async function setAuthCookies(session: AuthSession): Promise<void> {
     role: session.user.role,
     avatar: session.user.avatar,
     timezone: session.user.timezone ?? null,
+    practitionerStatus: session.user.practitionerStatus ?? null,
     context: {
       id: session.tenant.id,
       name: session.tenant.name,
@@ -240,6 +242,8 @@ function resolveRoleRefreshEndpoint(role: string | null): string | null {
     return ROLE_AUTH_ENDPOINTS.PATIENT.refresh;
   }
 
+  if (role === "TRAINEE") return ROLE_AUTH_ENDPOINTS.TRAINEE.refresh;
+
   if (role === "PRACTITIONER") {
     return ROLE_AUTH_ENDPOINTS.PRACTITIONER.refresh;
   }
@@ -267,6 +271,8 @@ export async function getLogoutEndpointForCurrentRole(): Promise<string | null> 
   if (role === "PATIENT") {
     return ROLE_AUTH_ENDPOINTS.PATIENT.logout;
   }
+
+  if (role === "TRAINEE") return ROLE_AUTH_ENDPOINTS.TRAINEE.logout;
 
   if (role === "PRACTITIONER") {
     return ROLE_AUTH_ENDPOINTS.PRACTITIONER.logout;

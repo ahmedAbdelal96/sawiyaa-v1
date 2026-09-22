@@ -62,13 +62,13 @@ type Props = {
 function toneClassName(tone: CredentialRow["statusTone"]) {
   switch (tone) {
     case "success":
-      return "border-emerald-300 bg-emerald-100/80 text-emerald-900 dark:border-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-200 font-bold";
+      return "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-800/60 dark:bg-emerald-950/40 dark:text-emerald-300";
     case "warning":
-      return "border-amber-300 bg-amber-100/80 text-amber-900 dark:border-amber-800 dark:bg-amber-950/60 dark:text-amber-200 font-bold";
+      return "border-amber-200 bg-amber-50 text-amber-800 dark:border-amber-800/60 dark:bg-amber-950/40 dark:text-amber-300";
     case "danger":
-      return "border-rose-300 bg-rose-100/80 text-rose-900 dark:border-rose-800 dark:bg-rose-950/60 dark:text-rose-200 font-bold";
+      return "border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-800/60 dark:bg-rose-950/40 dark:text-rose-300";
     default:
-      return "border-gray-300 bg-gray-100 text-gray-800 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 font-bold";
+      return "border-border-light bg-surface-secondary text-text-secondary";
   }
 }
 
@@ -84,10 +84,10 @@ function CompactStateGrid({
   stateLabel: string;
 }) {
   return (
-    <div className="rounded-xl border border-gray-200 bg-white p-3.5 shadow-2xs dark:border-gray-800 dark:bg-gray-900">
-      <div className="mb-2.5 flex items-center justify-between gap-2 border-b border-gray-200 pb-2 dark:border-gray-800">
-        <p className="text-sm font-extrabold text-gray-900 dark:text-white">{title}</p>
-        <span className="inline-flex items-center rounded-full border border-gray-300 bg-gray-100 px-2.5 py-0.5 text-xs font-bold text-gray-900 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100">
+    <div className="rounded-2xl border border-border-light bg-surface p-4 shadow-2xs dark:bg-surface-secondary/40">
+      <div className="mb-2.5 flex items-center justify-between gap-2 border-b border-border-light pb-2">
+        <p className="text-xs font-bold text-text-primary dark:text-white/95">{title}</p>
+        <span className="inline-flex items-center rounded-full border border-border-light bg-surface-secondary px-2.5 py-0.5 text-xs font-bold text-text-secondary">
           {stateLabel}
         </span>
       </div>
@@ -95,14 +95,14 @@ function CompactStateGrid({
         {rows.map((row) => (
           <div
             key={row.label}
-            className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 dark:border-gray-800 dark:bg-gray-800/40"
+            className="rounded-xl border border-border-light bg-surface-secondary/30 px-3 py-2 dark:bg-surface-secondary/20"
           >
-            <p className="text-xs font-bold text-gray-700 dark:text-gray-300">{row.label}</p>
-            <p className="text-sm font-extrabold text-gray-900 dark:text-white truncate">{row.state}</p>
+            <p className="text-[11px] font-semibold text-text-muted">{row.label}</p>
+            <p className="mt-0.5 text-xs font-bold text-text-primary truncate dark:text-white/95">{row.state}</p>
           </div>
         ))}
       </div>
-      {hint ? <p className="mt-2.5 text-xs font-bold text-gray-800 dark:text-gray-200 leading-normal">{hint}</p> : null}
+      {hint ? <p className="mt-2 text-xs font-medium text-text-secondary leading-relaxed">{hint}</p> : null}
     </div>
   );
 }
@@ -160,54 +160,56 @@ export default function AdminApplicationStepDocumentsPayout({
       </div>
 
       {/* Guidance Banner */}
-      <div className="rounded-xl border border-sky-200 bg-sky-50 px-4 py-2.5 text-xs font-bold text-sky-950 dark:border-sky-800 dark:bg-sky-950/50 dark:text-sky-200">
-        {guidance}
-      </div>
+      {guidance && (
+        <div className="rounded-xl border border-sky-200 bg-sky-50/70 px-3.5 py-2.5 text-xs font-semibold text-sky-900 dark:border-sky-800/60 dark:bg-sky-950/30 dark:text-sky-200">
+          {guidance}
+        </div>
+      )}
 
       {/* Main Documents Table Section */}
-      <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-2xs dark:border-gray-800 dark:bg-gray-900">
-        <div className="flex items-center justify-between border-b border-gray-200 bg-gray-50/80 px-4 py-3.5 dark:border-gray-800 dark:bg-gray-800/50">
-          <div className="flex items-center gap-2.5">
-            <FileText className="h-5 w-5 text-primary" />
-            <span className="text-base font-bold text-gray-900 dark:text-white">{credentialsTitle}</span>
-            <span className="rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-bold text-primary dark:bg-primary/20 dark:text-primary-light">
+      <div className="overflow-hidden rounded-2xl border border-border-light bg-surface shadow-2xs dark:bg-surface-secondary/40">
+        <div className="flex items-center justify-between border-b border-border-light bg-surface px-4 py-3 dark:bg-surface-secondary/40">
+          <div className="flex items-center gap-2">
+            <FileText className="h-4 w-4 text-primary" />
+            <span className="text-xs font-bold text-text-primary dark:text-white/95">{credentialsTitle}</span>
+            <span className="rounded-full bg-primary/10 px-2 py-0.2 text-[10px] font-bold text-primary dark:bg-primary/20 dark:text-primary-light">
               {credentials.length}
             </span>
           </div>
         </div>
 
         {credentials.length === 0 ? (
-          <div className="px-4 py-8 text-center text-sm font-semibold text-gray-600 dark:text-gray-400">{credentialsEmpty}</div>
+          <div className="px-4 py-8 text-center text-xs font-semibold text-text-muted">{credentialsEmpty}</div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-start border-collapse">
               <thead>
-                <tr className="border-b border-gray-200 bg-gray-100 text-sm font-bold text-gray-900 dark:border-gray-800 dark:bg-gray-800 dark:text-gray-100">
-                  <th className="px-4 py-3.5 text-start font-bold">{credentialsTitle || "المستند"}</th>
-                  <th className="px-4 py-3.5 text-start font-bold">{credentialDatesColumnLabel || "التواريخ"}</th>
-                  <th className="px-4 py-3.5 text-start font-bold">{credentialNotesColumnLabel || "الملاحظات والرد"}</th>
-                  <th className="px-4 py-3.5 text-end font-bold">{credentialActionsColumnLabel || "الإجراءات"}</th>
+                <tr className="border-b border-border-light bg-surface-secondary/30 text-xs font-bold text-text-secondary dark:bg-surface-secondary/20">
+                  <th className="px-4 py-2.5 text-start font-bold">{credentialsTitle || "المستند"}</th>
+                  <th className="px-4 py-2.5 text-start font-bold">{credentialDatesColumnLabel || "التواريخ"}</th>
+                  <th className="px-4 py-2.5 text-start font-bold">{credentialNotesColumnLabel || "الملاحظات والرد"}</th>
+                  <th className="px-4 py-2.5 text-end font-bold">{credentialActionsColumnLabel || "الإجراءات"}</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-200 dark:divide-gray-800">
+              <tbody className="divide-y divide-border-light/60">
                 {credentials.map((cred) => {
                   const isExpanded = expandedCredentialId === cred.id;
                   return (
-                    <tr key={cred.id} className="group hover:bg-gray-50/80 transition-colors dark:hover:bg-gray-800/40">
+                    <tr key={cred.id} className="group hover:bg-surface-secondary/30 transition-colors">
                       <td colSpan={4} className="p-0">
-                        <div className="flex items-center justify-between px-4 py-3.5 gap-4">
+                        <div className="flex flex-wrap items-center justify-between px-4 py-3 gap-3">
                           {/* Document Name & Status Pill */}
-                          <div className="flex items-center gap-3 min-w-[220px]">
-                            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary dark:bg-primary/20 dark:text-primary-light">
+                          <div className="flex items-center gap-3 min-w-[200px]">
+                            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
                               <FileText className="h-4 w-4" />
                             </div>
                             <div>
-                              <p className="font-bold text-base text-gray-900 dark:text-white leading-tight">
+                              <p className="font-bold text-xs text-text-primary dark:text-white/95">
                                 {cred.typeLabel}
                               </p>
                               <span
                                 className={cn(
-                                  "inline-flex items-center rounded-md border px-2.5 py-0.5 text-xs font-bold mt-1",
+                                  "inline-flex items-center rounded-full border px-2 py-0.2 text-[10px] font-bold mt-0.5",
                                   toneClassName(cred.statusTone)
                                 )}
                               >
@@ -217,24 +219,24 @@ export default function AdminApplicationStepDocumentsPayout({
                           </div>
 
                           {/* Upload / Expiry Dates */}
-                          <div className="text-sm text-gray-800 dark:text-gray-200 min-w-[160px]">
-                            <p className="font-bold text-gray-900 dark:text-white">{cred.uploadedAtLabel}</p>
-                            <p className="text-xs font-semibold text-gray-600 dark:text-gray-400 mt-0.5">{cred.expiresAtLabel}</p>
+                          <div className="text-xs text-text-secondary min-w-[140px]">
+                            <p className="font-semibold text-text-primary dark:text-white/90">{cred.uploadedAtLabel}</p>
+                            <p className="text-[11px] text-text-muted mt-0.5">{cred.expiresAtLabel}</p>
                           </div>
 
                           {/* Review Note / Status Hint */}
-                          <div className="text-sm text-gray-800 dark:text-gray-200 flex-1 max-w-[320px]">
-                            <p className="truncate text-sm font-semibold text-gray-800 dark:text-gray-200">
+                          <div className="text-xs text-text-secondary flex-1 max-w-[300px]">
+                            <p className="truncate text-xs font-medium text-text-secondary">
                               {cred.notesValue !== "لا توجد ملاحظات" && cred.notesValue ? (
-                                <span className="font-bold text-gray-900 dark:text-white">{cred.notesValue}</span>
+                                <span className="font-bold text-text-primary dark:text-white/90">{cred.notesValue}</span>
                               ) : (
-                                <span className="text-gray-600 dark:text-gray-400">{cred.reviewActionHint || "-"}</span>
+                                <span className="text-text-muted">{cred.reviewActionHint || "-"}</span>
                               )}
                             </p>
                           </div>
 
                           {/* Actions */}
-                          <div className="flex items-center gap-2.5 justify-end shrink-0">
+                          <div className="flex items-center gap-2 justify-end shrink-0">
                             {cred.viewUrl && (
                               <Button
                                 type="button"
@@ -242,8 +244,8 @@ export default function AdminApplicationStepDocumentsPayout({
                                 size="sm"
                                 onClick={cred.onOpenFile}
                                 disabled={cred.isOpeningFile}
-                                startIcon={<Eye className="h-4 w-4" />}
-                                className="font-bold text-sm px-3.5 py-2"
+                                startIcon={<Eye className="h-3.5 w-3.5" />}
+                                className="text-xs px-3 py-1.5"
                               >
                                 {cred.isOpeningFile ? "..." : openFileLabel}
                               </Button>
@@ -254,8 +256,8 @@ export default function AdminApplicationStepDocumentsPayout({
                                 variant={isExpanded ? "secondary" : "primary"}
                                 size="sm"
                                 onClick={() => setExpandedCredentialId(isExpanded ? null : cred.id)}
-                                endIcon={isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-                                className="font-bold text-sm px-3.5 py-2"
+                                endIcon={isExpanded ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
+                                className="text-xs px-3 py-1.5 font-bold"
                               >
                                 {isExpanded ? closeReviewLabel : reviewCredentialLabel}
                               </Button>
@@ -265,23 +267,23 @@ export default function AdminApplicationStepDocumentsPayout({
 
                         {/* Inline Review Drawer Panel when Expanded */}
                         {cred.canReview && isExpanded && (
-                          <div className="bg-gray-50 border-t border-gray-200 p-4 space-y-3 animate-in fade-in duration-150 dark:border-gray-800 dark:bg-gray-900">
+                          <div className="bg-surface-secondary/20 border-t border-border-light p-3.5 space-y-2.5 animate-in fade-in duration-150">
                             <textarea
                               rows={2}
                               value={cred.reviewNoteDraft}
                               onChange={(event) => cred.onReviewNoteChange(event.target.value)}
                               placeholder={cred.reviewNotePlaceholder}
-                              className="w-full rounded-xl border border-gray-300 bg-white px-3.5 py-2 text-sm font-medium text-gray-900 placeholder:text-gray-400 focus:border-primary focus:outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-white"
+                              className="w-full rounded-xl border border-border-light bg-surface px-3 py-2 text-xs font-medium text-text-primary placeholder:text-text-muted focus:border-primary focus:outline-none"
                             />
-                            <div className="flex items-center justify-end gap-2.5">
+                            <div className="flex items-center justify-end gap-2">
                               <Button
                                 type="button"
                                 variant="primary"
                                 size="sm"
                                 onClick={cred.onApprove}
                                 disabled={cred.isUpdating}
-                                startIcon={<CheckCircle2 className="h-4 w-4" />}
-                                className="font-bold text-sm"
+                                startIcon={<CheckCircle2 className="h-3.5 w-3.5" />}
+                                className="text-xs font-bold"
                               >
                                 {approveCredentialLabel}
                               </Button>
@@ -291,8 +293,8 @@ export default function AdminApplicationStepDocumentsPayout({
                                 size="sm"
                                 onClick={cred.onReject}
                                 disabled={cred.isUpdating}
-                                startIcon={<AlertCircle className="h-4 w-4 text-amber-500" />}
-                                className="font-bold text-sm border-amber-300 text-amber-800 hover:bg-amber-50 dark:border-amber-800 dark:text-amber-300 dark:hover:bg-amber-950/50"
+                                startIcon={<AlertCircle className="h-3.5 w-3.5 text-amber-500" />}
+                                className="text-xs font-bold border-amber-200 text-amber-800 hover:bg-amber-50 dark:border-amber-800 dark:text-amber-300"
                               >
                                 {rejectCredentialLabel}
                               </Button>
@@ -310,18 +312,18 @@ export default function AdminApplicationStepDocumentsPayout({
       </div>
 
       {/* Payout Details Compact Card */}
-      <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-2xs dark:border-gray-800 dark:bg-gray-900">
-        <div className="mb-3 flex items-center justify-between gap-2 border-b border-gray-100 pb-2.5 dark:border-gray-800">
+      <div className="rounded-2xl border border-border-light bg-surface p-4 shadow-2xs dark:bg-surface-secondary/40">
+        <div className="mb-3 flex items-center justify-between gap-2 border-b border-border-light pb-2.5">
           <div className="flex items-center gap-2">
-            <CreditCard className="h-5 w-5 text-primary" />
-            <p className="text-base font-bold text-gray-900 dark:text-white">{payoutTitle}</p>
+            <CreditCard className="h-4 w-4 text-primary" />
+            <p className="text-xs font-bold text-text-primary dark:text-white/95">{payoutTitle}</p>
           </div>
           <span
             className={cn(
-              "inline-flex items-center rounded-full border px-3 py-1 text-xs font-bold",
+              "inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-bold",
               payoutMissing
-                ? "border-amber-300 bg-amber-100 text-amber-900 dark:border-amber-800 dark:bg-amber-950/60 dark:text-amber-200"
-                : "border-emerald-300 bg-emerald-100 text-emerald-900 dark:border-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-200"
+                ? "border-amber-200 bg-amber-50 text-amber-800 dark:border-amber-800/60 dark:bg-amber-950/40 dark:text-amber-300"
+                : "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-800/60 dark:bg-emerald-950/40 dark:text-emerald-300"
             )}
           >
             {payoutMissing ? payoutMissingLabel : payoutProvidedLabel}
@@ -329,16 +331,16 @@ export default function AdminApplicationStepDocumentsPayout({
         </div>
 
         {payoutRows.every((item) => item.value === "-") ? (
-          <p className="text-sm font-semibold text-gray-600 dark:text-gray-400">{payoutEmptyLabel}</p>
+          <p className="text-xs font-semibold text-text-muted">{payoutEmptyLabel}</p>
         ) : (
-          <div className="grid gap-3 grid-cols-2 md:grid-cols-4">
+          <div className="grid gap-2.5 grid-cols-2 md:grid-cols-4">
             {payoutRows.map((row) => (
               <div
                 key={row.label}
-                className="rounded-lg border border-gray-200 bg-gray-50/80 px-3.5 py-2.5 dark:border-gray-800 dark:bg-gray-800/40"
+                className="rounded-xl border border-border-light bg-surface-secondary/30 px-3 py-2 dark:bg-surface-secondary/20"
               >
-                <p className="text-xs font-semibold text-gray-700 dark:text-gray-300">{row.label}</p>
-                <p className="mt-1 text-base font-bold text-gray-900 dark:text-white truncate">
+                <p className="text-[11px] font-semibold text-text-muted">{row.label}</p>
+                <p className="mt-0.5 text-xs font-bold text-text-primary dark:text-white/95 truncate">
                   {row.value || "-"}
                 </p>
               </div>

@@ -211,7 +211,12 @@ httpClient.interceptors.request.use(
       delete config.headers.Authorization;
     }
 
-    const language = Cookies.get("preferred_language") || "ar";
+    const routeLocale =
+      typeof window !== "undefined" ? window.location.pathname.split("/")[1] : "";
+    const language =
+      routeLocale === "ar" || routeLocale === "en"
+        ? routeLocale
+        : Cookies.get("preferred_language") || "ar";
     config.headers["Accept-Language"] = language;
 
     // Explicit web platform signal — used by backend WebResponseHardeningInterceptor
@@ -352,6 +357,9 @@ export const tokenManager = {
       secure: AUTH_COOKIE_OPTIONS.secure,
       sameSite: AUTH_COOKIE_OPTIONS.sameSite,
     });
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new Event("sawiyaa:auth-session-changed"));
+    }
 
     // NOTE: The refresh token is set as an HttpOnly cookie by the backend
     // on login/register/refresh. js-cookie cannot set real HttpOnly cookies —
@@ -429,6 +437,9 @@ export const tokenManager = {
     clearBrowserCookie(TOKEN_CONFIG.CONTEXT_ID_KEY);
     clearBrowserCookie(USER_DATA_COOKIE);
     clearBrowserCookie(USER_ROLE_COOKIE);
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new Event("sawiyaa:auth-session-changed"));
+    }
   },
 
   logout(): void {

@@ -16,6 +16,8 @@ import { RolesGuard } from '@common/guards/authorization/roles.guard';
 import { PermissionsGuard } from '@common/guards/authorization/permissions.guard';
 import { Roles } from '@common/decorators/roles.decorator';
 import { Permissions } from '@common/decorators/permissions.decorator';
+import { CurrentUser } from '@common/decorators/current-user.decorator';
+import { AuthenticatedUser } from '@common/interfaces/authenticated-user.interface';
 import { AppRole } from '@common/enums/app-role.enum';
 import { PermissionKey } from '@common/enums/permission-key.enum';
 import { UpdateRevenueShareRulesDto } from '../dto/revenue-share-rules.dto';
@@ -38,9 +40,9 @@ export class AdminRevenueShareRulesController {
   @Get()
   @Permissions(PermissionKey.ACCOUNTING_READ)
   @ApiOperation({
-    summary: 'Get revenue share rules (local vs cross-border)',
+    summary: 'Get the canonical platform commission setting',
     description:
-      'Returns the default platform/practitioner share percentages used by session payment allocation. Historical payments keep their stored snapshots.',
+      'Returns one platform commission percentage and its derived practitioner share. Historical payments keep their stored snapshots. If legacy market defaults differ, the setting fails closed until an administrator explicitly unifies them.',
   })
   @ApiResponse({ status: 200, type: RevenueShareRulesItemSuccessResponseDto })
   @ApiUnauthorizedResponse({ description: 'Access token is required' })
@@ -52,9 +54,9 @@ export class AdminRevenueShareRulesController {
   @Put()
   @Permissions(PermissionKey.ACCOUNTING_WRITE)
   @ApiOperation({
-    summary: 'Update revenue share rules (local vs cross-border)',
+    summary: 'Update the canonical platform commission setting',
     description:
-      'Updates the default commission splits for future allocations. Existing payments and ledger entries remain unchanged.',
+      'Updates both default market rules to the one explicitly selected split for future allocations. Existing payments and ledger entries remain unchanged.',
   })
   @ApiBody({ type: UpdateRevenueShareRulesDto })
   @ApiResponse({ status: 200, type: RevenueShareRulesItemSuccessResponseDto })
@@ -63,7 +65,10 @@ export class AdminRevenueShareRulesController {
   })
   @ApiUnauthorizedResponse({ description: 'Access token is required' })
   @ApiForbiddenResponse({ description: 'Admin active account is required' })
-  update(@Body() body: UpdateRevenueShareRulesDto) {
-    return this.updateRevenueShareRulesUseCase.execute(body);
+  update(
+    @Body() body: UpdateRevenueShareRulesDto,
+    @CurrentUser() actor: AuthenticatedUser,
+  ) {
+    return this.updateRevenueShareRulesUseCase.execute(body, actor);
   }
 }

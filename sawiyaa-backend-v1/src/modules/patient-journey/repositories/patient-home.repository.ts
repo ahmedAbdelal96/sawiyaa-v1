@@ -6,18 +6,23 @@ import {
   SessionReviewRatingAggregationService,
   type SessionReviewRatingSummary,
 } from '@modules/reviews/services/session-review-rating-aggregation.service';
+import { localizeSpecialtyTitle } from '@modules/specialties/utils/localize-specialty-title.util';
+import { PractitionerProfessionalContentResolver } from '@modules/practitioners/services/practitioner-professional-content-resolver.service';
+import { publicPractitionerPricingWhere } from '@modules/practitioners/utils/public-practitioner-pricing-readiness.util';
 
 @Injectable()
 export class PatientHomeRepository {
   constructor(
     private readonly prisma: PrismaService,
     private readonly sessionReviewRatingAggregationService: SessionReviewRatingAggregationService,
+    private readonly professionalContentResolver: PractitionerProfessionalContentResolver,
   ) {}
 
   async findPublicPractitionerBySlug(slug: string, locale: SupportedLocale) {
     const normalizedSlug = slug.trim().toLowerCase();
     const row = await this.prisma.practitionerProfile.findFirst({
       where: {
+        ...publicPractitionerPricingWhere(),
         publicSlug: normalizedSlug,
         status: PractitionerStatus.APPROVED,
         isPublicProfilePublished: true,
@@ -50,6 +55,11 @@ export class PatientHomeRepository {
           },
         },
         professionalTitle: true,
+        primaryContentLocale: true,
+        professionalContentTranslations: {
+          orderBy: { locale: 'asc' as const },
+          select: { locale: true, professionalTitle: true, bio: true },
+        },
         avatarUrl: true,
         sessionPrice30Egp: true,
         sessionPrice30Usd: true,
@@ -66,6 +76,8 @@ export class PatientHomeRepository {
           select: {
             specialty: {
               select: {
+                nameAr: true,
+                nameEn: true,
                 translations: {
                   where: {
                     locale: {
@@ -74,6 +86,7 @@ export class PatientHomeRepository {
                   },
                   orderBy: { locale: 'asc' },
                   select: {
+                    locale: true,
                     title: true,
                   },
                 },
@@ -159,6 +172,7 @@ export class PatientHomeRepository {
       where: {
         patientId,
         practitioner: {
+          ...publicPractitionerPricingWhere(),
           status: PractitionerStatus.APPROVED,
           isPublicProfilePublished: true,
           user: {
@@ -193,6 +207,11 @@ export class PatientHomeRepository {
             id: true,
             publicSlug: true,
             professionalTitle: true,
+            primaryContentLocale: true,
+            professionalContentTranslations: {
+              orderBy: { locale: 'asc' as const },
+              select: { locale: true, professionalTitle: true, bio: true },
+            },
             avatarUrl: true,
             user: {
               select: {
@@ -214,6 +233,8 @@ export class PatientHomeRepository {
               select: {
                 specialty: {
                   select: {
+                    nameAr: true,
+                    nameEn: true,
                     translations: {
                       where: {
                         locale: {
@@ -222,6 +243,7 @@ export class PatientHomeRepository {
                       },
                       orderBy: { locale: 'asc' },
                       select: {
+                        locale: true,
                         title: true,
                       },
                     },
@@ -243,6 +265,7 @@ export class PatientHomeRepository {
       ...this.mapPublicPractitionerCard(
         row.practitioner,
         ratingSummaries.get(row.practitioner.id) ?? null,
+        locale,
         currencyCode,
       ),
       lastViewedAt: row.lastViewedAt,
@@ -466,6 +489,11 @@ export class PatientHomeRepository {
         id: true,
         publicSlug: true,
         professionalTitle: true,
+        primaryContentLocale: true,
+        professionalContentTranslations: {
+          orderBy: { locale: 'asc' as const },
+          select: { locale: true, professionalTitle: true, bio: true },
+        },
         avatarUrl: true,
         user: {
           select: {
@@ -487,6 +515,8 @@ export class PatientHomeRepository {
           select: {
             specialty: {
               select: {
+                nameAr: true,
+                nameEn: true,
                 translations: {
                   where: {
                     locale: {
@@ -495,6 +525,7 @@ export class PatientHomeRepository {
                   },
                   orderBy: { locale: 'asc' },
                   select: {
+                    locale: true,
                     title: true,
                   },
                 },
@@ -518,6 +549,7 @@ export class PatientHomeRepository {
         this.mapPublicPractitionerCard(
           row,
           summaries.get(row.id) ?? null,
+          locale,
           currencyCode,
         ),
       );
@@ -528,6 +560,12 @@ export class PatientHomeRepository {
       id: string;
       publicSlug: string;
       professionalTitle: string | null;
+      primaryContentLocale: 'ar' | 'en' | null;
+      professionalContentTranslations: Array<{
+        locale: 'ar' | 'en';
+        professionalTitle: string | null;
+        bio: string | null;
+      }>;
       avatarUrl: string | null;
       user: { displayName: string | null };
       sessionPrice30Egp: unknown;
@@ -536,27 +574,43 @@ export class PatientHomeRepository {
       sessionPrice60Usd: unknown;
       specialties: Array<{
         specialty: {
+          nameAr: string | null;
+          nameEn: string | null;
           translations: Array<{
+            locale: string;
             title: string;
           }>;
         };
       }>;
     },
     ratingSummary: SessionReviewRatingSummary | null,
+    locale: SupportedLocale,
     currencyCode: 'EGP' | 'USD' = 'USD',
   ) {
     const sessionPrice30 =
       currencyCode === 'EGP' ? row.sessionPrice30Egp : row.sessionPrice30Usd;
     const sessionPrice60 =
       currencyCode === 'EGP' ? row.sessionPrice60Egp : row.sessionPrice60Usd;
+    const professionalContent = this.professionalContentResolver.resolve({
+      requestedLocale: locale,
+      primaryContentLocale: row.primaryContentLocale,
+      translations: row.professionalContentTranslations ?? [],
+      legacyProfessionalTitle: row.professionalTitle,
+    });
     return {
       practitionerId: row.id,
       slug: row.publicSlug,
       displayName: row.user.displayName ?? null,
-      professionalTitle: row.professionalTitle ?? null,
+      professionalTitle: professionalContent.professionalTitle,
       avatarUrl: row.avatarUrl ?? null,
-      primarySpecialty:
-        row.specialties[0]?.specialty.translations[0]?.title ?? null,
+      primarySpecialty: row.specialties[0]
+        ? localizeSpecialtyTitle({
+            locale,
+            translations: row.specialties[0].specialty.translations,
+            nameAr: row.specialties[0].specialty.nameAr,
+            nameEn: row.specialties[0].specialty.nameEn,
+          })
+        : null,
       averageRating:
         ratingSummary?.averageRating === null ||
         ratingSummary?.averageRating === undefined
@@ -587,6 +641,7 @@ export class PatientHomeRepository {
 
   private publicPractitionerWhere() {
     return {
+      ...publicPractitionerPricingWhere(),
       status: PractitionerStatus.APPROVED,
       isPublicProfilePublished: true,
       user: {

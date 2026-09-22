@@ -4,6 +4,13 @@ export type MessageSendDescriptor = {
   clientMessageId: string;
   conversationId: string;
   message: string;
+  attachments: Array<{
+    fileId: string;
+    fileUrl: string;
+    mimeType: string;
+    fileSize?: number;
+    originalName?: string;
+  }>;
 };
 
 function createClientMessageId() {
@@ -20,11 +27,13 @@ function createClientMessageId() {
 export function createMessageSendDescriptor(
   conversationId: string,
   message: string,
+  attachments: MessageSendDescriptor["attachments"] = [],
 ): MessageSendDescriptor {
   return {
     clientMessageId: createClientMessageId(),
     conversationId,
     message,
+    attachments,
   };
 }
 
@@ -32,7 +41,7 @@ export function buildMessageSendPayload(descriptor: MessageSendDescriptor) {
   return {
     message: descriptor.message,
     clientMessageId: descriptor.clientMessageId,
-    attachments: [],
+    attachments: descriptor.attachments,
   };
 }
 

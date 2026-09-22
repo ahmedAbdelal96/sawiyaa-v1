@@ -1,5 +1,5 @@
 import { Global, Module } from '@nestjs/common';
-import { PrismaService } from '@common/prisma/prisma.service';
+import { PrismaModule } from '@common/prisma/prisma.module';
 import { SecurityAuditRepository } from './security-audit.repository';
 import { SecurityAuditService } from './security-audit.service';
 
@@ -10,7 +10,8 @@ import { SecurityAuditService } from './security-audit.service';
  */
 @Global()
 @Module({
-  providers: [PrismaService, SecurityAuditRepository, SecurityAuditService],
+  imports: [PrismaModule],
+  providers: [SecurityAuditRepository, SecurityAuditService],
   exports: [SecurityAuditService],
 })
 export class SecurityAuditModule {}

@@ -5,6 +5,7 @@ import { PublicPractitionerVisibilityPolicy } from '../policies/public-practitio
 import type { PublicPractitionerReadRepository } from '../repositories/public-practitioner-read.repository';
 import type { PublicPractitionerPricingContextService } from '../services/public-practitioner-pricing-context.service';
 import { ListPublicPractitionersUseCase } from './list-public-practitioners.use-case';
+import { PractitionerProfessionalContentResolver } from '../services/practitioner-professional-content-resolver.service';
 
 describe('ListPublicPractitionersUseCase', () => {
   const publicReadRepository = {
@@ -25,6 +26,7 @@ describe('ListPublicPractitionersUseCase', () => {
     publicReadRepository,
     pricingContextService,
     sessionReviewRatingAggregationService,
+    new PractitionerProfessionalContentResolver(),
   );
 
   beforeEach(() => {
@@ -65,6 +67,10 @@ describe('ListPublicPractitionersUseCase', () => {
     sessionPrice30Usd: new Prisma.Decimal('8.00'),
     sessionPrice60Egp: new Prisma.Decimal('450.00'),
     sessionPrice60Usd: new Prisma.Decimal('15.00'),
+    instantBookingPrice30Egp: new Prisma.Decimal('520.00'),
+    instantBookingPrice30Usd: new Prisma.Decimal('31.00'),
+    instantBookingPrice60Egp: new Prisma.Decimal('940.00'),
+    instantBookingPrice60Usd: new Prisma.Decimal('56.00'),
     avatarUrl: null,
     acceptsPackages: true,
     yearsOfExperience: 7,
@@ -92,6 +98,7 @@ describe('ListPublicPractitionersUseCase', () => {
         ],
       ]),
     );
+    (publicReadRepository.listPublic as jest.Mock).mockResolvedValue([baseRow]);
   });
 
   it('returns USD selected amounts that match the selected currency, not legacy prices', async () => {
@@ -112,6 +119,10 @@ describe('ListPublicPractitionersUseCase', () => {
     expect(result.items[0].sessionPrice60).toBe(15);
     expect(result.items[0].sessionPrice30Egp).toBe(250);
     expect(result.items[0].sessionPrice30Usd).toBe(8);
+    expect(result.items[0].instantBookingPrice30Egp).toBe(520);
+    expect(result.items[0].instantBookingPrice30Usd).toBe(31);
+    expect(result.items[0].instantBookingPrice60Egp).toBe(940);
+    expect(result.items[0].instantBookingPrice60Usd).toBe(56);
     expect(result.items[0].ratingSummary).toEqual({
       averageRating: null,
       ratingsCount: 0,
@@ -119,6 +130,47 @@ describe('ListPublicPractitionersUseCase', () => {
       writtenReviewsCount: 0,
       totalReviews: 0,
     });
+  });
+
+  it('resolves AR and EN independently while preserving partial and legacy fallback', async () => {
+    const localizedRow = {
+      ...baseRow,
+      primaryContentLocale: 'en',
+      professionalContentTranslations: [
+        { locale: 'ar', professionalTitle: 'أخصائي نفسي', bio: null },
+        { locale: 'en', professionalTitle: 'Clinical Psychologist', bio: 'English bio' },
+      ],
+    };
+    (publicReadRepository.listPublic as jest.Mock).mockResolvedValue([localizedRow]);
+
+    const arabic = await useCase.execute({ locale: 'ar' });
+    const english = await useCase.execute({ locale: 'en' });
+
+    expect(arabic.items[0]).toEqual(
+      expect.objectContaining({
+        id: baseRow.id,
+        professionalTitle: 'أخصائي نفسي',
+        bioSnippet: 'English bio',
+      }),
+    );
+    expect(english.items[0]).toEqual(
+      expect.objectContaining({
+        id: baseRow.id,
+        professionalTitle: 'Clinical Psychologist',
+        bioSnippet: 'English bio',
+      }),
+    );
+
+    (publicReadRepository.listPublic as jest.Mock).mockResolvedValue([
+      { ...baseRow, primaryContentLocale: null, professionalContentTranslations: [] },
+    ]);
+    const legacy = await useCase.execute({ locale: 'ar' });
+    expect(legacy.items[0]).toEqual(
+      expect.objectContaining({
+        professionalTitle: 'Therapist',
+        bioSnippet: 'Bio',
+      }),
+    );
   });
 
   it('marks stale online presence as offline in the public list', async () => {
@@ -156,6 +208,26 @@ describe('ListPublicPractitionersUseCase', () => {
     );
   });
 
+  it('keeps the documented recommended comparator stable', async () => {
+    const rows = [
+      { ...baseRow, id: 'a', publicSlug: 'a', createdAt: new Date('2026-01-01'), yearsOfExperience: 10 },
+      { ...baseRow, id: 'b', publicSlug: 'b', createdAt: new Date('2026-02-01'), yearsOfExperience: 5 },
+      { ...baseRow, id: 'c', publicSlug: 'c', createdAt: new Date('2026-03-01'), yearsOfExperience: 5 },
+    ];
+    (publicReadRepository.listPublic as jest.Mock).mockResolvedValue(rows);
+    (sessionReviewRatingAggregationService.aggregateByPractitionerIds as jest.Mock).mockResolvedValue(
+      new Map([
+        ['a', { averageRating: 4.5, ratingsCount: 1, publishedRatingsCount: 1, writtenReviewsCount: 1 }],
+        ['b', { averageRating: 4.5, ratingsCount: 1, publishedRatingsCount: 1, writtenReviewsCount: 1 }],
+        ['c', { averageRating: 4.5, ratingsCount: 1, publishedRatingsCount: 1, writtenReviewsCount: 1 }],
+      ]),
+    );
+
+    const result = await useCase.execute({ locale: 'en', sort: 'recommended' as any });
+
+    expect(result.items.map((item) => item.slug)).toEqual(['a', 'c', 'b']);
+  });
+
   it('uses shared pricing context so Egypt-authenticated users see EGP display prices', async () => {
     (publicReadRepository.listPublic as jest.Mock).mockResolvedValue([baseRow]);
     (pricingContextService.resolve as jest.Mock).mockResolvedValue({
@@ -181,7 +253,7 @@ describe('ListPublicPractitionersUseCase', () => {
     expect(result.items[0].sessionPrice60).toBe(450);
   });
 
-  it('does not borrow an EGP value when the selected USD value is missing', async () => {
+  it('does not expose a practitioner when a required public currency is missing', async () => {
     (publicReadRepository.listPublic as jest.Mock).mockResolvedValue([
       {
         ...baseRow,
@@ -192,10 +264,6 @@ describe('ListPublicPractitionersUseCase', () => {
 
     const result = await useCase.execute({ locale: 'en' });
 
-    expect(result.items[0].currencyCode).toBe('USD');
-    expect(result.items[0].sessionPrice30).toBeNull();
-    expect(result.items[0].sessionPrice60).toBeNull();
-    expect(result.items[0].displaySessionPrice30).toBeNull();
-    expect(result.items[0].displaySessionPrice60).toBeNull();
+    expect(result.items).toHaveLength(0);
   });
 });

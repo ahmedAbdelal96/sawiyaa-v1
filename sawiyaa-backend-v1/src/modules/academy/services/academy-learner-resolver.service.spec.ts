@@ -6,6 +6,7 @@ import { AcademyLearnerResolverService } from './academy-learner-resolver.servic
 
 describe('AcademyLearnerResolverService', () => {
   const prisma = {
+    $transaction: jest.fn(),
     user: {
       findUnique: jest.fn(),
     },
@@ -15,6 +16,9 @@ describe('AcademyLearnerResolverService', () => {
       create: jest.fn(),
       update: jest.fn(),
       upsert: jest.fn(),
+    },
+    academyProgramEnrollment: {
+      updateMany: jest.fn(),
     },
   } as unknown as PrismaService;
 
@@ -29,6 +33,9 @@ describe('AcademyLearnerResolverService', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    (prisma.$transaction as jest.Mock).mockImplementation(
+      async (callback: (transaction: PrismaService) => unknown) => callback(prisma),
+    );
   });
 
   it('keeps guest enrollments phone-keyed and without a user link', async () => {

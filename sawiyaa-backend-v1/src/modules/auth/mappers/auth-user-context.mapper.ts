@@ -25,6 +25,10 @@ type UserWithAuthContext = {
     id: string;
     status: PractitionerStatus;
   } | null;
+  practitionerApplications?: Array<{
+    id: string;
+    status: string;
+  }>;
 };
 
 /**
@@ -49,6 +53,7 @@ export class AuthUserContextMapper {
       primaryPhone: primaryPhone?.phone ?? null,
       isPhoneVerified: primaryPhone?.isVerified ?? false,
       practitionerProfileId: user.practitionerProfile?.id ?? null,
+      practitionerApplicationId: user.practitionerApplications?.[0]?.id ?? null,
       practitionerStatus: user.practitionerProfile?.status ?? null,
     };
   }
@@ -72,10 +77,11 @@ export class AuthUserContextMapper {
       isEmailVerified: response.isEmailVerified,
       isPhoneVerified: response.isPhoneVerified,
       practitionerProfileId: response.practitionerProfileId,
-      practitionerApplicationId: null,
+      practitionerApplicationId: response.practitionerApplicationId,
       isPractitionerOtpVerified:
         authMethod === 'access' && roles.includes(AppRole.PRACTITIONER),
-      isPractitionerOnboardingCompleted: false,
+      isPractitionerOnboardingCompleted:
+        response.practitionerStatus === PractitionerStatus.APPROVED,
       isPractitionerApproved:
         response.practitionerStatus === PractitionerStatus.APPROVED,
       featureFlags: [],

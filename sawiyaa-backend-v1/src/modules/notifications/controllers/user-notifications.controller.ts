@@ -17,6 +17,8 @@ import {
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 import { CurrentUser } from '@common/decorators/current-user.decorator';
+import { CurrentLocale } from '@common/i18n/decorators/current-locale.decorator';
+import { SupportedLocale } from '@common/i18n/types/locale.types';
 import { JwtAccessAuthGuard } from '@common/guards/authentication/jwt-access-auth.guard';
 import { AuthenticatedUser } from '@common/interfaces/authenticated-user.interface';
 import { ListMyNotificationsDto } from '../dto/list-my-notifications.dto';
@@ -57,10 +59,12 @@ export class UserNotificationsController {
   })
   async list(
     @CurrentUser() authenticatedUser: AuthenticatedUser,
+    @CurrentLocale() locale: SupportedLocale,
     @Query() query: ListMyNotificationsDto,
   ) {
     const data = await this.listMyNotificationsUseCase.execute({
       authenticatedUser,
+      locale,
       query,
     });
 
@@ -112,10 +116,12 @@ export class UserNotificationsController {
   @ApiNotFoundResponse({ description: 'Notification was not found' })
   async markRead(
     @CurrentUser() authenticatedUser: AuthenticatedUser,
+    @CurrentLocale() locale: SupportedLocale,
     @Param('id') notificationId: string,
   ) {
     const data = await this.markMyNotificationReadUseCase.execute({
       authenticatedUser,
+      locale,
       notificationId,
     });
 

@@ -1,4 +1,5 @@
-import { ConflictException, SessionEventType, SessionStatus } from '@prisma/client';
+import { ConflictException } from '@nestjs/common';
+import { SessionEventType, SessionStatus } from '@prisma/client';
 import { SessionMapper } from '../mappers/session.mapper';
 import { SessionPractitionerRepository } from '../repositories/session-practitioner.repository';
 import { SessionRepository } from '../repositories/session.repository';
@@ -38,6 +39,15 @@ describe('MarkSessionNoShowByPractitionerUseCase', () => {
         expiredAt: null,
         timezoneSnapshot: 'Africa/Cairo',
       }),
+      findByIdForUpdate: jest.fn().mockResolvedValue({
+        id: 'session-1',
+        status: SessionStatus.UPCOMING,
+        practitioner: { id: 'practitioner-1', publicSlug: 'dr-one', user: { displayName: 'Dr One' } },
+        patient: { id: 'patient-1', user: { displayName: 'Patient One' } },
+        createdAt: new Date('2025-01-01T00:00:00.000Z'), scheduledStartAt: null, scheduledEndAt: null,
+        durationMinutes: 60, sessionMode: 'VIDEO', flowType: 'SCHEDULED', expiresAt: null, cancelledAt: null,
+        cancellationReason: null, completedAt: null, expiredAt: null, timezoneSnapshot: 'Africa/Cairo',
+      }),
       updateStatus: jest.fn().mockResolvedValue({
         id: 'session-1',
         status: SessionStatus.PATIENT_NO_SHOW,
@@ -75,10 +85,13 @@ describe('MarkSessionNoShowByPractitionerUseCase', () => {
     const operationalNotificationService = {
       cancelSessionReminders: jest.fn().mockResolvedValue(undefined),
     } as unknown as OperationalNotificationService;
+    const outcomeBoundary = {
+      decidePatientNoShow: jest.fn().mockResolvedValue({ kind: 'ALLOW' }),
+    };
 
     const prisma = {
       $transaction: jest.fn().mockImplementation(async (fn: (...args: any[]) => any) => fn({})),
-    } as never;
+    } as any;
 
     const useCase = new MarkSessionNoShowByPractitionerUseCase(
       prisma,
@@ -86,6 +99,7 @@ describe('MarkSessionNoShowByPractitionerUseCase', () => {
       sessionRepository,
       new SessionMapper(),
       transitionService,
+      outcomeBoundary as never,
       operationalNotificationService,
     );
 
@@ -121,6 +135,10 @@ describe('MarkSessionNoShowByPractitionerUseCase', () => {
         status: SessionStatus.PATIENT_NO_SHOW,
         practitioner: { id: 'practitioner-1' },
       }),
+      findByIdForUpdate: jest.fn().mockResolvedValue({
+        id: 'session-1', status: SessionStatus.PATIENT_NO_SHOW,
+        practitioner: { id: 'practitioner-1' },
+      }),
       updateStatus: jest.fn(),
       createEvent: jest.fn(),
     } as unknown as SessionRepository;
@@ -131,10 +149,15 @@ describe('MarkSessionNoShowByPractitionerUseCase', () => {
     const operationalNotificationService = {
       cancelSessionReminders: jest.fn(),
     } as unknown as OperationalNotificationService;
+    const outcomeBoundary = {
+      decidePatientNoShow: jest.fn().mockResolvedValue({
+        kind: 'REJECT', error: 'SESSION_ALREADY_NO_SHOW', messageKey: 'sessions.errors.sessionAlreadyNoShow',
+      }),
+    };
 
     const prisma = {
-      $transaction: jest.fn(),
-    } as never;
+      $transaction: jest.fn().mockImplementation(async (fn: (tx: object) => unknown) => fn({})),
+    } as any;
 
     const useCase = new MarkSessionNoShowByPractitionerUseCase(
       prisma,
@@ -142,6 +165,7 @@ describe('MarkSessionNoShowByPractitionerUseCase', () => {
       sessionRepository,
       new SessionMapper(),
       transitionService,
+      outcomeBoundary as never,
       operationalNotificationService,
     );
 
@@ -162,6 +186,6 @@ describe('MarkSessionNoShowByPractitionerUseCase', () => {
     expect(sessionRepository.updateStatus).not.toHaveBeenCalled();
     expect(sessionRepository.createEvent).not.toHaveBeenCalled();
     expect(operationalNotificationService.cancelSessionReminders).not.toHaveBeenCalled();
-    expect(prisma.$transaction).not.toHaveBeenCalled();
+    expect(prisma.$transaction).toHaveBeenCalled();
   });
 });

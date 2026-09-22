@@ -52,16 +52,13 @@ describe('ResendOtpChallengeUseCase', () => {
     ).rejects.toBeInstanceOf(BadRequestException);
   });
 
-  it('invalidates latest and sends a new challenge', async () => {
+  it('delegates atomic replacement and sends a new challenge', async () => {
     otpPolicyResolverService.resolve = jest.fn().mockReturnValue({
       resendCooldownSeconds: 30,
     });
     otpChallengeRepository.listRecentChallengesForTarget = jest
       .fn()
       .mockResolvedValue([]);
-    otpChallengeRepository.findLatestActiveByTarget = jest
-      .fn()
-      .mockResolvedValue({ id: 'old' });
     createOtpChallengeUseCase.execute = jest.fn().mockResolvedValue({
       challengeId: 'new',
       channel: OtpChannel.EMAIL,
@@ -78,7 +75,7 @@ describe('ResendOtpChallengeUseCase', () => {
       locale: 'en',
     });
 
-    expect(otpChallengeRepository.invalidate).toHaveBeenCalledWith('old');
+    expect(otpChallengeRepository.invalidate).not.toHaveBeenCalled();
     expect(sendOtpChallengeUseCase.execute).toHaveBeenCalled();
   });
 });

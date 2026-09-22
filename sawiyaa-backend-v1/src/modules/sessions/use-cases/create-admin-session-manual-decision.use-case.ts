@@ -7,6 +7,9 @@ import {
   Prisma,
   SessionAdminDecisionType,
   SessionEventType,
+  SessionResolutionCaseStatus,
+  SessionResolutionPatientRemedy,
+  SessionResolutionPractitionerRemedy,
   SessionStatus,
 } from '@prisma/client';
 import { PrismaService } from '@common/prisma/prisma.service';
@@ -79,14 +82,9 @@ export class CreateAdminSessionManualDecisionUseCase {
     actorRoles?: string[];
     requestId?: string | null;
     correlationId?: string | null;
+    /** Required when explicitly completing an open Admin resolution case. */
+    resolveOpenCase?: boolean;
   }): Promise<AdminSessionManualDecisionItemDto> {
-    // Trusted evidence is read-only. Status eligibility is checked again under
-    // the row lock below, immediately before the final decision is inserted.
-    const attendanceData = await this.getAdminSessionAttendanceUseCase.execute({
-      sessionId: input.sessionId,
-    });
-    const snapshot = this.buildEvidenceSnapshot(attendanceData);
-
     const decision = await this.prisma.$transaction(async (tx) => {
       const session = await this.sessionRepository.findByIdForUpdate(
         input.sessionId,
@@ -98,6 +96,29 @@ export class CreateAdminSessionManualDecisionUseCase {
           error: 'SESSION_NOT_FOUND',
         });
       }
+      // Evidence and the status decision are read under the same session row
+      // lock. This prevents an attendance reconciliation race from producing a
+      // stale Admin decision snapshot.
+      const attendanceData =
+        await this.getAdminSessionAttendanceUseCase.execute({
+          sessionId: input.sessionId,
+          tx,
+        });
+      if (input.decisionType === SessionAdminDecisionType.MARK_COMPLETED) {
+        const reviewDecision = attendanceData.extendedSummary?.reviewDecision;
+        const canApproveNormally = reviewDecision
+          ? reviewDecision.canApproveNormally
+          : attendanceData.extendedSummary?.recommendation
+                ?.recommendedOutcome === 'COMPLETION_CANDIDATE';
+        if (!canApproveNormally && input.resolveOpenCase !== true) {
+          throw new ConflictException({
+            messageKey: 'sessions.errors.sessionCompletionRequiresResolution',
+            error: 'SESSION_COMPLETION_REQUIRES_RESOLUTION',
+            reasonCode: reviewDecision?.reasonCode ?? 'REVIEW_DECISION_REQUIRED',
+          });
+        }
+      }
+      const snapshot = this.buildEvidenceSnapshot(attendanceData);
       if (NO_SHOW_DECISION_TYPES.has(input.decisionType)) {
         const latestActive =
           await this.sessionRepository.findLatestActiveSessionAdminDecision(
@@ -140,6 +161,7 @@ export class CreateAdminSessionManualDecisionUseCase {
         input.decisionType,
         input.supersedePrevious === true,
         tx,
+        input.resolveOpenCase === true,
       );
       const { previousSessionStatus, nextSessionStatus } =
         this.resolveStatusMapping(session.status, input.decisionType);
@@ -235,6 +257,17 @@ export class CreateAdminSessionManualDecisionUseCase {
             },
             tx,
           });
+          if (input.resolveOpenCase === true && 'sessionResolutionCase' in tx) {
+            const openCase = await tx.sessionResolutionCase.findUnique({
+              where: { sessionId: session.id },
+            });
+            if (openCase?.status === 'OPEN') {
+              await tx.sessionResolutionCase.update({
+                where: { id: openCase.id },
+                data: { status: 'EXECUTED', resolvedAt: newDecision.createdAt },
+              });
+            }
+          }
         } else {
           await this.sessionLifecycleService.transition({
             session: lifecycleSession,
@@ -272,6 +305,38 @@ export class CreateAdminSessionManualDecisionUseCase {
             decidedAt: newDecision.createdAt,
           });
         }
+      }
+
+      // 5d. Write ADMIN_MANUAL_DECISION_CREATED audit event
+      if (
+        input.decisionType === SessionAdminDecisionType.MARK_TECHNICAL_REVIEW ||
+        input.decisionType ===
+          SessionAdminDecisionType.MARK_INSUFFICIENT_EVIDENCE
+      ) {
+        if (!('sessionResolutionCase' in tx)) {
+          // Legacy unit-test transaction doubles may not expose the case model.
+        } else await tx.sessionResolutionCase.upsert({
+          where: { sessionId: session.id },
+          create: {
+            sessionId: session.id,
+            status: SessionResolutionCaseStatus.OPEN,
+            suggestedOutcome: SessionStatus.AWAITING_ADMIN_RESOLUTION,
+            suggestedPatientRemedy: SessionResolutionPatientRemedy.KEEP_ORIGINAL,
+            suggestedPractitionerRemedy:
+              SessionResolutionPractitionerRemedy.NO_EARNING,
+            evidenceSnapshotJson: snapshot.evidenceTimelineSnapshot,
+          },
+          update: {
+            status: SessionResolutionCaseStatus.OPEN,
+            suggestedOutcome: SessionStatus.AWAITING_ADMIN_RESOLUTION,
+            suggestedPatientRemedy: SessionResolutionPatientRemedy.KEEP_ORIGINAL,
+            suggestedPractitionerRemedy:
+              SessionResolutionPractitionerRemedy.NO_EARNING,
+            evidenceSnapshotJson: snapshot.evidenceTimelineSnapshot,
+            resolvedAt: null,
+            version: { increment: 1 },
+          },
+        });
       }
 
       // 5d. Write ADMIN_MANUAL_DECISION_CREATED audit event
@@ -355,6 +420,7 @@ export class CreateAdminSessionManualDecisionUseCase {
     decisionType: SessionAdminDecisionType,
     supersedePrevious?: boolean,
     tx?: Prisma.TransactionClient,
+    resolveOpenCase = false,
   ): Promise<void> {
     const now = new Date();
 
@@ -378,6 +444,39 @@ export class CreateAdminSessionManualDecisionUseCase {
         messageKey: 'sessions.errors.sessionNotFound',
         error: 'SESSION_DECISION_NOT_ALLOWED_STATUS',
       });
+    }
+
+    if (decisionType === SessionAdminDecisionType.MARK_COMPLETED) {
+      const resolutionCase = tx && 'sessionResolutionCase' in tx
+        ? await tx.sessionResolutionCase.findUnique({
+            where: { sessionId: session.id },
+            select: { status: true },
+          })
+        : null;
+      const isExplicitResolutionCompletion =
+        resolveOpenCase && resolutionCase?.status === 'OPEN';
+      if (
+        session.status !== SessionStatus.AWAITING_COMPLETION_CONFIRMATION &&
+        !(isExplicitResolutionCompletion &&
+          session.status === SessionStatus.AWAITING_ADMIN_RESOLUTION)
+      ) {
+        throw new ConflictException({
+          messageKey: 'sessions.errors.sessionCompletionRequiresAdminReview',
+          error: 'SESSION_COMPLETION_REQUIRES_ADMIN_REVIEW',
+        });
+      }
+      if (resolutionCase?.status === 'OPEN' && !resolveOpenCase) {
+        throw new ConflictException({
+          messageKey: 'sessions.errors.sessionResolutionCaseOpen',
+          error: 'SESSION_RESOLUTION_CASE_OPEN',
+        });
+      }
+      if (resolveOpenCase && resolutionCase?.status !== 'OPEN') {
+        throw new ConflictException({
+          messageKey: 'sessions.errors.sessionResolutionCaseNotOpen',
+          error: 'SESSION_RESOLUTION_CASE_NOT_OPEN',
+        });
+      }
     }
 
     if (NO_SHOW_DECISION_TYPES.has(decisionType)) {
@@ -543,7 +642,7 @@ export class CreateAdminSessionManualDecisionUseCase {
       case SessionAdminDecisionType.MARK_INSUFFICIENT_EVIDENCE:
         return {
           previousSessionStatus: currentStatus,
-          nextSessionStatus: SessionStatus.AWAITING_COMPLETION_CONFIRMATION,
+          nextSessionStatus: SessionStatus.AWAITING_ADMIN_RESOLUTION,
         };
     }
   }

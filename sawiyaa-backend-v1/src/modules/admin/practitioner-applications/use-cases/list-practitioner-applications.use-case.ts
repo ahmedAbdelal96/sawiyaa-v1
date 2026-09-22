@@ -56,35 +56,36 @@ export class ListPractitionerApplicationsUseCase {
     const summary = await this.applicationRepository.summary();
 
     const applications = rows.map((item) => {
-      const primarySpecialty = item.practitioner.specialties[0];
-      const snapshot = item.submissionSnapshot as { review?: { sections?: unknown } } | null;
+      const snapshot = item.submissionSnapshot as any;
+      const profile = item.practitioner;
+      const primarySpecialty = profile?.specialties?.[0] ?? snapshot?.specialtySelection?.specialties?.[0] ?? null;
+      const displayName = profile?.user?.displayName ?? item.user?.displayName ?? snapshot?.applicant?.displayName ?? null;
       const changedSections = Array.isArray(snapshot?.review?.sections)
         ? snapshot.review.sections.filter((section): section is string => typeof section === 'string')
-        : item.practitioner.status === PractitionerStatus.APPROVED
+        : profile?.status === PractitionerStatus.APPROVED
           ? ['PROFILE', 'SPECIALTIES', 'CREDENTIALS']
           : ['PROFILE', 'SPECIALTIES', 'CREDENTIALS'];
 
       return this.mapper.toListItem({
         applicationId: item.id,
         practitionerProfileId: item.practitionerId,
-        userId: item.practitioner.user.id,
-        displayName: item.practitioner.user.displayName ?? null,
-        practitionerType: item.practitioner.practitionerType,
-        countryCode: item.practitioner.country?.isoCode ?? null,
+        userId: profile?.user?.id ?? item.userId,
+        displayName,
+        practitionerType: profile?.practitionerType ?? snapshot?.profile?.practitionerType ?? 'OTHER',
+        countryCode: profile?.country?.isoCode ?? snapshot?.profile?.countryCode ?? null,
           applicationKind:
-          item.practitioner.status === PractitionerStatus.APPROVED
+          profile?.status === PractitionerStatus.APPROVED
             ? AdminPractitionerApplicationKind.EDIT_REQUEST
             : AdminPractitionerApplicationKind.NEW_APPLICATION,
         changedSections,
         mainSpecialty: primarySpecialty
-          ? {
-              specialtyId: primarySpecialty.specialtyId,
-              slug: primarySpecialty.specialty.slug,
-              title: this.mapper.pickLocalizedTitle(
-                primarySpecialty.specialty.translations,
-                input.locale,
-              ),
-            }
+          ? primarySpecialty.specialty
+            ? {
+                specialtyId: primarySpecialty.specialtyId,
+                slug: primarySpecialty.specialty.slug,
+                title: this.mapper.pickLocalizedTitle(primarySpecialty.specialty.translations, input.locale),
+              }
+            : { specialtyId: primarySpecialty.specialtyId, slug: '', title: null }
           : null,
         applicationStatus: item.status,
         submittedAt: item.submittedAt,

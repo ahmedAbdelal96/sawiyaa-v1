@@ -4,6 +4,7 @@ import { RolesGuard } from '@common/guards/authorization/roles.guard';
 import { PaymentsModule } from '@modules/payments/payments.module';
 import { PatientsModule } from '@modules/patients/patients.module';
 import { NotificationsModule } from '@modules/notifications/notifications.module';
+import { AuthModule } from '@modules/auth/auth.module';
 import { AcademyLearnerResolverService } from './services/academy-learner-resolver.service';
 import { AdminAcademyProgramsController } from './programs/controllers/admin-academy-programs.controller';
 import { PatientAcademyProgramsController } from './programs/controllers/patient-academy-programs.controller';
@@ -41,9 +42,10 @@ import { AcademyProgramSessionAttendanceRepository } from './programs/repositori
 import { AcademyProgramCertificateStorageService } from './programs/services/academy-program-certificate-storage.service';
 import { AcademyProgramCoverStorageService } from './programs/services/academy-program-cover-storage.service';
 import { AcademyProgramTargetLearnerAlertService } from './programs/services/academy-program-target-learner-alert.service';
+import { ManageAdminAcademyEnrollmentAccountUseCase } from './programs/use-cases/manage-admin-academy-enrollment-account.use-case';
 
 @Module({
-  imports: [PaymentsModule, PatientsModule, NotificationsModule],
+  imports: [PaymentsModule, PatientsModule, NotificationsModule, AuthModule],
   controllers: [
     PublicAcademyProgramsController,
     AdminAcademyProgramsController,
@@ -86,6 +88,7 @@ import { AcademyProgramTargetLearnerAlertService } from './programs/services/aca
     ArchiveAcademyProgramUseCase,
     CreateAcademyProgramSessionUseCase,
     UpdateAcademyProgramSessionUseCase,
+    ManageAdminAcademyEnrollmentAccountUseCase,
   ],
 })
 export class AcademyModule {}

@@ -143,6 +143,11 @@ describe('OperationalNotificationService', () => {
         channel: NotificationChannel.IN_APP,
         status: NotificationStatus.SENT,
         relatedEntityType: 'PAYMENT',
+        idempotencyKey: 'payments.payment-succeeded:payment_1:in-app',
+        payloadJson: expect.objectContaining({
+          amount: '100.00',
+          currencyCode: 'USD',
+        }),
       }),
     );
     expect(setup.createNotification).toHaveBeenCalledWith(
@@ -153,6 +158,32 @@ describe('OperationalNotificationService', () => {
       }),
     );
     expect(setup.updateNotificationStatus).not.toHaveBeenCalled();
+  });
+
+  it('emits deterministic patient financial notifications with amount, currency, and deep links', async () => {
+    const setup = buildService({ emailEnabled: false });
+
+    await setup.service.notifyPackagePurchaseSucceeded({
+      patientProfileId: 'patient_1',
+      packagePurchaseId: 'purchase_1',
+      amount: '1,250.00',
+      currencyCode: 'EGP',
+      packageName: 'Care package',
+    });
+
+    expect(setup.createNotification).toHaveBeenCalledWith(
+      expect.objectContaining({
+        relatedEntityType: 'PACKAGE_PURCHASE',
+        relatedEntityId: 'purchase_1',
+        idempotencyKey:
+          'payments.package-purchase-succeeded:purchase_1:user_1:in-app',
+        payloadJson: expect.objectContaining({
+          amount: '1,250.00',
+          currencyCode: 'EGP',
+          routePath: '/en/patient/package-purchases/purchase_1',
+        }),
+      }),
+    );
   });
 
   it('queues session chat notifications for the other conversation participant only', async () => {
@@ -423,6 +454,7 @@ describe('OperationalNotificationService', () => {
     await setup.service.notifyInstantBookingAccepted({
       patientProfileId: 'patient_1',
       requestId: 'request_1',
+      createdSessionId: 'session_1',
     });
 
     expect(setup.createNotification).toHaveBeenCalledWith(
@@ -433,7 +465,8 @@ describe('OperationalNotificationService', () => {
         idempotencyKey:
           'instant-booking.request-accepted:request_1:user_1:in-app',
         payloadJson: expect.objectContaining({
-          routePath: '/en/patient/instant-booking?requestId=request_1',
+          routePath: '/en/patient/sessions/session_1/pay',
+          createdSessionId: 'session_1',
           targetRole: 'PATIENT',
         }),
       }),
@@ -446,7 +479,8 @@ describe('OperationalNotificationService', () => {
         idempotencyKey:
           'instant-booking.request-accepted:request_1:user_1:push',
         payloadJson: expect.objectContaining({
-          routePath: '/en/patient/instant-booking?requestId=request_1',
+          routePath: '/en/patient/sessions/session_1/pay',
+          createdSessionId: 'session_1',
           targetRole: 'PATIENT',
         }),
       }),

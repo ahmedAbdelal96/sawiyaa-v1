@@ -7,6 +7,7 @@ import { BuildNormalizedCareSignalContextService } from '@modules/care-experienc
 import { InterpretAssessmentCareIntentService } from '@modules/care-experience-intelligence/services/interpret-assessment-care-intent.service';
 import { RecommendationPrecedenceService } from '@modules/care-experience-intelligence/services/recommendation-precedence.service';
 import { PublicPractitionerVisibilityPolicy } from '@modules/practitioners/policies/public-practitioner-visibility.policy';
+import { PractitionersModule } from '@modules/practitioners/practitioners.module';
 import { ReviewsModule } from '@modules/reviews/reviews.module';
 import { MatchingController } from './controllers/matching.controller';
 import { MatchingPresenter } from './presenters/matching.presenter';
@@ -19,9 +20,10 @@ import { NormalizeMatchingInputService } from './services/normalize-matching-inp
 import { ScorePractitionerMatchService } from './services/score-practitioner-match.service';
 import { CreateMatchingSessionUseCase } from './use-cases/create-matching-session.use-case';
 import { GetMatchingSessionUseCase } from './use-cases/get-matching-session.use-case';
+import { ResolveMatchingProfessionalContentService } from './services/resolve-matching-professional-content.service';
 
 @Module({
-  imports: [ReviewsModule],
+  imports: [ReviewsModule, PractitionersModule],
   controllers: [MatchingController],
   providers: [
     JwtAccessAuthGuard,
@@ -42,6 +44,7 @@ import { GetMatchingSessionUseCase } from './use-cases/get-matching-session.use-
     BuildMatchingRationaleService,
     CreateMatchingSessionUseCase,
     GetMatchingSessionUseCase,
+    ResolveMatchingProfessionalContentService,
   ],
 })
 export class MatchingModule {}

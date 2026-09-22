@@ -16,6 +16,7 @@ import { PermissionResolverService } from '@common/guards/authorization/permissi
 import { SecurityAuditService } from '@common/security-audit/security-audit.service';
 import { PermissionKey } from '@common/enums/permission-key.enum';
 import { AppRole } from '@common/enums/app-role.enum';
+import { DeleteIncompletePractitionerAccountUseCase } from '../use-cases/delete-incomplete-practitioner-account.use-case';
 
 describe('AdminPractitionersController (Authorization and Routing)', () => {
   let controller: AdminPractitionersController;
@@ -58,6 +59,10 @@ describe('AdminPractitionersController (Authorization and Routing)', () => {
           useValue: {},
         },
         {
+          provide: DeleteIncompletePractitionerAccountUseCase,
+          useValue: {},
+        },
+        {
           provide: PermissionResolverService,
           useValue: {
             hasPermissions: jest.fn().mockResolvedValue(true),
@@ -89,11 +94,20 @@ describe('AdminPractitionersController (Authorization and Routing)', () => {
       expect(guards).toContain(PermissionsGuard);
     });
 
-    it('details method should require PRACTITIONER_APPLICATIONS_READ permission', () => {
+  it('details method should require PRACTITIONER_APPLICATIONS_READ permission', () => {
       const permissions = Reflect.getMetadata('auth:permissions', controller.details);
       expect(permissions).toContain(PermissionKey.PRACTITIONER_APPLICATIONS_READ);
     });
   });
+
+    it('publication read/write methods require centralized permissions', () => {
+      expect(Reflect.getMetadata('auth:permissions', controller.getPublication)).toContain(
+        PermissionKey.PRACTITIONER_PUBLICATION_READ,
+      );
+      expect(Reflect.getMetadata('auth:permissions', controller.updatePublication)).toContain(
+        PermissionKey.PRACTITIONER_PUBLICATION_WRITE,
+      );
+    });
 
   describe('details endpoint', () => {
     const pId = '77777777-7777-7777-7777-777777777777';

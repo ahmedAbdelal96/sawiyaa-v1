@@ -52,5 +52,7 @@
   "practitionerPendingNote": "الطلب قيد المراجعة وسيظهر هنا بعد التفعيل.",
   "practitionerOpenFull": "فتح المحادثة الكاملة (اختياري)",
   "sessionOpenFull": "فتح محادثة الجلسة الكاملة (اختياري)",
-  "priorityBadge": "مهم"
+  "priorityBadge": "مهم",
+  "supportError": "تعذر إرسال رسالتك إلى الدعم. حاول مرة أخرى.",
+  "supportComposerPlaceholder": "اكتب تفاصيل المشكلة أو طلبك بوضوح..."
 }

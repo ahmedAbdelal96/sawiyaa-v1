@@ -5,6 +5,7 @@ import {
 } from '@nestjs/common';
 import { NotificationStatus } from '@prisma/client';
 import { AuthenticatedUser } from '@common/interfaces/authenticated-user.interface';
+import { SupportedLocale } from '@common/i18n/types/locale.types';
 import { UserNotificationsPresenter } from '../presenters/user-notifications.presenter';
 import { UserNotificationRepository } from '../repositories/user-notification.repository';
 import { NotificationContextEnrichmentService } from '../services/notification-context-enrichment.service';
@@ -19,6 +20,7 @@ export class MarkMyNotificationReadUseCase {
 
   async execute(input: {
     authenticatedUser: AuthenticatedUser;
+    locale?: SupportedLocale;
     notificationId: string;
   }) {
     const readableStatuses = new Set<NotificationStatus>([
@@ -54,7 +56,10 @@ export class MarkMyNotificationReadUseCase {
     }
 
     if (existing.readAt) {
-      const enrichment = await this.enrichmentService.enrichOne(existing);
+      const enrichment = await this.enrichmentService.enrichOne(
+        existing,
+        input.locale,
+      );
       return this.presenter.presentReadResult(existing, enrichment);
     }
 
@@ -78,7 +83,10 @@ export class MarkMyNotificationReadUseCase {
         });
       }
 
-      const enrichment = await this.enrichmentService.enrichOne(reloaded);
+      const enrichment = await this.enrichmentService.enrichOne(
+        reloaded,
+        input.locale,
+      );
       return this.presenter.presentReadResult(reloaded, enrichment);
     }
 
@@ -87,7 +95,10 @@ export class MarkMyNotificationReadUseCase {
       readAt: now,
       status: NotificationStatus.READ,
     };
-    const enrichment = await this.enrichmentService.enrichOne(updatedRow);
+    const enrichment = await this.enrichmentService.enrichOne(
+      updatedRow,
+      input.locale,
+    );
     return this.presenter.presentReadResult(updatedRow, enrichment);
   }
 }

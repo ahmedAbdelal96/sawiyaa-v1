@@ -5,6 +5,8 @@ import {
   getAdminPackageSettlement,
   listAdminPackageSettlements,
   releaseAdminPackageSettlement,
+  getAdminPackageRefundPreview,
+  finalizeAdminPackageRefund,
 } from "../api/admin-package-settlements.api";
 import { adminPackageSettlementsQueryKeys } from "../constants/query-keys";
 import type { ListAdminPackageSettlementsParams } from "../types/admin-package-settlements.types";
@@ -42,6 +44,33 @@ export function useReleaseAdminPackageSettlement() {
       queryClient.invalidateQueries({ queryKey: adminPackageSettlementsQueryKeys.details(id) });
       queryClient.invalidateQueries({ queryKey: adminPackageSettlementsQueryKeys.all });
       queryClient.invalidateQueries({ queryKey: ["admin", "practitioners"] });
+    },
+  });
+}
+
+export function useAdminPackageRefundPreview(paymentId?: string) {
+  const role = useSessionRole();
+  return useQuery({
+    queryKey: ["admin", "package-refund-preview", paymentId ?? ""],
+    queryFn: () => getAdminPackageRefundPreview(paymentId as string),
+    enabled: isAdminRole(role) && Boolean(paymentId),
+    staleTime: 15_000,
+  });
+}
+
+export function useFinalizeAdminPackageRefund() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ paymentId, finalAmount, reason, evidenceReference, idempotencyKey }: {
+      paymentId: string;
+      finalAmount?: number;
+      reason: string;
+      evidenceReference?: string;
+      idempotencyKey?: string;
+    }) => finalizeAdminPackageRefund(paymentId, { finalAmount, reason, evidenceReference, idempotencyKey }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: adminPackageSettlementsQueryKeys.all });
+      queryClient.invalidateQueries({ queryKey: ["admin", "package-refund-preview"] });
     },
   });
 }

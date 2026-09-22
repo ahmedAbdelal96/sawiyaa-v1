@@ -11,13 +11,7 @@ import { Link } from "@/i18n/navigation";
 import Input from "@/components/form/input/InputField";
 import AuthPasswordField from "./AuthPasswordField";
 import Label from "@/components/form/Label";
-import Select from "@/components/form/Select";
-import MultiSelect from "@/components/form/MultiSelect";
 import { GroupIcon, EyeCloseIcon, EyeIcon } from "@/icons";
-import {
-  useSpecialties,
-  useSpecialtyCategories,
-} from "@/features/specialties/hooks/use-specialties";
 import {
   usePatientRegister,
   usePractitionerRegister,
@@ -25,10 +19,6 @@ import {
   usePractitionerResendRegistrationOtp,
 } from "@/features/auth/hooks/use-auth";
 import { normalizeCallbackPath } from "@/lib/auth/callback-url";
-import {
-  getLocalizedSpecialtyCategoryName,
-  getLocalizedSpecialtyName,
-} from "@/features/specialties/utils/localized-specialty";
 import AuthSplitCard from "./AuthSplitCard";
 import { PractitionerPhoneField } from "@/components/form/group-input/PractitionerPhoneField";
 import AuthOtpInput from "./AuthOtpInput";
@@ -55,8 +45,6 @@ const staticSignUpSchema = z.object({
   phone: z.string().optional(),
   password: z.string(),
   confirmPassword: z.string(),
-  primarySpecialtyCategoryId: z.string().optional(),
-  specialtyIds: z.array(z.string()).optional(),
 });
 
 const PRACTITIONER_PHONE_COUNTRIES = [
@@ -91,8 +79,6 @@ export default function SignUpForm({ accountType }: SignUpFormProps) {
   const practitionerRegister = usePractitionerRegister();
   const practitionerVerifyRegistrationOtp = usePractitionerVerifyRegistrationOtp();
   const practitionerResendRegistrationOtp = usePractitionerResendRegistrationOtp();
-  const specialtyCategoriesQuery = useSpecialtyCategories(mode === "practitioner");
-  const specialtiesQuery = useSpecialties(undefined, mode === "practitioner");
   const isSubmitting = patientRegister.isPending || practitionerRegister.isPending || practitionerVerifyRegistrationOtp.isPending || practitionerResendRegistrationOtp.isPending;
 
   const signUpSchema = useMemo(() => {
@@ -104,14 +90,12 @@ export default function SignUpForm({ accountType }: SignUpFormProps) {
          phone: z.string().optional(),
         password: z.string().min(8, t("signUpForm.validation.passwordTooShort")),
         confirmPassword: z.string().min(1, t("patientSignUp.validation.confirmPasswordRequired")),
-        primarySpecialtyCategoryId: z.string().optional(),
-        specialtyIds: z.array(z.string()).optional(),
       })
       .refine((data) => data.password === data.confirmPassword, {
         message: t("patientSignUp.validation.passwordsMismatch"),
         path: ["confirmPassword"],
       });
-  }, [mode, t]);
+  }, [t]);
 
   const form = useForm<SignUpFormData>({
     resolver: zodResolver(signUpSchema),
@@ -122,8 +106,6 @@ export default function SignUpForm({ accountType }: SignUpFormProps) {
       phone: "",
       password: "",
       confirmPassword: "",
-      primarySpecialtyCategoryId: "",
-      specialtyIds: [],
     },
   });
 
@@ -154,11 +136,6 @@ export default function SignUpForm({ accountType }: SignUpFormProps) {
 
     const registrationErrorMessages: Record<string, string> = {
       INVALID_REGISTRATION_COUNTRY_CODE: "signUpForm.validation.countryInvalid",
-      INVALID_REGISTRATION_SPECIALTY_CATEGORY_ID: "signUpForm.validation.categoryInvalid",
-      INVALID_REGISTRATION_SPECIALTY_IDS: "signUpForm.validation.subSpecialtyInvalid",
-      INVALID_REGISTRATION_SPECIALTIES_FOR_CATEGORY: "signUpForm.validation.subSpecialtyCategoryMismatch",
-      PRACTITIONER_SPECIALTY_CATEGORY_NOT_FOUND: "signUpForm.validation.categoryInvalid",
-      PRACTITIONER_INVALID_SPECIALTIES_FOR_CATEGORY: "signUpForm.validation.subSpecialtyCategoryMismatch",
     };
     if (typeof err.code === "string") {
       const key = registrationErrorMessages[err.code];
@@ -174,12 +151,6 @@ export default function SignUpForm({ accountType }: SignUpFormProps) {
         if (rawMsg.includes("password must be longer than or equal to 8")) {
           return t("signUpForm.validation.passwordTooShort");
         }
-        if (rawMsg.includes("primarySpecialtyCategoryId must be a UUID") || rawMsg.includes("primarySpecialtyCategoryId")) {
-          return t("signUpForm.validation.categoryRequired");
-        }
-        if (rawMsg.includes("specialtyIds") && (rawMsg.includes("at least 1") || rawMsg.includes("UUID"))) {
-          return t("signUpForm.validation.subSpecialtyRequired");
-        }
       }
       return t("signUpForm.validation.genericError");
     }
@@ -192,27 +163,12 @@ export default function SignUpForm({ accountType }: SignUpFormProps) {
       if (msgLower.includes("password must be longer")) {
         return t("signUpForm.validation.passwordTooShort");
       }
-      if (msgLower.includes("primaryspecialtycategoryid")) {
-        return t("signUpForm.validation.categoryRequired");
-      }
-      if (msgLower.includes("specialtyids")) {
-        return t("signUpForm.validation.subSpecialtyRequired");
-      }
       return err.message.trim();
     }
 
     return t("registrationError");
   };
 
-  const selectedCategoryId = useWatch({
-    control: form.control,
-    name: "primarySpecialtyCategoryId",
-  });
-  const selectedSpecialtyIds =
-    useWatch({
-      control: form.control,
-      name: "specialtyIds",
-    }) ?? [];
   const selectedPhoneCountryCode =
     useWatch({ control: form.control, name: "phoneCountryCode" }) ??
     (mode === "practitioner" ? "EG" : "");
@@ -240,21 +196,6 @@ export default function SignUpForm({ accountType }: SignUpFormProps) {
     }
     return { score, text, color };
   }, [passwordVal, isRtl]);
-  const categoryOptions = (specialtyCategoriesQuery.data?.categories ?? []).map((category) => ({
-    value: category.id,
-    label: getLocalizedSpecialtyCategoryName(category, locale),
-  }));
-
-  const specialtiesForSelectedCategory = (specialtiesQuery.data?.specialties ?? []).filter(
-    (specialty) => (selectedCategoryId ? specialty.category?.id === selectedCategoryId : false)
-  );
-
-  const specialtyOptions = specialtiesForSelectedCategory.map((specialty) => ({
-    value: specialty.id,
-    text: getLocalizedSpecialtyName(specialty, locale),
-    selected: selectedSpecialtyIds.includes(specialty.id),
-  }));
-
   const onSubmit = async (data: SignUpFormData) => {
     if (submitLockRef.current) {
       return;
@@ -272,38 +213,20 @@ export default function SignUpForm({ accountType }: SignUpFormProps) {
         return;
       }
 
-      const selectedCategory = data.primarySpecialtyCategoryId?.trim() ?? "";
-      const availableSpecialtyIds = new Set(
-        specialtiesForSelectedCategory.map((specialty) => specialty.id),
-      );
-      const selectedSpecialties = (data.specialtyIds ?? []).filter(
-        (id) => Boolean(id) && availableSpecialtyIds.has(id),
-      );
-      if (!selectedCategory) {
-        setError(t("practitionerSpecialties.validation.categoryRequired"));
-        return;
-      }
-      if (selectedSpecialties.length === 0) {
-        setError(t("practitionerSpecialties.validation.subSpecialtyRequired"));
-        return;
-      }
-
       const normalizedPhone = data.phone?.trim() ?? "";
       const normalizedPhoneCountryCode =
         data.phoneCountryCode?.trim() || PRACTITIONER_PHONE_COUNTRIES[0].value;
 
-       const registration = await practitionerRegister.mutateAsync({
-         displayName: data.displayName,
-         email: data.email,
-         ...(normalizedPhone
-           ? {
-               phoneCountryCode: normalizedPhoneCountryCode,
-               phone: normalizedPhone,
-             }
-           : {}),
+      const registration = await practitionerRegister.mutateAsync({
+        displayName: data.displayName,
+        email: data.email,
+        ...(normalizedPhone
+          ? {
+              phoneCountryCode: normalizedPhoneCountryCode,
+              phone: normalizedPhone,
+            }
+          : {}),
         password: data.password,
-        primarySpecialtyCategoryId: selectedCategory,
-        specialtyIds: selectedSpecialties,
       });
        setRegistrationChallenge(registration);
        setRegistrationCode("");
@@ -500,78 +423,6 @@ export default function SignUpForm({ accountType }: SignUpFormProps) {
           ) : null}
 
         </div>
-
-        {mode === "practitioner" && (
-          <div className="rounded-2xl border border-border-light bg-surface-tertiary/40 p-4.5 dark:border-white/5">
-            <div className="mb-4">
-              <p className="text-sm font-semibold text-text-primary dark:text-text-primary">
-                {t("signUpInitialSpecialty.title")}
-              </p>
-              <p className="mt-1 text-xs leading-5 text-text-secondary dark:text-text-secondary">
-                {t("signUpInitialSpecialty.helper")}
-              </p>
-            </div>
-
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <div>
-                <Label>
-                  {t("practitionerSpecialties.categoryLabel")} <span className="text-error-500">*</span>
-                </Label>
-                <Select
-                  key={`signup-category-${categoryOptions.length}`}
-                  options={categoryOptions}
-                  placeholder={
-                    specialtyCategoriesQuery.isPending
-                      ? (isRtl ? "جاري تحميل التخصصات..." : "Loading specialties...")
-                      : t("practitionerSpecialties.categoryPlaceholder")
-                  }
-                  defaultValue={selectedCategoryId || ""}
-                  onChange={(value) => {
-                    form.setValue("primarySpecialtyCategoryId", value);
-                    form.setValue("specialtyIds", []);
-                    setError(null);
-                  }}
-                />
-              </div>
-
-              <div>
-                <Label>
-                  {t("practitionerSpecialties.subSpecialtyLabel")} <span className="text-error-500">*</span>
-                </Label>
-                <MultiSelect
-                  key={`signup-specialties-${selectedCategoryId || "none"}`}
-                  label=""
-                  placeholder={
-                    selectedCategoryId
-                      ? (isRtl ? "اختر التخصصات المناسبة" : "Select sub-specialties")
-                      : t("practitionerSpecialties.subSpecialtyPlaceholder")
-                  }
-                  options={specialtyOptions}
-                  defaultSelected={selectedSpecialtyIds}
-                  disabled={!selectedCategoryId || specialtyOptions.length === 0}
-                  hint={
-                    selectedCategoryId && specialtyOptions.length === 0
-                      ? t("practitionerSpecialties.emptyForCategory")
-                      : undefined
-                  }
-                  onChange={(selected) => {
-                    form.setValue("specialtyIds", selected);
-                    setError(null);
-                  }}
-                />
-
-              </div>
-            </div>
-
-            {(specialtyCategoriesQuery.isError || specialtiesQuery.isError) && (
-              <p className="text-xs text-error-500 mt-2">
-                {isRtl
-                  ? "لم نتمكن من تحميل التخصصات. حاول مرة أخرى."
-                  : "Failed to load specialties. Please try again."}
-              </p>
-            )}
-          </div>
-        )}
 
         {error && (
           <div className="rounded-2xl bg-error-50 p-3.5 text-xs text-error-500 dark:bg-error-500/10">

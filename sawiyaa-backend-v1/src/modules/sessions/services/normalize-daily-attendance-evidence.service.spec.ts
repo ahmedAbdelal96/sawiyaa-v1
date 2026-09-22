@@ -8,6 +8,7 @@ const session = {
   scheduledStartAt: new Date('2026-08-03T10:00:00.000Z'),
   scheduledEndAt: new Date('2026-08-03T11:00:00.000Z'),
   joinOpenAt: new Date('2026-08-03T09:58:00.000Z'),
+  joinCloseAt: new Date('2026-08-03T11:10:00.000Z'),
   videoRoomClosedAt: null,
   patient: { user: { id: 'patient-1', displayName: 'Patient' } },
   practitioner: { user: { id: 'practitioner-1', displayName: 'Practitioner' } },

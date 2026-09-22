@@ -59,7 +59,10 @@
     "trustNote": "يتم إرسال إجاباتك فقط عند الإكمال. هذه التجربة على الويب لا تحفظ التقدم الجزئي بعد.",
     "meta": {
       "duration": "{value} دقيقة",
-      "questionCount": "{value} أسئلة"
+    "questionCount": "{value} أسئلة",
+    "estimatedDuration": "المدة المقدرة",
+    "questionCountLabel": "عدد الأسئلة",
+    "privacy": "الخصوصية"
     },
     "beforeYouBegin": {
       "heading": "قبل أن تبدأ",
@@ -78,6 +81,8 @@
   "result": {
     "eyebrow": "نتيجة الاختبار",
     "note": "هذا ملخص داعم لاختبارك المكتمل، والغرض منه مساعدتك على اختيار خطوة عملية تالية.",
+    "severityLevel": "مستوى الشدة",
+    "recommendedNextSteps": "الخطوات التالية الموصى بها",
     "submissionId": "النتيجة #{id}",
     "completedAt": "اكتمل {date}",
     "score": "النتيجة: {value}",

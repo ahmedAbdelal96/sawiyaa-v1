@@ -15,6 +15,7 @@ import { useGetMatchingSession } from "../../../src/features/patient/matching/ap
 import { useTranslation } from "react-i18next";
 import { Ionicons } from "@expo/vector-icons";
 import { getProfessionalTitleLabel } from "../../../src/features/practitioner/reference-data";
+import type { MatchingRecommendationItem } from "../../../src/features/patient/matching/types";
 
 export default function MatchingResultsScreen() {
   const router = useRouter();
@@ -51,10 +52,7 @@ export default function MatchingResultsScreen() {
   if (isLoading) {
     return (
       <Screen bg="background">
-        <Header
-          title={t("matching.results.header")}
-          showBack
-        />
+        <Header title={t("matching.results.header")} showBack />
         <LoadingState fullScreen message={t("matching.results.loading")} />
       </Screen>
     );
@@ -63,23 +61,18 @@ export default function MatchingResultsScreen() {
   if (isError) {
     return (
       <Screen bg="background">
-        <Header
-          title={t("matching.results.header")}
-          showBack
-        />
+        <Header title={t("matching.results.header")} showBack />
         <ErrorState fullScreen onRetry={refetch} />
       </Screen>
     );
   }
 
-  const recommendations = sessionData?.data?.items ?? [];
+  const recommendations = (sessionData?.data?.items ??
+    []) as MatchingRecommendationItem[];
 
   return (
     <Screen bg="background">
-      <Header
-        title={t("matching.results.header")}
-        showBack
-      />
+      <Header title={t("matching.results.header")} showBack />
 
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <View style={styles.headerBlock}>
@@ -153,8 +146,10 @@ export default function MatchingResultsScreen() {
                     color={theme.colors.textSecondary}
                     style={styles.therapistSpec}
                   >
-                    {getProfessionalTitleLabel(item.practitioner.professionalTitle, isArabicUi) ||
-                      t("matching.results.professionalFallback")}
+                    {getProfessionalTitleLabel(
+                      item.practitioner.professionalTitle,
+                      isArabicUi,
+                    ) || t("matching.results.professionalFallback")}
                   </Text>
 
                   {item.rationale.notes.length > 0 ? (

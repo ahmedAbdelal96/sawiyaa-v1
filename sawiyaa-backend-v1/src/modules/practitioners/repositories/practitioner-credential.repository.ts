@@ -18,9 +18,11 @@ export class PractitionerCredentialRepository {
 
   create(
     data: {
-      practitionerId: string;
+      practitionerId?: string | null;
+      applicationId?: string | null;
       credentialType: CredentialType;
       fileUrl: string;
+      storedFileId?: string | null;
       expiresAt?: Date | null;
       lifecycleState?: CredentialLifecycleState;
     },
@@ -56,6 +58,31 @@ export class PractitionerCredentialRepository {
       where: { practitionerId },
       orderBy: [{ createdAt: 'desc' }],
     });
+  }
+
+  listByApplicationId(applicationId: string, tx?: Prisma.TransactionClient) {
+    return this.getDb(tx).practitionerCredential.findMany({
+      where: { applicationId },
+      orderBy: [{ createdAt: 'desc' }],
+    });
+  }
+
+  findExistingByTypeForApplication(input: { applicationId: string; credentialType: CredentialType }, tx?: Prisma.TransactionClient) {
+    return this.getDb(tx).practitionerCredential.findFirst({
+      where: { applicationId: input.applicationId, credentialType: input.credentialType },
+      select: { id: true, reviewStatus: true },
+    });
+  }
+
+  findExistingByTypeAndFileUrlForApplication(input: { applicationId: string; credentialType: CredentialType; fileUrl: string }, tx?: Prisma.TransactionClient) {
+    return this.getDb(tx).practitionerCredential.findFirst({
+      where: { applicationId: input.applicationId, credentialType: input.credentialType, fileUrl: input.fileUrl },
+      select: { id: true },
+    });
+  }
+
+  findByIdForApplication(id: string, applicationId: string, tx?: Prisma.TransactionClient) {
+    return this.getDb(tx).practitionerCredential.findFirst({ where: { id, applicationId } });
   }
 
   findExistingByType(

@@ -9,6 +9,7 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "../../providers/ThemeProvider";
+import { useAppDirection } from "../../i18n/direction";
 import { Text } from "./Text";
 import {
   formatViewerDate,
@@ -175,7 +176,7 @@ export const SectionHeader = ({
   ...props
 }: SectionHeaderProps) => {
   const { theme } = useTheme();
-  const isRTL = I18nManager.isRTL;
+  const { isRtl: isRTL } = useAppDirection();
 
   return (
     <View
@@ -221,13 +222,13 @@ export const InfoRow = ({
   ...props
 }: SummaryRowProps) => {
   const { theme } = useTheme();
-  const isRTL = I18nManager.isRTL;
+  const { isRtl: isRTL, chevronForward } = useAppDirection();
   const Container: React.ElementType = onPress ? TouchableOpacity : View;
   const containerProps = onPress ? { activeOpacity: 0.78, onPress } : {};
 
   const Chevron = () => (
     <Ionicons
-      name={isRTL ? "chevron-back" : "chevron-forward"}
+      name={chevronForward}
       size={18}
       color={theme.colors.textMuted}
     />
@@ -306,7 +307,7 @@ export const IconRow = ({
   ...props
 }: CompactActionRowProps) => {
   const { theme } = useTheme();
-  const isRTL = I18nManager.isRTL;
+  const { isRtl: isRTL, arrowForward } = useAppDirection();
 
   return (
     <TouchableOpacity
@@ -334,7 +335,7 @@ export const IconRow = ({
         label
       )}
       <Ionicons
-        name={isRTL ? "arrow-back" : "arrow-forward"}
+        name={arrowForward}
         size={16}
         color={theme.colors.primary}
         style={styles.compactActionIcon}

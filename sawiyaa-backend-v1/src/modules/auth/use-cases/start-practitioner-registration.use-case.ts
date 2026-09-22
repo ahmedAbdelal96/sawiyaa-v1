@@ -1,17 +1,11 @@
 import { ConflictException, Injectable } from '@nestjs/common';
-import {
-  OtpChannel,
-  OtpPurpose,
-  PractitionerType,
-  CredentialType,
-} from '@prisma/client';
+import { OtpChannel, OtpPurpose } from '@prisma/client';
 import { SupportedLocale } from '@common/i18n/types/locale.types';
 import { PhoneNumberValidationService } from '@common/validation/phone-number-validation.service';
 import { UserEmailRepository } from '../repositories/user-email.repository';
 import { HashPasswordUseCase } from './hash-password.use-case';
 import { CreateOtpChallengeUseCase } from '../../verification/use-cases/create-otp-challenge.use-case';
 import { SendOtpChallengeUseCase } from '../../verification/use-cases/send-otp-challenge.use-case';
-import { assertProfessionalTitle } from '@modules/practitioners/constants/professional-title.constants';
 
 @Injectable()
 export class StartPractitionerRegistrationUseCase {
@@ -29,18 +23,6 @@ export class StartPractitionerRegistrationUseCase {
     phoneCountryCode?: string | null;
     password: string;
     displayName?: string | null;
-    practitionerType?: PractitionerType;
-    professionalTitle?: string;
-    bio?: string;
-    yearsOfExperience?: number;
-    countryCode?: string;
-    primarySpecialtyCategoryId: string;
-    specialtyIds: string[];
-    initialCredential?: {
-      credentialType: CredentialType;
-      fileUrl: string;
-      expiresAt?: string;
-    };
     locale: SupportedLocale;
   }) {
     const email = input.email.trim().toLowerCase();
@@ -51,7 +33,6 @@ export class StartPractitionerRegistrationUseCase {
       });
     }
 
-    const professionalTitle = assertProfessionalTitle(input.professionalTitle);
     const phone = input.phone?.trim()
       ? this.phoneNumberValidationService.validate(
           input.phone,
@@ -62,14 +43,6 @@ export class StartPractitionerRegistrationUseCase {
     const metadata = {
       passwordHash,
       displayName: input.displayName ?? null,
-      practitionerType: input.practitionerType ?? PractitionerType.OTHER,
-      professionalTitle,
-      bio: input.bio ?? null,
-      yearsOfExperience: input.yearsOfExperience ?? null,
-      countryCode: input.countryCode ?? null,
-      primarySpecialtyCategoryId: input.primarySpecialtyCategoryId,
-      specialtyIds: input.specialtyIds,
-      initialCredential: input.initialCredential ?? null,
       phone: phone?.valid
         ? { e164: phone.e164, countryCode: phone.countryCode }
         : null,

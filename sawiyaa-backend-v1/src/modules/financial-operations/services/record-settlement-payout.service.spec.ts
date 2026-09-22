@@ -18,6 +18,8 @@ import {
 
 describe('RecordSettlementPayoutService', () => {
   const prisma = {
+    $transaction: jest.fn().mockImplementation(async (fn) => fn(prisma)),
+    $executeRaw: jest.fn().mockResolvedValue(1),
     $connect: jest.fn(),
     $disconnect: jest.fn(),
     practitionerWallet: {
@@ -28,6 +30,7 @@ describe('RecordSettlementPayoutService', () => {
     },
   } as unknown as PrismaService;
   const settlementRepository = {
+    findPractitionerSettlementById: jest.fn(),
     updatePractitionerSettlement: jest.fn(),
   } as unknown as SettlementRepository;
   const settlementPayoutRepository = {
@@ -39,6 +42,7 @@ describe('RecordSettlementPayoutService', () => {
     createLedgerEntry: jest.fn(),
   } as unknown as LedgerRepository;
   const practitionerRecoveryService = {
+    getOutstandingAmount: jest.fn().mockResolvedValue(new Prisma.Decimal(0)),
     applyOpenRecoveriesToPayout: jest.fn().mockResolvedValue({
       appliedAmount: new Prisma.Decimal('0.00'),
       appliedCount: 0,
@@ -66,6 +70,11 @@ describe('RecordSettlementPayoutService', () => {
     accountingJournalPostingService,
     new CalculatePractitionerPayoutConversionService(),
   );
+
+  async function executePayout(...args: Parameters<typeof service.execute>) {
+    (settlementRepository.findPractitionerSettlementById as jest.Mock).mockResolvedValue(args[0].settlement);
+    return service.execute(...args);
+  }
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -118,7 +127,7 @@ describe('RecordSettlementPayoutService', () => {
       wasAlreadyPosted: false,
     });
 
-    const result = await service.execute(
+    const result = await executePayout(
       {
         settlement: {
           id: 'settlement_1',
@@ -157,7 +166,7 @@ describe('RecordSettlementPayoutService', () => {
         externalPayoutRef: 'bank-123',
         processedByUserId: 'admin_1',
       }),
-      undefined,
+      prisma,
     );
     expect(
       settlementRepository.updatePractitionerSettlement,
@@ -166,23 +175,15 @@ describe('RecordSettlementPayoutService', () => {
       expect.objectContaining({
         status: 'PAID_OUT',
       }),
-      undefined,
+      prisma,
     );
     expect(ledgerRepository.createLedgerEntry).toHaveBeenCalled();
     expect(
       practitionerRecoveryService.applyOpenRecoveriesToPayout,
-    ).toHaveBeenCalledWith(
-      expect.objectContaining({
-        payoutId: 'payout_1',
-        payoutAmount: new Prisma.Decimal('120.00'),
-        practitionerId: 'pract_1',
-        currencyCode: 'EGP',
-        operatorUserId: 'admin_1',
-      }),
-    );
+    ).not.toHaveBeenCalled();
     expect(refreshPractitionerWalletService.refresh).toHaveBeenCalledWith(
       'pract_1',
-      undefined,
+      prisma,
     );
     expect(
       accountingJournalPostingService.postPractitionerPayout,
@@ -253,7 +254,7 @@ describe('RecordSettlementPayoutService', () => {
       wasAlreadyPosted: false,
     });
 
-    const first = await service.execute(
+    const first = await executePayout(
       {
         settlement: {
           id: 'settlement_1',
@@ -284,7 +285,7 @@ describe('RecordSettlementPayoutService', () => {
       undefined,
     );
 
-    const second = await service.execute(
+    const second = await executePayout(
       {
         settlement: {
           id: 'settlement_1',
@@ -326,7 +327,7 @@ describe('RecordSettlementPayoutService', () => {
         status: 'CREDITED',
         amountPaidTotal: new Prisma.Decimal('40.00'),
       }),
-      undefined,
+      prisma,
     );
     expect(
       settlementRepository.updatePractitionerSettlement,
@@ -337,7 +338,7 @@ describe('RecordSettlementPayoutService', () => {
         status: 'PAID_OUT',
         amountPaidTotal: new Prisma.Decimal('120.00'),
       }),
-      undefined,
+      prisma,
     );
     expect(
       accountingJournalPostingService.postPractitionerPayout,
@@ -362,7 +363,7 @@ describe('RecordSettlementPayoutService', () => {
       settlementPayoutRepository.findSettlementPayoutByIdempotencyKey as jest.Mock
     ).mockResolvedValue(null);
 
-    const result = await service.execute(
+    const result = await executePayout(
       {
         settlement: {
           id: 'settlement_1',
@@ -413,7 +414,7 @@ describe('RecordSettlementPayoutService', () => {
       processedByUser: { displayName: 'Admin' },
     });
 
-    const result = await service.execute(
+    const result = await executePayout(
       {
         settlement: {
           id: 'settlement_1',
@@ -455,7 +456,7 @@ describe('RecordSettlementPayoutService', () => {
     ]);
 
     await expect(
-      service.execute(
+      executePayout(
         {
           settlement: {
             id: 'settlement_1',
@@ -490,7 +491,7 @@ describe('RecordSettlementPayoutService', () => {
 
   it('rejects overpayment against the remaining settlement balance', async () => {
     await expect(
-      service.execute(
+      executePayout(
         {
           settlement: {
             id: 'settlement_1',
@@ -539,7 +540,7 @@ describe('RecordSettlementPayoutService', () => {
     });
 
     await expect(
-      service.execute(
+      executePayout(
         {
           settlement: {
             id: 'settlement_1',
@@ -570,7 +571,7 @@ describe('RecordSettlementPayoutService', () => {
 
   it('blocks invalid settlement statuses for payout recording', async () => {
     await expect(
-      service.execute(
+      executePayout(
         {
           settlement: {
             id: 'settlement_1',

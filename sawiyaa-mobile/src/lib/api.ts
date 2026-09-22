@@ -3,8 +3,8 @@ import axios, {
   AxiosResponse,
   InternalAxiosRequestConfig,
 } from "axios";
-import { Platform } from "react-native";
 import i18n from "../i18n";
+import { MOBILE_API_URL } from "../config/mobile-environment";
 
 interface ApiEnvelope<T> {
   success: boolean;
@@ -23,42 +23,10 @@ type RetriableRequestConfig = InternalAxiosRequestConfig & {
 let apiAuthSessionHandlers: ApiAuthSessionHandlers | null = null;
 let refreshAccessTokenPromise: Promise<string | null> | null = null;
 let authFailurePromise: Promise<void> | null = null;
-
-function resolveBaseUrl() {
-  const publicEnv = process.env as Record<string, string | undefined>;
-  const configured = publicEnv.EXPO_PUBLIC_API_URL?.trim();
-  if (configured) {
-    let parsed: URL;
-    try {
-      parsed = new URL(configured);
-    } catch {
-      throw new Error("EXPO_PUBLIC_API_URL must be a valid absolute URL.");
-    }
-
-    if (!(typeof __DEV__ !== "undefined" && __DEV__) && parsed.protocol !== "https:") {
-      throw new Error("EXPO_PUBLIC_API_URL must use https:// in production builds.");
-    }
-
-    return configured;
-  }
-
-  if (typeof __DEV__ !== "undefined" && __DEV__) {
-    if (Platform.OS === "android") {
-      return "http://10.0.2.2:7000/api/v1";
-    }
-
-    return "http://localhost:7000/api/v1";
-  }
-
-  if (Platform.OS === "android") {
-    throw new Error("EXPO_PUBLIC_API_URL is required in production builds.");
-  }
-
-  throw new Error("EXPO_PUBLIC_API_URL is required in production builds.");
-}
+let currentAccessToken: string | null = null;
 
 export const apiClient = axios.create({
-  baseURL: resolveBaseUrl(),
+  baseURL: MOBILE_API_URL,
   timeout: 15000,
   headers: {
     "Content-Type": "application/json",
@@ -183,6 +151,7 @@ export function configureApiAuthSessionHandlers(
 }
 
 export function setApiAccessToken(token: string | null) {
+  currentAccessToken = token;
   if (token) {
     apiClient.defaults.headers.common.Authorization = `Bearer ${token}`;
     return;
@@ -191,14 +160,35 @@ export function setApiAccessToken(token: string | null) {
   delete apiClient.defaults.headers.common.Authorization;
 }
 
+export function getApiAccessToken() {
+  return currentAccessToken;
+}
+
 export function extractApiData<T>(response: AxiosResponse<ApiEnvelope<T>>) {
   return response.data.data;
+}
+
+export function extractApiErrorCode(error: unknown): string | null {
+  if (!(error instanceof AxiosError)) return null;
+
+  const payload = error.response?.data as
+    | { errorCode?: unknown; error?: unknown }
+    | undefined;
+  if (typeof payload?.errorCode === "string") return payload.errorCode;
+  if (typeof payload?.error === "string") return payload.error;
+  return null;
 }
 
 export function extractApiErrorMessage(error: unknown) {
   if (error instanceof AxiosError) {
     if (error.response?.status === 401) {
-      const payload = error.response?.data as
+      const sessionExpiredMessage = i18n.language?.startsWith("ar")
+        ? "انتهت صلاحية الجلسة. سجّل الدخول مرة أخرى."
+        : "Your session has expired. Please sign in again.";
+
+      void sessionExpiredMessage;
+
+      const payload = (error as AxiosError).response?.data as
         | {
             message?: string | string[];
             error?: string;
@@ -207,15 +197,15 @@ export function extractApiErrorMessage(error: unknown) {
         | undefined;
       const rawMessage =
         typeof payload?.data?.message === "string"
-          ? payload.data.message
+          ? payload?.data?.message
           : typeof payload?.message === "string"
-            ? payload.message
+            ? payload?.message
             : Array.isArray(payload?.message)
-              ? String(payload.message[0] ?? "")
+              ? String(payload?.message?.[0] ?? "")
               : typeof payload?.error === "string"
-                ? payload.error
-                : error.message;
-      const normalizedRawMessage = rawMessage.trim().toLowerCase();
+                ? payload?.error
+                : (error as AxiosError).message;
+      const normalizedRawMessage = String(rawMessage ?? "").trim().toLowerCase();
       const isRawAuthMessage =
         !normalizedRawMessage ||
         normalizedRawMessage === "unauthorized" ||
@@ -223,7 +213,7 @@ export function extractApiErrorMessage(error: unknown) {
         normalizedRawMessage.includes("jwt") ||
         normalizedRawMessage.includes("token");
 
-      if (isRawAuthMessage) {
+      if (error.response?.status === 401 || isRawAuthMessage) {
         return i18n.language?.startsWith("ar")
           ? "انتهت صلاحية الجلسة. سجّل الدخول مرة أخرى."
           : "Your session has expired. Please sign in again.";
@@ -247,6 +237,12 @@ export function extractApiErrorMessage(error: unknown) {
 
     if (errorCode === "ACADEMY_LEARNER_ENROLLMENT_RESTRICTED") {
       return i18n.language?.startsWith("ar")
+        ? "لا يمكن لحسابات الإدارة الاشتراك كدارسين. استخدم حساب مريض أو مختص أو دارس منفصل."
+        : "Admin accounts cannot enroll as learners. Please use a patient, practitioner, or learner account.";
+    }
+
+    if (errorCode === "ACADEMY_LEARNER_ENROLLMENT_RESTRICTED_LEGACY") {
+      return i18n.language?.startsWith("ar")
         ? "Ø­Ø³Ø§Ø¨Ø§Øª Ø§Ù„Ø¥Ø¯Ø§Ø±Ø© Ù„Ø§ ÙŠÙ…ÙƒÙ†Ù‡Ø§ Ø§Ù„Ø§Ø´ØªØ±Ø§Ùƒ ÙƒØ¯Ø§Ø±Ø³. Ø§Ø³ØªØ®Ø¯Ù… Ø­Ø³Ø§Ø¨ Ù…Ø±ÙŠØ¶ Ø£Ùˆ Ù…Ø®ØªØµ Ø£Ùˆ Ø¯Ø§Ø±Ø³ Ù…Ù†ÙØµÙ„."
         : "Admin accounts cannot enroll as learners. Please use a patient, practitioner, or learner account.";
     }
@@ -255,29 +251,43 @@ export function extractApiErrorMessage(error: unknown) {
       typeof payload?.data?.message === "string" &&
       payload.data.message.trim()
     ) {
-      return payload.data.message;
+      return i18n.language?.startsWith("ar")
+        ? "تعذر إكمال الطلب حالياً. حاول مرة أخرى."
+        : "We couldn't complete that request. Please try again.";
     }
 
     if (typeof payload?.message === "string" && payload.message.trim()) {
-      return payload.message;
+      return i18n.language?.startsWith("ar")
+        ? "تعذر إكمال الطلب حالياً. حاول مرة أخرى."
+        : "We couldn't complete that request. Please try again.";
     }
 
     if (Array.isArray(payload?.message) && payload.message[0]) {
-      return String(payload.message[0]);
+      return i18n.language?.startsWith("ar")
+        ? "تعذر إكمال الطلب حالياً. حاول مرة أخرى."
+        : "We couldn't complete that request. Please try again.";
     }
 
     if (typeof payload?.error === "string" && payload.error.trim()) {
-      return payload.error;
+      return i18n.language?.startsWith("ar")
+        ? "تعذر إكمال الطلب حالياً. حاول مرة أخرى."
+        : "We couldn't complete that request. Please try again.";
     }
 
     if (error.code === "ECONNABORTED") {
-      return "Request timed out.";
+      return i18n.language?.startsWith("ar")
+        ? "انتهت مهلة الطلب. حاول مرة أخرى."
+        : "The request timed out. Please try again.";
     }
   }
 
   if (error instanceof Error && error.message.trim()) {
-    return error.message;
+    return i18n.language?.startsWith("ar")
+      ? "تعذر إكمال الطلب حالياً. حاول مرة أخرى."
+      : "We couldn't complete that request. Please try again.";
   }
 
-  return "Unexpected error. Please try again.";
+  return i18n.language?.startsWith("ar")
+    ? "تعذر إكمال الطلب حالياً. حاول مرة أخرى."
+    : "We couldn't complete that request. Please try again.";
 }

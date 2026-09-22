@@ -1,11 +1,11 @@
+name: sawiyaa
+
 services:
   postgres:
     image: postgres:16-bookworm
     restart: unless-stopped
     env_file:
-      - ./.env.production.db
-    environment:
-      PGDATA: /var/lib/postgresql/data/pgdata
+      - ./sawiyaa-backend-v1/.env.postgres
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -28,16 +28,9 @@ services:
       dockerfile: Dockerfile
     restart: unless-stopped
     env_file:
-      - ./.env.production.backend
+      - ./sawiyaa-backend-v1/.env
     environment:
-      APP_ENV: production
-      NODE_ENV: production
-      PORT: 7000
-      APP_NAME: sawiyaa-backend-v1
-      APP_URL: https://sawiyaa.com
-      APP_BASE_URL: https://sawiyaa.com
-      CORS_ORIGINS: https://sawiyaa.com
-      THROTTLE_STORE: memory
+      SAWIYAA_RELEASE_SHA: ${SAWIYAA_RELEASE_SHA:-}
     volumes:
       - backend_storage:/app/storage
       - backend_uploads:/app/uploads
@@ -109,18 +102,7 @@ services:
         NEXT_PUBLIC_DEBUG_PRACTITIONER_WIZARD: ${NEXT_PUBLIC_DEBUG_PRACTITIONER_WIZARD}
     restart: unless-stopped
     env_file:
-      - ./.env.production.frontend
-    environment:
-      NODE_ENV: production
-      PORT: 3000
-      HOSTNAME: 0.0.0.0
-      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
-      API_PROXY_TARGET: ${API_PROXY_TARGET}
-      NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL}
-      NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL}
-      NEXT_PUBLIC_APP_ENV: ${NEXT_PUBLIC_APP_ENV}
-      NEXT_PUBLIC_SHOW_DETAILED_ERRORS: ${NEXT_PUBLIC_SHOW_DETAILED_ERRORS}
-      NEXT_PUBLIC_CHAT_SOCKET_URL: ${NEXT_PUBLIC_CHAT_SOCKET_URL}
+      - ./sawiyaa-frontend-v1/.env
     expose:
       - "3000"
     depends_on:
@@ -132,7 +114,7 @@ services:
           "CMD",
           "node",
           "-e",
-          "fetch('http://127.0.0.1:3000/').then((r) => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))",
+          "fetch('http://127.0.0.1:3000/api/health').then((r) => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))",
         ]
       interval: 15s
       timeout: 5s

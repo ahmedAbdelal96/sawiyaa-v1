@@ -37,6 +37,10 @@ import {
   useViewAdminPractitionerApplicationCredentialFile,
 } from "../hooks/use-practitioner-applications";
 import { useAdminPractitioners } from "@/features/admin/practitioners/hooks/use-admin-practitioners";
+import {
+  useAdminSpecialties,
+  useAdminSpecialtyCategories,
+} from "@/features/specialties/hooks/use-specialties";
 import type { PractitionerApplicationDetailsResponse } from "../types/practitioner-applications.types";
 import AdminApplicationReviewHeader from "./AdminApplicationReviewHeader";
 import AdminApplicationReviewWizard from "./AdminApplicationReviewWizard";
@@ -148,8 +152,9 @@ function formatReviewToken(locale: string, value: string) {
 }
 
 function formatLanguageList(locale: string, values: string[]) {
-  if (values.length === 0) return "-";
-  return values.map((value) => formatLanguageLabel(locale, value)).join("، ");
+  const safeValues = Array.isArray(values) ? values : [];
+  if (safeValues.length === 0) return "-";
+  return safeValues.map((value) => formatLanguageLabel(locale, value)).join("، ");
 }
 
 function formatMoneyValue(value: number | null | undefined, locale: string) {
@@ -168,6 +173,14 @@ function formatCredentialStatusLabel(
   if (status === "APPROVED") return t("applicationDetails.review.reviewedApproved");
   if (status === "REJECTED") return t("applicationDetails.review.reviewedRejected");
   return t("applicationDetails.review.notVerifiedYet");
+}
+
+function formatApplicationStatusLabel(
+  t: ReturnType<typeof useTranslations>,
+  status?: PractitionerApplicationStatus | null,
+) {
+  if (!status) return "-";
+  return t(`status.${status}` as Parameters<typeof t>[0]);
 }
 
 function getCredentialStatusTone(status?: CredentialReviewStatus | null) {
@@ -193,14 +206,6 @@ function getCredentialTypeLabel(locale: string, type: CredentialType) {
   return labels[type];
 }
 
-function formatApplicationStatusLabel(
-  t: ReturnType<typeof useTranslations>,
-  status?: PractitionerApplicationStatus | null,
-) {
-  if (!status) return "-";
-  return t(`status.${status}` as Parameters<typeof t>[0]);
-}
-
 function formatPayoutMethodLabel(
   t: ReturnType<typeof useTranslations>,
   methodType?: PractitionerPayoutMethodType | null,
@@ -210,35 +215,42 @@ function formatPayoutMethodLabel(
 }
 
 function formatSpecialtyList(
-  specialties: Array<{
-    specialtyId: string;
-    slug: string;
-    title: string | null;
-    name: string | null;
-    nameAr: string | null;
-    nameEn: string | null;
-    isPrimary: boolean;
-  }>,
+  specialties: any[] | null | undefined,
   locale: string,
   primaryLabel: string,
+  catalogSpecialties?: Array<{ id: string; name: string; nameAr: string | null; nameEn: string | null; slug: string }>,
 ) {
-  if (specialties.length === 0) return "-";
-  return specialties
-    .map((item) => {
-      const label =
-        item.title ??
-        getLocalizedSpecialtyName(
-          {
-            name: item.name,
-            nameAr: item.nameAr,
-            nameEn: item.nameEn,
-            slug: item.slug,
-          },
-          locale,
-        );
-      return `${label}${item.isPrimary ? ` (${primaryLabel})` : ""}`;
+  const safeSpecialties = Array.isArray(specialties) ? specialties : [];
+  if (safeSpecialties.length === 0) return "-";
+  const formatted = safeSpecialties
+    .map((item: any) => {
+      const rawTitle = item?.title?.trim();
+      const rawNameAr = item?.nameAr?.trim() || item?.specialtyNameAr?.trim();
+      const rawNameEn = item?.nameEn?.trim() || item?.specialtyNameEn?.trim();
+      const rawName = item?.name?.trim() || item?.specialtyName?.trim() || item?.slug?.trim();
+
+      let label = rawTitle;
+      if (!label) {
+        label = locale === "ar" ? (rawNameAr || rawName || rawNameEn) : (rawNameEn || rawName || rawNameAr);
+      }
+      if (!label || label === "undefined" || /^[0-9a-fA-F-]{36}$/.test(label)) {
+        const id = item?.specialtyId || item?.id;
+        const fromCatalog = catalogSpecialties?.find((c) => c.id === id || c.slug === item?.slug);
+        if (fromCatalog) {
+          label = locale === "ar" ? (fromCatalog.nameAr || fromCatalog.name) : (fromCatalog.nameEn || fromCatalog.name);
+        }
+      }
+      if (!label || label === "undefined" || /^[0-9a-fA-F-]{36}$/.test(label)) {
+        label = item?.slug || "-";
+      }
+      if (!label || label === "-" || label === "undefined") {
+        return null;
+      }
+      return `${label}${item?.isPrimary ? ` (${primaryLabel})` : ""}`;
     })
-    .join("، ");
+    .filter(Boolean);
+
+  return formatted.length > 0 ? formatted.join("، ") : "-";
 }
 
 function getReadinessRecommendation(
@@ -414,7 +426,7 @@ export default function AdminApplicationDetails({ applicationId }: Props) {
     const { applicant, profile, liveApplicant, liveProfile, application } = data.details;
     const hasAvatar = Boolean(
       normalizeAvatarUrl(
-        applicant.avatarUrl ?? profile.avatarUrl ?? liveApplicant.avatarUrl ?? liveProfile.avatarUrl ?? null,
+        applicant.avatarUrl ?? profile.avatarUrl ?? liveApplicant.avatarUrl ?? liveProfile?.avatarUrl ?? null,
       ),
     );
     if (!hasAvatar) {
@@ -675,49 +687,49 @@ export default function AdminApplicationDetails({ applicationId }: Props) {
     {
       key: "practitionerType",
       label: t("applicationDetails.profile.type"),
-      current: liveProfile.practitionerType ? t(`practitionerType.${liveProfile.practitionerType as PractitionerType}`) : "-",
+      current: liveProfile?.practitionerType ? t(`practitionerType.${liveProfile.practitionerType as PractitionerType}`) : "-",
       requested: profile.practitionerType ? t(`practitionerType.${profile.practitionerType as PractitionerType}`) : "-",
     },
     {
       key: "professionalTitle",
       label: t("applicationDetails.profile.title"),
-      current: getProfessionalTitleLabel(liveProfile.professionalTitle, locale) || getReadableValue(liveProfile.professionalTitle),
+      current: getProfessionalTitleLabel(liveProfile?.professionalTitle, locale) || getReadableValue(liveProfile?.professionalTitle),
       requested: getProfessionalTitleLabel(profile.professionalTitle, locale) || getReadableValue(profile.professionalTitle),
     },
     {
       key: "sessionPrice30Egp",
       label: t("applicationDetails.profile.sessionPrice30Egp"),
-      current: formatMoneyValue(liveProfile.pricing.session30.egp, locale),
+      current: formatMoneyValue(liveProfile?.pricing.session30.egp, locale),
       requested: formatMoneyValue(profile.pricing.session30.egp, locale),
     },
     {
       key: "sessionPrice60Egp",
       label: t("applicationDetails.profile.sessionPrice60Egp"),
-      current: formatMoneyValue(liveProfile.pricing.session60.egp, locale),
+      current: formatMoneyValue(liveProfile?.pricing.session60.egp, locale),
       requested: formatMoneyValue(profile.pricing.session60.egp, locale),
     },
     {
       key: "instantBookingPrice30Egp",
       label: t("applicationDetails.profile.instantBookingPrice30Egp"),
-      current: formatMoneyValue(liveProfile.instantBookingPrice30Egp, locale),
+      current: formatMoneyValue(liveProfile?.instantBookingPrice30Egp, locale),
       requested: formatMoneyValue(profile.instantBookingPrice30Egp, locale),
     },
     {
       key: "instantBookingPrice60Egp",
       label: t("applicationDetails.profile.instantBookingPrice60Egp"),
-      current: formatMoneyValue(liveProfile.instantBookingPrice60Egp, locale),
+      current: formatMoneyValue(liveProfile?.instantBookingPrice60Egp, locale),
       requested: formatMoneyValue(profile.instantBookingPrice60Egp, locale),
     },
     {
       key: "instantBookingPrice30Usd",
       label: t("applicationDetails.profile.instantBookingPrice30Usd"),
-      current: formatMoneyValue(liveProfile.instantBookingPrice30Usd, locale),
+      current: formatMoneyValue(liveProfile?.instantBookingPrice30Usd, locale),
       requested: formatMoneyValue(profile.instantBookingPrice30Usd, locale),
     },
     {
       key: "instantBookingPrice60Usd",
       label: t("applicationDetails.profile.instantBookingPrice60Usd"),
-      current: formatMoneyValue(liveProfile.instantBookingPrice60Usd, locale),
+      current: formatMoneyValue(liveProfile?.instantBookingPrice60Usd, locale),
       requested: formatMoneyValue(profile.instantBookingPrice60Usd, locale),
     },
   ].filter((item) => normalizeForDiff(item.current) !== normalizeForDiff(item.requested));
@@ -995,7 +1007,9 @@ export default function AdminApplicationDetails({ applicationId }: Props) {
                       profile.primarySpecialtyCategory,
                       locale,
                     )
-                  : getReadableValue(profile.primarySpecialtyCategoryId),
+                  : (profile.specialties?.find((s: any) => s.category)?.category
+                      ? getLocalizedSpecialtyCategoryName(profile.specialties.find((s: any) => s.category)!.category!, locale)
+                      : "-"),
               },
               {
                 label: t("applicationDetails.profile.specialties"),

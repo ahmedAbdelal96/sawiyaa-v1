@@ -29,6 +29,7 @@ import {
 import { FileInterceptor } from '@nestjs/platform-express';
 import { createReadStream } from 'fs';
 import { Response } from 'express';
+import { setStoredFileResponseHeaders } from '@modules/files/file-response.utils';
 import { CurrentUser } from '@common/decorators/current-user.decorator';
 import { RequireAccountStates } from '@common/decorators/account-state.decorator';
 import { Permissions } from '@common/decorators/permissions.decorator';
@@ -247,15 +248,7 @@ export class AdminPractitionerPayoutsController {
       payoutId,
     });
 
-    response.setHeader('Content-Type', proof.mimeType);
-    response.setHeader('Cache-Control', 'private, max-age=300');
-    if (proof.originalFileName) {
-      response.setHeader(
-        'Content-Disposition',
-        `inline; filename="${proof.originalFileName}"`,
-      );
-    }
-
+    setStoredFileResponseHeaders(response, { mimeType: proof.mimeType, originalFileName: proof.originalFileName, isPrivate: true });
     return new StreamableFile(createReadStream(proof.item.absolutePath));
   }
 

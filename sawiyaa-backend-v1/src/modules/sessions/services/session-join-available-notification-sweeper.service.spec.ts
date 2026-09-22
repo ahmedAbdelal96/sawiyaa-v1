@@ -151,6 +151,7 @@ describe('SessionJoinAvailableNotificationSweeperService', () => {
       updateRuntimeIfMissing,
       createEvent,
       findById: jest.fn(() => Promise.resolve(currentSession)),
+      lockRuntimePreparation: jest.fn().mockResolvedValue(undefined),
     } as unknown as SessionRepository;
 
     const prisma = {

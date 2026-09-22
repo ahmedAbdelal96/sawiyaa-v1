@@ -64,6 +64,36 @@ export class RejectPractitionerApplicationUseCase {
 
     this.transitionPolicy.assertCanReject(existing.status);
 
+    if (!existing.practitioner) {
+      const reason = input.reason.trim();
+      if (!reason) throw new NotFoundException({ error: 'ADMIN_PRACTITIONER_APPLICATION_INVALID_REASON' });
+      const reviewedAt = new Date();
+      const updated = await this.prisma.$transaction(async (tx) => {
+        const decision = await this.applicationRepository.updateDecision(input.id, {
+          status: PractitionerApplicationStatus.REJECTED,
+          reviewedAt,
+          reviewedByUserId: input.adminUserId,
+          reviewDecisionReason: reason,
+          reviewNotes: input.note?.trim() || null,
+        }, tx);
+        await tx.practitionerReviewCase.updateMany({
+          where: { applicationId: input.id, status: { in: ['PENDING_REVIEW', 'UNDER_REVIEW', 'RESUBMITTED'] } },
+          data: { status: 'REJECTED', reviewedAt, reviewedByUserId: input.adminUserId, decisionReason: reason },
+        });
+        await this.securityAuditService.recordRequired(tx, {
+          action: 'security.practitioner.application.reject', outcome: SecurityAuditOutcome.SUCCESS,
+          actorType: SecurityAuditActorType.USER, source: SecurityAuditSource.HTTP_REQUEST,
+          actorUserId: input.adminUserId, actorRoles: input.operatorRoles, resourceType: 'PractitionerApplication', resourceId: input.id, targetUserId: existing.userId, reason,
+        });
+        return decision;
+      });
+      await this.notificationService.sendRejected({ userId: existing.userId, applicationId: updated.id, locale: input.locale, reason });
+      return {
+        message: this.i18nService.t('admin.practitionerApplications.success.applicationRejected', input.locale),
+        application: this.mapper.toDecision({ applicationId: updated.id, practitionerProfileId: null, userId: existing.userId, status: updated.status, reviewedAt: updated.reviewedAt, reviewedByUserId: updated.reviewedByUserId ?? null, reviewDecisionReason: updated.reviewDecisionReason ?? null, reviewNotes: updated.reviewNotes ?? null }),
+      };
+    }
+
     const reason = input.reason.trim();
     const note = input.note?.trim();
     const reviewNotes = note || null;

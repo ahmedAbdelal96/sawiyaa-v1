@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { JwtAccessAuthGuard } from '@common/guards/authentication/jwt-access-auth.guard';
 import { RolesGuard } from '@common/guards/authorization/roles.guard';
+import { PermissionsGuard } from '@common/guards/authorization/permissions.guard';
 import { AdminSessionsReportController } from './controllers/admin-sessions-report.controller';
 import { AdminPaymentsRevenueReportController } from './controllers/admin-payments-revenue-report.controller';
 import { AdminSupportReportController } from './controllers/admin-support-report.controller';
@@ -38,6 +39,7 @@ import { ListAdminSupportReportRowsUseCase } from './use-cases/list-admin-suppor
   providers: [
     JwtAccessAuthGuard,
     RolesGuard,
+    PermissionsGuard,
     {
       provide: SESSIONS_REPORT_PROVIDER,
       useClass: PrismaSessionsReportProvider,

@@ -13,6 +13,7 @@ import {
   UseGuards,
   UploadedFile,
   UseInterceptors,
+  Optional,
 } from '@nestjs/common';
 import { createReadStream } from 'fs';
 import type { Response } from 'express';
@@ -80,6 +81,8 @@ import { GetPractitionerApplicationAvatarFileUseCase } from '../use-cases/get-pr
 import { GetPractitionerApplicationCredentialFileUseCase } from '../use-cases/get-practitioner-application-credential-file.use-case';
 import { UploadAdminPractitionerCredentialFileUseCase } from '../use-cases/upload-admin-practitioner-credential-file.use-case';
 import { GetAdminDirectCreateCredentialFileUseCase } from '../use-cases/get-admin-direct-create-credential-file.use-case';
+import { ManagePractitionerRequirementUseCase } from '../use-cases/manage-practitioner-requirement.use-case';
+import { UpdatePractitionerRequirementDto } from '../dto/update-practitioner-requirement.dto';
 
 /**
  * Admin-only controller for practitioner application review decisions.
@@ -107,6 +110,7 @@ export class PractitionerApplicationsAdminController {
     private readonly uploadAdminPractitionerCredentialFileUseCase: UploadAdminPractitionerCredentialFileUseCase,
     private readonly getAdminDirectCreateCredentialFileUseCase: GetAdminDirectCreateCredentialFileUseCase,
     private readonly securityAuditService: SecurityAuditService,
+    @Optional() private readonly managePractitionerRequirementUseCase: ManagePractitionerRequirementUseCase,
   ) {}
 
   /**
@@ -126,11 +130,13 @@ export class PractitionerApplicationsAdminController {
     @Param('id', new ParseUUIDPipe()) id: string,
     @Res({ passthrough: true }) res: Response,
   ) {
-    const stored = await this.getPractitionerApplicationAvatarFileUseCase.execute(
-      { applicationId: id },
-    );
+    const stored =
+      await this.getPractitionerApplicationAvatarFileUseCase.execute({
+        applicationId: id,
+      });
 
     res.setHeader('Content-Type', stored.mimeType);
+    res.setHeader('X-Content-Type-Options', 'nosniff');
     res.setHeader('Content-Disposition', 'inline');
     res.setHeader('Cache-Control', 'private, max-age=60');
     return new StreamableFile(createReadStream(stored.absolutePath));
@@ -162,6 +168,7 @@ export class PractitionerApplicationsAdminController {
       });
 
     res.setHeader('Content-Type', stored.mimeType);
+    res.setHeader('X-Content-Type-Options', 'nosniff');
     res.setHeader('Content-Disposition', 'inline');
     res.setHeader('Cache-Control', 'private, max-age=60');
     return new StreamableFile(createReadStream(stored.absolutePath));
@@ -232,31 +239,32 @@ export class PractitionerApplicationsAdminController {
     @CurrentLocale() locale: SupportedLocale,
     @CurrentUser() currentUser: AuthenticatedUser,
   ) {
-    return this.createAdminPractitionerUseCase
-      .execute({
-        locale,
-        adminUserId: currentUser.id,
-        email: body.email,
-        phone: body.phone,
-        phoneCountryCode: body.phoneCountryCode,
-        password: body.password,
-        displayName: body.displayName,
-        practitionerType: body.practitionerType,
-        practitionerGender: body.practitionerGender,
-        professionalTitle: body.professionalTitle,
-        bio: body.bio,
-        yearsOfExperience: body.yearsOfExperience,
-        sessionPrice30Egp: body.sessionPrice30Egp,
-        sessionPrice30Usd: body.sessionPrice30Usd,
-        sessionPrice60Egp: body.sessionPrice60Egp,
-        sessionPrice60Usd: body.sessionPrice60Usd,
-        countryCode: body.countryCode,
-        languageCodes: body.languageCodes,
-        specialtySelection: body.specialtySelection,
-        payoutDestination: body.payoutDestination,
-        credentials: body.credentials,
-        note: body.note,
-      });
+    return this.createAdminPractitionerUseCase.execute({
+      locale,
+      adminUserId: currentUser.id,
+      email: body.email,
+      phone: body.phone,
+      phoneCountryCode: body.phoneCountryCode,
+      password: body.password,
+      displayName: body.displayName,
+      practitionerType: body.practitionerType,
+      practitionerGender: body.practitionerGender,
+      professionalTitle: body.professionalTitle,
+      bio: body.bio,
+      professionalContent: body.professionalContent,
+      primaryContentLocale: body.primaryContentLocale,
+      yearsOfExperience: body.yearsOfExperience,
+      sessionPrice30Egp: body.sessionPrice30Egp,
+      sessionPrice30Usd: body.sessionPrice30Usd,
+      sessionPrice60Egp: body.sessionPrice60Egp,
+      sessionPrice60Usd: body.sessionPrice60Usd,
+      countryCode: body.countryCode,
+      languageCodes: body.languageCodes,
+      specialtySelection: body.specialtySelection,
+      payoutDestination: body.payoutDestination,
+      credentials: body.credentials,
+      note: body.note,
+    });
   }
 
   /** Uploads a credential file for later inclusion in admin direct-create payloads. */
@@ -328,11 +336,14 @@ export class PractitionerApplicationsAdminController {
     @Query('mimeType') mimeType: string,
     @Res({ passthrough: true }) response: Response,
   ) {
-    const stored = await this.getAdminDirectCreateCredentialFileUseCase.execute({
-      credentialId,
-      mimeType,
-    });
+    const stored = await this.getAdminDirectCreateCredentialFileUseCase.execute(
+      {
+        credentialId,
+        mimeType,
+      },
+    );
     response.setHeader('Content-Type', stored.mimeType);
+    response.setHeader('X-Content-Type-Options', 'nosniff');
     response.setHeader('Cache-Control', 'private, no-store');
     return new StreamableFile(createReadStream(stored.absolutePath));
   }
@@ -364,6 +375,24 @@ export class PractitionerApplicationsAdminController {
     return this.getPractitionerApplicationDetailsUseCase.execute({
       id,
       locale,
+    });
+  }
+
+  @Patch(':id/requirements/:requirementId')
+  @Permissions(PermissionKey.PRACTITIONER_APPLICATIONS_APPROVE)
+  @ApiOperation({ summary: 'Satisfy, reject, or reopen an application requirement' })
+  updateRequirement(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Param('requirementId', new ParseUUIDPipe()) requirementId: string,
+    @Body() body: UpdatePractitionerRequirementDto,
+    @CurrentUser() currentUser: AuthenticatedUser,
+  ) {
+    return this.managePractitionerRequirementUseCase.execute({
+      applicationId: id,
+      requirementId,
+      actorUserId: currentUser.id,
+      action: body.action,
+      reason: body.reason,
     });
   }
 
@@ -572,13 +601,13 @@ export class PractitionerApplicationsAdminController {
     @CurrentUser() currentUser: AuthenticatedUser,
   ) {
     return this.approvePractitionerApplicationUseCase.execute({
-        id,
-        locale,
-        adminUserId: currentUser.id,
-        operatorRoles: currentUser.roles,
-        reason: body.reason,
-        note: body.note,
-      });
+      id,
+      locale,
+      adminUserId: currentUser.id,
+      operatorRoles: currentUser.roles,
+      reason: body.reason,
+      note: body.note,
+    });
   }
 
   /** Rejects a practitioner application when transition policy allows it. */
@@ -616,13 +645,13 @@ export class PractitionerApplicationsAdminController {
     @CurrentUser() currentUser: AuthenticatedUser,
   ) {
     return this.rejectPractitionerApplicationUseCase.execute({
-        id,
-        locale,
-        adminUserId: currentUser.id,
-        operatorRoles: currentUser.roles,
-        reason: body.reason,
-        note: body.note,
-      });
+      id,
+      locale,
+      adminUserId: currentUser.id,
+      operatorRoles: currentUser.roles,
+      reason: body.reason,
+      note: body.note,
+    });
   }
 
   /** Requests changes for a practitioner application (editable again). */

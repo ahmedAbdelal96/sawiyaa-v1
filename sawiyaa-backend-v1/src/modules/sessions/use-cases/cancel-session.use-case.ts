@@ -3,7 +3,11 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { Prisma, SessionStatus } from '@prisma/client';
+import {
+  Prisma,
+  SessionPaymentCoverageType,
+  SessionStatus,
+} from '@prisma/client';
 import { SupportedLocale } from '@common/i18n/types/locale.types';
 import { OperationalNotificationService } from '@modules/notifications/services/operational-notification.service';
 import { PrismaService } from '@common/prisma/prisma.service';
@@ -156,6 +160,35 @@ export class CancelSessionUseCase {
         } as Prisma.InputJsonObject,
         tx,
       });
+
+      // A package session is an entitlement reservation, not a separately
+      // paid session. When the patient cancels inside the configured policy
+      // window, return that reservation to the package so the cancelled row
+      // remains an auditable history record without silently consuming one of
+      // the patient's included sessions. Practitioner/no-show and admin
+      // resolution paths use their own explicit package decision workflow.
+      if (
+        lockedSession.paymentCoverageType ===
+          SessionPaymentCoverageType.PACKAGE &&
+        lockedSession.packagePurchaseId
+      ) {
+        await tx.sessionPackageEntitlementDecision.create({
+          data: {
+            sessionId: lockedSession.id,
+            packagePurchaseId: lockedSession.packagePurchaseId,
+            patientId: lockedSession.patientId,
+            practitionerId: lockedSession.practitionerId,
+            sessionStatusSnapshot: SessionStatus.CANCELLED,
+            decisionType: 'RESTORE_TO_PACKAGE',
+            reasonCode: 'PATIENT_CANCELLATION',
+            adminNote: 'Patient cancellation returned the package entitlement.',
+            decidedByUserId: input.userId,
+            resultingSessionEarningReviewId: null,
+            decidedAt: cancelledAt,
+            idempotencyKey: `patient-cancel:${lockedSession.id}`,
+          },
+        });
+      }
 
       await this.sessionCancellationPolicyRepository.createCancellationRecord(
         {

@@ -8,6 +8,9 @@ import { PractitionerApplicationRepository } from '../repositories/practitioner-
 import { PractitionerProfileRepository } from '../repositories/practitioner-profile.repository';
 import { GetPractitionerProfileReadinessUseCase } from './get-practitioner-profile-readiness.use-case';
 import { PractitionerReviewCaseService } from '../services/practitioner-review-case.service';
+import { PractitionerCredentialRepository } from '../repositories/practitioner-credential.repository';
+import { PractitionerUserRepository } from '../repositories/practitioner-user.repository';
+import { PractitionerRequiredDocumentsService } from '../services/practitioner-required-documents.service';
 
 /**
  * Returns current practitioner's latest application status summary with readiness/eligibility context.
@@ -23,6 +26,9 @@ export class GetPractitionerApplicationStatusUseCase {
     private readonly practitionerApplicationEligibilityPolicy: PractitionerApplicationEligibilityPolicy,
     private readonly getPractitionerProfileReadinessUseCase: GetPractitionerProfileReadinessUseCase,
     private readonly practitionerReviewCaseService: PractitionerReviewCaseService,
+    private readonly practitionerCredentialRepository: PractitionerCredentialRepository,
+    private readonly practitionerUserRepository: PractitionerUserRepository,
+    private readonly practitionerRequiredDocumentsService: PractitionerRequiredDocumentsService,
   ) {}
 
   async execute(input: {
@@ -35,10 +41,56 @@ export class GetPractitionerApplicationStatusUseCase {
     );
 
     if (!profile) {
-      throw new NotFoundException({
-        messageKey: 'practitioners.errors.profileNotFound',
-        error: 'PRACTITIONER_PROFILE_NOT_FOUND',
-      });
+      const [latestApplication, user] = await Promise.all([
+        this.practitionerApplicationRepository.findLatestByUserId(input.userId),
+        this.practitionerUserRepository.findProfileSeed(input.userId),
+      ]);
+      if (!latestApplication || !user) {
+        throw new NotFoundException({ error: 'PRACTITIONER_APPLICATION_NOT_FOUND' });
+      }
+      const snapshot = (latestApplication.submissionSnapshot ?? {}) as Record<string, any>;
+      const profileSnapshot = (snapshot.profile ?? {}) as Record<string, any>;
+      const credentials = await this.practitionerCredentialRepository.listByApplicationId(latestApplication.id);
+      const docs = this.practitionerRequiredDocumentsService.evaluate(credentials.map((credential) => ({ credentialType: credential.credentialType, reviewStatus: credential.reviewStatus, expiresAt: credential.expiresAt, fileUrl: credential.fileUrl })), { countryCode: profileSnapshot.countryCode });
+      const missing = [
+        ...(user.displayName?.trim() ? [] : ['displayName']),
+        ...(profileSnapshot.countryCode ? [] : ['countryCode']),
+        ...(profileSnapshot.professionalTitle?.trim() ? [] : ['professionalTitle']),
+        ...(profileSnapshot.bio?.trim() ? [] : ['bio']),
+        ...(profileSnapshot.yearsOfExperience === null || profileSnapshot.yearsOfExperience === undefined ? ['yearsOfExperience'] : []),
+        ...(Array.isArray(snapshot.languageCodes) && snapshot.languageCodes.length ? [] : ['languages']),
+        ...(profileSnapshot.primarySpecialtyCategoryId || snapshot.specialtySelection?.primarySpecialtyCategoryId ? [] : ['primarySpecialtyCategoryId']),
+        ...(Array.isArray(snapshot.specialtySelection?.specialties) && snapshot.specialtySelection.specialties.length ? [] : ['specialties']),
+        ...(docs.complete ? [] : docs.missingRequirements),
+      ];
+      const reviewCase = await this.practitionerReviewCaseService.findActiveApplicationCase(latestApplication.id);
+      const completion = {
+        overallPercent: missing.length ? 0 : 100,
+        canSubmit: missing.length === 0 && input.currentUser.isActive === true && input.currentUser.isPractitionerOtpVerified !== false,
+        blockers: missing.map((field) => ({ code: `APPLICATION_${String(field).toUpperCase()}_REQUIRED`, field, stepKey: 'reviewSubmit', severity: 'BLOCKER', requirementScope: 'SUBMISSION', messageKey: 'practitioners.application.completion.required' })),
+        warnings: [],
+        steps: [],
+      } as any;
+      return {
+        message: this.i18nService.t('practitioners.success.applicationStatusFetched', input.locale),
+        application: {
+          ...(this.practitionerApplicationMapper.toViewModel({
+            id: latestApplication.id,
+            status: latestApplication.status,
+            submittedAt: latestApplication.submittedAt,
+            reviewedAt: latestApplication.reviewedAt,
+            reviewedByUserId: latestApplication.reviewedByUserId ?? null,
+            reviewDecisionReason: latestApplication.reviewDecisionReason ?? null,
+            reviewNotes: latestApplication.reviewNotes ?? null,
+            submissionSnapshot: snapshot,
+            completion,
+            reviewCase: reviewCase as any,
+          })),
+          isProfileCompleted: missing.length === 0,
+          canSubmitApplication: completion.canSubmit,
+          missingRequirements: missing,
+        },
+      };
     }
 
     const [readiness, latestApplication, reviewCase] = await Promise.all([

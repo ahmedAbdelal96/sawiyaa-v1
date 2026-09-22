@@ -23,6 +23,8 @@ export const enInstantBookingCatalog = {
       'Instant booking request has already been handled',
   },
   notifications: {
+    requestCreatedTitle: 'New instant booking request',
+    requestCreatedBody: 'You have a new instant booking request. Open it to decide.',
     requestAcceptedTitle: 'Instant booking request accepted',
     requestAcceptedBody:
       'Your instant booking request was accepted. Open it to continue with payment.',

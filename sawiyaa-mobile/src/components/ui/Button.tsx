@@ -8,6 +8,7 @@ import {
   View,
 } from 'react-native';
 import { useTheme } from '../../providers/ThemeProvider';
+import { useAppDirection } from '../../i18n/direction';
 import { Text } from './Text';
 
 type ButtonVariant = 'primary' | 'secondary';
@@ -33,7 +34,7 @@ function ButtonBase({
   ...props
 }: ButtonProps) {
   const { theme } = useTheme();
-  const isRTL = I18nManager.isRTL;
+  const { isRtl: isRTL } = useAppDirection();
   const isPrimary = variant === 'primary';
   const isDisabled = Boolean(disabled || loading);
 

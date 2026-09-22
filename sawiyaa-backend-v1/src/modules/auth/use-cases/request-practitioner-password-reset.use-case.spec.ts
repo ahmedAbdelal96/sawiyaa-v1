@@ -1,4 +1,4 @@
-import { BadRequestException, ConflictException } from '@nestjs/common';
+import { BadRequestException, ConflictException, ServiceUnavailableException } from '@nestjs/common';
 import { OtpChannel, OtpPurpose, UserRoleType } from '@prisma/client';
 import { RequestPractitionerPasswordResetUseCase } from './request-practitioner-password-reset.use-case';
 
@@ -12,6 +12,7 @@ describe('RequestPractitionerPasswordResetUseCase', () => {
   const rateLimitService = {
     check: jest.fn().mockResolvedValue({ allowed: true }),
   };
+  const securityAuditService = { logAsync: jest.fn() };
 
   const useCase = new RequestPractitionerPasswordResetUseCase(
     i18nService as any,
@@ -21,6 +22,7 @@ describe('RequestPractitionerPasswordResetUseCase', () => {
     createOtpChallengeUseCase as any,
     sendOtpChallengeUseCase as any,
     rateLimitService as any,
+    securityAuditService as any,
   );
 
   beforeEach(() => {
@@ -87,15 +89,10 @@ describe('RequestPractitionerPasswordResetUseCase', () => {
     );
   });
 
-  it('throws conflict for unknown email', async () => {
+  it('rejects an unknown email without creating an OTP', async () => {
     userEmailRepository.findByEmailForAuth.mockResolvedValue(null);
 
-    await expect(
-      useCase.execute({
-        email: 'unknown@example.com',
-        locale: 'en',
-      }),
-    ).rejects.toBeInstanceOf(ConflictException);
+    await expect(useCase.execute({ email: 'unknown@example.com', locale: 'en' })).rejects.toBeInstanceOf(ConflictException);
     expect(createOtpChallengeUseCase.execute).not.toHaveBeenCalled();
   });
 
@@ -149,5 +146,34 @@ describe('RequestPractitionerPasswordResetUseCase', () => {
     ).rejects.toBeInstanceOf(BadRequestException);
 
     expect(createOtpChallengeUseCase.execute).not.toHaveBeenCalled();
+  });
+
+  it('propagates OTP delivery failure and never grants the OTP step', async () => {
+    userEmailRepository.findByEmailForAuth.mockResolvedValue({
+      user: {
+        id: 'user-1',
+        roles: [{ role: UserRoleType.PRACTITIONER }],
+        emails: [{ email: 'doc@sawiyaa.com' }],
+        phones: [],
+      },
+    });
+    practitionerOtpChannelService.resolveVerifiedChannel.mockReturnValue({
+      channel: OtpChannel.EMAIL,
+      target: 'doc@sawiyaa.com',
+    });
+    createOtpChallengeUseCase.execute.mockResolvedValue({
+      challengeId: 'ch-1',
+      channel: OtpChannel.EMAIL,
+      target: 'doc@sawiyaa.com',
+      code: '555666',
+      expiresAt: new Date(),
+    });
+    sendOtpChallengeUseCase.execute.mockRejectedValue(
+      new ServiceUnavailableException({ error: 'OTP_DELIVERY_FAILED' }),
+    );
+
+    await expect(
+      useCase.execute({ email: 'doc@sawiyaa.com', locale: 'en' }),
+    ).rejects.toBeInstanceOf(ServiceUnavailableException);
   });
 });

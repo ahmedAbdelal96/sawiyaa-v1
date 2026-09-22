@@ -1,7 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { SessionMode, SessionStatus } from '@prisma/client';
-import { SessionJoinAvailabilityDto } from '@modules/sessions/dto/session-response.dto';
-import { SessionPresentationStatus } from '@modules/sessions/utils/session-join-policy.util';
 
 export class PackagePurchaseLinkedSessionResponseDto {
   @ApiProperty()
@@ -12,25 +10,6 @@ export class PackagePurchaseLinkedSessionResponseDto {
 
   @ApiProperty({ enum: SessionStatus })
   status!: SessionStatus;
-
-  @ApiProperty({
-    enum: [
-      'UPCOMING',
-      'READY_TO_JOIN',
-      'IN_PROGRESS',
-      'AWAITING_COMPLETION_CONFIRMATION',
-      'COMPLETED',
-      'CANCELLED',
-      'PATIENT_NO_SHOW',
-      'PRACTITIONER_NO_SHOW',
-      'BOTH_NO_SHOW',
-      'EXPIRED',
-    ],
-  })
-  presentationStatus!: SessionPresentationStatus;
-
-  @ApiProperty({ type: SessionJoinAvailabilityDto })
-  joinAvailability!: SessionJoinAvailabilityDto;
 
   @ApiProperty({ nullable: true })
   scheduledStartAt!: string | null;
@@ -96,6 +75,22 @@ export class PatientPackagePurchaseResponseDto {
   @ApiProperty()
   patientPayableTotal!: string;
 
+  @ApiProperty({
+    description:
+      'Authoritative package progress. A reserved session is already linked to an appointment or awaiting an outcome.',
+  })
+  progress!: {
+    totalSessions: number;
+    consumedSessions: number;
+    completedSessions: number;
+    reservedSessions: number;
+    availableSessions: number;
+    remainingSessions: number;
+    scheduledSessions: number;
+    progressPercent: number;
+    nextSessionStartAt: string | null;
+  };
+
   @ApiProperty({ nullable: true })
   paymentExpiresAt!: string | null;
 
@@ -110,6 +105,12 @@ export class PatientPackagePurchaseResponseDto {
 
   @ApiProperty()
   updatedAt!: string;
+
+  @ApiProperty({ nullable: true, description: 'Patient-safe payment lifecycle and refund history.' })
+  payment!: Record<string, unknown> | null;
+
+  @ApiProperty({ type: [Object], description: 'Patient-safe package entitlement decisions.' })
+  entitlementHistory!: Record<string, unknown>[];
 }
 
 export class PatientPackagePurchasesPaginationResponseDto {

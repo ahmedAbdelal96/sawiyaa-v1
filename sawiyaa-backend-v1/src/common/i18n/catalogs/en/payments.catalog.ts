@@ -15,6 +15,12 @@ export const enPaymentsCatalog = {
     refundFailedTitle: 'Refund failed',
     refundFailedBody:
       'Your refund request could not be processed right now. Support can help if needed.',
+    packagePurchaseSucceededTitle: 'Package payment completed',
+    packagePurchaseSucceededBody:
+      'Your payment of {{amount}} {{currencyCode}} for the package was completed successfully.',
+    academyPaymentSucceededTitle: 'Training payment completed',
+    academyPaymentSucceededBody:
+      'Your payment of {{amount}} {{currencyCode}} for training registration was completed successfully.',
   },
   errors: {
     patientNotFound: 'Patient profile was not found',
@@ -27,6 +33,8 @@ export const enPaymentsCatalog = {
     activePaymentAlreadyExists:
       'An active payment attempt already exists for this session',
     pricingUnavailable: 'Session pricing is unavailable',
+    financialConfigurationUnavailable:
+      'Payment is temporarily unavailable while financial configuration is being verified.',
     currencyUnavailable: 'Payment currency is unavailable',
     invalidStatusTransition:
       'Payment status transition from {{from}} to {{to}} is invalid',

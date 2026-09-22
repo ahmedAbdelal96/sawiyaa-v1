@@ -4,6 +4,9 @@ import { PatientProfileRepository } from '@modules/patients/repositories/patient
 import { PackagePurchasePresenter } from '../presenters/package-purchase.presenter';
 import { PatientPackagePurchaseRepository } from '../repositories/package-purchase.repository';
 import { PatientPackagePurchaseResultViewModel } from '../types/package-purchases.types';
+import { PractitionerProfessionalContentRepository } from '@modules/practitioners/repositories/practitioner-professional-content.repository';
+import { PractitionerProfessionalContentResolver } from '@modules/practitioners/services/practitioner-professional-content-resolver.service';
+import { resolvePackageProfessionalTitle } from '../utils/resolve-package-professional-title.util';
 
 @Injectable()
 export class GetMyPackagePurchaseUseCase {
@@ -11,6 +14,8 @@ export class GetMyPackagePurchaseUseCase {
     private readonly patientProfileRepository: PatientProfileRepository,
     private readonly packagePurchaseRepository: PatientPackagePurchaseRepository,
     private readonly packagePurchasePresenter: PackagePurchasePresenter,
+    private readonly professionalContentRepository: PractitionerProfessionalContentRepository,
+    private readonly professionalContentResolver: PractitionerProfessionalContentResolver,
   ) {}
 
   async execute(input: {
@@ -42,9 +47,22 @@ export class GetMyPackagePurchaseUseCase {
     }
 
     const now = new Date();
+    const professionalContent =
+      await this.professionalContentRepository.findByPractitionerProfileId(
+        purchase.practitionerId,
+      );
 
     return {
-      item: this.packagePurchasePresenter.toViewModel({ purchase, now }),
+      item: await this.packagePurchasePresenter.toViewModel({
+        purchase,
+        now,
+        resolvedProfessionalTitle: resolvePackageProfessionalTitle({
+          requestedLocale: input.locale,
+          resolver: this.professionalContentResolver,
+          record: professionalContent,
+          legacyProfessionalTitle: purchase.practitioner?.professionalTitle,
+        }),
+      }),
     };
   }
 }

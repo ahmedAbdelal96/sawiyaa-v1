@@ -1,6 +1,11 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import {
-  I18nManager,
   Image,
   ScrollView,
   StyleSheet,
@@ -13,6 +18,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTranslation } from "react-i18next";
 import {
   Card,
+  Button,
   ErrorState,
   Header,
   LoadingState,
@@ -22,6 +28,7 @@ import {
 import { useTheme } from "../../../src/providers/ThemeProvider";
 import {
   useGetPublicPractitionerDetails,
+  useGetPublicPractitionerInstantBookingAvailability,
   useGetPublicPractitionerPresence,
 } from "../../../src/features/patient/discovery/api";
 import { usePublicPractitionerPackagePlans } from "../../../src/features/patient/package-plans/hooks";
@@ -29,10 +36,15 @@ import { useTrackPractitionerView } from "../../../src/features/patient/journey/
 import { useAuth } from "../../../src/providers/AuthProvider";
 import { trackAnalyticsEvent } from "../../../src/lib/analytics";
 import { PriceDisplay } from "../../../src/components/money";
-import { parseMoney, formatMoney as formatCentralMoney } from "../../../src/lib/money";
+import {
+  parseMoney,
+  formatMoney as formatCentralMoney,
+} from "../../../src/lib/money";
 import { mapPractitionerDurationPrice } from "../../../src/features/patient/discovery/practitioner-money";
-import { getProfessionalTitleLabel } from "../../../src/features/practitioner/reference-data";
 import { useAppDirection } from "../../../src/i18n/direction";
+import { hasPublicPractitionerRating } from "../../../src/features/patient/discovery/rating";
+import type { PublicPractitionerDetails } from "../../../src/features/patient/discovery/types";
+import type { PackagePlanQuotedItem } from "../../../src/features/patient/package-plans/types";
 
 const DEFAULT_AVATAR = require("../../../assets/user.avif");
 const STAR_GOLD = "#EAB308";
@@ -55,7 +67,10 @@ const LANGUAGE_LABELS: Record<string, { ar: string; en: string }> = {
   fr: { ar: "الفرنسية", en: "French" },
 };
 
-function resolveCountryLabel(code: string | null | undefined, isArabicUi: boolean) {
+function resolveCountryLabel(
+  code: string | null | undefined,
+  isArabicUi: boolean,
+) {
   const normalized = (code ?? "").trim().toUpperCase();
   if (!normalized) return null;
   const match = COUNTRY_LABELS[normalized];
@@ -68,21 +83,6 @@ function resolveLanguageLabel(code: string, isArabicUi: boolean) {
   return match ? (isArabicUi ? match.ar : match.en) : code;
 }
 
-function renderStarRating(rating: number) {
-  const score = rating || 5;
-  const stars = [];
-  for (let i = 1; i <= 5; i++) {
-    if (score >= i) {
-      stars.push(<Ionicons key={i} name="star" size={12} color={STAR_GOLD} />);
-    } else if (score >= i - 0.5) {
-      stars.push(<Ionicons key={i} name="star-half" size={12} color={STAR_GOLD} />);
-    } else {
-      stars.push(<Ionicons key={i} name="star-outline" size={12} color="#CBD5E1" />);
-    }
-  }
-  return stars;
-}
-
 function formatPackageMoney(
   amount: number | string | null | undefined,
   currency: string | null | undefined,
@@ -90,7 +90,9 @@ function formatPackageMoney(
 ): string {
   if (!amount) return "-";
   const money = parseMoney(String(amount), currency || "EGP");
-  return money ? formatCentralMoney(money, locale) : `${amount} ${currency || "EGP"}`;
+  return money
+    ? formatCentralMoney(money, locale)
+    : `${amount} ${currency || "EGP"}`;
 }
 
 function SectionHeader({
@@ -122,7 +124,11 @@ function SectionHeader({
         <Ionicons name={icon} size={18} color={theme.colors.primary} />
       </View>
 
-      <Text weight="bold" style={styles.sectionTitle} color={theme.colors.textPrimary}>
+      <Text
+        weight="bold"
+        style={styles.sectionTitle}
+        color={theme.colors.textPrimary}
+      >
         {title}
       </Text>
     </View>
@@ -136,7 +142,7 @@ export default function TherapistProfileScreen() {
   const { t, i18n } = useTranslation();
   const isArabicUi = i18n.language?.startsWith("ar") ?? true;
   const locale = isArabicUi ? "ar-SA" : "en-US";
-  const { isRtl, rowDirection, arrowBack } = useAppDirection();
+  const { isRtl, rowDirection } = useAppDirection();
 
   const authContext = useAuth();
   const isAuthenticated = Boolean(authContext?.user);
@@ -158,12 +164,16 @@ export default function TherapistProfileScreen() {
     slug || null,
   );
   const presenceQuery = useGetPublicPractitionerPresence(slug || null);
+  const instantAvailabilityQuery =
+    useGetPublicPractitionerInstantBookingAvailability(slug || null);
 
-  const practitioner = data?.data.item ?? null;
+  const practitioner = (data?.data.item ??
+    null) as PublicPractitionerDetails | null;
 
   // Query practitioner's package plans
   const packagePlansQuery = usePublicPractitionerPackagePlans(slug || null);
-  const fetchedPlans = packagePlansQuery.data?.items ?? [];
+  const fetchedPlans = (packagePlansQuery.data?.items ??
+    []) as PackagePlanQuotedItem[];
   const hasPackagePlans = fetchedPlans.length > 0;
 
   const rawAvatarUrl = practitioner?.avatarUrl;
@@ -173,15 +183,21 @@ export default function TherapistProfileScreen() {
     rawAvatarUrl.includes("files.local") ||
     rawAvatarUrl.includes("example.com");
 
-  const avatarSource = !isInvalidOrFakeUrl && !avatarFailed
-    ? { uri: rawAvatarUrl }
-    : DEFAULT_AVATAR;
+  const avatarSource =
+    !isInvalidOrFakeUrl && !avatarFailed
+      ? { uri: rawAvatarUrl }
+      : DEFAULT_AVATAR;
 
-  const isPresenceAvailable = presenceQuery.data?.data?.presence?.status === "ONLINE";
+  const isPresenceAvailable =
+    presenceQuery.data?.data?.presence?.status === "ONLINE";
+  const isInstantAvailable =
+    instantAvailabilityQuery.data?.data?.availableNow === true;
 
   const thirtyMinutePriceState = useMemo(() => {
     const rawPrice =
-      practitioner?.sessionPrice30 ?? practitioner?.displaySessionPrice30 ?? null;
+      practitioner?.sessionPrice30 ??
+      practitioner?.displaySessionPrice30 ??
+      null;
     return mapPractitionerDurationPrice({
       amount: rawPrice,
       currencyCode: practitioner?.currencyCode ?? null,
@@ -190,7 +206,9 @@ export default function TherapistProfileScreen() {
 
   const sixtyMinutePriceState = useMemo(() => {
     const rawPrice =
-      practitioner?.sessionPrice60 ?? practitioner?.displaySessionPrice60 ?? null;
+      practitioner?.sessionPrice60 ??
+      practitioner?.displaySessionPrice60 ??
+      null;
     return mapPractitionerDurationPrice({
       amount: rawPrice,
       currencyCode: practitioner?.currencyCode ?? null,
@@ -230,24 +248,27 @@ export default function TherapistProfileScreen() {
         bookingNavigationLockRef.current = false;
         router.push({
           pathname: "/(auth)/signin/patient",
-          params: { redirect: `/(public)/discovery/${slug}`, redirectIntent: "book" },
+          params: {
+            redirect: `/(public)/discovery/${slug}`,
+            redirectIntent: "book",
+          },
         });
         return;
       }
 
       router.push({
-        pathname: "/(patient)/sessions/select-time",
+        pathname: "/(patient)/sessions/duration",
         params: {
           slug,
           practitionerName: practitioner.displayName || practitioner.slug,
           practitionerTitle:
-            getProfessionalTitleLabel(practitioner.professionalTitle, isArabicUi) ||
-            t("discovery.profile.professionalFallback", "أخصائي"),
+            practitioner.professionalTitle?.trim() ||
+            t("discovery.profile.professionalFallback"),
           practitionerAvatarUrl: practitioner.avatarUrl || "",
         },
       });
     },
-    [intent, practitioner, router, slug, t, isAuthenticated, isArabicUi],
+    [intent, practitioner, router, slug, t, isAuthenticated],
   );
 
   useEffect(() => {
@@ -271,9 +292,36 @@ export default function TherapistProfileScreen() {
     defaultValue: isArabicUi ? "ملف المختص" : "Practitioner Profile",
   });
 
+  // Keep this callback unconditional so loading/error transitions never change
+  // the component's hook order.
+  const handlePackagePurchase = useCallback(
+    (plan: PackagePlanQuotedItem) => {
+      const packageRoute = `/(patient)/package-purchases/create?practitionerSlug=${encodeURIComponent(slug)}&practitionerName=${encodeURIComponent(practitioner?.displayName || practitioner?.slug || slug)}&practitionerTitle=${encodeURIComponent(practitioner?.professionalTitle?.trim() || t("discovery.profile.professionalFallback"))}&practitionerAvatarUrl=${encodeURIComponent(practitioner?.avatarUrl || "")}&packagePlanCode=${encodeURIComponent(plan.item.code)}&durationMinutes=${plan.quote.durationMinutes}&sessionMode=${plan.quote.sessionMode}`;
+
+      if (!isAuthenticated) {
+        router.push({
+          pathname: "/(auth)/signin/patient",
+          params: {
+            redirect: packageRoute,
+            redirectIntent: "package-purchase",
+          },
+        });
+        return;
+      }
+
+      router.push(packageRoute as never);
+    },
+    [isAuthenticated, practitioner, router, slug, t],
+  );
+
   if (isLoading) {
     return (
-      <Screen bg="background" style={styles.screen} edges={["top", "left", "right"]}>
+      <Screen
+        bg="background"
+        testID="patient-practitioner-details-screen"
+        style={styles.screen}
+        edges={["top", "left", "right"]}
+      >
         <Header showBack title={headerTitle} />
         <LoadingState fullScreen />
       </Screen>
@@ -282,7 +330,12 @@ export default function TherapistProfileScreen() {
 
   if (isError || !practitioner) {
     return (
-      <Screen bg="background" style={styles.screen} edges={["top", "left", "right"]}>
+      <Screen
+        bg="background"
+        testID="patient-practitioner-details-screen"
+        style={styles.screen}
+        edges={["top", "left", "right"]}
+      >
         <Header showBack title={headerTitle} />
         <ErrorState onRetry={() => void refetch()} />
       </Screen>
@@ -291,31 +344,36 @@ export default function TherapistProfileScreen() {
 
   const displayName = practitioner.displayName || practitioner.slug;
   const displayTitle =
-    getProfessionalTitleLabel(practitioner.professionalTitle, isArabicUi) ||
-    t("discovery.profile.professionalFallback", "أخصائي نفسيات وعلاج متكامل");
+    practitioner.professionalTitle?.trim() ||
+    t("discovery.profile.professionalFallback");
 
   const verified = Boolean(practitioner.isVerified);
   const averageRating = practitioner.ratingSummary?.averageRating;
   const totalReviews = practitioner.ratingSummary?.totalReviews;
 
-  const displayRating = averageRating && averageRating > 0 ? averageRating : 4.9;
-  const displayReviews = totalReviews && totalReviews > 0 ? totalReviews : 12;
+  const hasRating = hasPublicPractitionerRating(averageRating, totalReviews);
 
-  const yearsExperience = practitioner.yearsExperience ?? 15;
-  const approvedCredentials = practitioner.credentialsSummary?.approvedCredentials ?? 1;
+  const yearsExperience = practitioner.yearsExperience;
 
   const specialties = practitioner.specialties ?? [];
   const primarySpecialties = specialties.filter((spec) => spec.isPrimary);
-  const orderedSpecialties = primarySpecialties.length > 0 ? primarySpecialties : specialties;
+  const orderedSpecialties =
+    primarySpecialties.length > 0 ? primarySpecialties : specialties;
 
   const fullBio = practitioner.fullBio?.trim() ?? "";
-  const bioPreview = fullBio.length > 260 ? `${fullBio.slice(0, 260).trim()}…` : fullBio;
+  const bioPreview =
+    fullBio.length > 260 ? `${fullBio.slice(0, 260).trim()}…` : fullBio;
   const bioToShow = bioExpanded ? fullBio : bioPreview;
   const hasLongBio = fullBio.length > 260;
   const currency = practitioner.currencyCode || "EGP";
 
   return (
-    <Screen bg="background" style={styles.screen} edges={["top", "left", "right"]}>
+    <Screen
+      bg="background"
+      testID="patient-practitioner-details-screen"
+      style={styles.screen}
+      edges={["top", "left", "right"]}
+    >
       <Header showBack title={headerTitle} />
 
       <ScrollView
@@ -327,12 +385,21 @@ export default function TherapistProfileScreen() {
       >
         {/* 1. Hero Identity Card */}
         <Card variant="elevated" padding="none" style={styles.identityCard}>
-          <View style={[styles.goldBar, { backgroundColor: theme.colors.tertiary }]} />
+          <View
+            style={[styles.goldBar, { backgroundColor: theme.colors.tertiary }]}
+          />
 
           <View style={styles.identityCardPadding}>
-            <View style={[styles.identityTopRow, { flexDirection: rowDirection }]}>
+            <View
+              style={[styles.identityTopRow, { flexDirection: rowDirection }]}
+            >
               <View style={styles.avatarWrapper}>
-                <View style={[styles.avatarCircle, { backgroundColor: theme.colors.surfaceTertiary }]}>
+                <View
+                  style={[
+                    styles.avatarCircle,
+                    { backgroundColor: theme.colors.surfaceTertiary },
+                  ]}
+                >
                   <Image
                     source={avatarSource}
                     style={styles.avatarImage}
@@ -343,22 +410,54 @@ export default function TherapistProfileScreen() {
                 <View
                   style={[
                     styles.onlineBadge,
-                    { backgroundColor: isPresenceAvailable ? ONLINE_GREEN : OFFLINE_GRAY },
+                    {
+                      backgroundColor: isPresenceAvailable
+                        ? ONLINE_GREEN
+                        : OFFLINE_GRAY,
+                    },
                   ]}
                 />
               </View>
 
-              <View style={[styles.identityMeta, { alignItems: isRtl ? "flex-end" : "flex-start" }]}>
-                <View style={[styles.nameLine, { flexDirection: rowDirection }]}>
-                  <Text weight="bold" style={styles.displayName} color={theme.colors.textPrimary} numberOfLines={1}>
+              <View
+                style={[
+                  styles.identityMeta,
+                  { alignItems: isRtl ? "flex-end" : "flex-start" },
+                ]}
+              >
+                <View
+                  style={[styles.nameLine, { flexDirection: rowDirection }]}
+                >
+                  <Text
+                    weight="bold"
+                    style={styles.displayName}
+                    color={theme.colors.textPrimary}
+                    numberOfLines={1}
+                  >
                     {displayName}
                   </Text>
                   {verified ? (
-                    <Ionicons name="checkmark-circle" size={18} color={theme.colors.primary} />
+                    <>
+                      <Ionicons
+                        name="checkmark-circle"
+                        size={18}
+                        color={theme.colors.primary}
+                        accessibilityRole="image"
+                        accessibilityLabel={t("discovery.profile.verifiedProfessional")}
+                        accessibilityHint={t("discovery.profile.verifiedExplanation")}
+                      />
+                      <Text color={theme.colors.primary} style={styles.verifiedLabel}>
+                        {t("discovery.profile.verifiedProfessional")}
+                      </Text>
+                    </>
                   ) : null}
                 </View>
 
-                <Text color={theme.colors.textSecondary} style={styles.professionalTitle} numberOfLines={2}>
+                <Text
+                  color={theme.colors.textSecondary}
+                  style={styles.professionalTitle}
+                  numberOfLines={2}
+                >
                   {displayTitle}
                 </Text>
 
@@ -366,7 +465,9 @@ export default function TherapistProfileScreen() {
                   style={[
                     styles.presencePill,
                     {
-                      backgroundColor: isPresenceAvailable ? `${ONLINE_GREEN}15` : "#F1F5F9",
+                      backgroundColor: isInstantAvailable
+                        ? `${ONLINE_GREEN}15`
+                        : isPresenceAvailable ? "#ECFDF5" : "#F1F5F9",
                       flexDirection: rowDirection,
                     },
                   ]}
@@ -374,19 +475,29 @@ export default function TherapistProfileScreen() {
                   <View
                     style={[
                       styles.presenceDot,
-                      { backgroundColor: isPresenceAvailable ? ONLINE_GREEN : OFFLINE_GRAY },
+                      {
+                        backgroundColor: isInstantAvailable || isPresenceAvailable
+                          ? ONLINE_GREEN
+                          : OFFLINE_GRAY,
+                      },
                     ]}
                   />
                   <Text
                     weight="600"
                     style={[
                       styles.presenceText,
-                      { color: isPresenceAvailable ? ONLINE_GREEN : theme.colors.textMuted },
+                      {
+                          color: isInstantAvailable || isPresenceAvailable
+                          ? ONLINE_GREEN
+                          : theme.colors.textMuted,
+                      },
                     ]}
                   >
-                    {isPresenceAvailable
-                      ? (isArabicUi ? "متاح الآن" : "Available now")
-                      : (isArabicUi ? "غير متاح الآن" : "Unavailable right now")}
+                    {isInstantAvailable
+                      ? isArabicUi ? "متاح الآن" : "Available now"
+                      : isPresenceAvailable
+                        ? t("discovery.profile.presence.online")
+                        : isArabicUi ? "غير متاح الآن" : "Unavailable right now"}
                   </Text>
                 </View>
               </View>
@@ -403,45 +514,70 @@ export default function TherapistProfileScreen() {
                 },
               ]}
             >
-              <View style={styles.statCell}>
-                <View style={[styles.statTopRow, { flexDirection: rowDirection }]}>
-                  <Ionicons name="briefcase-outline" size={15} color={theme.colors.primary} />
-                  <Text weight="bold" style={styles.statValue} color={theme.colors.textPrimary}>
+              {yearsExperience != null ? <View style={styles.statCell}>
+                <View
+                  style={[styles.statTopRow, { flexDirection: rowDirection }]}
+                >
+                  <Ionicons
+                    name="briefcase-outline"
+                    size={15}
+                    color={theme.colors.primary}
+                  />
+                  <Text
+                    weight="bold"
+                    style={styles.statValue}
+                    color={theme.colors.textPrimary}
+                  >
                     +{yearsExperience}
                   </Text>
                 </View>
-                <Text color={theme.colors.textSecondary} style={styles.statLabel}>
+                <Text
+                  color={theme.colors.textSecondary}
+                  style={styles.statLabel}
+                >
                   {isArabicUi ? "سنوات خبرة" : "Years Exp"}
                 </Text>
-              </View>
+              </View> : null}
 
-              <View style={[styles.statDivider, { backgroundColor: theme.colors.borderLight }]} />
-
-              <View style={styles.statCell}>
-                <View style={[styles.statTopRow, { flexDirection: rowDirection }]}>
-                  <Ionicons name="star" size={14} color={STAR_GOLD} />
-                  <Text weight="bold" style={styles.statValue} color={theme.colors.textPrimary}>
-                    {displayRating.toFixed(1)}
-                  </Text>
-                </View>
-                <Text color={theme.colors.textSecondary} style={styles.statLabel}>
-                  {displayReviews} {isArabicUi ? "تقييماً" : "Reviews"}
-                </Text>
-              </View>
-
-              <View style={[styles.statDivider, { backgroundColor: theme.colors.borderLight }]} />
+              {yearsExperience != null ? <View
+                style={[
+                  styles.statDivider,
+                  { backgroundColor: theme.colors.borderLight },
+                ]}
+              /> : null}
 
               <View style={styles.statCell}>
-                <View style={[styles.statTopRow, { flexDirection: rowDirection }]}>
-                  <Ionicons name="shield-checkmark-outline" size={15} color={theme.colors.primary} />
-                  <Text weight="bold" style={styles.statValue} color={theme.colors.textPrimary}>
-                    {approvedCredentials}
+                {hasRating ? (
+                  <>
+                    <View
+                      style={[
+                        styles.statTopRow,
+                        { flexDirection: rowDirection },
+                      ]}
+                    >
+                      <Ionicons name="star" size={14} color={STAR_GOLD} />
+                      <Text
+                        weight="bold"
+                        style={styles.statValue}
+                        color={theme.colors.textPrimary}
+                      >
+                        {averageRating!.toFixed(1)}
+                      </Text>
+                    </View>
+                    <Text
+                      color={theme.colors.textSecondary}
+                      style={styles.statLabel}
+                    >
+                      {totalReviews} {isArabicUi ? "تقييماً" : "Reviews"}
+                    </Text>
+                  </>
+                ) : (
+                  <Text color={theme.colors.textMuted} style={styles.statLabel}>
+                    {t("discovery.list.noRatings")}
                   </Text>
-                </View>
-                <Text color={theme.colors.textSecondary} style={styles.statLabel}>
-                  {isArabicUi ? "الاعتمادات" : "Credentials"}
-                </Text>
+                )}
               </View>
+
             </View>
           </View>
         </Card>
@@ -449,7 +585,9 @@ export default function TherapistProfileScreen() {
         {/* 2. Specialties Card */}
         <Card variant="elevated" padding="md" style={styles.sectionCard}>
           <SectionHeader
-            title={isArabicUi ? "التخصصات والمجالات العلاجية" : "Specialties & Areas"}
+            title={
+              isArabicUi ? "التخصصات والمجالات العلاجية" : "Specialties & Areas"
+            }
             icon="ribbon-outline"
             iconBg="primary"
           />
@@ -464,8 +602,16 @@ export default function TherapistProfileScreen() {
                     { backgroundColor: theme.colors.primarySoft },
                   ]}
                 >
-                  <Ionicons name="checkmark-circle" size={13} color={theme.colors.primary} />
-                  <Text color={theme.colors.primary} weight="bold" style={styles.chipText}>
+                  <Ionicons
+                    name="checkmark-circle"
+                    size={13}
+                    color={theme.colors.primary}
+                  />
+                  <Text
+                    color={theme.colors.primary}
+                    weight="bold"
+                    style={styles.chipText}
+                  >
                     {spec.title || spec.slug}
                   </Text>
                 </View>
@@ -473,7 +619,9 @@ export default function TherapistProfileScreen() {
             </View>
           ) : (
             <Text color={theme.colors.textMuted} style={styles.emptyNote}>
-              {isArabicUi ? "لا توجد تخصصات منشورة بعد." : "No specialties published."}
+              {isArabicUi
+                ? "لا توجد تخصصات منشورة بعد."
+                : "No specialties published."}
             </Text>
           )}
         </Card>
@@ -481,60 +629,140 @@ export default function TherapistProfileScreen() {
         {/* 3. Single Session Fees Section */}
         <Card variant="elevated" padding="md" style={styles.sectionCard}>
           <SectionHeader
-            title={isArabicUi ? "رسوم الجلسات الفردية" : "Individual Session Fees"}
+            title={
+              isArabicUi ? "رسوم الجلسات الفردية" : "Individual Session Fees"
+            }
             icon="pricetag-outline"
             iconBg="soft"
           />
 
           <View style={styles.pricesStack}>
             {thirtyMinutePriceState.status === "PAID" ? (
-              <View
+              <TouchableOpacity
+                activeOpacity={0.85}
+                onPress={() => handleBookSession(30)}
                 style={[
                   styles.priceRow,
-                  { borderColor: theme.colors.borderLight, flexDirection: rowDirection },
+                  {
+                    borderColor: theme.colors.borderLight,
+                    flexDirection: rowDirection,
+                  },
                 ]}
               >
-                <View style={[styles.priceLeftBlock, { flexDirection: rowDirection }]}>
-                  <View style={[styles.priceIconWrap, { backgroundColor: theme.colors.surfaceTertiary }]}>
-                    <Ionicons name="time-outline" size={16} color={theme.colors.primary} />
+                <View
+                  style={[
+                    styles.priceLeftBlock,
+                    { flexDirection: rowDirection },
+                  ]}
+                >
+                  <View
+                    style={[
+                      styles.priceIconWrap,
+                      { backgroundColor: theme.colors.surfaceTertiary },
+                    ]}
+                  >
+                    <Ionicons
+                      name="time-outline"
+                      size={16}
+                      color={theme.colors.primary}
+                    />
                   </View>
-                  <Text weight="600" style={styles.priceLabel} color={theme.colors.textPrimary}>
+                  <Text
+                    weight="600"
+                    style={styles.priceLabel}
+                    color={theme.colors.textPrimary}
+                  >
                     {isArabicUi ? "جلسة 30 دقيقة" : "30-minute session"}
                   </Text>
                 </View>
 
-                <PriceDisplay
-                  price={thirtyMinutePriceState}
-                  weight="bold"
-                  color={theme.colors.primary}
-                  style={styles.priceValue}
-                />
-              </View>
+                <View
+                  style={[
+                    styles.priceRightBlock,
+                    {
+                      flexDirection: rowDirection,
+                      alignItems: "center",
+                      gap: 8,
+                    },
+                  ]}
+                >
+                  <PriceDisplay
+                    price={thirtyMinutePriceState}
+                    weight="bold"
+                    color={theme.colors.primary}
+                    style={styles.priceValue}
+                  />
+                  <Ionicons
+                    name={isRtl ? "chevron-back" : "chevron-forward"}
+                    size={16}
+                    color={theme.colors.primary}
+                  />
+                </View>
+              </TouchableOpacity>
             ) : null}
 
             {sixtyMinutePriceState.status === "PAID" ? (
-              <View
+              <TouchableOpacity
+                activeOpacity={0.85}
+                onPress={() => handleBookSession(60)}
                 style={[
                   styles.priceRow,
-                  { borderColor: theme.colors.borderLight, flexDirection: rowDirection },
+                  {
+                    borderColor: theme.colors.borderLight,
+                    flexDirection: rowDirection,
+                  },
                 ]}
               >
-                <View style={[styles.priceLeftBlock, { flexDirection: rowDirection }]}>
-                  <View style={[styles.priceIconWrap, { backgroundColor: theme.colors.surfaceTertiary }]}>
-                    <Ionicons name="hourglass-outline" size={16} color={theme.colors.primary} />
+                <View
+                  style={[
+                    styles.priceLeftBlock,
+                    { flexDirection: rowDirection },
+                  ]}
+                >
+                  <View
+                    style={[
+                      styles.priceIconWrap,
+                      { backgroundColor: theme.colors.surfaceTertiary },
+                    ]}
+                  >
+                    <Ionicons
+                      name="hourglass-outline"
+                      size={16}
+                      color={theme.colors.primary}
+                    />
                   </View>
-                  <Text weight="600" style={styles.priceLabel} color={theme.colors.textPrimary}>
+                  <Text
+                    weight="600"
+                    style={styles.priceLabel}
+                    color={theme.colors.textPrimary}
+                  >
                     {isArabicUi ? "جلسة 60 دقيقة" : "60-minute session"}
                   </Text>
                 </View>
 
-                <PriceDisplay
-                  price={sixtyMinutePriceState}
-                  weight="bold"
-                  color={theme.colors.primary}
-                  style={styles.priceValue}
-                />
-              </View>
+                <View
+                  style={[
+                    styles.priceRightBlock,
+                    {
+                      flexDirection: rowDirection,
+                      alignItems: "center",
+                      gap: 8,
+                    },
+                  ]}
+                >
+                  <PriceDisplay
+                    price={sixtyMinutePriceState}
+                    weight="bold"
+                    color={theme.colors.primary}
+                    style={styles.priceValue}
+                  />
+                  <Ionicons
+                    name={isRtl ? "chevron-back" : "chevron-forward"}
+                    size={16}
+                    color={theme.colors.primary}
+                  />
+                </View>
+              </TouchableOpacity>
             ) : null}
           </View>
         </Card>
@@ -543,7 +771,9 @@ export default function TherapistProfileScreen() {
         {hasPackagePlans ? (
           <Card variant="elevated" padding="md" style={styles.sectionCard}>
             <SectionHeader
-              title={isArabicUi ? "باقات جلسات مخفضة" : "Discounted Package Plans"}
+              title={
+                isArabicUi ? "باقات جلسات مخفضة" : "Discounted Package Plans"
+              }
               icon="gift-outline"
               iconBg="primary"
             />
@@ -551,7 +781,10 @@ export default function TherapistProfileScreen() {
             <View style={styles.packagesListStack}>
               {fetchedPlans.map((plan) => {
                 const sessionCount = plan.item.sessionCount || 4;
-                const discountPercent = Math.round(Number(plan.item.discountPercent || 15));
+                const packageCurrency = plan.quote.selectedCurrencyCode || currency;
+                const discountPercent = Math.round(
+                  Number(plan.item.discountPercent || 15),
+                );
                 return (
                   <View
                     key={plan.item.code}
@@ -560,38 +793,59 @@ export default function TherapistProfileScreen() {
                       {
                         backgroundColor: theme.colors.surfaceSecondary,
                         borderColor: theme.colors.borderLight,
-                        flexDirection: rowDirection,
                       },
                     ]}
                   >
-                    <View style={styles.packageLeftMeta}>
-                      <View style={[styles.packageTopRow, { flexDirection: rowDirection }]}>
-                        <Text weight="bold" color={theme.colors.textPrimary} style={styles.packageTitle}>
-                          {isArabicUi ? `باقة ${sessionCount} جلسات` : `${sessionCount} Sessions` }
-                        </Text>
-                        <View style={[styles.discountBadge, { backgroundColor: theme.colors.primarySoft }]}>
-                          <Text weight="bold" color={theme.colors.primary} style={styles.discountText}>
-                            -{discountPercent}%
+                    <View style={[styles.packageSummaryRow, { flexDirection: rowDirection }]}>
+                      <View style={styles.packageLeftMeta}>
+                        <View style={[styles.packageTopRow, { flexDirection: rowDirection }]}>
+                          <Text weight="bold" color={theme.colors.textPrimary} style={styles.packageTitle}>
+                            {isArabicUi
+                              ? `باقة ${sessionCount} جلسات`
+                              : plan.item.title || `${sessionCount} Sessions`}
                           </Text>
+                          <View style={[styles.discountBadge, { backgroundColor: theme.colors.primarySoft }]}>
+                            <Text weight="bold" color={theme.colors.primary} style={styles.discountText}>
+                              -{discountPercent}%
+                            </Text>
+                          </View>
                         </View>
+                        <Text color={theme.colors.textMuted} style={styles.packageWasText}>
+                          {isArabicUi
+                            ? `السعر العادي ${formatPackageMoney(plan.quote.undiscountedTotal, packageCurrency, locale)}`
+                            : `Regular price ${formatPackageMoney(plan.quote.undiscountedTotal, packageCurrency, locale)}`}
+                        </Text>
                       </View>
-                      <Text color={theme.colors.textMuted} style={styles.packageWasText}>
-                        {isArabicUi
-                          ? `بدلاً من ${formatPackageMoney(plan.quote.undiscountedTotal, currency, locale)}`
-                          : `Was ${formatPackageMoney(plan.quote.undiscountedTotal, currency, locale)}`}
-                      </Text>
+
+                      <View style={[styles.packageRightPrice, { alignItems: isRtl ? "flex-start" : "flex-end" }]}>
+                        <Text weight="bold" color={theme.colors.primary} style={styles.packagePayableText}>
+                          {formatPackageMoney(plan.quote.patientPayableTotal, packageCurrency, locale)}
+                        </Text>
+                        <Text weight="bold" color={theme.colors.primary} style={styles.savingsPillText}>
+                          {isArabicUi
+                            ? `وفر ${formatPackageMoney(plan.quote.discountAmount, packageCurrency, locale)}`
+                            : `Save ${formatPackageMoney(plan.quote.discountAmount, packageCurrency, locale)}`}
+                        </Text>
+                      </View>
                     </View>
 
-                    <View style={[styles.packageRightPrice, { alignItems: isRtl ? "flex-start" : "flex-end" }]}>
-                      <Text weight="bold" color={theme.colors.primary} style={styles.packagePayableText}>
-                        {formatPackageMoney(plan.quote.patientPayableTotal, currency, locale)}
+                    {plan.item.description ? (
+                      <Text color={theme.colors.textSecondary} style={styles.packageDescription}>
+                        {plan.item.description}
                       </Text>
-                      <Text weight="bold" color={theme.colors.primary} style={styles.savingsPillText}>
-                        {isArabicUi
-                          ? `وفر ${formatPackageMoney(plan.quote.discountAmount, currency, locale)}`
-                          : `Save ${formatPackageMoney(plan.quote.discountAmount, currency, locale)}`}
-                      </Text>
-                    </View>
+                    ) : null}
+
+                    <Text color={theme.colors.textMuted} style={styles.packageDuration}>
+                      {isArabicUi
+                        ? `${sessionCount} جلسات × ${plan.quote.durationMinutes} دقيقة`
+                        : `${sessionCount} sessions × ${plan.quote.durationMinutes} minutes`}
+                    </Text>
+
+                    <Button
+                      title={isArabicUi ? "اشترِ الباقة" : "Buy package"}
+                      onPress={() => handlePackagePurchase(plan)}
+                      style={styles.packagePurchaseButton}
+                    />
                   </View>
                 );
               })}
@@ -607,23 +861,38 @@ export default function TherapistProfileScreen() {
             iconBg="soft"
           />
 
-          <View style={[styles.langLocationRow, { flexDirection: rowDirection }]}>
+          <View
+            style={[styles.langLocationRow, { flexDirection: rowDirection }]}
+          >
             <View style={styles.langBlock}>
               <Text color={theme.colors.textMuted} style={styles.metaLabel}>
                 {isArabicUi ? "اللغات المتاحة" : "Languages"}
               </Text>
-              <Text weight="bold" color={theme.colors.textPrimary} style={styles.valueText}>
+              <Text
+                weight="bold"
+                color={theme.colors.textPrimary}
+                style={styles.valueText}
+              >
                 {languagesLabel}
               </Text>
             </View>
 
-            <View style={[styles.vertDivider, { backgroundColor: theme.colors.borderLight }]} />
+            <View
+              style={[
+                styles.vertDivider,
+                { backgroundColor: theme.colors.borderLight },
+              ]}
+            />
 
             <View style={styles.locationBlock}>
               <Text color={theme.colors.textMuted} style={styles.metaLabel}>
                 {isArabicUi ? "بلد الإقامة" : "Country"}
               </Text>
-              <Text weight="bold" color={theme.colors.textPrimary} style={styles.valueText}>
+              <Text
+                weight="bold"
+                color={theme.colors.textPrimary}
+                style={styles.valueText}
+              >
                 {countryLabel ?? (isArabicUi ? "مصر" : "Egypt")}
               </Text>
             </View>
@@ -648,12 +917,23 @@ export default function TherapistProfileScreen() {
                 <TouchableOpacity
                   onPress={() => setBioExpanded((current) => !current)}
                   activeOpacity={0.85}
-                  style={[styles.readMoreButton, { borderColor: theme.colors.borderLight }]}
+                  style={[
+                    styles.readMoreButton,
+                    { borderColor: theme.colors.borderLight },
+                  ]}
                 >
-                  <Text color={theme.colors.primary} weight="bold" style={styles.readMoreText}>
+                  <Text
+                    color={theme.colors.primary}
+                    weight="bold"
+                    style={styles.readMoreText}
+                  >
                     {bioExpanded
-                      ? (isArabicUi ? "عرض أقل ▲" : "Show less ▲")
-                      : (isArabicUi ? "عرض المزيد ▼" : "Show more ▼")}
+                      ? isArabicUi
+                        ? "عرض أقل ▲"
+                        : "Show less ▲"
+                      : isArabicUi
+                        ? "عرض المزيد ▼"
+                        : "Show more ▼"}
                   </Text>
                 </TouchableOpacity>
               ) : null}
@@ -680,11 +960,17 @@ export default function TherapistProfileScreen() {
         <TouchableOpacity
           activeOpacity={0.88}
           onPress={() => handleBookSession(30)}
-          style={[styles.bookBtn, { backgroundColor: theme.colors.primary, flexDirection: rowDirection }]}
+          style={[
+            styles.bookBtn,
+            {
+              backgroundColor: theme.colors.primary,
+              flexDirection: rowDirection,
+            },
+          ]}
         >
           <Ionicons name="calendar-outline" size={18} color="#FFFFFF" />
           <Text weight="bold" color="#FFFFFF" style={styles.bookBtnText}>
-            {isArabicUi ? "اختر موعداً للجلسة" : "Book a Session"}
+            {isArabicUi ? "احجز جلستك الآن" : "Book Your Session Now"}
           </Text>
         </TouchableOpacity>
       </View>
@@ -761,6 +1047,10 @@ const styles = StyleSheet.create({
   displayName: {
     fontSize: 17,
     lineHeight: 22,
+  },
+  verifiedLabel: {
+    fontSize: 10,
+    fontWeight: "600",
   },
   professionalTitle: {
     fontSize: 12,
@@ -845,9 +1135,13 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     borderWidth: 1,
     paddingHorizontal: 10,
-    paddingVertical: 8,
+    paddingVertical: 10,
+    gap: 7,
+  },
+  packageSummaryRow: {
     alignItems: "center",
     justifyContent: "space-between",
+    gap: 10,
   },
   packageLeftMeta: {
     gap: 2,
@@ -858,6 +1152,7 @@ const styles = StyleSheet.create({
   },
   packageTitle: {
     fontSize: 13,
+    flexShrink: 1,
   },
   discountBadge: {
     paddingHorizontal: 5,
@@ -879,6 +1174,19 @@ const styles = StyleSheet.create({
   },
   savingsPillText: {
     fontSize: 10,
+  },
+  packageDescription: {
+    fontSize: 11,
+    lineHeight: 17,
+  },
+  packageDuration: {
+    fontSize: 11,
+    lineHeight: 17,
+  },
+  packagePurchaseButton: {
+    minHeight: 42,
+    borderRadius: 12,
+    marginTop: 2,
   },
 
   // Single Session Fees Section
@@ -909,6 +1217,10 @@ const styles = StyleSheet.create({
   },
   priceValue: {
     fontSize: 15,
+  },
+  priceRightBlock: {
+    alignItems: "center",
+    gap: 8,
   },
 
   // Specialties

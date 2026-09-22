@@ -33,20 +33,20 @@ export default function AdminApplicationReviewWizard({
   children,
 }: Props) {
   return (
-    <section className="rounded-2xl border border-gray-200 bg-white shadow-2xs dark:border-gray-800 dark:bg-gray-900">
-      <div className="border-b border-gray-100 px-4 py-3 dark:border-gray-800">
+    <section className="rounded-2xl border border-border-light bg-surface shadow-2xs dark:bg-surface-secondary/40">
+      <div className="border-b border-border-light px-4 py-3">
         <AdminApplicationReviewStepper steps={steps} activeStep={activeStep} onStepChange={onStepChange} />
       </div>
 
       <div className="p-4 lg:p-5">{children}</div>
 
-      <div className="border-t border-gray-100 px-5 py-4 dark:border-gray-800">
-        <div className="flex flex-wrap items-center gap-3">
+      <div className="border-t border-border-light px-4 py-3.5">
+        <div className="flex flex-wrap items-center gap-2.5">
           <button
             type="button"
             onClick={onPrevious}
             disabled={previousDisabled}
-            className="inline-flex items-center rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
+            className="inline-flex items-center rounded-xl border border-border-light bg-surface px-3.5 py-2 text-xs font-bold text-text-secondary shadow-2xs transition hover:border-primary/40 hover:text-text-primary disabled:cursor-not-allowed disabled:opacity-40"
           >
             {previousLabel}
           </button>
@@ -54,14 +54,14 @@ export default function AdminApplicationReviewWizard({
             type="button"
             onClick={onNext}
             disabled={nextDisabled}
-            className="inline-flex items-center rounded-xl bg-primary px-4 py-2 text-sm font-medium text-white transition hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-50"
+            className="inline-flex items-center rounded-xl bg-primary px-4 py-2 text-xs font-bold text-white shadow-2xs transition hover:bg-primary-hover active:scale-95 disabled:cursor-not-allowed disabled:opacity-40"
           >
             {nextLabel}
           </button>
           <button
             type="button"
             onClick={onBack}
-            className="inline-flex items-center rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
+            className="inline-flex items-center rounded-xl border border-border-light bg-surface px-3.5 py-2 text-xs font-bold text-text-secondary shadow-2xs transition hover:border-primary/40 hover:text-text-primary"
           >
             {backLabel}
           </button>

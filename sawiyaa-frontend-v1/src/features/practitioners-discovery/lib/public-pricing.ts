@@ -30,8 +30,7 @@ export function formatPublicMoney(
   amount: number,
   currencyCode?: string | null,
 ): string {
-  return formatLocalizedMoney({ amount, currencyCode, locale }) ??
-    (locale.startsWith("ar") ? "تعذر عرض السعر حالياً" : "Price unavailable");
+  return formatLocalizedMoney({ amount, currencyCode, locale }) ?? "—";
 }
 
 export function isPublicSessionPriceInActiveFeeRange(

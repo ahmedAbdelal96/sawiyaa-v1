@@ -22,6 +22,13 @@ type JournalLineDraft = {
   metadataJson?: Prisma.InputJsonValue;
 };
 
+type JournalPostResult = {
+  journalEntry:
+    | Prisma.JournalEntryGetPayload<{ include: { lines: true } }>
+    | Prisma.JournalEntryGetPayload<Record<string, never>>;
+  wasAlreadyPosted: boolean;
+};
+
 @Injectable()
 export class AccountingJournalPostingService {
   constructor(
@@ -60,14 +67,15 @@ export class AccountingJournalPostingService {
       metadataJson: Prisma.JsonValue | null;
       capturedAt: Date | null;
     };
-    breakdown: {
+    breakdown?: {
       practitionerShareAmount: string;
       platformCommissionAmount: string;
       currencyCode: string;
     };
     tx?: Prisma.TransactionClient;
-  }) {
+  }): Promise<JournalPostResult> {
     return this.withTx(input.tx, async (tx) => {
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`journal:PAYMENT_CAPTURED:${input.payment.id}`})::bigint)`;
       const existing = await tx.journalEntry.findUnique({
         where: {
           sourceType_sourceId: {
@@ -97,10 +105,10 @@ export class AccountingJournalPostingService {
         : null;
 
       const practitionerShare = this.toMoney(
-        input.breakdown.practitionerShareAmount,
+        input.breakdown?.practitionerShareAmount ?? '0',
       );
       const platformCommission = this.toMoney(
-        input.breakdown.platformCommissionAmount,
+        input.breakdown?.platformCommissionAmount ?? '0',
       );
       const amountFromGateway = this.toMoney(input.payment.amountFromGateway);
       const amountFromWallet = this.toMoney(input.payment.amountFromWallet);
@@ -145,24 +153,14 @@ export class AccountingJournalPostingService {
       ];
 
       if (practitionerPayableAccountId) {
-        lines.push(
-          {
-            ledgerAccountId: platformAccounts.platformRevenueAccountId,
-            direction: LedgerDirection.CREDIT,
-            amount: platformCommission.toFixed(2),
-            memo: 'Recognize platform commission on captured payment.',
-            referenceType: 'payment',
-            referenceId: input.payment.id,
-          },
-          {
-            ledgerAccountId: practitionerPayableAccountId,
-            direction: LedgerDirection.CREDIT,
-            amount: practitionerShare.toFixed(2),
-            memo: 'Recognize practitioner payable on captured payment.',
-            referenceType: 'payment',
-            referenceId: input.payment.id,
-          },
-        );
+        lines.push({
+          ledgerAccountId: platformAccounts.deferredSessionFundsAccountId,
+          direction: LedgerDirection.CREDIT,
+          amount: totalAmount.toFixed(2),
+          memo: 'Hold captured session funds until the accounting decision is credited.',
+          referenceType: 'payment',
+          referenceId: input.payment.id,
+        });
       } else {
         lines.push({
           ledgerAccountId: platformAccounts.platformRevenueAccountId,
@@ -234,8 +232,10 @@ export class AccountingJournalPostingService {
           status: JournalEntryStatus.POSTED,
           description: 'Payment captured accounting posting.',
           metadataJson: {
-            postingVersion: 1,
+            postingVersion: 2,
+            recognition: practitionerPayableAccountId ? 'DEFERRED' : 'PLATFORM',
             source: 'payment-captured',
+            allocationSnapshotAvailable: Boolean(input.breakdown),
             amountTotal: totalAmount.toFixed(2),
             amountFromGateway: amountFromGateway.toFixed(2),
             amountFromWallet: amountFromWallet.toFixed(2),
@@ -277,6 +277,239 @@ export class AccountingJournalPostingService {
     });
   }
 
+  /** Called in the same transaction as the approved earning ledger credit. */
+  async postSessionEarningRecognized(input: {
+    reviewId: string;
+    paymentId: string;
+    practitionerId: string;
+    allocatedAmount: Prisma.Decimal;
+    practitionerSourceAmount: Prisma.Decimal;
+    sourceCurrency: string;
+    walletCurrency: string;
+    walletCredit: Prisma.Decimal;
+    occurredAt: Date;
+    tx: Prisma.TransactionClient;
+  }) {
+    const tx = input.tx;
+    const payment = await tx.payment.findUniqueOrThrow({
+      where: { id: input.paymentId },
+    });
+    // Reconstruct only from the persisted collection snapshot, never live prices.
+    const captured = await this.postPaymentCaptured({ payment, tx });
+    const sourceAccounts =
+      await this.accountingLedgerAccountService.ensurePlatformAccounts(
+        input.sourceCurrency,
+        tx,
+      );
+    const sourcePayable =
+      await this.accountingLedgerAccountService.ensurePractitionerPayableAccount(
+        {
+          practitionerId: input.practitionerId,
+          currencyCode: input.sourceCurrency,
+          tx,
+        },
+      );
+    const metadata = (captured.journalEntry.metadataJson ?? {}) as Record<
+      string,
+      unknown
+    >;
+    const deferred = metadata.recognition === 'DEFERRED';
+    const platform = input.allocatedAmount.sub(input.practitionerSourceAmount);
+    const lines: JournalLineDraft[] = [];
+    const add = (
+      account: string,
+      direction: LedgerDirection,
+      amount: Prisma.Decimal,
+      memo: string,
+    ) => {
+      if (amount.isZero()) return;
+      lines.push({
+        ledgerAccountId: account,
+        direction: amount.lt(0)
+          ? direction === 'DEBIT'
+            ? 'CREDIT'
+            : 'DEBIT'
+          : direction,
+        amount: amount.abs().toFixed(2),
+        memo,
+        referenceType: 'session-earning-review',
+        referenceId: input.reviewId,
+      });
+    };
+    if (deferred) {
+      add(
+        sourceAccounts.deferredSessionFundsAccountId,
+        'DEBIT',
+        input.allocatedAmount,
+        'Release approved session funds.',
+      );
+      add(
+        sourceAccounts.platformRevenueAccountId,
+        'CREDIT',
+        platform,
+        'Recognize approved platform allocation.',
+      );
+      add(
+        sourcePayable,
+        'CREDIT',
+        input.practitionerSourceAmount,
+        'Recognize approved practitioner entitlement.',
+      );
+    } else {
+      // Version-one journals already recognized checkout allocations. Append
+      // only the accountant-approved difference; preserve the original journal.
+      const previousPractitioner = this.readMoneyFromMetadata(
+        captured.journalEntry.metadataJson,
+        'practitionerShareAmount',
+      );
+      const delta = input.practitionerSourceAmount.sub(previousPractitioner);
+      add(
+        sourceAccounts.platformRevenueAccountId,
+        'DEBIT',
+        delta,
+        'Adjust legacy checkout allocation to the approved decision.',
+      );
+      add(
+        sourcePayable,
+        'CREDIT',
+        delta,
+        'Adjust legacy practitioner payable.',
+      );
+    }
+    if (
+      input.sourceCurrency !== input.walletCurrency &&
+      input.practitionerSourceAmount.gt(0)
+    ) {
+      add(
+        sourcePayable,
+        'DEBIT',
+        input.practitionerSourceAmount,
+        'Convert the approved source entitlement.',
+      );
+      add(
+        sourceAccounts.foreignExchangeClearingAccountId,
+        'CREDIT',
+        input.practitionerSourceAmount,
+        'Source side of approved currency conversion.',
+      );
+    } else {
+      const difference = input.walletCredit.sub(input.practitionerSourceAmount);
+      add(
+        sourceAccounts.earningAdjustmentsAccountId,
+        'DEBIT',
+        difference,
+        'Explicit wallet credit adjustment.',
+      );
+      add(
+        sourcePayable,
+        'CREDIT',
+        difference,
+        'Apply approved wallet credit adjustment.',
+      );
+    }
+    await this.postLifecycleEntry({
+      tx,
+      sourceType: JournalEntrySourceType.SESSION_EARNING_RECOGNIZED,
+      sourceId: input.reviewId,
+      currencyCode: input.sourceCurrency,
+      occurredAt: input.occurredAt,
+      lines,
+      metadata: {
+        paymentId: input.paymentId,
+        reviewId: input.reviewId,
+        allocatedAmount: input.allocatedAmount.toFixed(2),
+        practitionerSourceAmount: input.practitionerSourceAmount.toFixed(2),
+        walletCredit: input.walletCredit.toFixed(2),
+        walletCurrency: input.walletCurrency,
+        adjustedLegacyCapture: !deferred,
+      },
+    });
+    if (
+      input.sourceCurrency !== input.walletCurrency &&
+      input.walletCredit.gt(0)
+    ) {
+      const walletAccounts =
+        await this.accountingLedgerAccountService.ensurePlatformAccounts(
+          input.walletCurrency,
+          tx,
+        );
+      const walletPayable =
+        await this.accountingLedgerAccountService.ensurePractitionerPayableAccount(
+          {
+            practitionerId: input.practitionerId,
+            currencyCode: input.walletCurrency,
+            tx,
+          },
+        );
+      await this.postLifecycleEntry({
+        tx,
+        sourceType: JournalEntrySourceType.SESSION_EARNING_RECOGNIZED,
+        sourceId: `${input.reviewId}:wallet`,
+        currencyCode: input.walletCurrency,
+        occurredAt: input.occurredAt,
+        lines: [
+          {
+            ledgerAccountId: walletAccounts.foreignExchangeClearingAccountId,
+            direction: 'DEBIT',
+            amount: input.walletCredit.toFixed(2),
+            memo: 'Wallet side of approved currency conversion.',
+            referenceType: 'session-earning-review',
+            referenceId: input.reviewId,
+          },
+          {
+            ledgerAccountId: walletPayable,
+            direction: 'CREDIT',
+            amount: input.walletCredit.toFixed(2),
+            memo: 'Approved practitioner wallet payable.',
+            referenceType: 'session-earning-review',
+            referenceId: input.reviewId,
+          },
+        ],
+        metadata: {
+          paymentId: input.paymentId,
+          reviewId: input.reviewId,
+          sourceCurrency: input.sourceCurrency,
+          sourceAmount: input.practitionerSourceAmount.toFixed(2),
+        },
+      });
+    }
+  }
+
+  private async postLifecycleEntry(input: {
+    tx: Prisma.TransactionClient;
+    sourceType: JournalEntrySourceType;
+    sourceId: string;
+    currencyCode: string;
+    occurredAt: Date;
+    lines: JournalLineDraft[];
+    metadata: Prisma.InputJsonObject;
+  }) {
+    await input.tx
+      .$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`journal:${input.sourceType}:${input.sourceId}`})::bigint)`;
+    const existing = await input.tx.journalEntry.findUnique({
+      where: {
+        sourceType_sourceId: {
+          sourceType: input.sourceType,
+          sourceId: input.sourceId,
+        },
+      },
+    });
+    if (existing) return existing;
+    this.assertBalanced(input.lines);
+    return input.tx.journalEntry.create({
+      data: {
+        sourceType: input.sourceType,
+        sourceId: input.sourceId,
+        currencyCode: input.currencyCode,
+        occurredAt: input.occurredAt,
+        status: 'POSTED',
+        description: 'Session lifecycle accounting posting.',
+        metadataJson: { postingVersion: 2, ...input.metadata },
+        lines: { create: input.lines },
+      },
+    });
+  }
+
   async postRefundSucceeded(input: {
     refund: {
       id: string;
@@ -292,8 +525,17 @@ export class AccountingJournalPostingService {
       practitionerRefundAmount: string;
       platformRefundAmount: string;
     };
+    recognition?: {
+      allocatedRefundAmount: string;
+      practitionerSourceRefundAmount: string;
+      platformRefundAmount: string;
+      walletCurrency: string;
+      walletRefundAmount: string;
+      availableDebit: string;
+      recoveryAmount: string;
+    };
     tx?: Prisma.TransactionClient;
-  }) {
+  }): Promise<JournalPostResult> {
     return this.withTx(input.tx, async (tx) => {
       const existing = await tx.journalEntry.findUnique({
         where: {
@@ -306,6 +548,15 @@ export class AccountingJournalPostingService {
       });
       if (existing) {
         return { journalEntry: existing, wasAlreadyPosted: true };
+      }
+
+      if (input.recognition) {
+        return this.postRecognizedRefund(
+          input as typeof input & {
+            recognition: NonNullable<typeof input.recognition>;
+          },
+          tx,
+        );
       }
 
       const platformAccounts =
@@ -330,6 +581,12 @@ export class AccountingJournalPostingService {
         input.split.platformRefundAmount,
       );
       const totalRefundAmount = this.toMoney(input.refund.amount);
+      const vatReversal = await this.calculateRefundVatReversal({
+        paymentId: input.refund.paymentId,
+        refundId: input.refund.id,
+        refundAmount: totalRefundAmount,
+        tx,
+      });
 
       const lines: JournalLineDraft[] = [];
       if (practitionerPayableAccountId) {
@@ -350,6 +607,24 @@ export class AccountingJournalPostingService {
         referenceType: 'refund',
         referenceId: input.refund.id,
       });
+      if (vatReversal.gt(0)) {
+        lines.push({
+          ledgerAccountId: platformAccounts.vatPayableAccountId,
+          direction: LedgerDirection.DEBIT,
+          amount: vatReversal.toFixed(2),
+          memo: 'Reverse VAT payable for the refunded collection share.',
+          referenceType: 'refund',
+          referenceId: input.refund.id,
+        });
+        lines.push({
+          ledgerAccountId: platformAccounts.platformRevenueAccountId,
+          direction: LedgerDirection.CREDIT,
+          amount: vatReversal.toFixed(2),
+          memo: 'Restore the VAT reclassification for the refunded collection share.',
+          referenceType: 'refund',
+          referenceId: input.refund.id,
+        });
+      }
 
       if (input.refund.destination === RefundDestination.CUSTOMER_WALLET) {
         lines.push({
@@ -389,6 +664,7 @@ export class AccountingJournalPostingService {
             refundAmount: totalRefundAmount.toFixed(2),
             practitionerRefundAmount: practitionerRefundAmount.toFixed(2),
             platformRefundAmount: platformRefundAmount.toFixed(2),
+            vatReversalAmount: vatReversal.toFixed(2),
             cancellationPolicySnapshot: this.extractCancellationPolicySnapshot(
               input.refund.metadataJson,
             ),
@@ -413,6 +689,257 @@ export class AccountingJournalPostingService {
         wasAlreadyPosted: false,
       };
     });
+  }
+
+  private async postRecognizedRefund(
+    input: Parameters<
+      AccountingJournalPostingService['postRefundSucceeded']
+    >[0],
+    tx: Prisma.TransactionClient,
+  ): Promise<JournalPostResult> {
+    const allocation = input.recognition!;
+    const payment = await tx.payment.findUniqueOrThrow({
+      where: { id: input.refund.paymentId },
+    });
+    const capture = await this.postPaymentCaptured({ payment, tx });
+    const allocated = this.toMoney(allocation.allocatedRefundAmount);
+    const captureMetadata = (capture.journalEntry.metadataJson ?? {}) as Record<
+      string,
+      unknown
+    >;
+    if (captureMetadata.recognition !== 'DEFERRED' && allocated.isZero()) {
+      // Legacy receipt journals already recognized pending allocations.
+      const fraction = input.refund.amount.div(payment.amountTotal);
+      const practitioner = this.readMoneyFromMetadata(
+        capture.journalEntry.metadataJson,
+        'practitionerShareAmount',
+      )
+        .mul(fraction)
+        .toDecimalPlaces(2);
+      return this.postRefundSucceeded({
+        ...input,
+        split: {
+          practitionerRefundAmount: practitioner.toFixed(2),
+          platformRefundAmount: input.refund.amount
+            .sub(practitioner)
+            .toFixed(2),
+        },
+        recognition: undefined,
+        tx,
+      });
+    }
+    const total = this.toMoney(input.refund.amount);
+    const sourcePractitioner = this.toMoney(
+      allocation.practitionerSourceRefundAmount,
+    );
+    const platform = this.toMoney(allocation.platformRefundAmount);
+    const walletRefund = this.toMoney(allocation.walletRefundAmount);
+    const debit = this.toMoney(allocation.availableDebit);
+    const recovery = this.toMoney(allocation.recoveryAmount);
+    const vatReversal = await this.calculateRefundVatReversal({
+      paymentId: input.refund.paymentId,
+      refundId: input.refund.id,
+      refundAmount: total,
+      tx,
+    });
+    if (
+      allocated.gt(total) ||
+      !sourcePractitioner.add(platform).equals(allocated) ||
+      !debit.add(recovery).equals(walletRefund)
+    ) {
+      throw new BadRequestException({
+        error: 'FINANCIAL_OPERATIONS_REFUND_ALLOCATION_INVALID',
+      });
+    }
+    const accounts =
+      await this.accountingLedgerAccountService.ensurePlatformAccounts(
+        input.refund.currencyCode,
+        tx,
+      );
+    const lines: JournalLineDraft[] = [];
+    const add = (
+      account: string,
+      direction: LedgerDirection,
+      amount: Prisma.Decimal,
+      memo: string,
+    ) => {
+      if (amount.isZero()) return;
+      lines.push({
+        ledgerAccountId: account,
+        direction: amount.lt(0)
+          ? direction === 'DEBIT'
+            ? 'CREDIT'
+            : 'DEBIT'
+          : direction,
+        amount: amount.abs().toFixed(2),
+        memo,
+        referenceType: 'refund',
+        referenceId: input.refund.id,
+      });
+    };
+    add(
+      accounts.deferredSessionFundsAccountId,
+      'DEBIT',
+      total.sub(allocated),
+      'Return session funds not yet recognized.',
+    );
+    add(
+      accounts.platformRevenueAccountId,
+      'DEBIT',
+      platform,
+      'Reverse recognized platform allocation.',
+    );
+    add(
+      accounts.vatPayableAccountId,
+      'DEBIT',
+      vatReversal,
+      'Reverse VAT payable for the refunded collection share.',
+    );
+    add(
+      accounts.platformRevenueAccountId,
+      'CREDIT',
+      vatReversal,
+      'Restore the VAT reclassification for the refunded collection share.',
+    );
+    add(
+      accounts.foreignExchangeClearingAccountId,
+      'DEBIT',
+      sourcePractitioner,
+      'Reverse the source practitioner allocation.',
+    );
+    if (allocation.walletCurrency === input.refund.currencyCode) {
+      const adjustment = walletRefund.sub(sourcePractitioner);
+      add(
+        accounts.foreignExchangeClearingAccountId,
+        'DEBIT',
+        adjustment,
+        'Reverse approved wallet adjustment.',
+      );
+      add(
+        accounts.earningAdjustmentsAccountId,
+        'CREDIT',
+        adjustment,
+        'Reverse the refunded wallet adjustment expense.',
+      );
+    }
+    add(
+      input.refund.destination === RefundDestination.CUSTOMER_WALLET
+        ? accounts.customerWalletLiabilityAccountId
+        : accounts.gatewayClearingAccountId,
+      'CREDIT',
+      total,
+      'Return the exact refund amount to its recorded destination.',
+    );
+    const entry = await this.postLifecycleEntry({
+      tx,
+      sourceType: JournalEntrySourceType.REFUND_SUCCEEDED,
+      sourceId: input.refund.id,
+      currencyCode: input.refund.currencyCode,
+      occurredAt: input.refund.processedAt ?? new Date(),
+      lines,
+      metadata: {
+        paymentId: input.refund.paymentId,
+        refundAmount: total.toFixed(2),
+        destination: input.refund.destination,
+        allocation,
+        vatReversalAmount: vatReversal.toFixed(2),
+      },
+    });
+    if (walletRefund.gt(0) && input.refund.practitionerId) {
+      const walletAccounts =
+        await this.accountingLedgerAccountService.ensurePlatformAccounts(
+          allocation.walletCurrency,
+          tx,
+        );
+      const payable =
+        await this.accountingLedgerAccountService.ensurePractitionerPayableAccount(
+          {
+            practitionerId: input.refund.practitionerId,
+            currencyCode: allocation.walletCurrency,
+            tx,
+          },
+        );
+      await this.postLifecycleEntry({
+        tx,
+        sourceType: JournalEntrySourceType.REFUND_SUCCEEDED,
+        sourceId: `${input.refund.id}:wallet`,
+        currencyCode: allocation.walletCurrency,
+        occurredAt: input.refund.processedAt ?? new Date(),
+        lines: [
+          {
+            ledgerAccountId: payable,
+            direction: 'DEBIT',
+            amount: debit.toFixed(2),
+            memo: 'Reverse remaining practitioner payable.',
+            referenceType: 'refund',
+            referenceId: input.refund.id,
+          },
+          {
+            ledgerAccountId:
+              walletAccounts.practitionerRecoveryReceivableAccountId,
+            direction: 'DEBIT',
+            amount: recovery.toFixed(2),
+            memo: 'Recognize practitioner recovery for already paid or unavailable earnings.',
+            referenceType: 'refund',
+            referenceId: input.refund.id,
+          },
+          {
+            ledgerAccountId: walletAccounts.foreignExchangeClearingAccountId,
+            direction: 'CREDIT',
+            amount: walletRefund.toFixed(2),
+            memo: 'Reverse the wallet side of the earning allocation.',
+            referenceType: 'refund',
+            referenceId: input.refund.id,
+          },
+        ].filter((line) =>
+          this.toMoney(line.amount).gt(0),
+        ) as JournalLineDraft[],
+        metadata: {
+          paymentId: input.refund.paymentId,
+          refundId: input.refund.id,
+          sourceAmount: sourcePractitioner.toFixed(2),
+          sourceCurrency: input.refund.currencyCode,
+        },
+      });
+    }
+    return { journalEntry: entry, wasAlreadyPosted: false };
+  }
+
+  private async calculateRefundVatReversal(input: {
+    paymentId: string;
+    refundId: string;
+    refundAmount: Prisma.Decimal;
+    tx: Prisma.TransactionClient;
+  }) {
+    const payment = await input.tx.payment.findUniqueOrThrow({
+      where: { id: input.paymentId },
+      select: { amountTotal: true, vatAmountSnapshot: true },
+    });
+    const total = this.toMoney(payment.amountTotal);
+    const vat = payment.vatAmountSnapshot
+      ? this.toMoney(payment.vatAmountSnapshot)
+      : new Prisma.Decimal(0);
+    if (total.lte(0) || vat.lte(0)) return new Prisma.Decimal(0);
+
+    const prior = await input.tx.refund.aggregate({
+      where: {
+        paymentId: input.paymentId,
+        status: 'SUCCEEDED',
+        id: { not: input.refundId },
+      },
+      _sum: { amount: true },
+    });
+    const priorAmount = prior._sum.amount ?? new Prisma.Decimal(0);
+    const cumulativeAmount = Prisma.Decimal.min(
+      total,
+      priorAmount.add(input.refundAmount),
+    );
+    const priorVat = vat.mul(priorAmount).div(total).toDecimalPlaces(2);
+    const cumulativeVat = vat
+      .mul(cumulativeAmount)
+      .div(total)
+      .toDecimalPlaces(2);
+    return cumulativeVat.sub(priorVat);
   }
 
   async postPractitionerPayout(input: {

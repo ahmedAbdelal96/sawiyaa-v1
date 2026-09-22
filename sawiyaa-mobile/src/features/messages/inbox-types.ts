@@ -1,6 +1,7 @@
 import type { MessagesRole } from "./types";
 import type {
   GeneralChatConversationListItemDto,
+  CanonicalConversation,
 } from "./types";
 import type {
   SupportTicketItemDto,
@@ -23,6 +24,7 @@ export interface NormalizedInboxItem {
   destinationRoute: string;
   raw:
     | GeneralChatConversationListItemDto
+    | CanonicalConversation
     | SupportTicketItemDto
     | CareChatRequestItemDto;
 }

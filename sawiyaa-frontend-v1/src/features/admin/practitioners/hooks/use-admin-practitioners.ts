@@ -8,6 +8,7 @@ import {
   getAdminPractitionerPublication,
   updateAdminPractitionerPublication,
   getAdminPractitionerDetails,
+  deleteIncompleteAdminPractitioner,
 } from "../api/admin-practitioners.api";
 import type { ListAdminPractitionersParams } from "../types/admin-practitioners.types";
 
@@ -20,6 +21,16 @@ export function useAdminPractitioners(
     queryFn: () => listAdminPractitioners(params),
     enabled,
     staleTime: 30_000,
+  });
+}
+
+export function useDeleteIncompleteAdminPractitioner() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (practitionerId: string) => deleteIncompleteAdminPractitioner(practitionerId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin", "practitioners"] });
+    },
   });
 }
 

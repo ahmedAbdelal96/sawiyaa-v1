@@ -6,6 +6,10 @@ import {
   Prisma,
 } from '@prisma/client';
 import { AppLoggerService } from '@common/logging/app-logger.service';
+import {
+  SecurityAuditActorType as AuditActorType,
+  SecurityAuditSource,
+} from '@common/security-audit/security-audit.types';
 import { PaymentRepository } from '../repositories/payment.repository';
 import { PaymentProviderRegistryService } from '../services/payment-provider-registry.service';
 import { ExpirePaymentUseCase } from './expire-payment.use-case';
@@ -29,6 +33,8 @@ export class HandlePaymobWebhookUseCase {
     headers: Record<string, string | string[] | undefined>;
     query?: Record<string, unknown>;
   }) {
+    this.logWebhookShape(input);
+
     const adapter = this.paymentProviderRegistryService.get(
       PaymentProvider.PAYMOB,
     );
@@ -42,11 +48,27 @@ export class HandlePaymobWebhookUseCase {
       };
     }
 
-    const duplicate = await this.paymentRepository.findEventByProviderEventRef(
+    const duplicate = await this.paymentRepository.findWebhookReceipt(
+      PaymentProvider.PAYMOB,
       webhook.providerEventRef,
     );
 
     if (duplicate) {
+      const duplicatePayment = await this.paymentRepository.findById(
+        duplicate.paymentId,
+      );
+      if (
+        webhook.outcome === 'SUCCEEDED' &&
+        duplicatePayment?.status === PaymentStatus.CAPTURED
+      ) {
+        // Re-enter the idempotent capture orchestrator so a historical crash
+        // after capture can repair package/academy post-commit projections.
+        await this.markPaymentSucceededUseCase.execute({
+          paymentId: duplicate.paymentId,
+          providerEventRef: webhook.providerEventRef,
+          payload: webhook.payload,
+        });
+      }
       return {
         received: true,
         handled: true,
@@ -83,10 +105,21 @@ export class HandlePaymobWebhookUseCase {
       !gatewayMoneyMatchesPayment({
         amountMinor: webhook.amountMinor,
         currencyCode: webhook.currencyCode,
-        expectedAmount: payment.amountTotal,
+        expectedAmount: payment.amountFromGateway,
         expectedCurrencyCode: payment.currencyCode,
       })
     ) {
+      const receipt = await this.createReceiptOrFindDuplicate(
+        payment.id,
+        webhook.providerEventRef,
+      );
+      if (receipt.duplicate) {
+        return {
+          received: true,
+          handled: true,
+          paymentId: receipt.paymentId,
+        };
+      }
       await this.paymentRepository.createEvent({
         paymentId: payment.id,
         eventType: PaymentEventType.PROVIDER_WEBHOOK_RECEIVED,
@@ -98,6 +131,17 @@ export class HandlePaymobWebhookUseCase {
     }
 
     if (payment.status === targetStatus) {
+      const receipt = await this.createReceiptOrFindDuplicate(
+        payment.id,
+        webhook.providerEventRef,
+      );
+      if (receipt.duplicate) {
+        return {
+          received: true,
+          handled: true,
+          paymentId: receipt.paymentId,
+        };
+      }
       await this.paymentRepository.createEvent({
         paymentId: payment.id,
         eventType: PaymentEventType.PROVIDER_WEBHOOK_RECEIVED,
@@ -112,29 +156,70 @@ export class HandlePaymobWebhookUseCase {
       };
     }
 
-    switch (webhook.outcome) {
-      case 'SUCCEEDED':
-        await this.markPaymentSucceededUseCase.execute({
+    if (
+      payment.status === PaymentStatus.EXPIRED &&
+      webhook.outcome === 'SUCCEEDED'
+    ) {
+      const receipt = await this.createReceiptOrFindDuplicate(
+        payment.id,
+        webhook.providerEventRef,
+      );
+      if (!receipt.duplicate) {
+        await this.paymentRepository.createEvent({
           paymentId: payment.id,
+          eventType: PaymentEventType.PAYMENT_LATE_SUCCESS_REVIEW_REQUIRED,
+          actorType: AuditActorType.PAYMENT_WEBHOOK,
+          source: SecurityAuditSource.PAYMENT_WEBHOOK,
           providerEventRef: webhook.providerEventRef,
-          payload: webhook.payload,
+          reason: 'PAYMENT_SUCCESS_RECEIVED_AFTER_EXPIRY',
+          payloadJson: webhook.payload as Prisma.InputJsonValue,
         });
-        break;
-      case 'EXPIRED':
-        await this.expirePaymentUseCase.execute({
-          paymentId: payment.id,
-          providerEventRef: webhook.providerEventRef,
-          payload: webhook.payload,
-        });
-        break;
-      case 'FAILED':
-      default:
-        await this.markPaymentFailedUseCase.execute({
-          paymentId: payment.id,
-          providerEventRef: webhook.providerEventRef,
-          payload: webhook.payload,
-        });
-        break;
+      }
+      return {
+        received: true,
+        handled: false,
+        paymentId: payment.id,
+      };
+    }
+
+    try {
+      switch (webhook.outcome) {
+        case 'SUCCEEDED':
+          await this.markPaymentSucceededUseCase.execute({
+            paymentId: payment.id,
+            providerEventRef: webhook.providerEventRef,
+            payload: webhook.payload,
+          });
+          break;
+        case 'EXPIRED':
+          await this.expirePaymentUseCase.execute({
+            paymentId: payment.id,
+            providerEventRef: webhook.providerEventRef,
+            payload: webhook.payload,
+          });
+          break;
+        case 'FAILED':
+        default:
+          await this.markPaymentFailedUseCase.execute({
+            paymentId: payment.id,
+            providerEventRef: webhook.providerEventRef,
+            payload: webhook.payload,
+          });
+          break;
+      }
+    } catch (error) {
+      if (this.isWebhookReceiptConflict(error)) {
+        const receipt = await this.paymentRepository.findWebhookReceipt(
+          PaymentProvider.PAYMOB,
+          webhook.providerEventRef,
+        );
+        return {
+          received: true,
+          handled: true,
+          paymentId: receipt?.paymentId ?? payment.id,
+        };
+      }
+      throw error;
     }
 
     return {
@@ -156,5 +241,93 @@ export class HandlePaymobWebhookUseCase {
       default:
         return PaymentStatus.FAILED;
     }
+  }
+
+  private isWebhookReceiptConflict(error: unknown): boolean {
+    if ((error as { code?: string } | null)?.code !== 'P2002') {
+      return false;
+    }
+
+    const target = (error as { meta?: { target?: unknown } } | null)?.meta
+      ?.target;
+    return Array.isArray(target)
+      ? target.some((value) => value === 'providerEventRef')
+      : true;
+  }
+
+  private async createReceiptOrFindDuplicate(
+    paymentId: string,
+    providerEventRef: string,
+  ): Promise<{ duplicate: boolean; paymentId: string }> {
+    try {
+      await this.paymentRepository.createWebhookReceipt({
+        provider: PaymentProvider.PAYMOB,
+        providerEventRef,
+        paymentId,
+      });
+      return { duplicate: false, paymentId };
+    } catch (error) {
+      if (!this.isWebhookReceiptConflict(error)) {
+        throw error;
+      }
+
+      const receipt = await this.paymentRepository.findWebhookReceipt(
+        PaymentProvider.PAYMOB,
+        providerEventRef,
+      );
+      return {
+        duplicate: true,
+        paymentId: receipt?.paymentId ?? paymentId,
+      };
+    }
+  }
+
+  private logWebhookShape(input: {
+    rawBody: Buffer;
+    headers: Record<string, string | string[] | undefined>;
+    query?: Record<string, unknown>;
+  }): void {
+    let body: unknown;
+    try {
+      body = JSON.parse(input.rawBody.toString('utf8')) as unknown;
+    } catch {
+      this.logger.debug(
+        { message: 'Paymob webhook received with invalid JSON shape' },
+        'Payments',
+      );
+      return;
+    }
+
+    const record =
+      body && typeof body === 'object' && !Array.isArray(body)
+        ? (body as Record<string, unknown>)
+        : {};
+    const transaction =
+      record.obj && typeof record.obj === 'object' && !Array.isArray(record.obj)
+        ? (record.obj as Record<string, unknown>)
+        : record;
+    const hmacHeader = ['x-paymob-hmac', 'hmac', 'x-hmac'].some((key) => {
+      const value = input.headers[key];
+      return Array.isArray(value)
+        ? Boolean(value[0]?.trim())
+        : Boolean(value?.trim());
+    });
+    const hmacQuery =
+      typeof input.query?.hmac === 'string' && Boolean(input.query.hmac.trim());
+
+    this.logger.debug(
+      {
+        message: 'Paymob webhook shape received',
+        hasObj: Boolean(record.obj),
+        type: typeof record.type === 'string' ? record.type : null,
+        hasHmac: hmacHeader || hmacQuery,
+        transactionId:
+          typeof transaction.id === 'string' ||
+          typeof transaction.id === 'number'
+            ? String(transaction.id)
+            : null,
+      },
+      'Payments',
+    );
   }
 }

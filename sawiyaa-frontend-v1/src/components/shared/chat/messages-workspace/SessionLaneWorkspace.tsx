@@ -131,7 +131,7 @@ export default function SessionLaneWorkspace({
                     isUnread: (item.unreadCount ?? 0) > 0 || item.hasUnread === true,
                     readPending: readPendingThreadIds.includes(item.id),
                     lane: "session",
-                    statusLabel: item.presentationStatus.replaceAll("_", " "),
+                    statusLabel: item.operational.state.replaceAll("_", " "),
                     isActive: item.id === activeSessionId,
                   }}
                 />

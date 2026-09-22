@@ -16,19 +16,23 @@ export class PractitionerOtpQaCaptureService {
   constructor(private readonly configService: ConfigService) {
     this.enabled =
       this.configService.get<string>('app.nodeEnv') !== 'production' &&
-      this.configService.get<boolean>('auth.practitionerOtpQaCaptureEnabled') ===
-        true;
+      this.configService.get<boolean>(
+        'auth.practitionerOtpQaCaptureEnabled',
+      ) === true;
     this.capturePath = resolve(
       process.env.PRACTITIONER_OTP_QA_CAPTURE_PATH ??
         resolve(process.cwd(), '.tmp/practitioner-otp-qa.capture'),
     );
     this.allowedAccounts = new Set(
-      this.configService.get<string[]>('auth.practitionerOtpQaCaptureAccounts') ?? [],
+      this.configService.get<string[]>(
+        'auth.practitionerOtpQaCaptureAccounts',
+      ) ?? [],
     );
 
     if (
-      this.configService.get<boolean>('auth.practitionerOtpQaCaptureEnabled') ===
-        true &&
+      this.configService.get<boolean>(
+        'auth.practitionerOtpQaCaptureEnabled',
+      ) === true &&
       this.configService.get<string>('app.nodeEnv') === 'production'
     ) {
       throw new Error(
@@ -61,14 +65,31 @@ export class PractitionerOtpQaCaptureService {
   }
 
   shouldCapture(target: string, purpose = 'PRACTITIONER_LOGIN'): boolean {
-    return purpose === 'PRACTITIONER_LOGIN' && this.enabled && this.allowedAccounts.has(target.trim().toLowerCase());
+    const isPractitionerQaPurpose =
+      purpose === 'PRACTITIONER_LOGIN' ||
+      purpose === 'PRACTITIONER_SIGNUP_EMAIL_VERIFICATION';
+    return (
+      isPractitionerQaPurpose &&
+      this.enabled &&
+      this.allowedAccounts.has(target.trim().toLowerCase())
+    );
   }
 
-  async readLatest(target: string): Promise<string | null> {
-    if (!this.shouldCapture(target)) return null;
+  async readLatest(
+    target: string,
+    purpose = 'PRACTITIONER_LOGIN',
+  ): Promise<string | null> {
+    if (!this.shouldCapture(target, purpose)) return null;
     try {
-      const lines = (await readFile(this.capturePath, 'utf8')).trim().split(/\r?\n/).reverse();
-      const line = lines.find((candidate) => candidate.includes(`target=${target.trim().toLowerCase()}`));
+      const lines = (await readFile(this.capturePath, 'utf8'))
+        .trim()
+        .split(/\r?\n/)
+        .reverse();
+      const line = lines.find(
+        (candidate) =>
+          candidate.includes(`target=${target.trim().toLowerCase()}`) &&
+          candidate.includes(`purpose=${purpose}`),
+      );
       const match = line?.match(/\bcode=(\d{4,8})\b/);
       return match?.[1] ?? null;
     } catch {

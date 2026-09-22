@@ -28,5 +28,9 @@ export default registerAs('accountingReconciliation', () => ({
     process.env.ACCOUNTING_RECONCILIATION_BATCH_SIZE ?? '100',
     10,
   ),
+  pendingPaymentThresholdMinutes: parseInt(
+    process.env.ACCOUNTING_RECONCILIATION_PENDING_PAYMENT_THRESHOLD_MINUTES ?? '30',
+    10,
+  ),
   cron: process.env.ACCOUNTING_RECONCILIATION_CRON ?? '0 3 * * *',
 }));

@@ -25,6 +25,9 @@ import { AccountStateRequirement } from '@common/enums/account-state-requirement
 import { AppRole } from '@common/enums/app-role.enum';
 import { JwtAccessAuthGuard } from '@common/guards/authentication/jwt-access-auth.guard';
 import { RolesGuard } from '@common/guards/authorization/roles.guard';
+import { PermissionsGuard } from '@common/guards/authorization/permissions.guard';
+import { Permissions } from '@common/decorators/permissions.decorator';
+import { PermissionKey } from '@common/enums/permission-key.enum';
 import {
   HelpCategoriesResponseDto,
   HelpQuestionsResponseDto,
@@ -37,14 +40,15 @@ import { HelpService } from '../services/help.service';
 
 @ApiTags('Help')
 @ApiBearerAuth()
-@UseGuards(JwtAccessAuthGuard, RolesGuard)
+@UseGuards(JwtAccessAuthGuard, RolesGuard, PermissionsGuard)
 @RequireAccountStates(AccountStateRequirement.ACTIVE_ACCOUNT)
-@Roles(AppRole.ADMIN, AppRole.SUPER_ADMIN)
+@Roles(AppRole.ADMIN, AppRole.SUPER_ADMIN, AppRole.CONTENT_REVIEWER)
 @Controller('admin/help')
 export class AdminHelpController {
   constructor(private readonly helpService: HelpService) {}
 
   @Get('categories')
+  @Permissions(PermissionKey.HELP_READ)
   @ApiOperation({ summary: 'List help categories' })
   @ApiResponse({ status: 200, type: HelpCategoriesResponseDto })
   @ApiUnauthorizedResponse({ description: 'Access token is required' })
@@ -56,6 +60,7 @@ export class AdminHelpController {
   }
 
   @Post('categories')
+  @Permissions(PermissionKey.HELP_MANAGE)
   @ApiOperation({ summary: 'Create a help category' })
   @ApiBody({ type: UpsertHelpCategoryDto })
   @ApiResponse({ status: 200, type: HelpCategoriesResponseDto })
@@ -68,6 +73,7 @@ export class AdminHelpController {
   }
 
   @Patch('categories/:id')
+  @Permissions(PermissionKey.HELP_MANAGE)
   @ApiOperation({ summary: 'Update a help category' })
   @ApiParam({ name: 'id', description: 'Category UUID' })
   @ApiBody({ type: UpsertHelpCategoryDto })
@@ -78,6 +84,7 @@ export class AdminHelpController {
   }
 
   @Delete('categories/:id')
+  @Permissions(PermissionKey.HELP_MANAGE)
   @ApiOperation({ summary: 'Delete a help category' })
   @ApiParam({ name: 'id', description: 'Category UUID' })
   @ApiResponse({ status: 200, type: HelpCategoriesResponseDto })
@@ -87,6 +94,7 @@ export class AdminHelpController {
   }
 
   @Patch('categories/reorder')
+  @Permissions(PermissionKey.HELP_MANAGE)
   @ApiOperation({ summary: 'Reorder help categories' })
   @ApiBody({ type: ReorderHelpCategoriesDto })
   @ApiResponse({ status: 200, type: HelpCategoriesResponseDto })
@@ -95,6 +103,7 @@ export class AdminHelpController {
   }
 
   @Get('questions')
+  @Permissions(PermissionKey.HELP_READ)
   @ApiOperation({ summary: 'List help questions' })
   @ApiResponse({ status: 200, type: HelpQuestionsResponseDto })
   listQuestions() {
@@ -102,6 +111,7 @@ export class AdminHelpController {
   }
 
   @Post('questions')
+  @Permissions(PermissionKey.HELP_MANAGE)
   @ApiOperation({ summary: 'Create a help question' })
   @ApiBody({ type: UpsertHelpQuestionDto })
   @ApiResponse({ status: 200, type: HelpQuestionsResponseDto })
@@ -110,6 +120,7 @@ export class AdminHelpController {
   }
 
   @Patch('questions/:id')
+  @Permissions(PermissionKey.HELP_MANAGE)
   @ApiOperation({ summary: 'Update a help question' })
   @ApiParam({ name: 'id', description: 'Question UUID' })
   @ApiBody({ type: UpsertHelpQuestionDto })
@@ -120,6 +131,7 @@ export class AdminHelpController {
   }
 
   @Delete('questions/:id')
+  @Permissions(PermissionKey.HELP_MANAGE)
   @ApiOperation({ summary: 'Delete a help question' })
   @ApiParam({ name: 'id', description: 'Question UUID' })
   @ApiResponse({ status: 200, type: HelpQuestionsResponseDto })
@@ -129,6 +141,7 @@ export class AdminHelpController {
   }
 
   @Patch('questions/reorder')
+  @Permissions(PermissionKey.HELP_MANAGE)
   @ApiOperation({ summary: 'Reorder help questions' })
   @ApiBody({ type: ReorderHelpQuestionsDto })
   @ApiResponse({ status: 200, type: HelpQuestionsResponseDto })

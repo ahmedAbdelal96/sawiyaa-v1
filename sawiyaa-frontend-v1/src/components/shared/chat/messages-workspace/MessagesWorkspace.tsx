@@ -16,7 +16,9 @@ import UnifiedConversationThread from "./UnifiedConversationThread";
 import SupportSafeContextPanel from "./SupportSafeContextPanel";
 import NewSupportRequestModal from "./NewSupportRequestModal";
 import CareChatConversationPanel from "@/features/care-chat/components/CareChatConversationPanel";
+import SessionChatPanel from "@/features/chat/components/SessionChatPanel";
 import type { CanonicalConversation } from "@/features/messages-shell/types/messages-shell.types";
+import { filterVisibleCanonicalConversations } from "@/features/messages-shell/utils/session-lane-items";
 
 // Icons
 import { Search, PlusCircle, AlertCircle, Loader2, ArrowLeft, Heart } from "lucide-react";
@@ -45,8 +47,17 @@ export default function MessagesWorkspace({ role }: Props) {
   const defaultAdminQueue = "NEEDS_SUPPORT_REPLY";
   const activeAdminQueue = searchParams.get("queue") || defaultAdminQueue;
 
-  // Active selected conversation ID from URL
-  const selectedId = searchParams.get("id") || null;
+  // `id` is a canonical conversation (or support/care domain) identifier.
+  // Session deep links deliberately use their own identity because a Session ID
+  // is not a conversation ID and must be resolved by the Chat-domain command.
+  const activeLane = searchParams.get("lane");
+  const shouldStartSupport = searchParams.get("new") === "true";
+  const shouldFocusComposer = searchParams.get("focusComposer") === "true";
+  const selectedSessionId =
+    activeLane === "session"
+      ? searchParams.get("sessionId") || searchParams.get("id") || null
+      : null;
+  const selectedId = selectedSessionId ? null : searchParams.get("id") || null;
 
   // 1. Fetch conversations for Patient/Practitioner
   const conversationsQuery = useQuery({
@@ -174,7 +185,7 @@ export default function MessagesWorkspace({ role }: Props) {
         lastActivityAt: t.lastActivityAt,
       }));
     }
-    return conversationsQuery.data?.items ?? [];
+    return filterVisibleCanonicalConversations(conversationsQuery.data?.items ?? []);
   }, [role, adminConversationsQuery.data?.items, adminCareChatRequestsQuery.data?.items, activeAdminQueue, conversationsQuery.data?.items, isAr]);
 
   // 3. Filter & Search logic
@@ -265,6 +276,15 @@ export default function MessagesWorkspace({ role }: Props) {
     }
     router.replace(`${pathname}?${params.toString()}`);
   }, [searchParams, pathname, router]);
+
+  useEffect(() => {
+    if (role === "admin" || !shouldStartSupport) return;
+
+    setIsSupportModalOpen(true);
+    const params = new URLSearchParams(searchParams.toString());
+    params.delete("new");
+    router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+  }, [pathname, role, router, searchParams, shouldStartSupport]);
 
   // Restore last selected conversation ID on initial mount if not already present in searchParams
   useEffect(() => {
@@ -358,7 +378,7 @@ export default function MessagesWorkspace({ role }: Props) {
       : conversationsQuery.isError;
   const isThreadLoading = role === "admin" && Boolean(selectedId) ? resolvedTicketQuery.isLoading : false;
 
-  const showDetailPane = Boolean(selectedId);
+  const showDetailPane = Boolean(selectedId || selectedSessionId);
 
   return (
     <section className="h-full min-h-0 w-full overflow-hidden rounded-2xl border border-border-light/80 bg-white shadow-xs dark:border-white/10 dark:bg-slate-900">
@@ -564,7 +584,15 @@ export default function MessagesWorkspace({ role }: Props) {
                 </div>
                 <div className="flex-1 flex flex-col min-h-0">
                   {/* CARE lane: render the care conversation panel inline */}
-                  {role === "admin" && activeAdminQueue === "CARE" && selectedId ? (
+                  {selectedSessionId && role !== "admin" ? (
+                    <div className="flex-1 h-full min-h-0 overflow-hidden">
+                      <SessionChatPanel
+                        sessionId={selectedSessionId}
+                        scope={role}
+                        variant="embedded"
+                      />
+                    </div>
+                  ) : role === "admin" && activeAdminQueue === "CARE" && selectedId ? (
                     <div className="flex-1 h-full min-h-0 overflow-hidden">
                       <CareChatConversationPanel
                         conversationId={selectedId}
@@ -582,6 +610,7 @@ export default function MessagesWorkspace({ role }: Props) {
                       conversation={activeConversation}
                       role={role}
                       locale={locale}
+                      focusComposer={shouldFocusComposer}
                       onNewSupportClick={role !== "admin" ? () => setIsSupportModalOpen(true) : undefined}
                     />
                   ) : (

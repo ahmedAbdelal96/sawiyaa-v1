@@ -1,5 +1,5 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
-import { PaymentProvider, PaymentPurpose } from '@prisma/client';
+import { MarketType, PaymentProvider, PaymentPurpose } from '@prisma/client';
 import { CouponRepository } from '../repositories/coupon.repository';
 import { resolvePaymentRegionalResolution } from '@common/payments/payment-region.resolver';
 import {
@@ -31,35 +31,152 @@ export class CalculateSessionFinancialBreakdownService {
     session: SessionFinancialContext;
     requestCountryIsoCode?: string | null;
     couponCode?: string | null;
+    requireCommissionRule?: boolean;
   }): Promise<PaymentFinancialResolution> {
     const paymentSnapshot = this.resolvePaymentSnapshot(input.session);
-    const regionalResolution = paymentSnapshot
-      ? {
-          currencyCode: paymentSnapshot.currencyCode,
-          regionalPricingMode:
-            paymentSnapshot.currencyCode === 'EGP'
-              ? ('EGYPT_LOCAL' as const)
-              : ('INTERNATIONAL' as const),
+    if (paymentSnapshot) {
+      const payment = input.session.payments![0];
+      const platformRate =
+        payment.commissionPlatformRatePercent?.toString() ?? null;
+      const practitionerRate =
+        payment.commissionPractitionerRatePercent?.toString() ?? null;
+      const platformAmount =
+        platformRate === null
+          ? null
+          : this.moneyMathService
+              .percentOf(paymentSnapshot.amountTotal, platformRate)
+              .toFixed(2);
+      const practitionerAmount =
+        platformAmount === null
+          ? null
+          : this.moneyMathService
+              .subtract(paymentSnapshot.amountTotal, platformAmount)
+              .toFixed(2);
+      const regionalPricingMode =
+        paymentSnapshot.currencyCode === 'EGP'
+          ? ('EGYPT_LOCAL' as const)
+          : ('INTERNATIONAL' as const);
+      const purpose =
+        payment.paymentPurpose ??
+        (input.session.flowType === 'INSTANT'
+          ? PaymentPurpose.SESSION_INSTANT_BOOKING
+          : PaymentPurpose.SESSION_BOOKING);
+      const commissionRule =
+        payment.commissionRuleId &&
+        platformRate !== null &&
+        practitionerRate !== null
+          ? {
+              id: payment.commissionRuleId,
+              slug: payment.commissionRuleId,
+              platformRatePercent: platformRate,
+              practitionerRatePercent: practitionerRate,
+            }
+          : null;
+      return {
+        paymentPurpose: purpose,
+        marketType:
+          paymentSnapshot.currencyCode === 'EGP'
+            ? MarketType.LOCAL
+            : MarketType.CROSS_BORDER,
+        amountSubtotal: paymentSnapshot.amountSubtotal,
+        amountDiscount: paymentSnapshot.amountDiscount,
+        amountTotal: paymentSnapshot.amountTotal,
+        currencyCode: paymentSnapshot.currencyCode,
+        regionalPricingMode,
+        provider: paymentSnapshot.provider,
+        resolvedCountryIsoCode: null,
+        commissionRuleId: payment.commissionRuleId ?? null,
+        commissionPlatformRatePercent: platformRate,
+        commissionPractitionerRatePercent: practitionerRate,
+        couponId: payment.couponId ?? null,
+        couponCodeSnapshot: payment.couponCodeSnapshot ?? null,
+        couponDiscountSnapshot:
+          payment.couponDiscountSnapshot?.toString() ?? null,
+        couponPlatformSharePercent:
+          payment.couponPlatformShareSnapshot?.toString() ?? null,
+        couponPractitionerSharePercent:
+          payment.couponPractitionerShareSnapshot?.toString() ?? null,
+        breakdown: {
+          sessionId: input.session.id,
+          paymentPurpose: purpose,
+          currency: paymentSnapshot.currencyCode,
+          regionalPricingMode,
           provider: paymentSnapshot.provider,
           resolvedCountryIsoCode: null,
-        }
+          grossAmount: paymentSnapshot.amountSubtotal,
+          discountAmount: paymentSnapshot.amountDiscount,
+          netPaidAmount: paymentSnapshot.amountTotal,
+          platformCommissionAmount: platformAmount,
+          practitionerShareAmount: practitionerAmount,
+          commissionRule,
+          coupon:
+            payment.couponId && payment.couponCodeSnapshot
+              ? {
+                  id: payment.couponId,
+                  code: payment.couponCodeSnapshot,
+                  discountAmount: paymentSnapshot.amountDiscount,
+                  platformSharePercent:
+                    payment.couponPlatformShareSnapshot?.toString() ?? '0.00',
+                  practitionerSharePercent:
+                    payment.couponPractitionerShareSnapshot?.toString() ??
+                    '0.00',
+                  platformDiscountShareAmount: this.moneyMathService
+                    .percentOf(
+                      paymentSnapshot.amountDiscount,
+                      payment.couponPlatformShareSnapshot?.toString() ?? '0.00',
+                    )
+                    .toFixed(2),
+                  practitionerDiscountShareAmount: this.moneyMathService
+                    .subtract(
+                      paymentSnapshot.amountDiscount,
+                      this.moneyMathService
+                        .percentOf(
+                          paymentSnapshot.amountDiscount,
+                          payment.couponPlatformShareSnapshot?.toString() ??
+                            '0.00',
+                        )
+                        .toFixed(2),
+                    )
+                    .toFixed(2),
+                }
+              : null,
+        },
+      };
+    }
+    const selectedCurrencyCode = this.resolveSelectedCurrencyCode(
+      input.session,
+    );
+    const regionalResolution = selectedCurrencyCode
+      ? resolvePaymentRegionalResolution({
+          requestCountryIsoCode:
+            selectedCurrencyCode === 'EGP' ? 'EG' : 'US',
+        })
       : resolvePaymentRegionalResolution({
           requestCountryIsoCode:
             input.requestCountryIsoCode ??
             input.session.requestCountryIsoCode ??
             null,
+          patientCountryIsoCode: input.session.patient.country?.isoCode ?? null,
+          practitionerCountryIsoCode:
+            input.session.practitioner.country?.isoCode ?? null,
         });
-    const currencyCode = regionalResolution.currencyCode;
-    const grossAmount = paymentSnapshot
-      ? paymentSnapshot.amountSubtotal
-      : this.resolveGrossAmount(input.session, currencyCode);
+    const currencyCode = selectedCurrencyCode ?? regionalResolution.currencyCode;
+    const grossAmount = this.resolveGrossAmount(input.session, currencyCode);
 
+    // Instant booking prices are customer-facing quotes. Commission is an
+    // internal allocation and must not prevent the patient from seeing or
+    // paying the immutable quote when an admin rule is not configured yet.
     const commission =
-      await this.resolveCommissionRuleService.resolveForSession(input.session);
+      input.session.flowType === 'INSTANT' && !input.requireCommissionRule
+        ? null
+        : await this.resolveCommissionRuleService.resolveForSession(
+            input.session,
+          );
 
-    const couponCode = !paymentSnapshot && input.couponCode?.trim()
-      ? normalizeCouponCode(input.couponCode)
-      : null;
+    const couponCode =
+      !paymentSnapshot && input.couponCode?.trim()
+        ? normalizeCouponCode(input.couponCode)
+        : null;
     const coupon = couponCode
       ? await this.couponRepository.findByCode(couponCode)
       : null;
@@ -78,22 +195,25 @@ export class CalculateSessionFinancialBreakdownService {
         })
       : null;
 
-    const discountAmount = paymentSnapshot
-      ? paymentSnapshot.amountDiscount
-      : (couponBreakdown?.discountAmount ?? '0.00');
-    const netPaidAmount = paymentSnapshot
-      ? paymentSnapshot.amountTotal
-      : this.moneyMathService.subtract(grossAmount, discountAmount).toFixed(2);
-    const platformCommissionAmount = this.moneyMathService
-      .percentOf(netPaidAmount, commission.platformRatePercent)
+    const discountAmount = couponBreakdown?.discountAmount ?? '0.00';
+    const netPaidAmount = this.moneyMathService
+      .subtract(grossAmount, discountAmount)
       .toFixed(2);
-    const practitionerShareAmount = this.moneyMathService
-      .subtract(netPaidAmount, platformCommissionAmount)
-      .toFixed(2);
+    const platformCommissionAmount = commission
+      ? this.moneyMathService
+          .percentOf(netPaidAmount, commission.platformRatePercent)
+          .toFixed(2)
+      : null;
+    const practitionerShareAmount = commission
+      ? this.moneyMathService
+          .subtract(netPaidAmount, platformCommissionAmount!)
+          .toFixed(2)
+      : null;
 
     const breakdown: SessionFinancialBreakdownViewModel = {
       sessionId: input.session.id,
-      paymentPurpose: commission.paymentPurpose,
+      paymentPurpose:
+        commission?.paymentPurpose ?? PaymentPurpose.SESSION_INSTANT_BOOKING,
       currency: currencyCode,
       regionalPricingMode: regionalResolution.regionalPricingMode,
       provider: regionalResolution.provider,
@@ -103,12 +223,14 @@ export class CalculateSessionFinancialBreakdownService {
       netPaidAmount,
       platformCommissionAmount,
       practitionerShareAmount,
-      commissionRule: {
-        id: commission.rule.id,
-        slug: commission.rule.slug,
-        platformRatePercent: commission.platformRatePercent,
-        practitionerRatePercent: commission.practitionerRatePercent,
-      },
+      commissionRule: commission
+        ? {
+            id: commission.rule.id,
+            slug: commission.rule.slug,
+            platformRatePercent: commission.platformRatePercent,
+            practitionerRatePercent: commission.practitionerRatePercent,
+          }
+        : null,
       coupon: validatedCoupon
         ? {
             id: validatedCoupon.id,
@@ -125,8 +247,11 @@ export class CalculateSessionFinancialBreakdownService {
     };
 
     return {
-      paymentPurpose: commission.paymentPurpose,
-      marketType: commission.rule.marketType,
+      paymentPurpose:
+        commission?.paymentPurpose ?? PaymentPurpose.SESSION_INSTANT_BOOKING,
+      marketType:
+        commission?.rule.marketType ??
+        (currencyCode === 'EGP' ? MarketType.LOCAL : MarketType.CROSS_BORDER),
       amountSubtotal: grossAmount,
       amountDiscount: discountAmount,
       amountTotal: netPaidAmount,
@@ -134,9 +259,10 @@ export class CalculateSessionFinancialBreakdownService {
       regionalPricingMode: regionalResolution.regionalPricingMode,
       provider: regionalResolution.provider,
       resolvedCountryIsoCode: regionalResolution.resolvedCountryIsoCode,
-      commissionRuleId: commission.rule.id,
-      commissionPlatformRatePercent: commission.platformRatePercent,
-      commissionPractitionerRatePercent: commission.practitionerRatePercent,
+      commissionRuleId: commission?.rule.id ?? null,
+      commissionPlatformRatePercent: commission?.platformRatePercent ?? null,
+      commissionPractitionerRatePercent:
+        commission?.practitionerRatePercent ?? null,
       couponId: validatedCoupon?.id ?? null,
       couponCodeSnapshot: validatedCoupon?.code ?? null,
       couponDiscountSnapshot: validatedCoupon ? breakdown.discountAmount : null,
@@ -154,51 +280,52 @@ export class CalculateSessionFinancialBreakdownService {
     session: SessionFinancialContext,
     currencyCode: string,
   ) {
+    // Instant request quote precedes Session creation and takes precedence.
     if (session.flowType === 'INSTANT') {
-      const quoteAmount = this.resolveInstantBookingQuoteAmount(
+      const quoted = this.resolveInstantBookingQuoteAmount(
         session,
         currencyCode,
       );
-      if (quoteAmount) {
-        return this.moneyMathService.toDecimal(quoteAmount).toFixed(2);
-      }
+      if (quoted !== null) return this.normalizeSnapshotAmount(quoted);
+    }
+    const policy = session.pricingPolicySnapshotJson as {
+      pricingSnapshot?: Record<string, Record<string, string | null>>;
+    } | null;
+    if (policy?.pricingSnapshot) {
+      const amount =
+        policy.pricingSnapshot[currencyCode]?.[String(session.durationMinutes)];
+      if (amount === null || amount === undefined)
+        this.throwInvalidPaymentSnapshot();
+      return this.normalizeSnapshotAmount(amount);
+    }
+    // An unpaid historical session without a booking-time quote cannot be
+    // priced safely. Requiring reconciliation is preferable to silently using
+    // today's practitioner profile price.
+    this.throwInvalidPaymentSnapshot();
+  }
 
-      const instantPractitionerAmount = this.resolveInstantBookingPractitionerAmount(
-        session,
-        currencyCode,
-      );
-      if (instantPractitionerAmount) {
-        return this.moneyMathService
-          .toDecimal(instantPractitionerAmount)
-          .toFixed(2);
-      }
+  private resolveSelectedCurrencyCode(
+    session: SessionFinancialContext,
+  ): 'EGP' | 'USD' | null {
+    const policy = session.pricingPolicySnapshotJson;
+    const selectedFromPolicy =
+      policy && typeof policy === 'object'
+        ? (policy as Record<string, unknown>).selectedCurrencyCode
+        : null;
+    if (selectedFromPolicy === 'EGP' || selectedFromPolicy === 'USD') {
+      return selectedFromPolicy;
     }
 
-    const amountFromPractitioner =
-      currencyCode === 'EGP'
-        ? session.durationMinutes === 30
-          ? (session.practitioner.sessionPrice30Egp ??
-            session.practitioner.sessionPrice30)
-          : session.durationMinutes === 60
-            ? (session.practitioner.sessionPrice60Egp ??
-              session.practitioner.sessionPrice60)
-            : null
-        : session.durationMinutes === 30
-          ? (session.practitioner.sessionPrice30Usd ??
-            session.practitioner.sessionPrice30)
-          : session.durationMinutes === 60
-            ? (session.practitioner.sessionPrice60Usd ??
-              session.practitioner.sessionPrice60)
-            : null;
-
-    if (amountFromPractitioner) {
-      return this.moneyMathService.toDecimal(amountFromPractitioner).toFixed(2);
-    }
-
-    throw new BadRequestException({
-      messageKey: 'financialRules.errors.pricingUnavailable',
-      error: 'FINANCIAL_RULE_PRICING_UNAVAILABLE',
-    });
+    const metadata = session.instantBookingRequest?.metadataJson;
+    const selectedFromInstant =
+      metadata && typeof metadata === 'object'
+        ? ((metadata as Record<string, unknown>).selectedMoney as
+            | Record<string, unknown>
+            | undefined)?.currencyCode
+        : null;
+    return selectedFromInstant === 'EGP' || selectedFromInstant === 'USD'
+      ? selectedFromInstant
+      : null;
   }
 
   private resolvePaymentSnapshot(session: SessionFinancialContext): {
@@ -218,10 +345,15 @@ export class CalculateSessionFinancialBreakdownService {
       this.throwInvalidPaymentSnapshot();
     }
 
+    const subtotal = this.normalizeSnapshotAmount(payment.amountSubtotal);
+    const discount = this.normalizeSnapshotAmount(payment.amountDiscount);
+    const total = this.normalizeSnapshotAmount(payment.amountTotal);
+    if (!this.moneyMathService.toDecimal(subtotal).sub(discount).eq(total))
+      this.throwInvalidPaymentSnapshot();
     return {
-      amountSubtotal: this.normalizeSnapshotAmount(payment.amountSubtotal),
-      amountDiscount: this.normalizeSnapshotAmount(payment.amountDiscount),
-      amountTotal: this.normalizeSnapshotAmount(payment.amountTotal),
+      amountSubtotal: subtotal,
+      amountDiscount: discount,
+      amountTotal: total,
       currencyCode,
       provider: payment.provider,
     };
@@ -230,7 +362,10 @@ export class CalculateSessionFinancialBreakdownService {
   private normalizeSnapshotAmount(value: { toString(): string } | string) {
     try {
       const normalized = this.moneyMathService.toDecimal(value).toFixed(2);
-      if (this.moneyMathService.toDecimal(normalized).lt(0)) {
+      if (
+        !this.moneyMathService.toDecimal(normalized).isFinite() ||
+        this.moneyMathService.toDecimal(normalized).lt(0)
+      ) {
         this.throwInvalidPaymentSnapshot();
       }
       return normalized;
@@ -260,43 +395,18 @@ export class CalculateSessionFinancialBreakdownService {
       return null;
     }
 
-    const currencySnapshot = (snapshot as Record<string, unknown>)[currencyCode];
+    const currencySnapshot = (snapshot as Record<string, unknown>)[
+      currencyCode
+    ];
     if (!currencySnapshot || typeof currencySnapshot !== 'object') {
       return null;
     }
 
-    const durationSnapshot = (
-      currencySnapshot as Record<string, unknown>
-    )[String(session.durationMinutes)] as
-      | { toString(): string }
-      | string
-      | null
-      | undefined;
+    const durationSnapshot = (currencySnapshot as Record<string, unknown>)[
+      String(session.durationMinutes)
+    ] as { toString(): string } | string | null | undefined;
 
     return this.toMaybeAmountString(durationSnapshot);
-  }
-
-  private resolveInstantBookingPractitionerAmount(
-    session: SessionFinancialContext,
-    currencyCode: string,
-  ): string | null {
-    if (currencyCode === 'EGP') {
-      return session.durationMinutes === 30
-        ? this.toMaybeAmountString(session.practitioner.instantBookingPrice30Egp)
-        : session.durationMinutes === 60
-          ? this.toMaybeAmountString(session.practitioner.instantBookingPrice60Egp)
-          : null;
-    }
-
-    if (currencyCode === 'USD') {
-      return session.durationMinutes === 30
-        ? this.toMaybeAmountString(session.practitioner.instantBookingPrice30Usd)
-        : session.durationMinutes === 60
-          ? this.toMaybeAmountString(session.practitioner.instantBookingPrice60Usd)
-          : null;
-    }
-
-    return null;
   }
 
   private toMaybeAmountString(

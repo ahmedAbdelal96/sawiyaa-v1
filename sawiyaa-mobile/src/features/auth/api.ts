@@ -6,6 +6,7 @@ import type {
   PractitionerLoginResponse,
   PatientGoogleAuthRequest,
   PatientLoginRequest,
+  TraineeLoginRequest,
   PatientRegisterRequest,
   PatientForgotPasswordRequest,
   PatientVerifyPasswordResetOtpRequest,
@@ -53,6 +54,21 @@ export async function patientRegister(data: PatientRegisterRequest) {
 export async function patientLogin(data: PatientLoginRequest) {
   const response = await apiClient.post("/auth/patient/login", data);
   return extractApiData<AuthSuccessResponse>(response);
+}
+
+export async function traineeLogin(data: TraineeLoginRequest) {
+  const response = await apiClient.post("/auth/trainee/login", data);
+  return extractApiData<AuthSuccessResponse>(response);
+}
+
+export async function traineeRefresh(data: RefreshTokenRequest = {}) {
+  const response = await apiClient.post("/auth/trainee/refresh", data, { headers: buildRefreshAuthHeader(data.refreshToken) });
+  return extractApiData<AuthSuccessResponse>(response);
+}
+
+export async function traineeLogout(refreshToken?: string) {
+  const response = await apiClient.post("/auth/trainee/logout", undefined, { headers: buildRefreshAuthHeader(refreshToken) });
+  return extractApiData<MessageResponse>(response);
 }
 
 export async function patientRefresh(data: RefreshTokenRequest = {}) {

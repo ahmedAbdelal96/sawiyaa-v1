@@ -3,13 +3,19 @@ import { render, screen } from "@testing-library/react";
 import React from "react";
 import PractitionerSessionDetailPanel from "./PractitionerSessionDetailPanel";
 import { formatMoney } from "@/lib/finance-format";
+import sessionMessages from "../../../../messages/ar/sessions.json";
 
 // Mock next-intl
 vi.mock("next-intl", () => ({
   useLocale: () => "ar",
-  useTranslations: () => (key: string) => {
+  useTranslations: (namespace?: string) => (key: string) => {
     if (key.includes("presentation")) return "جلسة جاهزة للانضمام";
-    return key;
+    const path = [namespace?.replace(/^sessions\.?/, ""), key].filter(Boolean).join(".");
+    const value = path.split(".").reduce<unknown>((node, part) =>
+      node && typeof node === "object" ? (node as Record<string, unknown>)[part] : undefined,
+      sessionMessages,
+    );
+    return typeof value === "string" ? value : key;
   },
 }));
 
@@ -22,7 +28,6 @@ vi.mock("@/i18n/navigation", () => ({
 vi.mock("../hooks/use-sessions", () => ({
   usePractitionerSession: vi.fn(),
   useClosePractitionerSessionRuntime: vi.fn(() => ({ mutateAsync: vi.fn(), isPending: false })),
-  useMarkPractitionerSessionCompleted: vi.fn(() => ({ mutateAsync: vi.fn(), isPending: false })),
   useMarkPractitionerSessionNoShow: vi.fn(() => ({ mutateAsync: vi.fn(), isPending: false })),
   usePreparePractitionerSessionRuntime: vi.fn(() => ({ mutateAsync: vi.fn(), isPending: false })),
   useResolvePractitionerSessionJoinContract: vi.fn(() => ({ mutateAsync: vi.fn(), isPending: false })),
@@ -75,6 +80,7 @@ describe("PractitionerSessionDetailPanel Web UI", () => {
       readOnly: false,
       reason: "ALLOWED",
     },
+    sessionChat: { available: true },
     flowType: "SCHEDULED",
     expiresAt: null,
     cancelledAt: null,
@@ -140,12 +146,24 @@ describe("PractitionerSessionDetailPanel Web UI", () => {
     expect(screen.getByText("دفع مباشر")).toBeDefined();
     
     // Currency snapshot remains authoritative
-    expect(formatMoney("ar", 300, "EGP")).toBe("300 جنيه مصري");
+    expect(formatMoney("ar", 300, "EGP")).toBe("300 جنيه");
 
     // Internal notes display correctly
     expect(screen.getByText("Internal session notes text")).toBeDefined();
 
     // Localized timeline displays correctly
-    expect(screen.getByText("تم إنشاء الجلسة")).toBeDefined();
+    expect(screen.getAllByText(sessionMessages.practitioner.detail.eventTypes.SESSION_CREATED).length).toBeGreaterThan(0);
+  });
+
+  it("hides Chat CTAs when the embedded Chat projection denies access", () => {
+    (usePractitionerSession as any).mockReturnValue({
+      data: { ...mockSessionItem, sessionChat: { available: false } },
+      isLoading: false,
+      isError: false,
+    });
+
+    render(<PractitionerSessionDetailPanel sessionId="session-1" />);
+
+    expect(document.querySelector('a[href="/practitioner/sessions/session-1/chat"]')).toBeNull();
   });
 });

@@ -64,6 +64,7 @@ export class PublicPractitionerController {
   @ApiQuery({ name: 'gender', required: false })
   @ApiQuery({ name: 'duration', required: false })
   @ApiQuery({ name: 'onlineNow', required: false })
+  @ApiQuery({ name: 'instantBookingEnabled', required: false })
   @ApiQuery({ name: 'availableToday', required: false })
   @ApiQuery({ name: 'availableThisWeek', required: false })
   @ApiQuery({ name: 'acceptsCoupon', required: false })
@@ -95,6 +96,7 @@ export class PublicPractitionerController {
       gender: query.gender,
       duration: query.duration,
       onlineNow: query.onlineNow,
+      instantBookingEnabled: query.instantBookingEnabled,
       availableToday: query.availableToday,
       availableThisWeek: query.availableThisWeek,
       acceptsCoupon: query.acceptsCoupon,
@@ -141,6 +143,7 @@ export class PublicPractitionerController {
   ) {
     const avatar = await this.getPublicPractitionerAvatarFileUseCase.execute(slug);
     response.setHeader('Content-Type', avatar.mimeType);
+    response.setHeader('X-Content-Type-Options', 'nosniff');
     response.setHeader('Cache-Control', 'public, max-age=300');
     return new StreamableFile(createReadStream(avatar.absolutePath));
   }

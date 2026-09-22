@@ -47,6 +47,7 @@ export class AdminPaymentGatewayControlController {
   ) {}
 
   @Get()
+  @Permissions(PermissionKey.FINANCE_EVENTS_READ)
   @ApiOperation({
     summary: 'List payment gateway control state',
     description:
@@ -66,6 +67,7 @@ export class AdminPaymentGatewayControlController {
   }
 
   @Get('providers/:provider')
+  @Permissions(PermissionKey.FINANCE_EVENTS_READ)
   @ApiOperation({
     summary: 'Get payment gateway provider control state',
     description:
@@ -81,6 +83,7 @@ export class AdminPaymentGatewayControlController {
   }
 
   @Get('providers/:provider/history')
+  @Permissions(PermissionKey.FINANCE_EVENTS_READ)
   @ApiOperation({
     summary: 'List payment gateway provider control history',
     description:

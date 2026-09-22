@@ -6,6 +6,7 @@ import type {
   AdminLoginRequest,
   AuthSuccessResponse,
   CurrentAuthUserResponse,
+  ChangePasswordRequest,
   MessageResponse,
   OtpChallengeResponse,
   PatientForgotPasswordRequest,
@@ -14,6 +15,7 @@ import type {
   PatientConfirmPasswordResetRequest,
   PatientGoogleAuthRequest,
   PatientLoginRequest,
+  TraineeLoginRequest,
   PatientRegisterRequest,
   PatientResetPasswordRequest,
   PractitionerForgotPasswordRequest,
@@ -25,6 +27,7 @@ import type {
   PractitionerRegistrationResponse,
   PractitionerResetPasswordRequest,
   PractitionerLoginResponse,
+  PractitionerResendLoginOtpRequest,
   PractitionerAuthenticatedResponse,
   PractitionerOtpChallengeResponse,
   PractitionerVerifyOtpRequest,
@@ -62,6 +65,7 @@ function storeAuthSession(payload: AuthSuccessResponse) {
       firstName: payload.user.displayName || payload.user.primaryEmail || "",
       lastName: "",
       role: (payload.user.roles?.[0] ?? "PATIENT") as never,
+      practitionerStatus: payload.user.practitionerStatus ?? null,
     },
     tenant: null,
   });
@@ -228,6 +232,45 @@ export async function practitionerVerifyOtp(data: PractitionerVerifyOtpRequest) 
   return normalized;
 }
 
+export async function traineeLogin(data: TraineeLoginRequest) {
+  const response = await httpClient.post<ApiPayload<AuthSuccessResponse>>("/auth/trainee/login", data);
+  const normalized = extractData(response.data);
+  storeAuthSession(normalized);
+  return normalized;
+}
+
+export async function traineeRefresh(data: RefreshTokenRequest = {}) {
+  const response = await httpClient.post<ApiPayload<AuthSuccessResponse>>("/auth/trainee/refresh", data, { headers: buildRefreshAuthHeader(data.refreshToken) });
+  const normalized = extractData(response.data);
+  storeAuthSession(normalized);
+  return normalized;
+}
+
+export async function traineeLogout() {
+  try {
+    const response = await httpClient.post<ApiPayload<MessageResponse>>("/auth/trainee/logout", undefined, { headers: buildRefreshAuthHeader() });
+    return extractData(response.data);
+  } finally {
+    clearLocalAuthSession();
+  }
+}
+
+export async function patientChangePassword(data: ChangePasswordRequest) {
+  const response = await httpClient.post<ApiPayload<MessageResponse>>(
+    "/auth/patient/change-password",
+    data,
+  );
+  return extractData(response.data);
+}
+
+export async function practitionerResendLoginOtp(data: PractitionerResendLoginOtpRequest) {
+  const response = await httpClient.post<ApiPayload<PractitionerOtpChallengeResponse>>(
+    "/auth/practitioner/login/resend-otp",
+    data,
+  );
+  return extractData(response.data);
+}
+
 export async function practitionerRefresh(data: RefreshTokenRequest = {}) {
   const response = await httpClient.post<ApiPayload<AuthSuccessResponse>>(
     "/auth/practitioner/refresh",
@@ -256,6 +299,14 @@ export async function practitionerLogout() {
   }
 }
 
+export async function practitionerChangePassword(data: ChangePasswordRequest) {
+  const response = await httpClient.post<ApiPayload<MessageResponse>>(
+    "/auth/practitioner/change-password",
+    data,
+  );
+  return extractData(response.data);
+}
+
 export async function practitionerForgotPassword(
   data: PractitionerForgotPasswordRequest
 ) {
@@ -281,7 +332,8 @@ export async function practitionerVerifyPasswordResetOtp(
 ) {
   const response = await httpClient.post<ApiPayload<PractitionerVerifyPasswordResetOtpResponse>>(
     "/auth/practitioner/verify-password-reset-otp",
-    data
+    data,
+    { withCredentials: true }
   );
   return extractData(response.data);
 }
@@ -289,11 +341,14 @@ export async function practitionerVerifyPasswordResetOtp(
 export async function practitionerConfirmPasswordReset(
   data: PractitionerConfirmPasswordResetRequest
 ) {
-  const response = await httpClient.post<ApiPayload<MessageResponse>>(
+  const response = await httpClient.post<ApiPayload<AuthSuccessResponse>>(
     "/auth/practitioner/confirm-password-reset",
-    data
+    data,
+    { withCredentials: true }
   );
-  return extractData(response.data);
+  const normalized = extractData(response.data);
+  storeAuthSession(normalized);
+  return normalized;
 }
 
 export async function patientForgotPassword(
@@ -321,7 +376,8 @@ export async function patientVerifyPasswordResetOtp(
 ) {
   const response = await httpClient.post<ApiPayload<PatientVerifyPasswordResetOtpResponse>>(
     "/auth/patient/verify-password-reset-otp",
-    data
+    data,
+    { withCredentials: true }
   );
   return extractData(response.data);
 }
@@ -329,11 +385,14 @@ export async function patientVerifyPasswordResetOtp(
 export async function patientConfirmPasswordReset(
   data: PatientConfirmPasswordResetRequest
 ) {
-  const response = await httpClient.post<ApiPayload<MessageResponse>>(
+  const response = await httpClient.post<ApiPayload<AuthSuccessResponse>>(
     "/auth/patient/confirm-password-reset",
-    data
+    data,
+    { withCredentials: true }
   );
-  return extractData(response.data);
+  const normalized = extractData(response.data);
+  storeAuthSession(normalized);
+  return normalized;
 }
 
 export async function adminLogin(data: AdminLoginRequest) {

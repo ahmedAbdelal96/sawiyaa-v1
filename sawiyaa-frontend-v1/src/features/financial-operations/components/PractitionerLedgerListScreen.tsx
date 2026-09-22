@@ -164,7 +164,7 @@ export default function PractitionerLedgerListScreen() {
     () => [
       {
         id: "entryType",
-        header: locale.startsWith("ar") ? "نوع القيد" : "Entry type",
+        header: t("ui.entryType"),
         accessor: (row) => row.entryType,
         cell: (row) => (
           <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${getEntryTone(row.entryType)}`}>
@@ -174,7 +174,7 @@ export default function PractitionerLedgerListScreen() {
       },
       {
         id: "amount",
-        header: locale.startsWith("ar") ? "المبلغ" : "Amount",
+        header: t("ui.amount"),
         accessor: (row) => Number(row.amount),
         cell: (row) => (
           <div className="min-w-0">
@@ -190,7 +190,7 @@ export default function PractitionerLedgerListScreen() {
       },
       {
         id: "reference",
-        header: locale.startsWith("ar") ? "المرجع" : "Reference",
+        header: t("ui.referenceColumn"),
         accessor: (row) => row.paymentId ?? row.sessionId ?? row.settlementId ?? row.referenceId ?? "",
         cell: (row) => {
           const reference = getReferenceLabel(row, t);
@@ -206,7 +206,7 @@ export default function PractitionerLedgerListScreen() {
       },
       {
         id: "effectiveAt",
-        header: locale.startsWith("ar") ? "سريان القيد" : "Effective",
+        header: t("ui.effective"),
         accessor: (row) => new Date(row.effectiveAt).getTime(),
         cell: (row) =>
           formatPractitionerOrViewerDateTime(row.effectiveAt, practitionerTimeZone, {
@@ -216,7 +216,7 @@ export default function PractitionerLedgerListScreen() {
       },
       {
         id: "createdAt",
-        header: locale.startsWith("ar") ? "التسجيل" : "Recorded",
+        header: t("ui.recorded"),
         accessor: (row) => new Date(row.createdAt).getTime(),
         cell: (row) =>
           formatPractitionerOrViewerDateTime(row.createdAt, practitionerTimeZone, {
@@ -227,7 +227,7 @@ export default function PractitionerLedgerListScreen() {
       },
       {
         id: "description",
-        header: locale.startsWith("ar") ? "الوصف" : "Description",
+        header: t("ui.description"),
         accessor: (row) => row.description ?? "",
         cell: (row) => (
           <span className="text-xs text-text-secondary">
@@ -255,25 +255,25 @@ export default function PractitionerLedgerListScreen() {
 
       <PractitionerStatsGrid cols={4}>
         <PractitionerStatCard
-          label={locale.startsWith("ar") ? "إجمالي القيود" : "Entries"}
+          label={t("ui.entries")}
           value={data ? String(data.pagination.totalItems) : "..."}
           tone="primary"
           metricKey="ledger.entries"
         />
         <PractitionerStatCard
-          label={locale.startsWith("ar") ? "القيد المدين" : "Debit focus"}
+          label={t("ui.debitFocus")}
           value={t("ledger.directions.DEBIT" as Parameters<typeof t>[0])}
           tone="neutral"
           metricKey="ledger.debit"
         />
         <PractitionerStatCard
-          label={locale.startsWith("ar") ? "القيود المرتبطة" : "Linked refs"}
+          label={t("ui.linkedRefs")}
           value={paymentId || settlementId || referenceType ? "1+" : "..."}
           tone="success"
           metricKey="ledger.linkedRefs"
         />
         <PractitionerStatCard
-          label={locale.startsWith("ar") ? "الصفحة الحالية" : "Current page"}
+          label={t("ui.currentPage")}
           value={String(page)}
           tone="warning"
           metricKey="ledger.currentPage"
@@ -285,12 +285,10 @@ export default function PractitionerLedgerListScreen() {
           <div className="flex flex-wrap items-start justify-between gap-3 border-b border-border-light pb-2 dark:border-white/8">
             <div className="min-w-0">
               <h2 className="text-sm font-semibold text-text-primary dark:text-white/95">
-                {locale.startsWith("ar") ? "فلاتر الدفتر" : "Ledger filters"}
+                {t("ui.ledgerFilters")}
               </h2>
               <p className="mt-0.5 text-xs text-text-muted">
-                {locale.startsWith("ar")
-                  ? "فلتر القيود حسب النوع والحجم والمرجع والتاريخ."
-                  : "Filter ledger entries by type, bucket, reference, and date range."}
+                {t("ui.ledgerFiltersNote")}
               </p>
             </div>
           </div>
@@ -298,7 +296,7 @@ export default function PractitionerLedgerListScreen() {
           <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
             <label className="block">
               <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-text-muted">
-                {locale.startsWith("ar") ? "نوع القيد" : "Entry type"}
+                {t("ui.entryType")}
               </span>
               <select
                 value={entryType}
@@ -307,7 +305,7 @@ export default function PractitionerLedgerListScreen() {
                 }
                 className="app-control w-full px-4 py-3"
               >
-                <option value="ALL">{locale.startsWith("ar") ? "كل الأنواع" : "All types"}</option>
+                <option value="ALL">{t("ui.allTypes")}</option>
                 {ENTRY_TYPE_FILTERS.filter((value) => value !== "ALL").map((value) => (
                   <option key={value} value={value}>
                     {t(`ledger.entryTypes.${value}` as Parameters<typeof t>[0])}
@@ -318,7 +316,7 @@ export default function PractitionerLedgerListScreen() {
 
             <label className="block">
               <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-text-muted">
-                {locale.startsWith("ar") ? "حجم الرصيد" : "Balance bucket"}
+                {t("ui.balanceBucket")}
               </span>
               <select
                 value={balanceBucket}
@@ -327,7 +325,7 @@ export default function PractitionerLedgerListScreen() {
                 }
                 className="app-control w-full px-4 py-3"
               >
-                <option value="ALL">{locale.startsWith("ar") ? "كل الأنواع" : "All buckets"}</option>
+                <option value="ALL">{t("ui.allBuckets")}</option>
                 {BALANCE_BUCKET_FILTERS.filter((value) => value !== "ALL").map((value) => (
                   <option key={value} value={value}>
                     {t(`ledger.balanceBuckets.${value}` as Parameters<typeof t>[0])}
@@ -338,20 +336,20 @@ export default function PractitionerLedgerListScreen() {
 
             <label className="block">
               <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-text-muted">
-                {locale.startsWith("ar") ? "رقم الدفع" : "Payment ID"}
+                {t("ui.paymentId")}
               </span>
               <input
                 type="text"
                 value={paymentId}
                 onChange={(event) => updateListQuery({ paymentId: event.target.value.trim() || null, page: 1 })}
-                placeholder={locale.startsWith("ar") ? "ابحث عن الدفع" : "Search payment"}
+                placeholder={t("ui.searchPayment")}
                 className="app-control w-full px-4 py-3"
               />
             </label>
 
             <label className="block">
               <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-text-muted">
-                {locale.startsWith("ar") ? "مرجع التسوية" : "Settlement ID"}
+                {t("ui.transferId")}
               </span>
               <input
                 type="text"
@@ -359,14 +357,14 @@ export default function PractitionerLedgerListScreen() {
                 onChange={(event) =>
                   updateListQuery({ settlementId: event.target.value.trim() || null, page: 1 })
                 }
-                placeholder={locale.startsWith("ar") ? "ابحث عن التسوية" : "Search settlement"}
+                placeholder={t("ui.searchTransfer")}
                 className="app-control w-full px-4 py-3"
               />
             </label>
 
             <label className="block">
               <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-text-muted">
-                {locale.startsWith("ar") ? "العملة" : "Currency"}
+                {t("ui.currency")}
               </span>
               <input
                 type="text"
@@ -379,7 +377,7 @@ export default function PractitionerLedgerListScreen() {
 
             <label className="block">
               <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-text-muted">
-                {locale.startsWith("ar") ? "نوع المرجع" : "Reference type"}
+                {t("ui.referenceType")}
               </span>
               <input
                 type="text"
@@ -391,14 +389,14 @@ export default function PractitionerLedgerListScreen() {
             </label>
 
             <DateField
-              label={locale.startsWith("ar") ? "من تاريخ" : "From date"}
+              label={t("ui.fromDate")}
               value={effectiveFrom}
               onChange={(nextValue) => updateListQuery({ effectiveFrom: nextValue || null, page: 1 })}
               placeholder={locale.startsWith("ar") ? "YYYY-MM-DD" : "YYYY-MM-DD"}
             />
 
             <DateField
-              label={locale.startsWith("ar") ? "إلى تاريخ" : "To date"}
+              label={t("ui.toDate")}
               value={effectiveTo}
               onChange={(nextValue) => updateListQuery({ effectiveTo: nextValue || null, page: 1 })}
               placeholder={locale.startsWith("ar") ? "YYYY-MM-DD" : "YYYY-MM-DD"}
@@ -427,8 +425,8 @@ export default function PractitionerLedgerListScreen() {
       </PractitionerFilterCard>
 
       <PractitionerTableSection
-        title={locale.startsWith("ar") ? "سجل المعاملات" : "Transactions Log"}
-        subtitle={locale.startsWith("ar") ? "قائمة تفصيلية بكل القيود المالية المسجلة لحسابك" : "Detailed list of all ledger entries recorded for your account"}
+        title={t("ui.transactionsLog")}
+        subtitle={t("ui.transactionsSubtitle")}
         flushContent
       >
         <DataTable

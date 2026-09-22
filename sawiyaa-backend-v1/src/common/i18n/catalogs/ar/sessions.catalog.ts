@@ -56,6 +56,7 @@ export const arSessionsCatalog = {
       ' الجلسة {{packageSessionIndex}} من أصل {{packageSessionCount}} ضمن الباقة الخاصة بك.',
   },
   errors: {
+    adminResolutionRequired: 'تدخل الإدارة مطلوب لحل هذه الحالة',
     scheduledStartTimezoneRequired:
       'يجب أن يتضمن وقت بداية الجلسة رمز Z أو فارقة زمنية صريحة',
     normalBookingsPaused:

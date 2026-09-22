@@ -254,16 +254,18 @@ export async function logoutAction(): Promise<ActionResult> {
     const logoutEndpoint = await getLogoutEndpointForCurrentRole();
 
     if (refreshToken && logoutEndpoint) {
-      fetch(await resolveAuthRequestUrl(logoutEndpoint), {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${refreshToken}`,
-        },
-        body: JSON.stringify({ refreshToken }),
-      }).catch(() => {
-        // We clear cookies locally regardless of API result.
-      });
+      try {
+        await fetch(await resolveAuthRequestUrl(logoutEndpoint), {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${refreshToken}`,
+          },
+          body: JSON.stringify({ refreshToken }),
+        });
+      } catch {
+        // Local logout remains fail-safe when the backend is unavailable.
+      }
     }
 
     await clearAuthCookies();

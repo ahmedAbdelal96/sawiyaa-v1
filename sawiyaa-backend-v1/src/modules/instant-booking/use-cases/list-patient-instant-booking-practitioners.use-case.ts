@@ -1,5 +1,6 @@
 import { BadRequestException, Injectable, Optional } from '@nestjs/common';
 import { SupportedLocale } from '@common/i18n/types/locale.types';
+import { localizeSpecialtyTitle } from '@modules/specialties/utils/localize-specialty-title.util';
 import { AvailabilityExceptionRepository } from '@modules/availability/repositories/availability-exception.repository';
 import { PractitionerAvailabilityWeekRepository } from '@modules/availability/repositories/practitioner-availability-week.repository';
 import { BuildPublishedWeekAvailabilityWindowsService } from '@modules/availability/services/build-published-week-availability-windows.service';
@@ -10,6 +11,7 @@ import { SessionReviewRatingAggregationService } from '@modules/reviews/services
 import { PublicPractitionerVisibilityPolicy } from '@modules/practitioners/policies/public-practitioner-visibility.policy';
 import { SessionRepository } from '@modules/sessions/repositories/session.repository';
 import { InstantBookingPractitionerRepository } from '../repositories/instant-booking-practitioner.repository';
+import { InstantBookingRequestRepository } from '../repositories/instant-booking-request.repository';
 import {
   InstantBookingEligiblePractitionerPricingViewModel,
   InstantBookingEligiblePractitionerViewModel,
@@ -18,6 +20,7 @@ import {
 import { InstantBookingDiscoveryDuration } from '../dto/list-patient-instant-booking-practitioners.dto';
 import { PatientProfileRepository } from '@modules/patients/repositories/patient-profile.repository';
 import { resolvePaymentRegionalResolution } from '@common/payments/payment-region.resolver';
+import { PractitionerProfessionalContentResolver } from '@modules/practitioners/services/practitioner-professional-content-resolver.service';
 
 type DiscoveryCandidate = Awaited<
   ReturnType<
@@ -46,6 +49,8 @@ export class ListPatientInstantBookingPractitionersUseCase {
     private readonly buildPublishedWeekAvailabilityWindowsService: BuildPublishedWeekAvailabilityWindowsService,
     private readonly publicPractitionerVisibilityPolicy: PublicPractitionerVisibilityPolicy,
     private readonly sessionReviewRatingAggregationService: SessionReviewRatingAggregationService,
+    private readonly professionalContentResolver: PractitionerProfessionalContentResolver,
+    private readonly instantBookingRequestRepository: InstantBookingRequestRepository,
     @Optional() private readonly patientProfileRepository?: PatientProfileRepository,
   ) {}
 
@@ -62,7 +67,8 @@ export class ListPatientInstantBookingPractitionersUseCase {
       ? await this.patientProfileRepository.findByUserId(input.currentUserId)
       : null;
     const regionalResolution = resolvePaymentRegionalResolution({
-      requestCountryIsoCode: input.guestCountryIsoCode ?? null,
+      requestCountryIsoCode:
+        input.guestCountryIsoCode ?? patientProfile?.country?.isoCode ?? null,
     });
     const resolvedCurrency = regionalResolution.currencyCode as CurrencyCode;
     const now = new Date();
@@ -180,6 +186,14 @@ export class ListPatientInstantBookingPractitionersUseCase {
     }
 
     if (!isPresenceEffectivelyOnline(presence, input.now)) {
+      return null;
+    }
+
+    const activeHold =
+      await this.instantBookingRequestRepository.findActivePendingRequestForPractitioner(
+        { practitionerId: input.row.id, now: input.now },
+      );
+    if (activeHold) {
       return null;
     }
 
@@ -325,6 +339,13 @@ export class ListPatientInstantBookingPractitionersUseCase {
     const primarySpecialty =
       input.row.specialties.find((specialty) => specialty.isPrimary) ??
       input.row.specialties[0];
+    const professionalContent = this.professionalContentResolver.resolve({
+      requestedLocale: input.locale,
+      primaryContentLocale: input.row.primaryContentLocale,
+      translations: input.row.professionalContentTranslations ?? [],
+      legacyProfessionalTitle: input.row.professionalTitle,
+      legacyBio: input.row.bio,
+    });
 
     return {
       practitionerId: input.row.id,
@@ -332,9 +353,15 @@ export class ListPatientInstantBookingPractitionersUseCase {
       displayName: input.row.user.displayName!.trim(),
       avatarUrl: input.row.avatarUrl ?? null,
       primarySpecialty: primarySpecialty
-        ? this.pickLocalizedSpecialtyTitle(primarySpecialty.specialty.translations, input.locale)
+        ? localizeSpecialtyTitle({
+            locale: input.locale,
+            translations: primarySpecialty.specialty.translations,
+            nameAr: primarySpecialty.specialty.nameAr,
+            nameEn: primarySpecialty.specialty.nameEn,
+            fallback: primarySpecialty.specialty.slug,
+          })
         : null,
-      title: input.row.professionalTitle?.trim() ?? null,
+      title: professionalContent.professionalTitle,
       isOnline: true,
       availableNow: true,
       instantBookingEnabled: true,
@@ -342,21 +369,10 @@ export class ListPatientInstantBookingPractitionersUseCase {
       currentWindowEndsAt: currentWindowEndsAt.toISOString(),
       supportedDurations,
       instantBookingPricing: pricing,
-      shortBio: this.toBioSnippet(input.row.bio),
+      shortBio: this.toBioSnippet(professionalContent.bio),
       rating: input.rating,
       completedSessionsCount: input.completedSessionsCount,
     };
-  }
-
-  private pickLocalizedSpecialtyTitle(
-    translations: Array<{ locale: string; title: string }>,
-    locale: SupportedLocale,
-  ) {
-    return (
-      translations.find((item) => item.locale === locale)?.title ??
-      translations.find((item) => item.locale === 'en')?.title ??
-      null
-    );
   }
 
   private toBioSnippet(fullBio: string | null): string | null {

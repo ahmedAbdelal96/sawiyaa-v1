@@ -18,7 +18,7 @@ export type MessagesShellContinuitySnapshot = {
   localSessionReads: Record<string, SessionReadState>;
 };
 
-const CONTINUITY_VERSION = 1;
+const CONTINUITY_VERSION = 2;
 
 type PersistedPayload = {
   version: number;

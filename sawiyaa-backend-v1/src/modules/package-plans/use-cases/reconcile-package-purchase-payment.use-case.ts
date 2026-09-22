@@ -41,7 +41,6 @@ export class ReconcilePackagePurchasePaymentUseCase {
 
     switch (payment.status) {
       case PaymentStatus.CAPTURED:
-      case PaymentStatus.AUTHORIZED:
         return this.handlePackagePurchasePaymentSuccessUseCase.execute({
           paymentId: payment.id,
           providerEventRef: input.providerEventRef,

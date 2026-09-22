@@ -1,14 +1,6 @@
-export type SupportTicketType =
-  | "BOOKING"
-  | "PAYMENT"
-  | "SESSION"
-  | "TECHNICAL"
-  | "ACCOUNT"
-  | "MATCHING"
-  | "GENERAL"
-  | "CONTENT"
-  | "CHAT"
-  | "OTHER";
+import type { SupportTicketCategory } from "../../support/contracts";
+
+export type SupportTicketType = SupportTicketCategory;
 
 export type SupportTicketStatus =
   | "OPEN"

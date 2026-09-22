@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Optional } from '@nestjs/common';
 import {
   LedgerEntry,
   PackageSettlement,
@@ -30,6 +30,10 @@ import {
   SettlementBatchListItemViewModel,
   WalletViewModel,
 } from '../types/financial-operations.types';
+import {
+  PACKAGE_RESERVED_SESSION_STATUSES,
+  PackageEntitlementService,
+} from '@modules/package-plans/services/package-entitlement.service';
 
 type BatchWithSettlements = SettlementBatch & {
   settlements: Array<
@@ -128,8 +132,29 @@ type PackageSettlementWithRelations = PackageSettlement & {
       title: string;
     } | null;
     payment?: {
+      id: string;
       status: string;
+      provider: string;
+      providerPaymentRef: string | null;
+      currencyCode: string;
+      amountTotal: Prisma.Decimal;
+      capturedAt: Date | null;
     } | null;
+    sessions: Array<{
+      id: string;
+      sessionCode: string;
+      status: string;
+      packageSessionIndex: number | null;
+      packageSessionCount: number | null;
+      scheduledStartAt: Date | null;
+      scheduledEndAt: Date | null;
+      paymentCoverageType: string;
+      packageEntitlementDecision: {
+        decisionType: string;
+        reasonCode: string;
+        decidedAt: Date;
+      } | null;
+    }>;
   } | null;
   practitioner?: {
     id: string;
@@ -162,6 +187,11 @@ type PractitionerManualPayoutWithRelations = PractitionerManualPayout & {
 
 @Injectable()
 export class FinancialOperationsMapper {
+  constructor(
+    @Optional()
+    private readonly packageEntitlementService?: PackageEntitlementService,
+  ) {}
+
   toWallet(input: {
     currency: string;
     pendingBalance: string;
@@ -176,7 +206,9 @@ export class FinancialOperationsMapper {
     return input;
   }
 
-  toLedgerEntry(entry: LedgerEntry & { session?: { sessionCode: string } | null }): LedgerEntryViewModel {
+  toLedgerEntry(
+    entry: LedgerEntry & { session?: { sessionCode: string } | null },
+  ): LedgerEntryViewModel {
     return {
       id: entry.id,
       entryType: entry.entryType,
@@ -224,18 +256,29 @@ export class FinancialOperationsMapper {
   }
 
   toPractitionerSafeSettlement(
-    settlement: PractitionerSettlementWithBatch & { sourceReview?: { sessionId: string } | null },
-    session?: { id: string; sessionCode: string; scheduledStartAt: Date | null; completedAt: Date | null; flowType: string } | null,
+    settlement: PractitionerSettlementWithBatch & {
+      sourceReview?: { sessionId: string } | null;
+    },
+    session?: {
+      id: string;
+      sessionCode: string;
+      scheduledStartAt: Date | null;
+      completedAt: Date | null;
+      flowType: string;
+    } | null,
   ): PractitionerSafeSettlementViewModel {
-    const payoutStatus = settlement.status === 'PAID_OUT'
-      ? 'PAID'
-      : settlement.status === 'REJECTED'
-        ? 'NOT_ELIGIBLE'
-        : 'PENDING';
+    const payoutStatus =
+      settlement.status === 'PAID_OUT'
+        ? 'PAID'
+        : settlement.status === 'REJECTED'
+          ? 'NOT_ELIGIBLE'
+          : 'PENDING';
     return {
       sessionId: session?.id ?? settlement.sourceReview?.sessionId ?? null,
       sessionCode: session?.sessionCode ?? null,
-      date: (session?.completedAt ?? session?.scheduledStartAt)?.toISOString() ?? null,
+      date:
+        (session?.completedAt ?? session?.scheduledStartAt)?.toISOString() ??
+        null,
       sessionType: session?.flowType ?? null,
       amountAdded: settlement.finalWalletCredit.toString(),
       currency: settlement.walletCurrencyCode,
@@ -267,10 +310,13 @@ export class FinancialOperationsMapper {
       differenceAmount: payout.differenceAmount?.toString() ?? null,
       overrideReason: payout.overrideReason ?? null,
       transferFeeAmount: payout.transferFeeAmount?.toString() ?? null,
-      transferFeeCurrency: payout.transferFeeCurrencyCode ?? payout.currencyCode,
+      transferFeeCurrency:
+        payout.transferFeeCurrencyCode ?? payout.currencyCode,
       feeBearer: payout.transferFeeTreatment,
-      netAmountReceived: payout.netAmountReceived?.toString() ?? payout.amountPaid.toString(),
-      totalPlatformOutflow: payout.totalPlatformOutflow?.toString() ?? payout.amountPaid.toString(),
+      netAmountReceived:
+        payout.netAmountReceived?.toString() ?? payout.amountPaid.toString(),
+      totalPlatformOutflow:
+        payout.totalPlatformOutflow?.toString() ?? payout.amountPaid.toString(),
       payoutMethod: payout.payoutMethod,
       payoutSource: payout.payoutSource,
       externalPayoutRef: payout.externalPayoutRef ?? null,
@@ -576,6 +622,25 @@ export class FinancialOperationsMapper {
   toPackageSettlement(
     settlement: PackageSettlementWithRelations,
   ): PackageSettlementViewModel {
+    const linkedSessions = settlement.purchase?.sessions ?? [];
+    const entitlement = (
+      this.packageEntitlementService ?? new PackageEntitlementService()
+    ).summarize(settlement.sessionCount, linkedSessions);
+    const nextSessionStartAt =
+      linkedSessions
+        .filter(
+          (session) =>
+            PACKAGE_RESERVED_SESSION_STATUSES.has(session.status) &&
+            session.scheduledStartAt &&
+            session.scheduledStartAt.getTime() >= Date.now(),
+        )
+        .sort(
+          (left, right) =>
+            left.scheduledStartAt!.getTime() -
+            right.scheduledStartAt!.getTime(),
+        )[0]
+        ?.scheduledStartAt?.toISOString() ?? null;
+
     return {
       id: settlement.id,
       purchaseId: settlement.purchaseId,
@@ -608,6 +673,40 @@ export class FinancialOperationsMapper {
       normalEquivalentUsedAmount:
         settlement.normalEquivalentUsedAmount.toString(),
       discountAppliedAmount: settlement.discountAppliedAmount.toString(),
+      availableSessions: entitlement.availableSessions,
+      reservedSessions: entitlement.reservedSessions,
+      consumedSessions: entitlement.consumedSessions,
+      nextSessionStartAt,
+      payment: settlement.purchase?.payment
+        ? {
+            id: settlement.purchase.payment.id,
+            status: settlement.purchase.payment.status,
+            provider: settlement.purchase.payment.provider,
+            reference: settlement.purchase.payment.providerPaymentRef,
+            amount: settlement.purchase.payment.amountTotal.toString(),
+            currency: settlement.purchase.payment.currencyCode,
+            capturedAt:
+              settlement.purchase.payment.capturedAt?.toISOString() ?? null,
+          }
+        : null,
+      sessions: linkedSessions.map((session) => ({
+        id: session.id,
+        sessionCode: session.sessionCode,
+        status: session.status,
+        packageSessionIndex: session.packageSessionIndex,
+        packageSessionCount: session.packageSessionCount,
+        scheduledStartAt: session.scheduledStartAt?.toISOString() ?? null,
+        scheduledEndAt: session.scheduledEndAt?.toISOString() ?? null,
+        paymentCoverageType: session.paymentCoverageType,
+        entitlementDecision: session.packageEntitlementDecision
+          ? {
+              decisionType: session.packageEntitlementDecision.decisionType,
+              reasonCode: session.packageEntitlementDecision.reasonCode,
+              decidedAt:
+                session.packageEntitlementDecision.decidedAt.toISOString(),
+            }
+          : null,
+      })),
       reviewedAt: settlement.reviewedAt?.toISOString() ?? null,
       reviewedByAdminId: settlement.reviewedByAdminId ?? null,
       releasedAt: settlement.releasedAt?.toISOString() ?? null,

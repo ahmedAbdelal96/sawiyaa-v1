@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { SessionRepository } from '../repositories/session.repository';
 import { ResolveSessionJoinReadinessService } from '../services/resolve-session-join-readiness.service';
+import { SessionOperationalInterpreterService } from '../services/session-operational-interpreter.service';
 import { buildParticipantsSummary, type SessionWithParticipants } from '../utils/session-participant-identity.util';
 
 @Injectable()
@@ -8,6 +9,7 @@ export class InspectAdminSessionRuntimeUseCase {
   constructor(
     private readonly sessionRepository: SessionRepository,
     private readonly resolveSessionJoinReadinessService: ResolveSessionJoinReadinessService,
+    private readonly operationalInterpreter: SessionOperationalInterpreterService,
   ) {}
 
   async execute(input: { sessionId: string }) {
@@ -32,15 +34,22 @@ export class InspectAdminSessionRuntimeUseCase {
       sessionMode: session.sessionMode,
       scheduledStartAt: session.scheduledStartAt,
       scheduledEndAt: session.scheduledEndAt,
+      joinOpenAt: session.joinOpenAt,
+      joinCloseAt: session.joinCloseAt,
       provider: session.provider,
       providerRoomId: session.providerRoomId,
       providerSessionRef: session.providerSessionRef,
       videoRoomClosedAt: session.videoRoomClosedAt,
       now,
     });
+    const operational = await this.operationalInterpreter.interpret({
+      session,
+      actor: 'ADMIN',
+      now,
+    });
 
     const participants = buildParticipantsSummary(
-      session as unknown as SessionWithParticipants,
+      session satisfies SessionWithParticipants,
     );
     const packagePurchase = session.packagePurchase
       ? {
@@ -61,23 +70,24 @@ export class InspectAdminSessionRuntimeUseCase {
         }
       : null;
 
-    const packageEntitlementDecision = (session as any).packageEntitlementDecision
+    const packageEntitlementDecision = session.packageEntitlementDecision
       ? {
-          id: (session as any).packageEntitlementDecision.id,
-          sessionId: (session as any).packageEntitlementDecision.sessionId,
-          packagePurchaseId: (session as any).packageEntitlementDecision.packagePurchaseId,
-          sessionStatusSnapshot: (session as any).packageEntitlementDecision.sessionStatusSnapshot,
-          decisionType: (session as any).packageEntitlementDecision.decisionType,
-          reasonCode: (session as any).packageEntitlementDecision.reasonCode,
-          adminNote: (session as any).packageEntitlementDecision.adminNote,
+          id: session.packageEntitlementDecision.id,
+          sessionId: session.packageEntitlementDecision.sessionId,
+          packagePurchaseId: session.packageEntitlementDecision.packagePurchaseId,
+          sessionStatusSnapshot:
+            session.packageEntitlementDecision.sessionStatusSnapshot,
+          decisionType: session.packageEntitlementDecision.decisionType,
+          reasonCode: session.packageEntitlementDecision.reasonCode,
+          adminNote: session.packageEntitlementDecision.adminNote,
           resultingSessionEarningReviewId:
-            (session as any).packageEntitlementDecision.resultingSessionEarningReviewId,
+            session.packageEntitlementDecision.resultingSessionEarningReviewId,
           decidedBy: {
-            userId: (session as any).packageEntitlementDecision.decidedByUser.id,
-            displayName: (session as any).packageEntitlementDecision.decidedByUser.displayName,
+            userId: session.packageEntitlementDecision.decidedByUser.id,
+            displayName: session.packageEntitlementDecision.decidedByUser.displayName,
           },
-          decidedAt: (session as any).packageEntitlementDecision.decidedAt.toISOString(),
-          idempotencyKey: (session as any).packageEntitlementDecision.idempotencyKey,
+          decidedAt: session.packageEntitlementDecision.decidedAt.toISOString(),
+          idempotencyKey: session.packageEntitlementDecision.idempotencyKey,
         }
       : null;
 
@@ -86,6 +96,7 @@ export class InspectAdminSessionRuntimeUseCase {
         id: session.id,
         sessionCode: session.sessionCode,
         status: session.status,
+        operational,
         sessionMode: session.sessionMode,
         scheduledStartAt: session.scheduledStartAt?.toISOString() ?? null,
         scheduledEndAt: session.scheduledEndAt?.toISOString() ?? null,
@@ -101,6 +112,11 @@ export class InspectAdminSessionRuntimeUseCase {
         packagePurchase,
         packageEntitlementDecision,
         paymentCoverageType: session.paymentCoverageType,
+        fundingSource: session.fundingSource,
+        earningEntitlementId: session.earningEntitlementId,
+        payment: session.payments[0]
+          ? { amount: session.payments[0].amountTotal.toString(), currency: session.payments[0].currencyCode, status: session.payments[0].status }
+          : null,
         packageSessionIndex: session.packageSessionIndex ?? null,
         packageSessionCount: session.packageSessionCount ?? null,
       },

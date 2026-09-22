@@ -1,6 +1,26 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { PractitionerApplicationCompletionResponseDto } from './practitioner-application-completion-response.dto';
-import { ReviewCaseStatus, ReviewRequirementStatus } from '@prisma/client';
+import { PractitionerPayoutMethodType, ReviewCaseStatus, ReviewRequirementStatus } from '@prisma/client';
+
+export class PractitionerPayoutCapabilityResponseDto {
+  @ApiProperty({ enum: PractitionerPayoutMethodType })
+  methodType!: PractitionerPayoutMethodType;
+
+  @ApiProperty()
+  semanticKey!: string;
+
+  @ApiProperty({ type: [String], nullable: true })
+  countryCodes!: string[] | null;
+
+  @ApiProperty({ type: [String] })
+  requiredFields!: string[];
+
+  @ApiProperty({ type: [String] })
+  optionalFields!: string[];
+
+  @ApiProperty()
+  providerIntegration!: false;
+}
 
 export class PractitionerProfessionalTitleReadinessResponseDto {
   @ApiProperty({ nullable: true })
@@ -56,6 +76,21 @@ export class PractitionerReadinessChecksResponseDto {
 
 export class PractitionerProfileReadinessResponseDto {
   @ApiProperty()
+  isApproved!: boolean;
+
+  @ApiProperty()
+  isProfileComplete!: boolean;
+
+  @ApiProperty()
+  hasRequiredSpecialty!: boolean;
+
+  @ApiProperty()
+  hasRequiredNormalPricing!: boolean;
+
+  @ApiProperty()
+  canPublish!: boolean;
+
+  @ApiProperty()
   isProfileCompleted!: boolean;
 
   @ApiProperty()
@@ -67,6 +102,9 @@ export class PractitionerProfileReadinessResponseDto {
   @ApiProperty({ type: [String] })
   remediationMissingRequirements!: string[];
 
+  @ApiProperty({ type: [String] })
+  publicationMissingRequirements!: string[];
+
   @ApiProperty({ type: PractitionerReadinessChecksResponseDto })
   checks!: PractitionerReadinessChecksResponseDto;
 
@@ -75,6 +113,9 @@ export class PractitionerProfileReadinessResponseDto {
 
   @ApiProperty({ type: PractitionerApplicationCompletionResponseDto })
   completion!: PractitionerApplicationCompletionResponseDto;
+
+  @ApiProperty({ type: [PractitionerPayoutCapabilityResponseDto] })
+  payoutCapabilities!: PractitionerPayoutCapabilityResponseDto[];
 }
 
 export class PractitionerProfileReadinessSuccessResponseDto {

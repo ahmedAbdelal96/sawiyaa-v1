@@ -1,11 +1,6 @@
+import { ConflictException, Injectable, Logger } from '@nestjs/common';
 import {
-  BadRequestException,
-  ConflictException,
-  Injectable,
-  Logger,
-} from '@nestjs/common';
-import {
-  CredentialType,
+  Prisma,
   OtpChannel,
   PractitionerType,
   UserRoleType,
@@ -21,8 +16,6 @@ import { UserPhoneRepository } from '../repositories/user-phone.repository';
 import { isUserEmailUniqueConstraintError } from '../utils/is-user-email-unique-constraint-error';
 import { isUserPhoneUniqueConstraintError } from '../utils/is-user-phone-unique-constraint-error';
 import { PhoneNumberValidationService } from '@common/validation/phone-number-validation.service';
-import { assertProfessionalTitle } from '@modules/practitioners/constants/professional-title.constants';
-import { PractitionerSpecialtyIntegrityService } from '@modules/practitioners/services/practitioner-specialty-integrity.service';
 
 /**
  * Practitioner registration creates only the auth/account baseline.
@@ -40,7 +33,6 @@ export class RegisterPractitionerAccountUseCase {
     private readonly twoFactorSettingRepository: TwoFactorSettingRepository,
     private readonly hashPasswordUseCase: HashPasswordUseCase,
     private readonly phoneNumberValidationService: PhoneNumberValidationService,
-    private readonly practitionerSpecialtyIntegrityService: PractitionerSpecialtyIntegrityService,
   ) {}
 
   async execute(input: {
@@ -51,23 +43,8 @@ export class RegisterPractitionerAccountUseCase {
     passwordHash?: string;
     phoneStatusOverride?: 'NOT_PROVIDED' | 'NOT_SAVED_INVALID' | 'SAVED';
     displayName?: string | null;
-    practitionerType?: PractitionerType;
-    professionalTitle?: string;
-    bio?: string;
-    yearsOfExperience?: number;
-    countryCode?: string;
-    primarySpecialtyCategoryId: string;
-    specialtyIds: string[];
-    initialCredential?: {
-      credentialType: CredentialType;
-      fileUrl: string;
-      expiresAt?: string;
-    };
   }) {
     const normalizedEmail = input.email.trim().toLowerCase();
-    const normalizedSpecialtyIds = Array.from(
-      new Set(input.specialtyIds.map((id) => id.trim()).filter(Boolean)),
-    );
     const validatedPhone = input.phone?.trim()
       ? typeof this.phoneNumberValidationService.validate === 'function'
         ? this.phoneNumberValidationService.validate(
@@ -89,70 +66,11 @@ export class RegisterPractitionerAccountUseCase {
       });
     }
 
-    await this.practitionerSpecialtyIntegrityService.validateSelection({
-      primarySpecialtyCategoryId: input.primarySpecialtyCategoryId,
-      specialtyIds: normalizedSpecialtyIds,
-    });
-
     const passwordHash =
       input.passwordHash ??
       (await this.hashPasswordUseCase.execute(input.password));
     const user = await this.prisma
       .$transaction(async (tx) => {
-        let countryId: string | undefined;
-        if (input.countryCode) {
-          const normalizedCountryCode = input.countryCode.trim().toUpperCase();
-          const country = await tx.country.findFirst({
-            where: {
-              isoCode: normalizedCountryCode,
-              isActive: true,
-            },
-            select: { id: true },
-          });
-
-          if (!country) {
-            throw new BadRequestException({
-              messageKey: 'auth.errors.invalidRegistrationCountryCode',
-              error: 'INVALID_REGISTRATION_COUNTRY_CODE',
-            });
-          }
-
-          countryId = country.id;
-        }
-
-        const category = await tx.specialtyCategory.findFirst({
-          where: {
-            id: input.primarySpecialtyCategoryId,
-            isActive: true,
-          },
-          select: { id: true },
-        });
-
-        if (!category) {
-          throw new BadRequestException({
-            messageKey: 'auth.errors.invalidRegistrationSpecialtyCategoryId',
-            error: 'INVALID_REGISTRATION_SPECIALTY_CATEGORY_ID',
-          });
-        }
-
-        const specialties = await tx.specialty.findMany({
-          where: {
-            id: { in: normalizedSpecialtyIds },
-            isActive: true,
-            categoryId: input.primarySpecialtyCategoryId,
-          },
-          select: { id: true },
-        });
-
-        const validatedSpecialtyIds = specialties.map((item) => item.id);
-
-        if (validatedSpecialtyIds.length !== normalizedSpecialtyIds.length) {
-          throw new BadRequestException({
-            messageKey: 'auth.errors.invalidRegistrationSpecialtiesForCategory',
-            error: 'INVALID_REGISTRATION_SPECIALTIES_FOR_CATEGORY',
-          });
-        }
-
         const createdUser = await this.userRepository.createUser(
           {
             displayName: input.displayName ?? null,
@@ -166,75 +84,34 @@ export class RegisterPractitionerAccountUseCase {
           UserRoleType.PRACTITIONER,
           tx,
         );
-        await this.userRepository.createPractitionerProfileIfMissing(
-          createdUser.id,
-          input.displayName ?? normalizedEmail,
-          tx,
-        );
-
-        await tx.practitionerProfile.update({
-          where: { userId: createdUser.id },
+        // Registration owns only the account and the draft application. A
+        // live practitioner profile is created by the approval transaction.
+        await tx.practitionerApplication.create({
           data: {
-            practitionerType: input.practitionerType ?? PractitionerType.OTHER,
-            professionalTitle: assertProfessionalTitle(input.professionalTitle),
-            bio: input.bio?.trim() || null,
-            yearsOfExperience: input.yearsOfExperience ?? null,
-            countryId: countryId ?? null,
-            // Keep the selected category on the canonical practitioner profile.
-            // The specialty links below are scoped to this category, and the
-            // application/readiness/public flows use this scalar as their
-            // primary-category source of truth.
-            primarySpecialtyCategoryId: input.primarySpecialtyCategoryId,
+            userId: createdUser.id,
+            status: 'DRAFT',
+            submissionSnapshot: {
+              applicant: {
+                displayName: input.displayName ?? null,
+                locale: null,
+                timezone: null,
+              },
+              profile: {
+                practitionerType: PractitionerType.OTHER,
+                practitionerTypeExplicit: false,
+                professionalTitle: null,
+                bio: null,
+                yearsOfExperience: null,
+                countryCode: null,
+                primaryContentLocale: null,
+                professionalContent: null,
+              },
+              languageCodes: [],
+              specialtySelection: null,
+              credentials: [],
+            } as Prisma.InputJsonValue,
           },
         });
-
-        if (validatedSpecialtyIds.length > 0) {
-          const profile = await tx.practitionerProfile.findUnique({
-            where: { userId: createdUser.id },
-            select: { id: true },
-          });
-
-          if (!profile) {
-            throw new BadRequestException({
-              messageKey: 'auth.errors.practitionerRoleRequired',
-              error: 'PRACTITIONER_PROFILE_NOT_FOUND',
-            });
-          }
-
-          await tx.practitionerSpecialty.createMany({
-            data: validatedSpecialtyIds.map((specialtyId, index) => ({
-              practitionerId: profile.id,
-              specialtyId,
-              isPrimary: index === 0,
-            })),
-            skipDuplicates: true,
-          });
-        }
-
-        if (input.initialCredential?.fileUrl?.trim()) {
-          const profile = await tx.practitionerProfile.findUnique({
-            where: { userId: createdUser.id },
-            select: { id: true },
-          });
-
-          if (!profile) {
-            throw new BadRequestException({
-              messageKey: 'auth.errors.practitionerRoleRequired',
-              error: 'PRACTITIONER_PROFILE_NOT_FOUND',
-            });
-          }
-
-          await tx.practitionerCredential.create({
-            data: {
-              practitionerId: profile.id,
-              credentialType: input.initialCredential.credentialType,
-              fileUrl: input.initialCredential.fileUrl.trim(),
-              expiresAt: input.initialCredential.expiresAt
-                ? new Date(input.initialCredential.expiresAt)
-                : null,
-            },
-          });
-        }
 
         await this.userEmailRepository.createPrimaryEmail(
           createdUser.id,

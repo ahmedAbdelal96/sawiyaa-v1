@@ -34,6 +34,7 @@ export class SettlementPayoutProofRepository {
       mimeType: string;
       fileSizeBytes: number;
       originalFileName?: string | null;
+      storedFileId?: string | null;
       uploadedAt: Date;
     },
     tx?: Prisma.TransactionClient,
@@ -49,6 +50,7 @@ export class SettlementPayoutProofRepository {
         mimeType: input.mimeType,
         fileSizeBytes: input.fileSizeBytes,
         originalFileName: input.originalFileName ?? null,
+        storedFileId: input.storedFileId ?? null,
         uploadedAt: input.uploadedAt,
       },
       update: {
@@ -57,6 +59,7 @@ export class SettlementPayoutProofRepository {
         mimeType: input.mimeType,
         fileSizeBytes: input.fileSizeBytes,
         originalFileName: input.originalFileName ?? null,
+        storedFileId: input.storedFileId ?? null,
         uploadedAt: input.uploadedAt,
       },
     });

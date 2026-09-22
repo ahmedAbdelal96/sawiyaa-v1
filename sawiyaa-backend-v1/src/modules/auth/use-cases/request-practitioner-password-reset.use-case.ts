@@ -1,7 +1,7 @@
-import { ConflictException, Injectable, Optional } from '@nestjs/common';
+import { ConflictException, ForbiddenException, Injectable, Optional } from '@nestjs/common';
 import { I18nService } from '@common/i18n/services/i18n.service';
 import { SupportedLocale } from '@common/i18n/types/locale.types';
-import { OtpPurpose, UserRoleType } from '@prisma/client';
+import { OtpPurpose, PractitionerStatus, UserRoleType, UserStatus } from '@prisma/client';
 import { TwoFactorSettingRepository } from '../repositories/two-factor-setting.repository';
 import { UserEmailRepository } from '../repositories/user-email.repository';
 import { PractitionerOtpChannelService } from '../services/practitioner-otp-channel.service';
@@ -34,21 +34,28 @@ export class RequestPractitionerPasswordResetUseCase {
     const userEmail =
       await this.userEmailRepository.findByEmailForAuth(normalizedEmail);
 
-    if (!userEmail) {
+    const hasPractitionerRole = userEmail?.user.roles.some(
+      (role) => role.role === UserRoleType.PRACTITIONER,
+    ) ?? false;
+
+    if (!userEmail || !hasPractitionerRole) {
       throw new ConflictException({
-        messageKey: 'auth.errors.passwordResetAccountNotFound',
-        error: 'PASSWORD_RESET_ACCOUNT_NOT_FOUND',
+        messageKey: 'auth.errors.emailNotRegistered',
+        error: 'EMAIL_NOT_REGISTERED',
       });
     }
 
-    const hasPractitionerRole = userEmail.user.roles.some(
-      (role) => role.role === UserRoleType.PRACTITIONER,
-    );
-
-    if (!hasPractitionerRole) {
-      throw new ConflictException({
-        messageKey: 'auth.errors.passwordResetAccountNotFound',
-        error: 'PASSWORD_RESET_ACCOUNT_NOT_FOUND',
+    const practitionerStatus = userEmail.user.practitionerProfile?.status;
+    if (
+      (userEmail.user.status !== undefined && userEmail.user.status !== UserStatus.ACTIVE) ||
+      userEmail.user.practitionerProfile === null ||
+      practitionerStatus === PractitionerStatus.REJECTED ||
+      practitionerStatus === PractitionerStatus.SUSPENDED ||
+      practitionerStatus === PractitionerStatus.INACTIVE
+    ) {
+      throw new ForbiddenException({
+        messageKey: 'auth.errors.accountNotEligible',
+        error: 'ACCOUNT_NOT_ELIGIBLE',
       });
     }
 
@@ -69,14 +76,24 @@ export class RequestPractitionerPasswordResetUseCase {
     }
 
     try {
-      const resolvedChannel =
-        this.practitionerOtpChannelService.resolveVerifiedChannel(
+      let resolvedChannel;
+      try {
+        resolvedChannel = this.practitionerOtpChannelService.resolveVerifiedChannel(
           {
             emails: userEmail.user.emails ?? [],
             phones: userEmail.user.phones ?? [],
           },
           twoFactorSetting,
         );
+      } catch (error) {
+        if (error instanceof ForbiddenException) {
+          throw new ConflictException({
+            messageKey: 'auth.errors.accountEmailUnavailable',
+            error: 'ACCOUNT_EMAIL_UNAVAILABLE',
+          });
+        }
+        throw error;
+      }
       const challenge = await this.createOtpChallengeUseCase.execute({
         userId: userEmail.user.id,
         purpose: OtpPurpose.PASSWORD_RESET,
@@ -104,6 +121,7 @@ export class RequestPractitionerPasswordResetUseCase {
       ) {
         throw error;
       }
+
       throw error;
     }
 
@@ -126,4 +144,5 @@ export class RequestPractitionerPasswordResetUseCase {
       nextStep: 'VERIFY_OTP',
     };
   }
+
 }

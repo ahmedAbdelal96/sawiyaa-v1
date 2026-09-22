@@ -1,0 +1,11 @@
+appId: com.sawiyaa.mobile
+---
+- runFlow: practitioner-login.yaml
+- tapOn:
+    text: "More|المزيد"
+- tapOn:
+    text: "Application|الطلب"
+- assertVisible:
+    text: "Documents|المستندات"
+- assertNotVisible:
+    text: "FATAL EXCEPTION"

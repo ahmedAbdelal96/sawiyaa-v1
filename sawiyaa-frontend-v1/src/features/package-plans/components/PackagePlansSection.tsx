@@ -1,10 +1,16 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { useTranslations } from "next-intl";
-import { BadgePercent, CircleDollarSign, Package, Sparkles } from "lucide-react";
-import Badge from "@/components/ui/badge/Badge";
-import Button from "@/components/ui/button/Button";
+import { useLocale, useTranslations } from "next-intl";
+import {
+  ArrowRight,
+  Check,
+  Clock,
+  Package,
+  Sparkles,
+  Tag,
+  Video,
+} from "lucide-react";
 import { Link } from "@/i18n/navigation";
 import { Skeleton } from "@/components/shared/LoadingStates";
 import { useAuthStore } from "@/stores/auth-store";
@@ -20,10 +26,14 @@ type Props = {
   profile: PractitionerProfile;
 };
 
+const AVAILABLE_DURATIONS = [30, 60] as const;
+
 export default function PackagePlansSection({ slug, profile }: Props) {
   const t = useTranslations("practitioner-profile.packages");
+  const locale = useLocale();
   const { user, isInitialized } = useAuthStore();
   const isPatient = user?.role === "PATIENT";
+
   const authScopeKey = useMemo(() => {
     if (!isInitialized) {
       return "bootstrapping";
@@ -36,18 +46,16 @@ export default function PackagePlansSection({ slug, profile }: Props) {
     return `auth:${user.id}:${user.role}`;
   }, [isInitialized, user]);
 
-  const availableDurations = [30, 60] as const;
-  const hasAvailablePricing = true;
-
   const [selectedDuration, setSelectedDuration] = useState<30 | 60>(60);
   const [purchasePlanCode, setPurchasePlanCode] = useState<string | null>(null);
   const [isPurchaseModalOpen, setIsPurchaseModalOpen] = useState(false);
+
   const normalizedDuration = useMemo<30 | 60>(() => {
-    if (availableDurations.includes(selectedDuration)) {
+    if (AVAILABLE_DURATIONS.includes(selectedDuration)) {
       return selectedDuration;
     }
     return 60;
-  }, [availableDurations, selectedDuration]);
+  }, [selectedDuration]);
 
   const selectedSessionMode = "VIDEO" as const;
   const packagePlansQuery = usePublicPractitionerPackagePlans(
@@ -56,134 +64,89 @@ export default function PackagePlansSection({ slug, profile }: Props) {
       durationMinutes: normalizedDuration,
       sessionMode: selectedSessionMode,
     },
-    {
-      enabled: hasAvailablePricing,
-      cacheScopeKey: authScopeKey,
-    },
+    { cacheScopeKey: authScopeKey },
   );
 
-  const packagesDisabled = profile.acceptsPackage === false;
   const plans = packagePlansQuery.data?.items ?? [];
 
   if (!packagePlansQuery.isLoading && plans.length === 0) {
     return null;
   }
 
-  if (packagesDisabled) {
-    return null;
-  }
-
   return (
-    <section className="rounded-[32px] border border-border-light bg-gradient-to-br from-white to-surface/70 p-5 shadow-sm dark:from-white/4 dark:to-transparent">
-      <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-        <div className="space-y-2">
+    <section className="app-panel rounded-2xl p-4 sm:p-5 space-y-4">
+      {/* Header & Duration Switcher */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-b border-border-light/50 pb-3 dark:border-white/10">
+        <div className="space-y-0.5">
           <div className="flex items-center gap-2">
-            <span className="inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-primary-light text-primary dark:bg-primary/15 dark:text-primary-light">
-              <Package className="h-5 w-5" />
+            <span className="inline-flex h-7 w-7 items-center justify-center rounded-lg bg-primary/10 text-primary dark:bg-primary/20 dark:text-primary-light">
+              <Package className="h-3.5 w-3.5" />
             </span>
-            <div>
-              <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-primary">
-                {t("eyebrow")}
-              </p>
-              <h3 className="text-xl font-bold text-text-primary dark:text-white/90">
-                {t("title")}
-              </h3>
-            </div>
+            <h3 className="text-base font-bold text-text-primary dark:text-white/95">
+              {t("title")}
+            </h3>
+            <span className="inline-flex items-center gap-1 rounded-full bg-surface-tertiary px-2 py-0.5 text-[10px] font-semibold text-text-secondary dark:bg-white/5 dark:text-text-muted">
+              <Video className="h-2.5 w-2.5 text-primary" />
+              {t("videoSessionsBadge")}
+            </span>
           </div>
-          <p className="max-w-2xl text-sm leading-6 text-text-secondary">
+
+          <p className="text-xs text-text-secondary">
             {t("subtitle")}
           </p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2">
-          <Badge variant="light" color="info" size="sm" startIcon={<Sparkles size={14} />}>
-            {t("mode.video")}
-          </Badge>
-          <Badge variant="light" color="light" size="sm" startIcon={<CircleDollarSign size={14} />}>
-            {t("controls.currency")}
-          </Badge>
-        </div>
-      </div>
-
-      <div className="grid gap-4 lg:grid-cols-[minmax(0,1.1fr)_auto] lg:items-start">
-        <div className="space-y-4">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="text-xs font-medium uppercase tracking-[0.18em] text-text-muted">
-              {t("controls.duration")}
-            </span>
-            {([30, 60] as const).map((duration) => {
-              const enabled = availableDurations.includes(duration);
+        {/* Duration Switcher */}
+        <div className="flex items-center gap-2 shrink-0">
+          <span className="text-xs text-text-muted font-medium">
+            {t("controls.duration")}:
+          </span>
+          <div className="inline-flex items-center rounded-xl bg-surface-tertiary/70 p-0.5 border border-border-light/50 dark:bg-white/5 dark:border-white/10">
+            {AVAILABLE_DURATIONS.map((duration) => {
               const active = duration === normalizedDuration;
               return (
                 <button
                   key={duration}
                   type="button"
-                  onClick={() => {
-                    if (!enabled) return;
-                    setSelectedDuration(duration);
-                  }}
-                  className={`inline-flex items-center justify-center rounded-full border px-3 py-1.5 text-xs font-semibold transition ${
+                  onClick={() => setSelectedDuration(duration)}
+                  className={`inline-flex items-center gap-1 rounded-lg px-2.5 py-1 text-xs font-semibold transition-all ${
                     active
-                      ? "border-primary bg-primary/10 text-primary"
-                      : "border-border-light bg-white text-text-secondary hover:border-primary/40 hover:text-primary dark:bg-white/5"
-                  } ${enabled ? "" : "cursor-not-allowed opacity-45"}`}
-                  disabled={!enabled}
+                      ? "bg-primary text-white shadow-2xs"
+                      : "text-text-secondary hover:text-text-primary dark:text-text-muted dark:hover:text-white"
+                  }`}
                 >
-                  {formatDurationLabel(duration)}
+                  <Clock className="h-3 w-3" />
+                  <span>{formatDurationLabel(duration, locale)}</span>
                 </button>
               );
             })}
           </div>
-
-          <div className="flex items-center gap-2 text-xs font-medium uppercase tracking-[0.18em] text-text-muted">
-            {t("controls.currency")}
-          </div>
-        </div>
-
-        <div className="rounded-[28px] border border-border-light bg-surface px-4 py-3.5 shadow-sm dark:bg-white/5">
-          <div className="flex items-center justify-between gap-3">
-            <div>
-              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-text-muted">
-                {t("controls.sessionMode")}
-              </p>
-              <p className="mt-1 text-sm font-semibold text-text-primary dark:text-white/90">
-                {t("mode.video")}
-              </p>
-            </div>
-            <div className="rounded-2xl bg-primary-light px-3 py-2 text-right dark:bg-primary/15">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-primary">
-                {t("availablePlans")}
-              </p>
-              <p className="mt-1 text-sm font-semibold text-primary">
-                {plans.length} {plans.length === 1 ? t("plan.single") : t("plan.multiple")}
-              </p>
-            </div>
-          </div>
         </div>
       </div>
 
-      {!hasAvailablePricing ? (
-        <div className="mt-5 rounded-[28px] border border-dashed border-border-light bg-surface px-4 py-6 text-sm text-text-muted dark:bg-white/5">
-          {t("empty")}
-        </div>
-      ) : packagePlansQuery.isLoading ? (
-        <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+      {/* Loading Skeleton */}
+      {packagePlansQuery.isLoading ? (
+        <div className="grid gap-3.5 sm:grid-cols-2 lg:grid-cols-3">
           {Array.from({ length: 3 }).map((_, index) => (
-            <div key={index} className="rounded-[28px] border border-border-light bg-surface p-5 dark:bg-white/5">
-              <Skeleton className="mb-4 h-6 w-2/3" />
-              <Skeleton className="mb-2 h-4 w-full" />
-              <Skeleton className="mb-2 h-4 w-5/6" />
-              <Skeleton className="mb-4 h-4 w-2/3" />
-              <Skeleton className="h-24 w-full" />
+            <div
+              key={index}
+              className="rounded-xl border border-border-light bg-surface-tertiary/40 p-4 dark:bg-white/5"
+            >
+              <Skeleton className="mb-3 h-5 w-1/2" />
+              <Skeleton className="mb-2 h-3 w-3/4" />
+              <Skeleton className="mb-4 h-10 w-full rounded-lg" />
+              <Skeleton className="mb-3 h-16 w-full rounded-lg" />
+              <Skeleton className="h-9 w-full rounded-lg" />
             </div>
           ))}
         </div>
       ) : plans.length === 0 ? (
-        <div className="mt-5 rounded-[28px] border border-dashed border-border-light bg-surface px-4 py-6 text-sm text-text-muted dark:bg-white/5">
+        <div className="rounded-xl border border-dashed border-border-light bg-surface-tertiary/30 px-4 py-6 text-center text-xs text-text-muted dark:bg-white/5">
           {t("empty")}
         </div>
       ) : (
-        <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+        /* Package Cards Grid */
+        <div className="grid gap-3.5 sm:grid-cols-2 lg:grid-cols-3 items-stretch">
           {plans.map(({ item, quote }) => {
             const baseSessionPrice = mapPackagePublicPrice({
               priceStatus: "PAID",
@@ -207,123 +170,142 @@ export default function PackagePlansSection({ slug, profile }: Props) {
             });
             const discountPercent = formatPercent(quote.discountPercent);
 
+            const perSessionDiscounted = (
+              Number(quote.patientPayableTotal) / quote.sessionCount
+            ).toFixed(0);
+
+            const perSessionDiscountedPrice = mapPackagePublicPrice({
+              priceStatus: "PAID",
+              priceAmount: perSessionDiscounted,
+              currencyCode: quote.selectedCurrencyCode,
+            });
+
+            const isBestValue =
+              item.sessionCount >= 6 || Number(quote.discountPercent) >= 15;
+
             return (
               <article
                 key={item.id}
-                className="flex h-full flex-col rounded-[28px] border border-border-light bg-white p-5 shadow-[0_10px_24px_-20px_rgba(15,23,38,0.2)] transition hover:-translate-y-0.5 hover:border-primary/30 dark:bg-surface dark:shadow-none"
+                className={`relative flex flex-col justify-between rounded-xl border p-4 transition-all duration-200 hover:shadow-xs ${
+                  isBestValue
+                    ? "border-primary/40 bg-gradient-to-b from-primary/[0.03] to-white ring-1 ring-primary/20 dark:from-primary/10 dark:to-surface-secondary dark:border-primary/40"
+                    : "border-border-light/80 bg-white hover:border-primary/30 dark:border-white/10 dark:bg-surface-secondary"
+                }`}
               >
-                <div className="flex items-start justify-between gap-3">
-                  <div className="space-y-1">
-                    <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">
-                      {item.code}
-                    </p>
-                    <h4 className="text-lg font-semibold text-text-primary dark:text-white/90">
-                      {item.title}
-                    </h4>
+                {/* Popular / Best Value Ribbon */}
+                {isBestValue && (
+                  <div className="absolute -top-2.5 start-4">
+                    <span className="inline-flex items-center gap-1 rounded-full bg-primary px-2 py-0.5 text-[10px] font-bold text-white shadow-2xs">
+                      <Sparkles className="h-2.5 w-2.5" />
+                      {t("popularBadge")}
+                    </span>
                   </div>
-                  <Badge variant="solid" color="primary" size="sm">
-                    {discountPercent}
-                  </Badge>
+                )}
+
+                <div className="space-y-3">
+                  {/* Card Header */}
+                  <div className="flex items-start justify-between gap-2 pt-0.5">
+                    <div className="space-y-0.5">
+                      <h4 className="text-sm font-bold text-text-primary dark:text-white">
+                        {locale === "ar"
+                          ? t("plan.titleTemplate", { count: item.sessionCount })
+                          : item.title}
+                      </h4>
+                      <p className="text-[11px] text-text-muted leading-tight">
+                        {t("plan.descriptionTemplate", {
+                          count: item.sessionCount,
+                          duration: formatDurationLabel(quote.durationMinutes, locale),
+                          discount: discountPercent,
+                        })}
+                      </p>
+                    </div>
+
+                    {/* Discount Badge */}
+                    <span className="shrink-0 inline-flex items-center gap-1 rounded-md bg-emerald-50 border border-emerald-200/80 px-2 py-0.5 text-[11px] font-bold text-emerald-700 dark:bg-emerald-950/40 dark:border-emerald-800/40 dark:text-emerald-300">
+                      <Tag className="h-2.5 w-2.5" />
+                      <span>{discountPercent}</span>
+                    </span>
+                  </div>
+
+                  {/* Main Price Block */}
+                  <div className="rounded-xl border border-border-light/60 bg-surface-secondary/50 p-3 dark:bg-white/5 dark:border-border-dark">
+                    <div className="flex items-baseline justify-between gap-2">
+                      <div>
+                        <span className="text-[10px] font-medium text-text-muted block">
+                          {t("packageTotal")}
+                        </span>
+                        <div className="text-lg font-bold text-primary dark:text-primary-light">
+                          <PriceDisplay price={payable} />
+                        </div>
+                      </div>
+
+                      {/* Strikethrough Regular Price & Savings */}
+                      <div className="text-end space-y-0.5">
+                        <p className="text-[11px] text-text-muted line-through">
+                          <PriceDisplay price={regularTotal} />
+                        </p>
+                        <p className="text-[11px] font-bold text-emerald-700 dark:text-emerald-400">
+                          {t("plan.saveLabel")} <PriceDisplay price={savings} />
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Effective Price Per Session */}
+                    <div className="mt-2 flex items-center justify-between border-t border-border-light/50 pt-2 text-[11px] dark:border-white/10">
+                      <span className="text-text-secondary">
+                        {t("perSession")}:
+                      </span>
+                      <div className="flex items-center gap-1 font-bold text-text-primary dark:text-white">
+                        <PriceDisplay price={perSessionDiscountedPrice} />
+                        <span className="text-[10px] font-normal text-text-muted">
+                          ({t("insteadOf")} <PriceDisplay price={baseSessionPrice} />)
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Feature Highlights */}
+                  <ul className="space-y-1.5 text-[11px] text-text-secondary dark:text-white/80">
+                    <li className="flex items-start gap-1.5">
+                      <Check className="h-3.5 w-3.5 text-primary shrink-0 mt-0.5" />
+                      <span>
+                        {t("features.video", {
+                          duration: formatDurationLabel(quote.durationMinutes, locale),
+                        })}
+                      </span>
+                    </li>
+                    <li className="flex items-start gap-1.5">
+                      <Check className="h-3.5 w-3.5 text-primary shrink-0 mt-0.5" />
+                      <span>{t("features.schedule")}</span>
+                    </li>
+                    <li className="flex items-start gap-1.5">
+                      <Check className="h-3.5 w-3.5 text-primary shrink-0 mt-0.5" />
+                      <span>{t("features.flexible")}</span>
+                    </li>
+                  </ul>
                 </div>
 
-                {item.description ? (
-                  <p className="mt-3 text-sm leading-6 text-text-secondary">{item.description}</p>
-                ) : null}
-
-                <div className="mt-4 flex items-center justify-between gap-3 rounded-2xl bg-primary-light/35 px-4 py-3 dark:bg-primary/10">
-                  <div>
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-text-muted">
-                      {t("plan.sessionCount")}
-                    </p>
-                    <p className="mt-1 text-lg font-semibold text-text-primary dark:text-white/90">
-                      {item.sessionCount} {item.sessionCount === 1 ? t("plan.session") : t("plan.sessions")}
-                    </p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-text-muted">
-                      {t("selected")}
-                    </p>
-                    <p className="mt-1 text-sm font-semibold text-text-primary dark:text-white/90">
-                      {formatDurationLabel(quote.durationMinutes)}
-                    </p>
-                  </div>
-                </div>
-
-                <dl className="mt-4 grid gap-3 rounded-[24px] border border-border-light bg-surface px-4 py-4 text-sm dark:bg-white/5">
-                  <div className="flex items-center justify-between gap-3">
-                    <dt className="text-text-secondary">{t("quote.baseSessionPrice")}</dt>
-                    <dd className="font-semibold text-text-primary dark:text-white/90">
-                      <PriceDisplay price={baseSessionPrice} />
-                    </dd>
-                  </div>
-                  <div className="flex items-center justify-between gap-3">
-                    <dt className="text-text-secondary">{t("quote.regularTotal")}</dt>
-                    <dd className="font-semibold text-text-primary dark:text-white/90">
-                      <PriceDisplay price={regularTotal} />
-                    </dd>
-                  </div>
-                  <div className="flex items-center justify-between gap-3">
-                    <dt className="text-text-secondary">{t("quote.discountAmount")}</dt>
-                    <dd className="font-semibold text-success-700 dark:text-success-300">
-                      {t.rich("plan.save", {
-                        amount: () => <PriceDisplay price={savings} />,
-                      })}
-                    </dd>
-                  </div>
-                  <div className="flex items-center justify-between gap-3 border-t border-border-light pt-3">
-                    <dt className="text-text-secondary">{t("quote.payableTotal")}</dt>
-                    <dd className="text-base font-bold text-primary"><PriceDisplay price={payable} /></dd>
-                  </div>
-                </dl>
-
-                <div className="mt-4 flex flex-wrap items-center gap-2 text-xs text-text-muted">
-                  <span>
-                    {t("controls.currency")}: {t(`currency.${quote.selectedCurrencyCode}`)}
-                  </span>
-                  <span>•</span>
-                  <span>
-                    {t("controls.sessionMode")}: {t("mode.video")}
-                  </span>
-                </div>
-
-                <div className="mt-4 flex items-center justify-between gap-3">
-                  <div>
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-text-muted">
-                      {t("quote.discount")}
-                    </p>
-                    <p className="mt-1 text-sm font-semibold text-text-primary dark:text-white/90">
-                      {discountPercent}
-                    </p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-text-muted">
-                      {t("quote.currency")}
-                    </p>
-                    <p className="mt-1 text-sm font-semibold text-text-primary dark:text-white/90">
-                      {quote.selectedCurrencyCode}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="mt-5 flex flex-col gap-2 sm:flex-row">
+                {/* Primary CTA Button */}
+                <div className="mt-4 pt-1">
                   {isPatient ? (
-                    <Button
-                      startIcon={<BadgePercent className="h-4 w-4" />}
+                    <button
+                      type="button"
                       onClick={() => {
                         setPurchasePlanCode(item.code);
                         setIsPurchaseModalOpen(true);
                       }}
-                      className="w-full sm:w-auto"
+                      className="sawiyaa-btn-press flex w-full items-center justify-center gap-1.5 rounded-xl py-2.5 px-3 text-xs font-bold bg-primary text-white hover:bg-primary-hover shadow-2xs transition active:scale-[0.98]"
                     >
-                      {t("startPurchase")}
-                    </Button>
+                      <span>{t("startPurchase")}</span>
+                      <ArrowRight className="h-3.5 w-3.5 rtl:rotate-180" />
+                    </button>
                   ) : (
                     <Link
-                  href="/signin/patient"
-                      className="inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-border-light bg-white px-4 py-3 text-sm font-semibold text-text-primary transition hover:border-primary/40 hover:text-primary dark:bg-white/5 dark:hover:bg-white/10 sm:w-auto"
+                      href="/signin/patient"
+                      className="inline-flex w-full items-center justify-center gap-1.5 rounded-xl border border-border-light bg-white py-2.5 px-3 text-xs font-bold text-text-primary transition hover:border-primary hover:text-primary active:scale-[0.98] dark:bg-white/5 dark:border-white/10 dark:text-white"
                     >
-                      <BadgePercent className="h-4 w-4" />
-                      {t("signInToContinue")}
+                      <span>{t("signInToContinue")}</span>
+                      <ArrowRight className="h-3.5 w-3.5 rtl:rotate-180" />
                     </Link>
                   )}
                 </div>
@@ -333,15 +315,19 @@ export default function PackagePlansSection({ slug, profile }: Props) {
         </div>
       )}
 
-      <div className="mt-5 flex justify-end">
+      {/* Bottom Footer Link */}
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-2 border-t border-border-light/50 pt-3 text-xs text-text-muted dark:border-white/10">
+        <span>{t("subtitle")}</span>
         <Link
           href="/patient/package-purchases"
-          className="inline-flex items-center justify-center rounded-2xl border border-border-light bg-white px-4 py-2 text-sm font-semibold text-text-primary transition hover:border-primary/30 hover:text-primary dark:bg-white/5"
+          className="inline-flex items-center gap-1 font-bold text-primary transition hover:underline dark:text-primary-light"
         >
-          {t("viewPurchases")}
+          <span>{t("viewPurchases")}</span>
+          <ArrowRight className="h-3 w-3 rtl:rotate-180" />
         </Link>
       </div>
 
+      {/* Purchase Flow Modal */}
       {isPurchaseModalOpen ? (
         <PackagePurchaseFlowModal
           isOpen={isPurchaseModalOpen}

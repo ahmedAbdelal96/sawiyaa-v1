@@ -265,6 +265,14 @@
       "rawLogs": "سجلات التشخيص الخام"
     },
     "slugs": {
+      "instant-booking-request-created": {
+        "title": "طلب حجز فوري جديد",
+        "subtitle": "حجز فوري · طلب جديد"
+      },
+      "sessions-session-late-join": {
+        "title": "تنبيه تأخر الانضمام إلى الجلسة",
+        "subtitle": "جلسة · انضمام متأخر"
+      },
       "admin-practitioner-application-approved": {
         "title": "تمت الموافقة على طلب انضمام المختص",
         "subtitle": "مختص · انضمام"

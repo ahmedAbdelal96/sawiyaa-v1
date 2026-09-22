@@ -10,6 +10,7 @@ import { CareChatModule } from '@modules/care-chat/care-chat.module';
 import { ModerationModule } from '@modules/moderation/moderation.module';
 import { NotificationsModule } from '@modules/notifications/notifications.module';
 import { MessagingModule } from '@modules/messaging/messaging.module';
+import { PractitionersModule } from '@modules/practitioners/practitioners.module';
 import { SupportModule } from '@modules/support/support.module';
 import { GeneralChatAttachmentsController } from './controllers/general-chat-attachments.controller';
 import { AdminGeneralChatConversationsController } from './controllers/admin-general-chat-conversations.controller';
@@ -22,6 +23,7 @@ import { GeneralChatRepository } from './repositories/general-chat.repository';
 import { GeneralChatAttachmentStorageService } from './services/general-chat-attachment-storage.service';
 import { GeneralChatAvailabilityService } from './services/general-chat-availability.service';
 import { GeneralChatModerationStateService } from './services/general-chat-moderation-state.service';
+import { ResolveSessionChatAvailabilityService } from './services/resolve-session-chat-availability.service';
 import { ValidateGeneralChatMessagePayloadService } from './services/validate-general-chat-message-payload.service';
 import { ValidateGeneralChatParticipantPolicyService } from './services/validate-general-chat-participant-policy.service';
 import { DisableAdminGeneralChatConversationUseCase } from './use-cases/disable-admin-general-chat-conversation.use-case';
@@ -37,6 +39,7 @@ import { ListMyGeneralChatMessagesUseCase } from './use-cases/list-my-general-ch
 import { ListMyGeneralChatConversationsUseCase } from './use-cases/list-my-general-chat-conversations.use-case';
 import { MarkMyGeneralChatConversationReadUseCase } from './use-cases/mark-my-general-chat-conversation-read.use-case';
 import { OpenSessionGeneralChatUseCase } from './use-cases/open-session-general-chat.use-case';
+import { GetSessionGeneralChatConversationUseCase } from './use-cases/get-session-general-chat-conversation.use-case';
 import { ReportGeneralChatTargetUseCase } from './use-cases/report-general-chat-target.use-case';
 import { StreamAdminGeneralChatAttachmentUseCase } from './use-cases/stream-admin-general-chat-attachment.use-case';
 import { SendGeneralChatMessageUseCase } from './use-cases/send-general-chat-message.use-case';
@@ -52,6 +55,7 @@ import { ConversationAccessPolicy } from './policies/conversation-access.policy'
     SupportModule,
     CareChatModule,
     MessagingModule,
+    PractitionersModule,
   ],
   controllers: [
     AdminGeneralChatConversationsController,
@@ -71,6 +75,7 @@ import { ConversationAccessPolicy } from './policies/conversation-access.policy'
     GeneralChatAttachmentStorageService,
     GeneralChatAvailabilityService,
     GeneralChatModerationStateService,
+    ResolveSessionChatAvailabilityService,
     ValidateGeneralChatParticipantPolicyService,
     ValidateGeneralChatMessagePayloadService,
     CreateOrGetGeneralChatConversationUseCase,
@@ -82,6 +87,7 @@ import { ConversationAccessPolicy } from './policies/conversation-access.policy'
     MarkMyGeneralChatConversationReadUseCase,
     ReportGeneralChatTargetUseCase,
     OpenSessionGeneralChatUseCase,
+    GetSessionGeneralChatConversationUseCase,
     CloseGeneralChatConversationUseCase,
     ListAdminGeneralChatConversationsUseCase,
     GetAdminGeneralChatConversationUseCase,
@@ -91,5 +97,6 @@ import { ConversationAccessPolicy } from './policies/conversation-access.policy'
     EnableAdminGeneralChatConversationUseCase,
     GeneralChatGateway,
   ],
+  exports: [ResolveSessionChatAvailabilityService],
 })
 export class ChatModule {}

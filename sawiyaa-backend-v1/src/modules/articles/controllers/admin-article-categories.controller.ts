@@ -22,6 +22,9 @@ import { AccountStateRequirement } from '@common/enums/account-state-requirement
 import { AppRole } from '@common/enums/app-role.enum';
 import { JwtAccessAuthGuard } from '@common/guards/authentication/jwt-access-auth.guard';
 import { RolesGuard } from '@common/guards/authorization/roles.guard';
+import { PermissionsGuard } from '@common/guards/authorization/permissions.guard';
+import { Permissions } from '@common/decorators/permissions.decorator';
+import { PermissionKey } from '@common/enums/permission-key.enum';
 import { AuthenticatedUser } from '@common/interfaces/authenticated-user.interface';
 import { ArticleLocaleQueryDto } from '../dto/article-locale-query.dto';
 import { CreateArticleCategoryDto } from '../dto/create-article-category.dto';
@@ -38,9 +41,9 @@ import { UpdateArticleCategoryUseCase } from '../use-cases/update-article-catego
 
 @ApiTags('Articles')
 @ApiBearerAuth()
-@UseGuards(JwtAccessAuthGuard, RolesGuard)
+@UseGuards(JwtAccessAuthGuard, RolesGuard, PermissionsGuard)
 @RequireAccountStates(AccountStateRequirement.ACTIVE_ACCOUNT)
-@Roles(AppRole.ADMIN, AppRole.SUPER_ADMIN)
+@Roles(AppRole.ADMIN, AppRole.SUPER_ADMIN, AppRole.CONTENT_REVIEWER)
 @Controller('admin/article-categories')
 export class AdminArticleCategoriesController {
   constructor(
@@ -51,6 +54,7 @@ export class AdminArticleCategoriesController {
   ) {}
 
   @Post()
+  @Permissions(PermissionKey.ARTICLES_MANAGE)
   @ApiOperation({ summary: 'Create article category (admin only)' })
   @ApiBody({ type: CreateArticleCategoryDto })
   @ApiResponse({
@@ -70,6 +74,7 @@ export class AdminArticleCategoriesController {
   }
 
   @Get()
+  @Permissions(PermissionKey.ARTICLES_READ)
   @ApiOperation({ summary: 'List article categories for admin management' })
   @ApiResponse({
     status: 200,
@@ -82,6 +87,7 @@ export class AdminArticleCategoriesController {
   }
 
   @Get(':id')
+  @Permissions(PermissionKey.ARTICLES_READ)
   @ApiOperation({ summary: 'Get category details by id for admin' })
   @ApiResponse({
     status: 200,
@@ -100,6 +106,7 @@ export class AdminArticleCategoriesController {
   }
 
   @Patch(':id')
+  @Permissions(PermissionKey.ARTICLES_MANAGE)
   @ApiOperation({ summary: 'Update category details by id for admin' })
   @ApiBody({ type: UpdateArticleCategoryDto })
   @ApiResponse({

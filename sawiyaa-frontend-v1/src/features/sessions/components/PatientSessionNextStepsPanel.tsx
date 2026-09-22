@@ -13,7 +13,6 @@ import { usePatientCareChatRequests } from "@/features/care-chat/hooks/use-care-
 import { usePatientReviews } from "@/features/reviews";
 import PatientSessionReviewCard from "./PatientSessionReviewCard";
 import SessionStatusBadge from "./SessionStatusBadge";
-import { canOpenSessionChatFromPresentationStatus } from "../lib/session-presentation";
 import type { SessionItem } from "../types/sessions.types";
 
 type Props = {
@@ -72,12 +71,10 @@ function ActionTile({
 
 export default function PatientSessionNextStepsPanel({ session }: Props) {
   const t = useTranslations("sessions");
-  // A time-ended session is not completed until the backend confirms it.
-  // Keep review/next-step content gated by the canonical presentation status.
-  const isCompleted = session.presentationStatus === "COMPLETED";
-  const canOpenSessionChat = canOpenSessionChatFromPresentationStatus(
-    session.presentationStatus,
-  );
+  // Review eligibility is a backend action policy. Chat permission remains
+  // owned by the chat request/conversation contract below.
+  const isCompleted = session.operational?.actions.canReview === true;
+  const canOpenSessionChat = true;
 
   const reviewsQuery = usePatientReviews(
     { page: 1, limit: 100 },
@@ -123,7 +120,7 @@ export default function PatientSessionNextStepsPanel({ session }: Props) {
           </p>
         </div>
 
-      <SessionStatusBadge presentationStatus={session.presentationStatus} />
+      <SessionStatusBadge status={session.status} operational={session.operational} />
       </div>
 
       <div className="mt-4 grid gap-4 xl:grid-cols-[minmax(0,1.35fr)_minmax(0,0.9fr)]">

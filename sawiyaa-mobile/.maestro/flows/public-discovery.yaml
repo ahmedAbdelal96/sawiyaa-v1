@@ -1,0 +1,10 @@
+appId: com.sawiyaa.mobile
+---
+- launchApp:
+    clearState: true
+- tapOn:
+    text: "Explore|استكشف"
+- assertVisible:
+    text: "Practitioners|الممارسون"
+- assertNotVisible:
+    text: "FATAL EXCEPTION"

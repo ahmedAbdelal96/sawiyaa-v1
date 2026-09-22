@@ -4,6 +4,7 @@ import {
   PublicPractitionerDetailsViewModel,
   PublicPractitionerListItemViewModel,
 } from '../types/public-practitioner.types';
+import { localizeSpecialtyTitle } from '@modules/specialties/utils/localize-specialty-title.util';
 
 /**
  * Mapper for public practitioner read responses.
@@ -16,12 +17,17 @@ export class PublicPractitionerMapper {
   pickLocalizedTitle(
     translations: Array<{ locale: string; title: string }>,
     locale: SupportedLocale,
+    compatibility?: {
+      nameAr?: string | null;
+      nameEn?: string | null;
+      fallback?: string | null;
+    },
   ): string | null {
-    return (
-      translations.find((item) => item.locale === locale)?.title ??
-      translations.find((item) => item.locale === 'en')?.title ??
-      null
-    );
+    return localizeSpecialtyTitle({
+      locale,
+      translations,
+      ...compatibility,
+    });
   }
 
   toBioSnippet(fullBio: string | null): string | null {

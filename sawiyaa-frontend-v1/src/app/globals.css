@@ -140,8 +140,8 @@ html:not(.dark) .bg-white {
 
 @theme {
   --font-*: initial;
-  --font-outfit: var(--font-outfit), Outfit, sans-serif;
-  --font-cairo: var(--font-cairo), Cairo, sans-serif;
+  --font-outfit: "Outfit Variable", Outfit, sans-serif;
+  --font-cairo: "Cairo Variable", Cairo, sans-serif;
 
   --breakpoint-*: initial;
   --breakpoint-2xsm: 375px;
@@ -382,14 +382,14 @@ html:not(.dark) .bg-white {
 
   body {
     @apply relative z-1 bg-surface font-normal text-text-primary;
-    font-family: var(--font-outfit), Outfit, sans-serif;
+    font-family: var(--font-outfit);
     background: var(--background);
     background-attachment: fixed;
     text-rendering: optimizeLegibility;
   }
 
   html[lang="ar"] body {
-    font-family: var(--font-cairo), Cairo, sans-serif;
+    font-family: var(--font-cairo);
   }
 }
 

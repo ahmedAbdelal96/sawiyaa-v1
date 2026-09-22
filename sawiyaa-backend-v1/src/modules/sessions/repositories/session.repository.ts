@@ -10,7 +10,12 @@ import {
 } from '@prisma/client';
 import { PrismaService } from '@common/prisma/prisma.service';
 import { sessionCodeSearchFilter } from '../utils/session-code-search.util';
-import { AdminSessionsSortDto } from '../dto/list-admin-sessions.dto';
+import {
+  AdminSessionComplaintFilterDto,
+  AdminSessionQueueViewDto,
+  AdminSessionResolutionFilterDto,
+  AdminSessionsSortDto,
+} from '../dto/list-admin-sessions.dto';
 import { SessionPresentationFilter } from '../types/session-video.types';
 import { buildSessionPresentationFilterWhere } from '../utils/session-join-policy.util';
 import {
@@ -117,13 +122,18 @@ const sessionReminderNotificationCandidateSelect = {
 const sessionSummaryCandidateSelect = {
   id: true,
   status: true,
+  flowType: true,
   sessionMode: true,
   scheduledStartAt: true,
   scheduledEndAt: true,
+  joinOpenAt: true,
+  joinCloseAt: true,
+  expiresAt: true,
   provider: true,
   providerRoomId: true,
   providerSessionRef: true,
   videoRoomClosedAt: true,
+  originalSessionId: true,
 } as const;
 
 export type SessionReminderNotificationCandidate = Prisma.SessionGetPayload<{
@@ -146,7 +156,9 @@ export class SessionRepository {
   }
 
   async createSession(
-    data: Omit<Prisma.SessionUncheckedCreateInput, 'sessionCode'>,
+    data: Omit<Prisma.SessionUncheckedCreateInput, 'sessionCode'> & {
+      pricingCurrencyCode?: 'EGP' | 'USD' | null;
+    },
     tx?: Prisma.TransactionClient,
     creationFlow = 'unknown',
   ): Promise<
@@ -160,12 +172,68 @@ export class SessionRepository {
       );
     }
 
+    const pricingCurrencyCode = data.pricingCurrencyCode ?? null;
+    const { pricingCurrencyCode: _pricingCurrencyCode, ...persistedData } = data;
+    data = persistedData;
+
     const createdAt =
       data.createdAt instanceof Date
         ? data.createdAt
         : data.createdAt
           ? new Date(data.createdAt)
           : new Date();
+    // Freeze prices at booking; never use current profile prices to backfill history.
+    if (!data.packagePurchaseId && !data.pricingPolicySnapshotJson) {
+      const practitioner = await tx.practitionerProfile.findUniqueOrThrow({
+        where: { id: data.practitionerId },
+        select: {
+          sessionPrice30Egp: true,
+          sessionPrice30Usd: true,
+          sessionPrice60Egp: true,
+          sessionPrice60Usd: true,
+          instantBookingPrice30Egp: true,
+          instantBookingPrice30Usd: true,
+          instantBookingPrice60Egp: true,
+          instantBookingPrice60Usd: true,
+        },
+      });
+      const instant = data.flowType === 'INSTANT';
+      data = {
+        ...data,
+        pricingPolicySnapshotJson: {
+          source: 'booking-price-snapshot',
+          version: 1,
+          durationMinutes: data.durationMinutes,
+          selectedCurrencyCode: pricingCurrencyCode,
+          pricingSnapshot: {
+            EGP: {
+              '30':
+                (instant
+                  ? practitioner.instantBookingPrice30Egp
+                  : practitioner.sessionPrice30Egp
+                )?.toFixed(2) ?? null,
+              '60':
+                (instant
+                  ? practitioner.instantBookingPrice60Egp
+                  : practitioner.sessionPrice60Egp
+                )?.toFixed(2) ?? null,
+            },
+            USD: {
+              '30':
+                (instant
+                  ? practitioner.instantBookingPrice30Usd
+                  : practitioner.sessionPrice30Usd
+                )?.toFixed(2) ?? null,
+              '60':
+                (instant
+                  ? practitioner.instantBookingPrice60Usd
+                  : practitioner.sessionPrice60Usd
+                )?.toFixed(2) ?? null,
+            },
+          },
+        },
+      };
+    }
     const savepoint = 'session_code_generation_retry';
 
     for (let attempt = 1; attempt <= 3; attempt += 1) {
@@ -650,7 +718,7 @@ export class SessionRepository {
     });
   }
 
-  listAdminSessions(input: {
+  async listAdminSessions(input: {
     status?: SessionStatus;
     sort?: AdminSessionsSortDto;
     query?: string;
@@ -660,6 +728,9 @@ export class SessionRepository {
     scheduledTo?: Date;
     late?: boolean;
     missingAttendance?: boolean;
+    view?: AdminSessionQueueViewDto;
+    complaint?: AdminSessionComplaintFilterDto;
+    resolution?: AdminSessionResolutionFilterDto;
     now?: Date;
     skip: number;
     take: number;
@@ -670,6 +741,49 @@ export class SessionRepository {
 
     if (input.status) {
       andFilters.push({ status: input.status });
+    }
+
+    if (input.view === AdminSessionQueueViewDto.REVIEW) {
+      andFilters.push({
+        status: {
+          in: [
+            SessionStatus.AWAITING_COMPLETION_CONFIRMATION,
+            SessionStatus.AWAITING_ADMIN_RESOLUTION,
+          ],
+        },
+      });
+    }
+
+    if (input.resolution === AdminSessionResolutionFilterDto.OPEN) {
+      andFilters.push({ resolutionCase: { is: { status: 'OPEN' } } });
+    } else if (input.resolution === AdminSessionResolutionFilterDto.NONE) {
+      andFilters.push({ resolutionCase: { is: null } });
+    }
+
+    const activeComplaintStatuses = [
+      'OPEN',
+      'IN_PROGRESS',
+      'WAITING_FOR_USER',
+      'ESCALATED',
+    ] as const;
+    if (input.complaint === AdminSessionComplaintFilterDto.ACTIVE) {
+      const activeComplaintRows = await this.prisma.supportTicket.findMany({
+        where: { status: { in: [...activeComplaintStatuses] } },
+        select: { relatedSessionId: true },
+      });
+      const activeSessionIds = activeComplaintRows
+        .map((row) => row.relatedSessionId)
+        .filter((id): id is string => Boolean(id));
+      andFilters.push({ id: { in: activeSessionIds } });
+    } else if (input.complaint === AdminSessionComplaintFilterDto.NONE) {
+      const activeComplaintRows = await this.prisma.supportTicket.findMany({
+        where: { status: { in: [...activeComplaintStatuses] } },
+        select: { relatedSessionId: true },
+      });
+      const activeSessionIds = activeComplaintRows
+        .map((row) => row.relatedSessionId)
+        .filter((id): id is string => Boolean(id));
+      andFilters.push({ id: { notIn: activeSessionIds } });
     }
 
     if (input.query?.trim()) {
@@ -740,6 +854,26 @@ export class SessionRepository {
     ]);
   }
 
+  async findActiveSupportTicketCounts(sessionIds: string[]) {
+    const counts = new Map<string, number>();
+    if (sessionIds.length === 0) return counts;
+    const rows = await this.prisma.supportTicket.groupBy({
+      by: ['relatedSessionId'],
+      where: {
+        relatedSessionId: { in: sessionIds },
+        status: {
+          in: ['OPEN', 'IN_PROGRESS', 'WAITING_FOR_USER', 'ESCALATED'],
+        },
+      },
+      _count: { _all: true },
+    });
+    for (const row of rows) {
+      if (row.relatedSessionId)
+        counts.set(row.relatedSessionId, row._count._all);
+    }
+    return counts;
+  }
+
   updateStatus(
     sessionId: string,
     data: Prisma.SessionUncheckedUpdateInput,
@@ -768,6 +902,19 @@ export class SessionRepository {
       },
       data,
     });
+  }
+
+  /**
+   * Serializes provider-runtime provisioning for one Session across backend
+   * instances. The caller keeps this transaction open through provider create
+   * and the conditional persistence claim, so a concurrent caller reuses the
+   * authoritative persisted runtime instead of creating another provider room.
+   */
+  async lockRuntimePreparation(
+    sessionId: string,
+    tx: Prisma.TransactionClient,
+  ): Promise<void> {
+    await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`session-runtime:${sessionId}`})::bigint)`;
   }
 
   listSessionsInRangeForPractitioner(
@@ -1063,7 +1210,10 @@ export class SessionRepository {
             SessionStatus.IN_PROGRESS,
           ],
         },
-        scheduledEndAt: { not: null, lte: input.now },
+        OR: [
+          { joinCloseAt: { not: null, lte: input.now } },
+          { joinCloseAt: null, scheduledEndAt: { not: null, lte: input.now } },
+        ],
         ...(input.cursor
           ? {
               OR: [
@@ -1119,8 +1269,11 @@ export class SessionRepository {
         SELECT "id", "status", "scheduledEndAt"
         FROM "Session"
         WHERE "id" = ${input.sessionId}::uuid
-          AND "scheduledEndAt" IS NOT NULL
-          AND "scheduledEndAt" <= ${input.now}
+          AND (
+            ("joinCloseAt" IS NOT NULL AND "joinCloseAt" <= ${input.now})
+            OR
+            ("joinCloseAt" IS NULL AND "scheduledEndAt" IS NOT NULL AND "scheduledEndAt" <= ${input.now})
+          )
           AND "status" IN (${Prisma.join(
             eligibleStatuses.map(
               (status) => Prisma.sql`${status}::"SessionStatus"`,
@@ -1506,6 +1659,32 @@ export class SessionRepository {
         },
       },
     },
+    events: {
+      where: {
+        eventType: SessionEventType.SESSION_AWAITING_COMPLETION_CONFIRMATION,
+      },
+      orderBy: { occurredAt: 'asc' as const },
+      take: 1,
+      select: { occurredAt: true },
+    },
+    attendanceReconciliations: {
+      orderBy: [
+        { reconciledAt: 'desc' as const },
+        { createdAt: 'desc' as const },
+      ],
+      take: 1,
+      select: {
+        status: true,
+        confidence: true,
+        patientTotalPresenceSeconds: true,
+        practitionerTotalPresenceSeconds: true,
+        reasonCodesJson: true,
+        reconciledAt: true,
+      },
+    },
+    resolutionCase: {
+      select: { status: true, openedAt: true, suggestedOutcome: true },
+    },
     packagePurchase: {
       select: {
         id: true,
@@ -1609,6 +1788,8 @@ export class SessionRepository {
         eventType: true,
         actorType: true,
         reason: true,
+        occurredAt: true,
+        metadataJson: true,
         createdAt: true,
       },
       orderBy: {
@@ -1657,13 +1838,19 @@ export class SessionRepository {
     id: true,
     sessionCode: true,
     status: true,
+    flowType: true,
     sessionMode: true,
     paymentCoverageType: true,
+    fundingSource: true,
+    earningEntitlementId: true,
     scheduledStartAt: true,
     scheduledEndAt: true,
     cancelledAt: true,
     durationMinutes: true,
     joinOpenAt: true,
+    joinCloseAt: true,
+    expiresAt: true,
+    originalSessionId: true,
     provider: true,
     providerRoomId: true,
     providerSessionRef: true,
@@ -1732,6 +1919,11 @@ export class SessionRepository {
           },
         },
       },
+    },
+    payments: {
+      orderBy: { createdAt: 'desc' },
+      take: 1,
+      select: { amountTotal: true, currencyCode: true, status: true },
     },
     packageEntitlementDecision: {
       select: {

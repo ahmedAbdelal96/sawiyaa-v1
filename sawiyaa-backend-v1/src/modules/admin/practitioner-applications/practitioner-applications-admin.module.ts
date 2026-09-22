@@ -55,6 +55,11 @@ import { PractitionerRequiredDocumentsService } from '@modules/practitioners/ser
 import { PractitionerReviewCaseService } from '@modules/practitioners/services/practitioner-review-case.service';
 import { FinancialOperationsModule } from '@modules/financial-operations/financial-operations.module';
 import { PractitionerTimezoneChangeGuardService } from '@modules/practitioners/services/practitioner-timezone-change-guard.service';
+import { PractitionerProfessionalContentAuthoringService } from '@modules/practitioners/services/practitioner-professional-content-authoring.service';
+import { PractitionerProfessionalContentResolver } from '@modules/practitioners/services/practitioner-professional-content-resolver.service';
+import { AdminPractitionerProfessionalContentReadinessService } from './services/admin-practitioner-professional-content-readiness.service';
+import { ManagePractitionerRequirementUseCase } from './use-cases/manage-practitioner-requirement.use-case';
+import { DeleteIncompletePractitionerAccountUseCase } from './use-cases/delete-incomplete-practitioner-account.use-case';
 
 /**
  * This sub-module isolates admin-only practitioner review/application-management concerns.
@@ -118,6 +123,11 @@ import { PractitionerTimezoneChangeGuardService } from '@modules/practitioners/s
     PractitionerRequiredDocumentsService,
     PractitionerReviewCaseService,
     PractitionerTimezoneChangeGuardService,
+    PractitionerProfessionalContentAuthoringService,
+    PractitionerProfessionalContentResolver,
+    AdminPractitionerProfessionalContentReadinessService,
+    ManagePractitionerRequirementUseCase,
+    DeleteIncompletePractitionerAccountUseCase,
   ],
 })
 export class PractitionerApplicationsAdminModule {}

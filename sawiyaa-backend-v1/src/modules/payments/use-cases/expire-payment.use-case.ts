@@ -50,6 +50,20 @@ export class ExpirePaymentUseCase {
     );
 
     const updated = await this.prisma.$transaction(async (tx) => {
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${payment.id})::bigint)`;
+      const current = await this.paymentRepository.findById(payment.id, tx);
+      if (!current) throw new NotFoundException({ error: 'PAYMENT_NOT_FOUND' });
+      this.validatePaymentStatusTransitionService.assertCanTransition(current.status, PaymentStatus.EXPIRED);
+      if (current.status === PaymentStatus.EXPIRED) return current;
+      await this.paymentRepository.createWebhookReceipt(
+        {
+          provider: payment.provider,
+          providerEventRef: input.providerEventRef,
+          paymentId: payment.id,
+        },
+        tx,
+      );
+
       await this.paymentRepository.createEvent(
         {
           paymentId: payment.id,
@@ -83,6 +97,12 @@ export class ExpirePaymentUseCase {
         tx,
       );
 
+      if (expired.paymentPurpose !== PaymentPurpose.SESSION_PACKAGE_PURCHASE &&
+          expired.paymentPurpose !== PaymentPurpose.ACADEMY_PROGRAM_ENROLLMENT && expired.amountFromWallet.gt(0)) {
+        await this.customerWalletAccountingService.releaseReservationForPayment({
+          paymentId: expired.id, currencyCode: expired.currencyCode, releaseReason: 'PAYMENT_EXPIRED', tx,
+        });
+      }
       return expired;
     });
 
@@ -115,17 +135,6 @@ export class ExpirePaymentUseCase {
       return {
         item: this.paymentMapper.toViewModel(updated),
       };
-    }
-
-    if (
-      payment.paymentPurpose !== PaymentPurpose.ACADEMY_PROGRAM_ENROLLMENT &&
-      updated.amountFromWallet.gt(0)
-    ) {
-      await this.customerWalletAccountingService.releaseReservationForPayment({
-        paymentId: updated.id,
-        currencyCode: updated.currencyCode,
-        releaseReason: 'PAYMENT_EXPIRED',
-      });
     }
 
     if (payment.sessionId) {

@@ -94,6 +94,15 @@ const generalChatParticipantDirectorySelect =
       select: {
         avatarUrl: true,
         professionalTitle: true,
+        primaryContentLocale: true,
+        professionalContentTranslations: {
+          orderBy: { locale: 'asc' as const },
+          select: {
+            locale: true,
+            professionalTitle: true,
+            bio: true,
+          },
+        },
         status: true,
         isPublicProfilePublished: true,
         primarySpecialtyCategory: {

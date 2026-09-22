@@ -40,6 +40,8 @@ import {
 import { PaymentItemSuccessResponseDto } from '@modules/payments/dto/payment-response.dto';
 import { Request } from 'express';
 import { CreatePackagePurchaseUseCase } from '../use-cases/create-package-purchase.use-case';
+import { BookPackageSessionDto } from '../dto/book-package-session.dto';
+import { BookPackageSessionUseCase } from '../use-cases/book-package-session.use-case';
 import { GetMyPackagePurchaseUseCase } from '../use-cases/get-my-package-purchase.use-case';
 import { ListMyPackagePurchasesUseCase } from '../use-cases/list-my-package-purchases.use-case';
 import { InitiatePackagePurchasePaymentUseCase } from '../use-cases/initiate-package-purchase-payment.use-case';
@@ -57,13 +59,14 @@ export class PatientPackagePurchasesController {
     private readonly listMyPackagePurchasesUseCase: ListMyPackagePurchasesUseCase,
     private readonly getMyPackagePurchaseUseCase: GetMyPackagePurchaseUseCase,
     private readonly initiatePackagePurchasePaymentUseCase: InitiatePackagePurchasePaymentUseCase,
+    private readonly bookPackageSessionUseCase: BookPackageSessionUseCase,
   ) {}
 
   @Post()
   @ApiOperation({
     summary: 'Create a standardized package purchase draft',
     description:
-      'Creates a pending standardized package purchase with real linked sessions held for payment without creating a payment yet.',
+      'Creates a pending standardized package purchase. The patient may buy without selecting appointments, optionally reserve one initial appointment, or send all legacy slots. No payment is created until the payment-initiation operation.',
   })
   @ApiBody({ type: CreatePackagePurchaseDto })
   @ApiResponse({
@@ -92,7 +95,32 @@ export class PatientPackagePurchasesController {
         durationMinutes: body.durationMinutes,
         sessionMode: body.sessionMode,
         requestCountryIsoCode: resolveCountryFromRequest(request).countryCode,
-        selectedSessionSlots: body.selectedSessionSlots,
+        selectedSessionSlots: body.selectedSessionSlots ?? [],
+      })
+      .then((data) => ({ success: true as const, data }));
+  }
+
+  @Post(':id/sessions')
+  @ApiOperation({
+    summary: 'Book one available session from an active package purchase',
+    description:
+      'Atomically reserves one package entitlement and creates one canonical Session. Payment is not created because the package payment is already captured.',
+  })
+  @ApiParam({ name: 'id', description: 'Package purchase id' })
+  @ApiBody({ type: BookPackageSessionDto })
+  @ApiResponse({ status: 201, type: Object })
+  bookSession(
+    @CurrentUser() currentUser: AuthenticatedUser,
+    @CurrentLocale() locale: SupportedLocale,
+    @Param('id') purchaseId: string,
+    @Body() body: BookPackageSessionDto,
+  ) {
+    return this.bookPackageSessionUseCase
+      .execute({
+        userId: currentUser.id,
+        locale,
+        purchaseId,
+        scheduledStartAt: body.scheduledStartAt,
       })
       .then((data) => ({ success: true as const, data }));
   }

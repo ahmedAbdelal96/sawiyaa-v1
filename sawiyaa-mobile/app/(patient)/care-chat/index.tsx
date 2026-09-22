@@ -14,6 +14,7 @@ import {
   FilterChip,
 } from "../../../src/components/ui";
 import { useTheme } from "../../../src/providers/ThemeProvider";
+import { useAppDirection } from "../../../src/i18n/direction";
 import { useMyCareChatRequests } from "../../../src/features/patient/care-chat/hooks";
 import type {
   CareChatRequestItemDto,
@@ -54,11 +55,12 @@ function approvalStatusColor(
 export default function CareChatListScreen() {
   const router = useRouter();
   const { theme } = useTheme();
+  const { chevronForward } = useAppDirection();
   const { t, i18n } = useTranslation();
   const [tab, setTab] = useState<TabFilter>("active");
 
   const query = useMyCareChatRequests({ page: 1, limit: 20 });
-  const allItems = query.data?.items ?? [];
+  const allItems: CareChatRequestItemDto[] = query.data?.items ?? [];
 
   const filtered = allItems.filter((req) => {
     if (tab === "active") return ACTIVE_STATUSES.includes(req.status);
@@ -121,7 +123,7 @@ export default function CareChatListScreen() {
                 />
               )}
               <Ionicons
-                name="chevron-forward"
+                name={chevronForward}
                 size={16}
                 color={theme.colors.textMuted}
               />

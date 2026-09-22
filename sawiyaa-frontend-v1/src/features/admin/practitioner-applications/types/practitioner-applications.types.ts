@@ -92,7 +92,7 @@ export interface AdminApplicantPhoneSummary {
 
 export interface AdminApplicantBasics {
   userId: string;
-  practitionerProfileId: string;
+  practitionerProfileId: string | null;
   displayName: string | null;
   avatarUrl?: string | null;
   accountStatus: UserStatus;
@@ -168,17 +168,61 @@ export interface AdminReadinessSnapshot {
   canRequestChanges: boolean;
 }
 
+export type ProfessionalContentLocale = "ar" | "en";
+
+export interface AdminProfessionalContentLocaleReadiness {
+  professionalTitle: string | null;
+  bio: string | null;
+  titleComplete: boolean;
+  bioComplete: boolean;
+  complete: boolean;
+}
+
+export interface AdminProfessionalContentReadiness {
+  primaryContentLocale: ProfessionalContentLocale | null;
+  locales: Record<ProfessionalContentLocale, AdminProfessionalContentLocaleReadiness>;
+  bilingualComplete: boolean;
+  fallbackActive: boolean;
+  sourceLocaleUnresolved: boolean;
+}
+
+export interface AdminProfessionalContentReadinessView {
+  readiness: AdminProfessionalContentReadiness;
+  legacyContent: {
+    professionalTitle: string | null;
+    bio: string | null;
+  } | null;
+  legacySnapshot: boolean;
+}
+
+export interface AdminProfessionalContentChangedField {
+  path: string;
+  locale: ProfessionalContentLocale | null;
+  field: "professionalTitle" | "bio" | "primaryContentLocale";
+  status: "ADDED" | "REMOVED" | "MODIFIED";
+  currentValue: string | null;
+  proposedValue: string | null;
+}
+
+export interface AdminProfessionalContentReview {
+  currentApproved: AdminProfessionalContentReadinessView;
+  proposed: AdminProfessionalContentReadinessView;
+  changedFields: AdminProfessionalContentChangedField[];
+}
+
 export interface PractitionerApplicationDetails {
   applicant: AdminApplicantBasics;
   liveApplicant: AdminApplicantBasics;
   profile: AdminPractitionerProfileSection;
-  liveProfile: AdminPractitionerProfileSection;
+  liveProfile: AdminPractitionerProfileSection | null;
   credentials: AdminPractitionerCredential[];
   payoutDestination: PractitionerPayoutDestination | null;
   livePayoutDestination: PractitionerPayoutDestination | null;
   application: AdminPractitionerApplicationSummary;
   readinessSnapshot: AdminReadinessSnapshot;
   completion: PractitionerApplicationCompletionViewModel;
+  professionalContentReadiness?: AdminProfessionalContentReadiness;
+  professionalContentReview?: AdminProfessionalContentReview;
   reviewCase?: PractitionerReviewCase | null;
 }
 

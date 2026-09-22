@@ -1,10 +1,17 @@
-import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  OnModuleDestroy,
+  OnModuleInit,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { CronJob } from 'cron';
-import { Prisma, AccountingReconciliationRunStatus, AccountingReconciliationRunTrigger } from '@prisma/client';
+import { AccountingReconciliationRunStatus } from '@prisma/client';
 import { PrismaService } from '@common/prisma/prisma.service';
 import { AccountingReconciliationOperationsService } from './accounting-reconciliation-operations.service';
 import { AccountingReconciliationSchedulerState } from '../types/accounting-reconciliation-operations.types';
+import { ModuleRef } from '@nestjs/core';
+import { PaymentProviderRecoveryService } from '@modules/payments/services/payment-provider-recovery.service';
 
 @Injectable()
 export class AccountingReconciliationSchedulerService
@@ -16,7 +23,8 @@ export class AccountingReconciliationSchedulerService
   private job: CronJob | null = null;
   private lastScheduledRunAt: Date | null = null;
   private lastScheduledRunId: string | null = null;
-  private lastScheduledRunStatus: AccountingReconciliationRunStatus | null = null;
+  private lastScheduledRunStatus: AccountingReconciliationRunStatus | null =
+    null;
   private lastScheduledIssueCount: number | null = null;
   private lastScheduledCriticalCount: number | null = null;
   private running = false;
@@ -25,6 +33,7 @@ export class AccountingReconciliationSchedulerService
     private readonly configService: ConfigService,
     private readonly prisma: PrismaService,
     private readonly operationsService: AccountingReconciliationOperationsService,
+    private readonly moduleRef?: ModuleRef,
   ) {}
 
   onModuleInit() {
@@ -62,11 +71,12 @@ export class AccountingReconciliationSchedulerService
   }
 
   onModuleDestroy() {
-    this.job?.stop();
+    void this.job?.stop();
     this.job = null;
   }
 
-  async runScheduledReconciliation(triggeredBy: 'cron' | 'manual' = 'manual') {
+  async runScheduledReconciliation(_triggeredBy: 'cron' | 'manual' = 'manual') {
+    void _triggeredBy;
     if (!this.isEnabled()) {
       return null;
     }
@@ -82,6 +92,11 @@ export class AccountingReconciliationSchedulerService
     const startedAt = new Date();
 
     try {
+      const providerRecovery = this.moduleRef?.get(
+        PaymentProviderRecoveryService,
+        { strict: false },
+      );
+      await providerRecovery?.reconcileEligible(this.getBatchSize());
       const result = await this.operationsService.runFull({
         scope: 'FULL',
         trigger: 'SCHEDULED',
@@ -91,7 +106,8 @@ export class AccountingReconciliationSchedulerService
 
       this.lastScheduledRunAt = startedAt;
       this.lastScheduledRunId = result.run.id;
-      this.lastScheduledRunStatus = result.run.status as AccountingReconciliationRunStatus;
+      this.lastScheduledRunStatus = result.run
+        .status as AccountingReconciliationRunStatus;
       this.lastScheduledIssueCount = result.issueCount;
       this.lastScheduledCriticalCount = result.summary.totalCritical;
 
@@ -118,7 +134,11 @@ export class AccountingReconciliationSchedulerService
             scope: 'FULL',
             trigger: 'SCHEDULED',
           },
-          orderBy: [{ startedAt: 'desc' }, { createdAt: 'desc' }, { id: 'desc' }],
+          orderBy: [
+            { startedAt: 'desc' },
+            { createdAt: 'desc' },
+            { id: 'desc' },
+          ],
           select: {
             id: true,
             startedAt: true,
@@ -138,7 +158,11 @@ export class AccountingReconciliationSchedulerService
               ],
             },
           },
-          orderBy: [{ startedAt: 'desc' }, { createdAt: 'desc' }, { id: 'desc' }],
+          orderBy: [
+            { startedAt: 'desc' },
+            { createdAt: 'desc' },
+            { id: 'desc' },
+          ],
           select: { startedAt: true },
         }),
         this.prisma.accountingReconciliationIssue.count({
@@ -162,23 +186,26 @@ export class AccountingReconciliationSchedulerService
       lookbackDays: this.getLookbackDays(),
       batchSize: this.getBatchSize(),
       active: Boolean(this.job),
-      nextScheduledRunAt: this.job ? this.job.nextDate().toJSDate().toISOString() : null,
+      nextScheduledRunAt: this.job
+        ? this.job.nextDate().toJSDate().toISOString()
+        : null,
       lastScheduledRunAt:
         this.lastScheduledRunAt?.toISOString() ??
         lastScheduledRun?.startedAt?.toISOString() ??
         null,
-      lastScheduledRunId: this.lastScheduledRunId ?? lastScheduledRun?.id ?? null,
+      lastScheduledRunId:
+        this.lastScheduledRunId ?? lastScheduledRun?.id ?? null,
       lastScheduledRunStatus:
-        this.lastScheduledRunStatus ??
-        (lastScheduledRun?.status ?? null) ??
-        null,
+        this.lastScheduledRunStatus ?? lastScheduledRun?.status ?? null,
       lastScheduledIssueCount:
         this.lastScheduledIssueCount ??
         (typeof lastScheduledRun?.totalCritical === 'number'
           ? lastScheduledRun.totalCritical + lastScheduledRun.totalWarnings
           : null),
       lastScheduledCriticalCount:
-        this.lastScheduledCriticalCount ?? lastScheduledRun?.totalCritical ?? null,
+        this.lastScheduledCriticalCount ??
+        lastScheduledRun?.totalCritical ??
+        null,
       lastFullRunAt: lastFullRun?.startedAt?.toISOString() ?? null,
       openCriticalCount: criticalCount,
       openWarningCount: warningCount,
@@ -199,14 +226,16 @@ export class AccountingReconciliationSchedulerService
 
   private isEnabled() {
     return (
-      this.configService.get<boolean>('accountingReconciliation.enabled') ?? false
+      this.configService.get<boolean>('accountingReconciliation.enabled') ??
+      false
     );
   }
 
   private isAlertsEnabled() {
     return (
-      this.configService.get<boolean>('accountingReconciliation.alertsEnabled') ??
-      false
+      this.configService.get<boolean>(
+        'accountingReconciliation.alertsEnabled',
+      ) ?? false
     );
   }
 
@@ -220,14 +249,16 @@ export class AccountingReconciliationSchedulerService
   private getLookbackDays() {
     return Math.max(
       1,
-      this.configService.get<number>('accountingReconciliation.lookbackDays') ?? 7,
+      this.configService.get<number>('accountingReconciliation.lookbackDays') ??
+        7,
     );
   }
 
   private getBatchSize() {
     return Math.max(
       10,
-      this.configService.get<number>('accountingReconciliation.batchSize') ?? 100,
+      this.configService.get<number>('accountingReconciliation.batchSize') ??
+        100,
     );
   }
 }

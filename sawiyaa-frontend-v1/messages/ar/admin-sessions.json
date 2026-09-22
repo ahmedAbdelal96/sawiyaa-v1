@@ -240,5 +240,38 @@
       "untilHours": "حتى {value} ساعة قبل الجلسة",
       "betweenHours": "بين {min} و {max} ساعة قبل الجلسة"
     }
+  },
+  "reviewWorkspace": {
+    "title": "مراجعة الجلسة",
+    "backToQueue": "العودة إلى قائمة المراجعة",
+    "previousSession": "الجلسة السابقة",
+    "nextSession": "الجلسة التالية",
+    "approvePrimary": "اعتماد وإرسال إلى المحاسبة",
+    "approveAndNext": "اعتماد والانتقال إلى التالية",
+    "needsResolution": "تحتاج إلى تسوية",
+    "decisionTitle": "قرار مراجعة الجلسة",
+    "level1Evidence": "أدلة الحضور والشكوى والتوصية",
+    "timelineAccordion": "الخط الزمني للحضور والأحداث",
+    "roomEvidenceAccordion": "أدلة إغلاق الغرفة وتذاكر الدعم",
+    "packageEntitlementAccordion": "استحقاق الباقة وتفاصيل الاستبدال",
+    "auditHistoryAccordion": "سجل تدقيق القرارات الإدارية",
+    "activeComplaint": "شكوى نشطة",
+    "noActiveComplaint": "لا توجد شكوى نشطة حالياً",
+    "recommendationPrefix": "توصية النظام",
+    "noRecommendation": "لا تتوفر توصية",
+    "overlapMinutes": "تداخل {minutes} دقيقة ({percent}%)",
+    "patientAttended": "حضور المريض: {minutes} دقيقة",
+    "practitionerAttended": "حضور المعالج: {minutes} دقيقة",
+    "reasonCodes": {
+      "INSUFFICIENT_EVIDENCE": "الأدلة غير كافية",
+      "COMPLETION_CANDIDATE": "موصى بالاعتماد",
+      "PATIENT_NO_SHOW_CANDIDATE": "يتطلب مراجعة: غياب المريض",
+      "PRACTITIONER_NO_SHOW_CANDIDATE": "يتطلب مراجعة: غياب المعالج",
+      "BOTH_NO_SHOW_CANDIDATE": "يتطلب مراجعة: غياب الطرفين",
+      "TECHNICAL_REVIEW_CANDIDATE": "يتطلب مراجعة تقنية",
+      "MANUAL_REVIEW_REQUIRED": "تتطلب مراجعة إدارية",
+      "ACTIVE_COMPLAINT": "توجد شكوى نشطة",
+      "OPEN_RESOLUTION_CASE": "توجد حالة تسوية مفتوحة"
+    }
   }
 }

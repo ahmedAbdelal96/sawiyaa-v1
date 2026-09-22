@@ -50,6 +50,7 @@ describe('PrepareSessionRuntimeUseCase', () => {
     };
     const sessionRepository = {
       findById: jest.fn(() => Promise.resolve(currentSession)),
+      lockRuntimePreparation: jest.fn().mockResolvedValue(undefined),
       updateRuntimeIfMissing: jest.fn(() => {
         const count = overrides?.updateCount ?? 1;
         if (count > 0) {
@@ -97,7 +98,7 @@ describe('PrepareSessionRuntimeUseCase', () => {
     };
     const resolveSessionJoinReadinessService = {
       resolve: jest.fn().mockImplementation((input) =>
-        input.finalManualDecision
+        input.finalManualDecision || input.status === SessionStatus.CANCELLED
           ? {
               canPrepareRuntime: false,
               canJoin: false,
@@ -122,7 +123,12 @@ describe('PrepareSessionRuntimeUseCase', () => {
       new SessionAccessPolicy(),
     );
 
-    return { useCase, sessionRepository, sessionVideoProviderResolverService };
+    return {
+      useCase,
+      sessionRepository,
+      sessionVideoProviderRegistryService,
+      sessionVideoProviderResolverService,
+    };
   }
 
   it('prepares runtime successfully', async () => {
@@ -140,6 +146,10 @@ describe('PrepareSessionRuntimeUseCase', () => {
       roomUrl: 'https://room.daily.co',
       token: null,
     });
+    expect(setup.sessionRepository.lockRuntimePreparation).toHaveBeenCalledWith(
+      'session_1',
+      expect.anything(),
+    );
   });
 
   it('returns existing runtime for idempotent prepare', async () => {
@@ -248,6 +258,29 @@ describe('PrepareSessionRuntimeUseCase', () => {
       response: { error: 'SESSION_RUNTIME_PREPARATION_NOT_ALLOWED' },
     });
 
+    expect(setup.sessionRepository.updateRuntimeIfMissing).not.toHaveBeenCalled();
+  });
+
+  it('revalidates after the runtime claim and does not provision after cancellation', async () => {
+    const setup = buildUseCase();
+    setup.sessionRepository.findById
+      .mockResolvedValueOnce(baseSession)
+      .mockResolvedValueOnce({
+        ...baseSession,
+        status: SessionStatus.CANCELLED,
+      });
+
+    await expect(
+      setup.useCase.execute({
+        userId: 'user_1',
+        sessionId: 'session_1',
+        actorType: 'PATIENT',
+      }),
+    ).rejects.toMatchObject({
+      response: { error: 'SESSION_RUNTIME_PREPARATION_NOT_ALLOWED' },
+    });
+
+    expect(setup.sessionVideoProviderRegistryService.get).not.toHaveBeenCalled();
     expect(setup.sessionRepository.updateRuntimeIfMissing).not.toHaveBeenCalled();
   });
 });

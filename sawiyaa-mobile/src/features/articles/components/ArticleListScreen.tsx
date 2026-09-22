@@ -1,5 +1,12 @@
 import React, { useCallback, useMemo, useState } from "react";
-import { FlatList, Image, ScrollView, StyleSheet, TouchableOpacity, View } from "react-native";
+import {
+  FlatList,
+  Image,
+  ScrollView,
+  StyleSheet,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 import { Ionicons } from "@expo/vector-icons";
@@ -21,7 +28,7 @@ import {
 } from "../../../components/mobile-shell";
 import { useArticleCategories, useInfiniteArticles } from "../hooks";
 import { apiClient } from "../../../lib/api";
-import type { ArticleListItem } from "../types";
+import type { ArticleCategory, ArticleListItem } from "../types";
 
 type ArticleListScreenProps = {
   locale?: string;
@@ -53,15 +60,33 @@ function FeaturedCardNoCover({
     : null;
 
   return (
-    <Card variant="elevated" padding="none" onPress={onPress} style={styles.featuredCardNoCover}>
-      <View style={[styles.featuredNoCoverRow, { flexDirection: rowDirection }]}>
+    <Card
+      variant="elevated"
+      padding="none"
+      onPress={onPress}
+      style={styles.featuredCardNoCover}
+    >
+      <View
+        style={[styles.featuredNoCoverRow, { flexDirection: rowDirection }]}
+      >
         {/* Compact icon badge */}
-        <View style={[styles.featuredNoCoverIcon, { backgroundColor: theme.colors.primaryLight }]}>
-          <Ionicons name="book-outline" size={24} color={theme.colors.primary} />
+        <View
+          style={[
+            styles.featuredNoCoverIcon,
+            { backgroundColor: theme.colors.primaryLight },
+          ]}
+        >
+          <Ionicons
+            name="book-outline"
+            size={24}
+            color={theme.colors.primary}
+          />
         </View>
 
         {/* Text content */}
-        <View style={[styles.featuredNoCoverBody, { padding: MOBILE_CARD_PADDING }]}>
+        <View
+          style={[styles.featuredNoCoverBody, { padding: MOBILE_CARD_PADDING }]}
+        >
           {article.category ? (
             <View style={{ flexDirection: rowDirection, gap: 8 }}>
               <View
@@ -70,17 +95,29 @@ function FeaturedCardNoCover({
                   { backgroundColor: theme.colors.primaryLight },
                 ]}
               >
-                <Text style={[styles.categoryChipText, { color: theme.colors.primary }]}>
+                <Text
+                  style={[
+                    styles.categoryChipText,
+                    { color: theme.colors.primary },
+                  ]}
+                >
                   {article.category.title}
                 </Text>
               </View>
             </View>
           ) : null}
-          
-          <Text weight="700" style={[styles.featuredTitle, { textAlign, color: theme.colors.textPrimary }]} numberOfLines={2}>
+
+          <Text
+            weight="700"
+            style={[
+              styles.featuredTitle,
+              { textAlign, color: theme.colors.textPrimary },
+            ]}
+            numberOfLines={2}
+          >
             {article.title}
           </Text>
-          
+
           {article.excerpt ? (
             <Text
               color={theme.colors.textSecondary}
@@ -90,16 +127,29 @@ function FeaturedCardNoCover({
               {article.excerpt}
             </Text>
           ) : null}
-          
-          <View style={[styles.featuredFooter, { flexDirection: rowDirection }]}>
+
+          <View
+            style={[styles.featuredFooter, { flexDirection: rowDirection }]}
+          >
             {publishedLabel ? (
               <Text color={theme.colors.textMuted} style={styles.featuredDate}>
                 {publishedLabel}
               </Text>
-            ) : <View />}
-            
-            <View style={{ flexDirection: rowDirection, alignItems: "center", gap: 4 }}>
-              <Text weight="600" style={[styles.ctaText, { color: theme.colors.primary }]}>
+            ) : (
+              <View />
+            )}
+
+            <View
+              style={{
+                flexDirection: rowDirection,
+                alignItems: "center",
+                gap: 4,
+              }}
+            >
+              <Text
+                weight="600"
+                style={[styles.ctaText, { color: theme.colors.primary }]}
+              >
                 {isRtl ? "اقرأ المقال" : "Read article"}
               </Text>
               <Ionicons
@@ -151,7 +201,12 @@ function FeaturedCardWithImage({
   }
 
   return (
-    <Card variant="elevated" padding="none" onPress={onPress} style={styles.featuredCard}>
+    <Card
+      variant="elevated"
+      padding="none"
+      onPress={onPress}
+      style={styles.featuredCard}
+    >
       <Image
         source={{ uri: resolvedUri ?? undefined }}
         alt={article.title}
@@ -159,7 +214,9 @@ function FeaturedCardWithImage({
         resizeMode="cover"
         onError={handleImageError}
       />
-      <View style={[styles.featuredImageBody, { padding: MOBILE_CARD_PADDING }]}>
+      <View
+        style={[styles.featuredImageBody, { padding: MOBILE_CARD_PADDING }]}
+      >
         {article.category ? (
           <View style={{ flexDirection: rowDirection, gap: 8 }}>
             <View
@@ -169,18 +226,28 @@ function FeaturedCardWithImage({
               ]}
             >
               <Text
-                style={[styles.categoryChipText, { color: theme.colors.primary }]}
+                style={[
+                  styles.categoryChipText,
+                  { color: theme.colors.primary },
+                ]}
               >
                 {article.category.title}
               </Text>
             </View>
           </View>
         ) : null}
-        
-        <Text weight="700" style={[styles.featuredTitle, { textAlign, color: theme.colors.textPrimary }]} numberOfLines={2}>
+
+        <Text
+          weight="700"
+          style={[
+            styles.featuredTitle,
+            { textAlign, color: theme.colors.textPrimary },
+          ]}
+          numberOfLines={2}
+        >
           {article.title}
         </Text>
-        
+
         {article.excerpt ? (
           <Text
             color={theme.colors.textSecondary}
@@ -190,16 +257,27 @@ function FeaturedCardWithImage({
             {article.excerpt}
           </Text>
         ) : null}
-        
+
         <View style={[styles.featuredFooter, { flexDirection: rowDirection }]}>
           {publishedLabel ? (
             <Text color={theme.colors.textMuted} style={styles.featuredDate}>
               {publishedLabel}
             </Text>
-          ) : <View />}
-          
-          <View style={{ flexDirection: rowDirection, alignItems: "center", gap: 4 }}>
-            <Text weight="600" style={[styles.ctaText, { color: theme.colors.primary }]}>
+          ) : (
+            <View />
+          )}
+
+          <View
+            style={{
+              flexDirection: rowDirection,
+              alignItems: "center",
+              gap: 4,
+            }}
+          >
+            <Text
+              weight="600"
+              style={[styles.ctaText, { color: theme.colors.primary }]}
+            >
               {isRtl ? "اقرأ المقال" : "Read article"}
             </Text>
             <Ionicons
@@ -233,7 +311,11 @@ function ArticleListRow({
   const authorLabel = article.trust?.authorDisplayName || null;
 
   const resolvedThumbUri = resolveArticleImageUri(article.coverImageUrl);
-  const showImage = article.coverImageUrl && resolvedThumbUri && /^https?:\/\//i.test(resolvedThumbUri) && !thumbError;
+  const showImage =
+    article.coverImageUrl &&
+    resolvedThumbUri &&
+    /^https?:\/\//i.test(resolvedThumbUri) &&
+    !thumbError;
 
   const thumbBlock = (
     <View style={styles.listRowThumbArea}>
@@ -264,7 +346,14 @@ function ArticleListRow({
 
   const textBlock = (
     <View style={styles.listRowTextBlock}>
-      <View style={{ flexDirection: rowDirection, alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+      <View
+        style={{
+          flexDirection: rowDirection,
+          alignItems: "center",
+          gap: 6,
+          flexWrap: "wrap",
+        }}
+      >
         {article.category ? (
           <View
             style={[
@@ -273,7 +362,10 @@ function ArticleListRow({
             ]}
           >
             <Text
-              style={[styles.categoryChipTextSm, { color: theme.colors.primary }]}
+              style={[
+                styles.categoryChipTextSm,
+                { color: theme.colors.primary },
+              ]}
             >
               {article.category.title}
             </Text>
@@ -285,7 +377,13 @@ function ArticleListRow({
           </Text>
         ) : null}
         {authorLabel ? (
-          <View style={{ flexDirection: rowDirection, alignItems: "center", gap: 4 }}>
+          <View
+            style={{
+              flexDirection: rowDirection,
+              alignItems: "center",
+              gap: 4,
+            }}
+          >
             <Text color={theme.colors.textMuted} style={styles.listRowDate}>
               •
             </Text>
@@ -295,11 +393,18 @@ function ArticleListRow({
           </View>
         ) : null}
       </View>
-      
-      <Text weight="600" style={[styles.listRowTitle, { textAlign, color: theme.colors.textPrimary }]} numberOfLines={2}>
+
+      <Text
+        weight="600"
+        style={[
+          styles.listRowTitle,
+          { textAlign, color: theme.colors.textPrimary },
+        ]}
+        numberOfLines={2}
+      >
         {article.title}
       </Text>
-      
+
       {article.excerpt ? (
         <Text
           color={theme.colors.textSecondary}
@@ -407,7 +512,9 @@ export function ArticleListScreen({ locale }: ArticleListScreenProps) {
   const { i18n, t } = useTranslation();
   const resolvedLocale = locale ?? i18n.language;
   const isRTL = i18n.language?.startsWith("ar") ?? false;
-  const [selectedCategorySlug, setSelectedCategorySlug] = useState<string | null>(null);
+  const [selectedCategorySlug, setSelectedCategorySlug] = useState<
+    string | null
+  >(null);
 
   const articlesQuery = useInfiniteArticles({
     limit: 12,
@@ -425,7 +532,7 @@ export function ArticleListScreen({ locale }: ArticleListScreenProps) {
     () => articlesQuery.data?.pages.flatMap((page) => page.items) ?? [],
     [articlesQuery.data?.pages],
   );
-  const categories = categoriesQuery.data?.items ?? [];
+  const categories = (categoriesQuery.data?.items ?? []) as ArticleCategory[];
   const hasNextPage = articlesQuery.hasNextPage ?? false;
 
   const allCategoriesLabel = isRTL ? "كل المقالات" : "All articles";
@@ -447,14 +554,10 @@ export function ArticleListScreen({ locale }: ArticleListScreenProps) {
     ? "وصلت إلى نهاية المقالات."
     : "You've reached the end of the articles.";
 
-  const loadingMoreLabel = isRTL
-    ? "جارٍ تحميل المزيد..."
-    : "Loading more...";
+  const loadingMoreLabel = isRTL ? "جارٍ تحميل المزيد..." : "Loading more...";
 
   const handleCategoryPress = (slug: string | null) => {
-    setSelectedCategorySlug((current) =>
-      current === slug ? null : slug,
-    );
+    setSelectedCategorySlug((current) => (current === slug ? null : slug));
   };
 
   const handleFeaturedPress = () => {
@@ -516,7 +619,10 @@ export function ArticleListScreen({ locale }: ArticleListScreenProps) {
           size={44}
           color={theme.colors.textMuted}
         />
-        <Text weight="600" style={[styles.emptyTitle, { color: theme.colors.textPrimary }]}>
+        <Text
+          weight="600"
+          style={[styles.emptyTitle, { color: theme.colors.textPrimary }]}
+        >
           {t("articlesMobile.emptyTitle", "No articles yet")}
         </Text>
         <Text color={theme.colors.textSecondary} style={styles.emptyDesc}>
@@ -582,7 +688,10 @@ export function ArticleListScreen({ locale }: ArticleListScreenProps) {
 const styles = StyleSheet.create({
   screen: { flex: 1 },
   list: { flex: 1 },
-  listContent: { paddingBottom: 100, paddingHorizontal: MOBILE_HORIZONTAL_PADDING },
+  listContent: {
+    paddingBottom: 100,
+    paddingHorizontal: MOBILE_HORIZONTAL_PADDING,
+  },
 
   // List header
   listHeader: {

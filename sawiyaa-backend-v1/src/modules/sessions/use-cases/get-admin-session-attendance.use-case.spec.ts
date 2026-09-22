@@ -80,8 +80,14 @@ describe('GetAdminSessionAttendanceUseCase', () => {
     expect(result.outcomeEvaluation.classification).toBe(
       'NOT_READY_FOR_EVALUATION',
     );
-    expect(result.outcomeEvaluation.eligibleForAutomaticFinalization).toBe(
+    expect(result.outcomeEvaluation.eligibleForAdminApproval).toBe(
       false,
+    );
+    expect(result.extendedSummary?.reviewDecision).toEqual(
+      expect.objectContaining({
+        canApproveNormally: false,
+        requiresResolution: true,
+      }),
     );
     expect(result.outcomeEvaluation).toEqual(
       expect.objectContaining({

@@ -10,6 +10,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../providers/ThemeProvider';
+import { useAppDirection } from '../../i18n/direction';
 import { Text } from './Text';
 
 export interface BottomActionBarProps extends ViewProps {
@@ -59,7 +60,7 @@ export const SegmentedControl = ({
   ...props
 }: SegmentedControlProps) => {
   const { theme } = useTheme();
-  const isRTL = I18nManager.isRTL;
+  const { isRtl: isRTL } = useAppDirection();
 
   return (
     <View
@@ -144,7 +145,7 @@ export interface ChipsProps extends ViewProps {
 }
 
 export const Chips = ({ items, style, ...props }: ChipsProps) => {
-  const isRTL = I18nManager.isRTL;
+  const { isRtl: isRTL } = useAppDirection();
 
   return (
     <View
@@ -180,7 +181,7 @@ export const PreferenceToggleRow = ({
   ...props
 }: PreferenceToggleRowProps) => {
   const { theme } = useTheme();
-  const isRTL = I18nManager.isRTL;
+  const { isRtl: isRTL } = useAppDirection();
 
   return (
     <View
@@ -238,7 +239,7 @@ export const ContentListItem = ({
   ...props
 }: ContentListItemProps) => {
   const { theme } = useTheme();
-  const isRTL = I18nManager.isRTL;
+  const { isRtl: isRTL, chevronForward } = useAppDirection();
   const Container: React.ElementType = onPress ? Pressable : View;
   const containerProps = onPress ? { onPress } : {};
 
@@ -274,7 +275,7 @@ export const ContentListItem = ({
       </View>
       {showChevron ? (
         <Ionicons
-          name={isRTL ? 'chevron-back' : 'chevron-forward'}
+          name={chevronForward}
           size={18}
           color={theme.colors.textMuted}
         />
@@ -307,7 +308,7 @@ export const TransactionRow = ({
   ...props
 }: TransactionRowProps) => {
   const { theme } = useTheme();
-  const isRTL = I18nManager.isRTL;
+  const { isRtl: isRTL, chevronForward } = useAppDirection();
   const Container: React.ElementType = onPress ? Pressable : View;
   const containerProps = onPress ? { onPress } : {};
 
@@ -349,7 +350,7 @@ export const TransactionRow = ({
       </View>
       {showChevron ? (
         <Ionicons
-          name={isRTL ? 'chevron-back' : 'chevron-forward'}
+          name={chevronForward}
           size={18}
           color={theme.colors.textMuted}
           style={styles.rowChevron}

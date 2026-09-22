@@ -83,12 +83,6 @@ export class PractitionerProfileReadinessPolicy {
     if (!checks.hasProfessionalAuthorization) {
       missingRequirements.push('professionalAuthorization');
     }
-    if (!checks.hasPayoutDestination) {
-      missingRequirements.push('payoutDestination');
-    }
-    if (!checks.hasPayoutAccountHolderName) {
-      missingRequirements.push('payoutAccountHolderName');
-    }
     if (!checks.isAccountActive) {
       missingRequirements.push('activeAccount');
     }
@@ -108,9 +102,7 @@ export class PractitionerProfileReadinessPolicy {
       checks.hasCredential &&
       checks.hasIdentityEvidence &&
       checks.hasAcademicCertificate &&
-      checks.hasProfessionalAuthorization &&
-      checks.hasPayoutDestination &&
-      checks.hasPayoutAccountHolderName;
+      checks.hasProfessionalAuthorization;
 
     return {
       isProfileCompleted,

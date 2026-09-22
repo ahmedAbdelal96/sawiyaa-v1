@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 
+export COMPOSE_PROJECT_NAME=sawiyaa
 # Phase 0A read-only preflight. It never fetches, resets, builds, starts,
 # recreates, migrates, seeds, backs up, or modifies environment files.
 PROJECT_DIR="${SAWIYAA_PROJECT_DIR:-$(pwd)}"
@@ -8,9 +9,11 @@ ENVIRONMENT=production
 BACKEND_ENV=""; FRONTEND_ENV=""; DB_ENV=""; COMPOSE_FILE=""
 MIN_FREE_MB="${SAWIYAA_MIN_FREE_MB:-2048}"
 LOCK_PATH="${SAWIYAA_DEPLOY_LOCK:-/tmp/sawiyaa-production-deploy.lock}"
-MOCK=0; CHECK_LOCK_ONLY=0; SKIP_LOCK=0; BOOTSTRAP_ONLY=0; TARGET_ONLY=0; BLOCKERS=0; WARNINGS=0; TEMP_DIR=""
-BACKEND_IMAGE=""; FRONTEND_IMAGE=""
-COMPOSE_EXTRA_ARGS=()
+MOCK=0; CHECK_LOCK_ONLY=0; SKIP_LOCK=0; BOOTSTRAP_ONLY=0; TARGET_ONLY=0; BLOCKERS=0; WARNINGS=0; TEMP_DIR=""; COMPOSE_MODEL_OK=0
+BACKEND_IMAGE=""; FRONTEND_IMAGE=""; PROVIDER_STATE_FILE=""
+RUNTIME_UID="${SAWIYAA_RUNTIME_UID:-10001}"
+RUNTIME_GID="${SAWIYAA_RUNTIME_GID:-10001}"
+RUNTIME_INIT_IMAGE="${SAWIYAA_RUNTIME_INIT_IMAGE:-busybox:1.36.1}"
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -28,6 +31,7 @@ while [[ $# -gt 0 ]]; do
     --target-only) TARGET_ONLY=1; shift;;
     --backend-image) BACKEND_IMAGE="$2"; shift 2;;
     --frontend-image) FRONTEND_IMAGE="$2"; shift 2;;
+    --provider-state-file) PROVIDER_STATE_FILE="$2"; shift 2;;
     --mock) MOCK=1; shift;;
     -h|--help) sed -n 's/^# //p' "$0"; exit 0;;
     *) printf 'BLOCKING UNKNOWN_ARGUMENT\n'; exit 2;;
@@ -64,6 +68,27 @@ if (( ! SKIP_LOCK )); then
   fi
 fi
 if [[ "$CHECK_LOCK_ONLY" == 1 ]]; then (( BLOCKERS == 0 )); exit; fi
+
+# The backend uses a non-root UID and the log directory is a host bind mount.
+# Validate the actual container identity rather than host user records.
+if (( TARGET_ONLY )); then
+  # Detached release worktrees do not own the active host runtime directories;
+  # bootstrap-only preflight validates those directories on the live checkout.
+  skip RUNTIME_DIRECTORY_CHECK_TARGET_ONLY
+elif (( MOCK )); then
+  warn RUNTIME_DIRECTORY_CHECK_MOCKED
+elif [[ -d "$PROJECT_DIR/logs/backend" ]]; then
+  if docker run --rm --user "$RUNTIME_UID:$RUNTIME_GID" \
+    --mount "type=bind,src=$PROJECT_DIR/logs/backend,dst=/target" \
+    "$RUNTIME_INIT_IMAGE" sh -c \
+    'touch /target/.sawiyaa-preflight-write-test && rm -f /target/.sawiyaa-preflight-write-test' >/dev/null 2>&1; then
+    pass RUNTIME_LOG_DIRECTORY_WRITABLE
+  else
+    block RUNTIME_LOG_DIRECTORY_NOT_WRITABLE
+  fi
+else
+  block RUNTIME_LOG_DIRECTORY_MISSING
+fi
 
 # 2-5. Project, repository, branch/commit and Git cleanliness.
 if [[ -d "$PROJECT_DIR" ]]; then pass PROJECT_DIRECTORY; else block PROJECT_DIRECTORY; fi
@@ -102,9 +127,9 @@ else
 fi
 
 # 9-10. Environment files and status-only validator.
-BACKEND_ENV="${BACKEND_ENV:-$PROJECT_DIR/.env.production.backend}"
-FRONTEND_ENV="${FRONTEND_ENV:-$PROJECT_DIR/.env.production.frontend}"
-DB_ENV="${DB_ENV:-$PROJECT_DIR/.env.production.db}"
+BACKEND_ENV="${BACKEND_ENV:-$PROJECT_DIR/sawiyaa-backend-v1/.env}"
+FRONTEND_ENV="${FRONTEND_ENV:-$PROJECT_DIR/sawiyaa-frontend-v1/.env}"
+DB_ENV="${DB_ENV:-$PROJECT_DIR/sawiyaa-backend-v1/.env.postgres}"
 for file in "$BACKEND_ENV" "$FRONTEND_ENV" "$DB_ENV"; do
   [[ -r "$file" ]] && pass "ENV_FILE_PRESENT $(basename -- "$file")" || block "ENV_FILE_MISSING $(basename -- "$file")"
 done
@@ -131,6 +156,10 @@ run_environment_validator() {
   local frontend_env="$4"
   local db_env="$5"
   local image="${SAWIYAA_VALIDATOR_NODE_IMAGE:-node:20-bookworm-slim}"
+  local provider_args=()
+  if [[ -n "$PROVIDER_STATE_FILE" ]]; then
+    provider_args+=(--provider-state-file "$PROVIDER_STATE_FILE")
+  fi
 
   if [[ "${SAWIYAA_FORCE_DOCKER_VALIDATOR:-false}" != "true" ]] &&
     command -v node >/dev/null 2>&1 &&
@@ -139,7 +168,8 @@ run_environment_validator() {
       --backend-env "$backend_env" \
       --frontend-env "$frontend_env" \
       --db-env "$db_env" \
-      --environment "$ENVIRONMENT"
+      --environment "$ENVIRONMENT" \
+      "${provider_args[@]}"
     return $?
   fi
 
@@ -148,6 +178,12 @@ run_environment_validator() {
     return 127
   fi
 
+  local docker_mount_args=()
+  local docker_provider_args=()
+  if [[ -n "$PROVIDER_STATE_FILE" ]]; then
+    docker_mount_args+=( -v "$PROVIDER_STATE_FILE:/inputs/provider-state.txt:ro" )
+    docker_provider_args+=( --provider-state-file /inputs/provider-state.txt )
+  fi
   docker run --rm \
     --network none \
     --read-only \
@@ -156,11 +192,13 @@ run_environment_validator() {
     -v "$backend_env:/inputs/backend.env:ro" \
     -v "$frontend_env:/inputs/frontend.env:ro" \
     -v "$db_env:/inputs/db.env:ro" \
+    "${docker_mount_args[@]}" \
     "$image" node /workspace/deploy/scripts/validate-environment-contract.js \
     --backend-env /inputs/backend.env \
     --frontend-env /inputs/frontend.env \
     --db-env /inputs/db.env \
-    --environment "$ENVIRONMENT"
+    --environment "$ENVIRONMENT" \
+    "${docker_provider_args[@]}"
 }
 
 if [[ -f "$VALIDATOR" ]]; then
@@ -173,6 +211,34 @@ if [[ -f "$VALIDATOR" ]]; then
   (( contract_exit == 0 )) && pass ENVIRONMENT_CONTRACT || block ENVIRONMENT_CONTRACT
 else
   block ENVIRONMENT_VALIDATOR_MISSING
+fi
+
+# Daily webhook verification is read-only and runs only after the environment
+# contract passes. It never creates, updates, or deletes a provider resource.
+DAILY_VALIDATOR="${SAWIYAA_DAILY_WEBHOOK_VALIDATOR_PATH:-$PROJECT_DIR/deploy/scripts/validate-daily-webhook.js}"
+if (( MOCK )); then
+  warn DAILY_WEBHOOK_CHECK_MOCKED
+elif (( contract_exit != 0 )); then
+  skip DAILY_WEBHOOK_CHECK_DEPENDENCY_ENVIRONMENT_CONTRACT
+elif [[ -f "$DAILY_VALIDATOR" ]]; then
+  daily_check=1
+  if command -v node >/dev/null 2>&1; then
+    node "$DAILY_VALIDATOR" "$BACKEND_ENV" && daily_check=0
+  elif command -v docker >/dev/null 2>&1; then
+    docker run --rm --network host \
+      --read-only --tmpfs /tmp:rw,nosuid,nodev,size=16m \
+      -v "$PROJECT_DIR:/workspace:ro" \
+      -v "$BACKEND_ENV:/inputs/backend.env:ro" \
+      "${SAWIYAA_VALIDATOR_NODE_IMAGE:-node:20-bookworm-slim}" \
+      node /workspace/deploy/scripts/validate-daily-webhook.js /inputs/backend.env && daily_check=0
+  fi
+  if (( daily_check == 0 )); then
+    :
+  else
+    block DAILY_WEBHOOK_NOT_READY
+  fi
+else
+  block DAILY_WEBHOOK_VALIDATOR_MISSING
 fi
 
 # 11. GeoIP file check without printing its value.
@@ -195,7 +261,7 @@ else
   block DISK_SPACE_PROJECT_UNAVAILABLE
 fi
 
-# 13-14. Compose model validation with a temporary, non-tracked override.
+# 13-14. Compose model validation against the release's canonical env files.
 COMPOSE_FILE="${COMPOSE_FILE:-$PROJECT_DIR/docker-compose.prod.yml}"
 if [[ ! -f "$COMPOSE_FILE" ]]; then
   block COMPOSE_FILE_MISSING
@@ -205,18 +271,26 @@ elif (( contract_exit != 0 )) || [[ ! -r "$BACKEND_ENV" || ! -r "$FRONTEND_ENV" 
   skip COMPOSE_VALIDATION_DEPENDENCY_ENVIRONMENT_CONTRACT
 else
   if [[ -z "$TEMP_DIR" ]]; then TEMP_DIR="$(mktemp -d "${TMPDIR:-/tmp}/sawiyaa-preflight.XXXXXX")"; fi
-  override="$TEMP_DIR/compose-env-override.yml"
-  { printf 'services:\n'; printf '  postgres:\n    env_file:\n      - %s\n' "$DB_ENV"; printf '  backend:\n    env_file:\n      - %s\n' "$BACKEND_ENV"; printf '  frontend:\n    env_file:\n      - %s\n' "$FRONTEND_ENV"; } > "$override"
-  COMPOSE_EXTRA_ARGS=(-f "$override")
-  docker compose --env-file "$FRONTEND_ENV" -f "$COMPOSE_FILE" "${COMPOSE_EXTRA_ARGS[@]}" config --quiet >/dev/null 2>&1 && pass COMPOSE_MODEL || block COMPOSE_MODEL_INVALID
+  compose_error="$TEMP_DIR/compose-config.err"
+  if docker compose --env-file "$FRONTEND_ENV" -f "$COMPOSE_FILE" config --quiet > /dev/null 2>"$compose_error"; then
+    COMPOSE_MODEL_OK=1
+    pass COMPOSE_MODEL
+  else
+    echo "SANITIZED_COMPOSE_CONFIG_ERROR_BEGIN"
+    sed -E 's/([A-Za-z_]*(password|secret|token|api[_-]?key|authorization|database[_-]?url)[A-Za-z_]*[=:][[:space:]]*)[^[:space:],;]+/\1[REDACTED]/Ig' "$compose_error" | head -n 80
+    echo "SANITIZED_COMPOSE_CONFIG_ERROR_END"
+    block COMPOSE_MODEL_INVALID
+  fi
 fi
 
 # 15-16. PostgreSQL running and non-mutating readiness/connectivity.
 if (( MOCK )); then
   warn POSTGRES_CHECK_MOCKED
+elif (( COMPOSE_MODEL_OK == 0 )); then
+  skip POSTGRES_CHECK_COMPOSE_MODEL_INVALID
 elif (( contract_exit == 0 )) && [[ -f "$COMPOSE_FILE" ]]; then
-  docker compose --env-file "$FRONTEND_ENV" -f "$COMPOSE_FILE" "${COMPOSE_EXTRA_ARGS[@]}" ps --status running --services 2>/dev/null | grep -Fxq postgres && pass POSTGRES_CONTAINER_RUNNING || block POSTGRES_CONTAINER_UNAVAILABLE
-  docker compose --env-file "$FRONTEND_ENV" -f "$COMPOSE_FILE" "${COMPOSE_EXTRA_ARGS[@]}" exec -T postgres pg_isready >/dev/null 2>&1 && pass POSTGRES_CONNECTIVITY || block POSTGRES_UNHEALTHY
+  docker compose --env-file "$FRONTEND_ENV" -f "$COMPOSE_FILE" ps --status running --services 2>/dev/null | grep -Fxq postgres && pass POSTGRES_CONTAINER_RUNNING || block POSTGRES_CONTAINER_UNAVAILABLE
+  docker compose --env-file "$FRONTEND_ENV" -f "$COMPOSE_FILE" exec -T postgres pg_isready >/dev/null 2>&1 && pass POSTGRES_CONNECTIVITY || block POSTGRES_UNHEALTHY
 else
   skip POSTGRES_CHECK_DEPENDENCY_ENVIRONMENT_CONTRACT
 fi

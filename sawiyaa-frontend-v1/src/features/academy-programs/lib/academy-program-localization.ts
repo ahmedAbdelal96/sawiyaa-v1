@@ -110,7 +110,7 @@ export function resolveAcademyProgramEnrollmentStatusLabel(
   switch (status) {
     case "PENDING_PAYMENT":
       return t("statuses.enrollment.PENDING_PAYMENT");
-    case "UPCOMING":
+    case "CONFIRMED":
       return t("statuses.enrollment.CONFIRMED");
     case "CANCELLED":
       return t("statuses.enrollment.CANCELLED");
@@ -163,10 +163,11 @@ export function resolveAcademyProgramRegistrationStateLabel(
 }
 
 export function resolveAcademyProgramCertificateStatusLabel(
-  status: "NOT_ISSUED" | "ISSUED" | "REISSUED",
+  status: "NOT_UPLOADED" | "UPLOADED" | "NOT_ISSUED" | "ISSUED" | "REISSUED",
   t: (key: string) => string,
 ): string {
   switch (status) {
+    case "UPLOADED":
     case "ISSUED":
       return t("programs.certificate.statuses.ISSUED");
     case "REISSUED":

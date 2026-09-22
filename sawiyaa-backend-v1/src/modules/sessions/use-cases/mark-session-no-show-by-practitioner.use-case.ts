@@ -11,6 +11,7 @@ import { SessionMapper } from '../mappers/session.mapper';
 import { SessionPractitionerRepository } from '../repositories/session-practitioner.repository';
 import { SessionRepository } from '../repositories/session.repository';
 import { SessionLifecycleService } from '../services/session-lifecycle.service';
+import { ParticipantSessionOutcomeBoundaryService } from '../services/participant-session-outcome-boundary.service';
 import { OperationalNotificationService } from '@modules/notifications/services/operational-notification.service';
 
 @Injectable()
@@ -21,6 +22,7 @@ export class MarkSessionNoShowByPractitionerUseCase {
     private readonly sessionRepository: SessionRepository,
     private readonly sessionMapper: SessionMapper,
     private readonly sessionLifecycleService: SessionLifecycleService,
+    private readonly outcomeBoundary: ParticipantSessionOutcomeBoundaryService,
     private readonly operationalNotificationService: OperationalNotificationService,
   ) {}
 
@@ -56,19 +58,56 @@ export class MarkSessionNoShowByPractitionerUseCase {
       });
     }
 
-    if (session.status === SessionStatus.PATIENT_NO_SHOW) {
-      throw new ConflictException({
-        messageKey: 'sessions.errors.sessionAlreadyNoShow',
-        error: 'SESSION_ALREADY_NO_SHOW',
-      });
-    }
-
     const updatedSession = await this.prisma.$transaction(async (tx) => {
+      const lockedSession = await this.sessionRepository.findByIdForUpdate(
+        session.id,
+        tx,
+      );
+      if (!lockedSession) {
+        throw new NotFoundException({
+          messageKey: 'sessions.errors.sessionNotFound',
+          error: 'SESSION_NOT_FOUND',
+        });
+      }
+
+      const decision = await this.outcomeBoundary.decidePatientNoShow({
+        session: lockedSession,
+        tx,
+        now: new Date(),
+      });
+      if (decision.kind === 'REJECT') {
+        throw new ConflictException({
+          messageKey: decision.messageKey,
+          error: decision.error,
+        });
+      }
+
+      if (decision.kind === 'REQUIRES_ADMIN_RESOLUTION') {
+        if (lockedSession.status === SessionStatus.AWAITING_ADMIN_RESOLUTION) {
+          return lockedSession;
+        }
+        return this.sessionLifecycleService.transition({
+          session: lockedSession,
+          to: SessionStatus.AWAITING_ADMIN_RESOLUTION,
+          actorUserId: input.userId,
+          metadata: {
+            requestedOutcome: SessionStatus.PATIENT_NO_SHOW,
+            decision: 'REQUIRES_ADMIN_RESOLUTION',
+            reason: decision.reason,
+          },
+          tx,
+        });
+      }
+
       return this.sessionLifecycleService.transition({
-        session,
+        session: lockedSession,
         to: SessionStatus.PATIENT_NO_SHOW,
         actorUserId: input.userId,
-        metadata: { markedBy: 'PRACTITIONER', locale: input.locale },
+        metadata: {
+          markedBy: 'PRACTITIONER',
+          locale: input.locale,
+          outcomeDecision: 'ALLOW',
+        },
         tx,
       });
     });

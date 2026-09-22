@@ -8,14 +8,27 @@ import { mapPractitionerDurationPrice } from "../practitioner-money";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
-import { getProfessionalTitleLabel } from "../../../practitioner/reference-data";
 import { useAppDirection } from "../../../../i18n/direction";
+import { hasPublicPractitionerRating } from "../rating";
 
 const DEFAULT_AVATAR = require("../../../../../assets/user.avif");
 
 const STAR_GOLD = "#EAB308";
-const ONLINE_GREEN = "#22C55E";
-const OFFLINE_GRAY = "#94A3B8";
+
+const LANGUAGE_LABELS: Record<string, { ar: string; en: string }> = {
+  ar: { ar: "العربية", en: "Arabic" },
+  en: { ar: "الإنجليزية", en: "English" },
+  fr: { ar: "الفرنسية", en: "French" },
+  de: { ar: "الألمانية", en: "German" },
+  es: { ar: "الإسبانية", en: "Spanish" },
+  tr: { ar: "التركية", en: "Turkish" },
+  ru: { ar: "الروسية", en: "Russian" },
+};
+
+function resolveLanguageLabel(code: string, isArabicUi: boolean) {
+  const normalized = code.trim().toLowerCase();
+  return LANGUAGE_LABELS[normalized]?.[isArabicUi ? "ar" : "en"] ?? code;
+}
 
 export interface PractitionerCompactCardProps {
   practitioner: PublicPractitionerListItem;
@@ -25,7 +38,7 @@ export interface PractitionerCompactCardProps {
 }
 
 function renderStarRating(rating: number) {
-  const score = rating || 5;
+  const score = Math.max(0, Math.min(5, rating));
   const stars = [];
   for (let i = 1; i <= 5; i++) {
     if (score >= i) {
@@ -66,9 +79,12 @@ export const PractitionerCompactCard = ({
   const averageRating = practitioner.ratingSummary?.averageRating;
   const totalReviews = practitioner.ratingSummary?.totalReviews;
 
-  // Prominent rating fallback for mock data
-  const displayRating = averageRating && averageRating > 0 ? averageRating : 4.9;
-  const displayReviews = totalReviews && totalReviews > 0 ? totalReviews : 12;
+  const hasRating = hasPublicPractitionerRating(averageRating, totalReviews);
+  const languageSummary = practitioner.languages
+    .slice(0, 2)
+    .map((code) => resolveLanguageLabel(code, isArabic))
+    .join(isArabic ? "، " : ", ");
+  const additionalLanguageCount = Math.max(practitioner.languages.length - 2, 0);
 
   const handlePress = () => {
     if (onPress) {
@@ -77,8 +93,6 @@ export const PractitionerCompactCard = ({
       router.push(`${routeBase}/${practitioner.slug}` as any);
     }
   };
-
-  const isOnline = practitioner.isOnlineNow;
 
   const rawAvatarUrl = practitioner.avatarUrl;
   const isInvalidOrFakeUrl =
@@ -119,13 +133,6 @@ export const PractitionerCompactCard = ({
               />
             </View>
 
-            {/* Online Green Badge */}
-            <View
-              style={[
-                styles.onlineBadge,
-                { backgroundColor: isOnline ? ONLINE_GREEN : OFFLINE_GRAY },
-              ]}
-            />
           </View>
 
           {/* Name & Sub-info */}
@@ -135,28 +142,41 @@ export const PractitionerCompactCard = ({
                 {practitioner.displayName || practitioner.slug}
               </Text>
               {practitioner.isVerified ? (
-                <Ionicons name="checkmark-circle" size={14} color={theme.colors.primary} />
+                <Ionicons
+                  name="checkmark-circle"
+                  size={14}
+                  color={theme.colors.primary}
+                  accessibilityRole="image"
+                  accessibilityLabel={t("discovery.profile.verifiedProfessional")}
+                  accessibilityHint={t("discovery.profile.verifiedExplanation")}
+                />
               ) : null}
             </View>
 
             <Text color={theme.colors.textSecondary} style={styles.professionalTitle} numberOfLines={1}>
-              {getProfessionalTitleLabel(practitioner.professionalTitle, isArabic) ||
+              {practitioner.professionalTitle?.trim() ||
                 primarySpecialty?.title ||
-                t("discovery.list.professionalFallback", "أخصائي")}
+                t("discovery.list.professionalFallback")}
             </Text>
 
             {/* Prominent Stars & Rating Row */}
-            <View style={[styles.ratingInline, { flexDirection: rowDirection }]}>
-              <View style={[styles.starsRow, { flexDirection: rowDirection }]}>
-                {renderStarRating(displayRating)}
+            {hasRating ? (
+              <View style={[styles.ratingInline, { flexDirection: rowDirection }]}>
+                <View style={[styles.starsRow, { flexDirection: rowDirection }]}>
+                  {renderStarRating(averageRating!)}
+                </View>
+                <Text weight="bold" style={styles.ratingText} color={theme.colors.textPrimary}>
+                  {averageRating!.toFixed(1)}
+                </Text>
+                <Text color={theme.colors.textMuted} style={styles.reviewsCount}>
+                  ({totalReviews!})
+                </Text>
               </View>
-              <Text weight="bold" style={styles.ratingText} color={theme.colors.textPrimary}>
-                {displayRating.toFixed(1)}
-              </Text>
+            ) : (
               <Text color={theme.colors.textMuted} style={styles.reviewsCount}>
-                ({displayReviews})
+                {t("discovery.list.noRatings")}
               </Text>
-            </View>
+            )}
 
             {/* Specialties Chips */}
             {practitioner.specialties.length > 0 ? (
@@ -174,6 +194,15 @@ export const PractitionerCompactCard = ({
                     </Text>
                   </View>
                 ))}
+              </View>
+            ) : null}
+
+            {languageSummary ? (
+              <View style={[styles.languagesRow, { flexDirection: rowDirection }]}>
+                <Ionicons name="language-outline" size={12} color={theme.colors.primary} accessibilityElementsHidden />
+                <Text color={theme.colors.textSecondary} style={styles.languagesText} numberOfLines={1}>
+                  {languageSummary}{additionalLanguageCount > 0 ? ` +${additionalLanguageCount}` : ""}
+                </Text>
               </View>
             ) : null}
           </View>
@@ -240,7 +269,7 @@ export const PractitionerCompactCard = ({
           ]}
         >
           <Text weight="bold" style={styles.ctaButtonText}>
-            {isArabic ? "عرض الملف" : "View Profile"}
+            {isArabic ? "عرض الملف والحجز" : "View Profile & Book"}
           </Text>
           <Ionicons name={arrowBack} size={13} color="#FFFFFF" />
         </TouchableOpacity>
@@ -290,16 +319,6 @@ const styles = StyleSheet.create({
     height: 44,
     borderRadius: 22,
   },
-  onlineBadge: {
-    position: "absolute",
-    bottom: 0,
-    right: 0,
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    borderWidth: 2,
-    borderColor: "#FFFFFF",
-  },
   mainInfoWrap: {
     flex: 1,
     gap: 2,
@@ -346,6 +365,15 @@ const styles = StyleSheet.create({
   },
   specialtyChipText: {
     fontSize: 10,
+  },
+  languagesRow: {
+    alignItems: "center",
+    gap: 4,
+    marginTop: 2,
+  },
+  languagesText: {
+    fontSize: 10,
+    flexShrink: 1,
   },
 
   // Pricing Strip

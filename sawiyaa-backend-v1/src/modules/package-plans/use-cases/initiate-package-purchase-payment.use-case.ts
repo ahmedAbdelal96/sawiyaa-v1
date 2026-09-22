@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import {
   MarketType,
+  PackageSchedulePolicy,
   PaymentEventType,
   PaymentPurpose,
   PaymentStatus,
@@ -104,7 +105,11 @@ export class InitiatePackagePurchasePaymentUseCase {
       });
     }
 
-    if (!purchase.sessions.length) {
+    if (
+      !purchase.sessions.length &&
+      purchase.schedulePolicySnapshot !==
+        PackageSchedulePolicy.ALLOW_SCHEDULE_LATER
+    ) {
       throw new ConflictException({
         messageKey: 'packagePurchases.errors.noLinkedSessions',
         error: 'PACKAGE_PURCHASE_NO_LINKED_SESSIONS',

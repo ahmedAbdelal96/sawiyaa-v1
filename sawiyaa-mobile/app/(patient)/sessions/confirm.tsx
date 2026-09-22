@@ -5,7 +5,6 @@ import {
   StyleSheet,
   View,
   TouchableOpacity,
-  Animated,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -20,18 +19,19 @@ import { useTheme } from "../../../src/providers/ThemeProvider";
 import { useCreateScheduledSession } from "../../../src/features/patient/sessions/hooks";
 import { useSessionFinancialBreakdown } from "../../../src/features/patient/payments/hooks";
 import {
-  formatTimeZoneLabel,
   formatPatientDateTime,
   resolvePatientDisplayTimeZone,
 } from "../../../src/lib/time-formatting";
+import { getTimeZoneDisplayLabel } from "../../../src/features/timezone/timezone-options";
 import { usePatientProfile } from "../../../src/features/patient/profile/hooks";
-import { extractApiErrorMessage } from "../../../src/lib/api";
+import { getBookingErrorMessage } from "../../../src/lib/booking-error-messages";
 import { trackAnalyticsEvent } from "../../../src/lib/analytics";
 import {
   formatMoney as formatCentralMoney,
   parseMoney,
 } from "../../../src/lib/money";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { getDirectionalIcon } from "../../../src/i18n/direction";
 
 const FALLBACK_AVATAR = require("../../../assets/user.avif");
 
@@ -187,7 +187,6 @@ export default function BookingConfirmationScreen() {
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [createdSession, setCreatedSession] = useState<{
     id: string;
-    sessionCode: string;
     status: string;
   } | null>(null);
   const confirmLockRef = useRef(false);
@@ -226,7 +225,10 @@ export default function BookingConfirmationScreen() {
     }
 
     if (createdSession?.id) {
-      router.push(`/(patient)/sessions/${createdSession.id}/pay` as any);
+      router.push({
+        pathname: "/(patient)/sessions/[id]/pay",
+        params: { id: createdSession.id },
+      });
       return;
     }
 
@@ -247,7 +249,6 @@ export default function BookingConfirmationScreen() {
 
       setCreatedSession({
         id: payload.item.id,
-        sessionCode: payload.item.sessionCode,
         status: payload.item.status,
       });
       trackAnalyticsEvent("booking_confirmed", {
@@ -258,7 +259,7 @@ export default function BookingConfirmationScreen() {
         durationMinutes: duration,
       });
     } catch (error) {
-      setSubmitError(extractApiErrorMessage(error));
+      setSubmitError(getBookingErrorMessage(error, t, "appointment"));
     } finally {
       confirmLockRef.current = false;
     }
@@ -267,7 +268,7 @@ export default function BookingConfirmationScreen() {
   const showAvatar = params.practitionerAvatarUrl && !avatarFailed;
 
   return (
-    <Screen bg="background">
+    <Screen bg="background" testID="patient-booking-screen">
       <Header showBack />
 
       <ScrollView
@@ -397,7 +398,10 @@ export default function BookingConfirmationScreen() {
             <InfoRow
               icon="globe-outline"
               label={t("patientSessionsFlow.detail.timezone")}
-              value={formatTimeZoneLabel(timezone, { locale, includeOffset: true })}
+              value={
+                getTimeZoneDisplayLabel(timezone, isRtl ? "ar" : "en") ??
+                t("patientSessionsFlow.selectTime.timezoneUnavailable")
+              }
             />
           </View>
         </View>
@@ -419,26 +423,6 @@ export default function BookingConfirmationScreen() {
           </View>
 
           <View style={styles.cardBody}>
-            {/* Session code after booking created */}
-            {createdSession ? (
-              <View
-                style={[
-                  styles.sessionCodeBanner,
-                  { backgroundColor: theme.colors.primaryLight, borderColor: theme.colors.primary + "30" },
-                ]}
-              >
-                <Ionicons name="checkmark-circle" size={18} color={theme.colors.primary} />
-                <View style={{ flex: 1, marginStart: 8 }}>
-                  <Text style={styles.sessionCodeLabel} color={theme.colors.primary} weight="600">
-                    {isRtl ? "تم إنشاء الحجز" : "Booking created"}
-                  </Text>
-                  <Text style={styles.sessionCodeValue} color={theme.colors.textSecondary}>
-                    {isRtl ? `رقم الجلسة: ${createdSession.sessionCode}` : `Ref: ${createdSession.sessionCode}`}
-                  </Text>
-                </View>
-              </View>
-            ) : null}
-
             {/* Before session created — show duration + pending status */}
             {!createdSession ? (
               <>
@@ -446,12 +430,6 @@ export default function BookingConfirmationScreen() {
                   label={t("patientSessionsFlow.confirmation.sessionDuration")}
                   value={totalLabel}
                 />
-                <PriceRow
-                  label={t("patientSessionsFlow.confirmation.statusLabel")}
-                  value={t("patientSessionsFlow.confirmation.pendingPayment")}
-                />
-
-                {/* Preview notice */}
                 <View
                   style={[
                     styles.noticeBox,
@@ -463,7 +441,7 @@ export default function BookingConfirmationScreen() {
                     style={styles.noticeText}
                     color={theme.colors.textSecondary}
                   >
-                    {t("patientSessionsFlow.confirmation.previewNotice")}
+                    {t("patientSessionsFlow.confirmation.reviewBeforeCreateNotice")}
                   </Text>
                 </View>
               </>
@@ -633,7 +611,7 @@ export default function BookingConfirmationScreen() {
           rightIcon={
             !createMutation.isPending ? (
               <Ionicons
-                name={isRtl ? "arrow-back" : "arrow-forward"}
+                name={getDirectionalIcon("forward", isRtl)}
                 size={18}
                 color="#fff"
               />
@@ -756,25 +734,6 @@ const styles = StyleSheet.create({
   divider: {
     height: 1,
     marginHorizontal: 0,
-  },
-
-  // Session code banner
-  sessionCodeBanner: {
-    flexDirection: "row",
-    alignItems: "center",
-    borderRadius: 12,
-    borderWidth: 1,
-    padding: 12,
-    marginVertical: 8,
-  },
-  sessionCodeLabel: {
-    fontSize: 13,
-    lineHeight: 18,
-  },
-  sessionCodeValue: {
-    fontSize: 12,
-    lineHeight: 17,
-    marginTop: 2,
   },
 
   // Notice / info box

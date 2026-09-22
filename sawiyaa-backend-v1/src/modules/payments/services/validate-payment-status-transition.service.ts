@@ -47,11 +47,14 @@ export class ValidatePaymentStatusTransitionService {
       [PaymentStatus.CANCELLED]: [],
       [PaymentStatus.EXPIRED]: [],
       [PaymentStatus.REFUND_PENDING]: [
+        PaymentStatus.CAPTURED,
         PaymentStatus.PARTIALLY_REFUNDED,
         PaymentStatus.REFUNDED,
-        PaymentStatus.FAILED,
       ],
-      [PaymentStatus.PARTIALLY_REFUNDED]: [PaymentStatus.REFUNDED],
+      [PaymentStatus.PARTIALLY_REFUNDED]: [
+        PaymentStatus.REFUND_PENDING,
+        PaymentStatus.REFUNDED,
+      ],
       [PaymentStatus.REFUNDED]: [],
     };
 

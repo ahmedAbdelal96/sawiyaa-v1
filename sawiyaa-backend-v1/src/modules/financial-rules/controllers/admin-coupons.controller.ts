@@ -14,7 +14,12 @@ import { RequireAccountStates } from '@common/decorators/account-state.decorator
 import { CurrentUser } from '@common/decorators/current-user.decorator';
 import { AccountStateRequirement } from '@common/enums/account-state-requirement.enum';
 import { JwtAccessAuthGuard } from '@common/guards/authentication/jwt-access-auth.guard';
-import { AdminGuard } from '@common/guards/authorization/admin.guard';
+import { Roles } from '@common/decorators/roles.decorator';
+import { AppRole } from '@common/enums/app-role.enum';
+import { RolesGuard } from '@common/guards/authorization/roles.guard';
+import { PermissionsGuard } from '@common/guards/authorization/permissions.guard';
+import { Permissions } from '@common/decorators/permissions.decorator';
+import { PermissionKey } from '@common/enums/permission-key.enum';
 import { AuthenticatedUser } from '@common/interfaces/authenticated-user.interface';
 import { CreateCouponDto } from '../dto/create-coupon.dto';
 import { CouponItemSuccessResponseDto } from '../dto/financial-rules-response.dto';
@@ -22,13 +27,24 @@ import { CreateCouponUseCase } from '../use-cases/create-coupon.use-case';
 
 @ApiTags('Admin - Coupons')
 @ApiBearerAuth()
-@UseGuards(JwtAccessAuthGuard, AdminGuard)
+@UseGuards(JwtAccessAuthGuard, RolesGuard, PermissionsGuard)
+@Roles(
+  AppRole.ADMIN,
+  AppRole.SUPER_ADMIN,
+  AppRole.FINANCE_STAFF,
+  AppRole.MARKETING_STAFF,
+  AppRole.PRACTITIONER_REVIEWER,
+  AppRole.PATIENT_OPERATIONS,
+  AppRole.SUPPORT_AGENT,
+  AppRole.CONTENT_REVIEWER,
+)
 @RequireAccountStates(AccountStateRequirement.ACTIVE_ACCOUNT)
 @Controller('admin/coupons')
 export class AdminCouponsController {
   constructor(private readonly createCouponUseCase: CreateCouponUseCase) {}
 
   @Post()
+  @Permissions(PermissionKey.COUPONS_MANAGE)
   @ApiOperation({
     summary: 'Create coupon',
     description:

@@ -31,6 +31,8 @@ import { JwtAccessAuthGuard } from '@common/guards/authentication/jwt-access-aut
 import { AuthenticatedUser } from '@common/interfaces/authenticated-user.interface';
 import { GeneralChatAttachmentSuccessResponseDto } from '../dto/general-chat-attachment-response.dto';
 import { MessagingUseCase } from '@modules/messaging/use-cases/messaging.use-case';
+import { HARD_UPLOAD_CEILING_BYTES } from '@modules/files/file.types';
+import { setStoredFileResponseHeaders } from '@modules/files/file-response.utils';
 
 const MAX_ATTACHMENT_SIZE = 10 * 1024 * 1024;
 
@@ -68,7 +70,7 @@ export class GeneralChatAttachmentsController {
   })
   @ApiNotFoundResponse({ description: 'Conversation was not found' })
   @UseInterceptors(
-    FileInterceptor('file'),
+    FileInterceptor('file', { limits: { fileSize: HARD_UPLOAD_CEILING_BYTES } }),
   )
   async upload(
     @CurrentUser() authenticatedUser: AuthenticatedUser,
@@ -134,15 +136,7 @@ export class GeneralChatAttachmentsController {
       { allowLegacyAdmin: true },
     );
 
-    response.setHeader('Content-Type', resolved.mimeType);
-    response.setHeader('Cache-Control', 'private, max-age=300');
-    if (resolved.originalFileName) {
-      response.setHeader(
-        'Content-Disposition',
-        `inline; filename="${resolved.originalFileName}"`,
-      );
-    }
-
+    setStoredFileResponseHeaders(response, { mimeType: resolved.mimeType, originalFileName: resolved.originalFileName, isPrivate: true });
     return new StreamableFile(createReadStream(resolved.absolutePath));
   }
 }

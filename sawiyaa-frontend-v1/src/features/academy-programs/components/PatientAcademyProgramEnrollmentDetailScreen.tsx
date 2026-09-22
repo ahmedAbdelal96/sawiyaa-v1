@@ -3,6 +3,7 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { useLocale, useTranslations } from "next-intl";
+import { useAuthState } from "@/stores/auth-store";
 import {
   AlertCircle,
   ArrowLeft,
@@ -64,7 +65,7 @@ function formatDurationMinutes(startAt: string, endAt: string, locale: string) {
 
 function resolveEnrollmentTone(status: AcademyProgramEnrollmentItem["status"]) {
   switch (status) {
-    case "UPCOMING":
+    case "CONFIRMED":
       return "success";
     case "PENDING_PAYMENT":
       return "warning";
@@ -167,6 +168,8 @@ export default function PatientAcademyProgramEnrollmentDetailScreen({
 }) {
   const t = useTranslations("academy");
   const locale = useLocale();
+  const { user } = useAuthState();
+  const academyBase = user?.role === "TRAINEE" ? "/trainee/academy" : "/patient/academy";
   const { data: enrollmentResponse, isLoading, isError, refetch } =
     usePatientAcademyProgramEnrollment(enrollmentId);
 
@@ -194,8 +197,8 @@ export default function PatientAcademyProgramEnrollmentDetailScreen({
   const endDate = enrollment ? formatDate(enrollment.program.endAt, locale) : null;
   const isPendingPayment = enrollment?.status === "PENDING_PAYMENT" && Boolean(enrollment.payment);
   const payHref = enrollment
-    ? `/patient/academy/program-enrollments/${enrollment.id}/pay`
-    : "/patient/academy";
+    ? `${academyBase}/program-enrollments/${enrollment.id}/pay`
+    : academyBase;
 
   const attendanceSummary = attendance?.summary ?? enrollment?.attendanceSummary ?? null;
   const hasRecordedAttendance = attendance?.hasRecordedAttendance ?? false;
@@ -213,7 +216,7 @@ export default function PatientAcademyProgramEnrollmentDetailScreen({
         })
       : null;
   const programStateLabel = enrollment
-    ? enrollment.status === "UPCOMING"
+    ? enrollment.status === "CONFIRMED"
       ? t("patient.detail.state.confirmed")
       : enrollment.status === "PENDING_PAYMENT"
         ? t("patient.detail.state.pendingPayment")
@@ -264,7 +267,7 @@ export default function PatientAcademyProgramEnrollmentDetailScreen({
     <div className="app-max-content mx-auto space-y-6 px-4 py-6 sm:py-8">
       <div className="flex flex-wrap items-center gap-3">
         <Link
-          href="/patient/academy"
+          href={academyBase}
           className="inline-flex items-center justify-center rounded-full border border-border-light bg-white px-4 py-2 text-sm text-text-secondary transition hover:bg-surface-tertiary"
         >
           <ArrowLeft className="h-4 w-4" />
@@ -503,10 +506,10 @@ export default function PatientAcademyProgramEnrollmentDetailScreen({
                     const currentStatus = normalizeAttendanceStatus(session.attendanceStatus);
                     const statusLabel =
                       currentStatus === "PRESENT"
-                        ? t("programs.attendance.statuses.present")
+                        ? t("patient.detail.attendance.statuses.present")
                         : currentStatus === "ABSENT"
-                          ? t("programs.attendance.statuses.absent")
-                          : t("programs.attendance.statuses.unmarked");
+                          ? t("patient.detail.attendance.statuses.absent")
+                          : t("patient.detail.attendance.statuses.unmarked");
 
                     return (
                       <article
@@ -540,7 +543,7 @@ export default function PatientAcademyProgramEnrollmentDetailScreen({
                             </p>
                             {session.markedAt ? (
                               <p className="text-xs text-text-muted">
-                                {t("programs.attendance.row.markedAt", {
+                                {t("patient.detail.attendance.row.markedAt", {
                                   date: formatDate(session.markedAt, locale) ?? t("public.detail.noDate"),
                                 })}
                               </p>

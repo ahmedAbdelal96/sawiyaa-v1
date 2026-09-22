@@ -75,6 +75,10 @@ export interface PractitionerProfile {
   primarySpecialtyCategoryId: string | null;
   acceptsPackage: boolean;
   pricing: PractitionerPricing;
+  instantBookingPrice30Egp: number | null;
+  instantBookingPrice30Usd: number | null;
+  instantBookingPrice60Egp: number | null;
+  instantBookingPrice60Usd: number | null;
   payoutDestination: {
     methodType: PractitionerPayoutMethodType | null;
     countryCode: string | null;
@@ -120,6 +124,10 @@ export interface PractitionerReadiness {
   canSubmitApplication: boolean;
   missingRequirements: string[];
   checks: PractitionerReadinessChecks;
+  isApproved?: boolean;
+  hasRequiredNormalPricing?: boolean;
+  canPublish?: boolean;
+  publicationMissingRequirements?: string[];
 }
 
 export interface PractitionerReadinessResponse {
@@ -175,6 +183,10 @@ export interface UpdatePractitionerProfileRequest {
   sessionPrice30Usd?: number | null;
   sessionPrice60Egp?: number | null;
   sessionPrice60Usd?: number | null;
+  instantBookingPrice30Egp?: number | null;
+  instantBookingPrice30Usd?: number | null;
+  instantBookingPrice60Egp?: number | null;
+  instantBookingPrice60Usd?: number | null;
   acceptsPackage?: boolean;
   payoutDestination?:
       | {

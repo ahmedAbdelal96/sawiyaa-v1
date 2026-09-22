@@ -56,6 +56,9 @@ describe('SubmitPractitionerApplicationUseCase', () => {
     ensureOnboardingCase: jest.fn().mockResolvedValue({ id: 'case-1' }),
     resubmitChangeCase: jest.fn().mockResolvedValue({ id: 'case-1' }),
   } as never;
+  const practitionerSpecialtyIntegrityService = {
+    validateSelection: jest.fn().mockResolvedValue(undefined),
+  } as never;
 
   const useCase = new SubmitPractitionerApplicationUseCase(
     prisma,
@@ -74,6 +77,7 @@ describe('SubmitPractitionerApplicationUseCase', () => {
     getPractitionerApplicationStatusUseCase,
     practitionerPayoutDestinationValidationService,
     practitionerReviewCaseService,
+    practitionerSpecialtyIntegrityService,
   );
 
   const baseProfile = {
@@ -155,8 +159,18 @@ describe('SubmitPractitionerApplicationUseCase', () => {
       },
       {
         id: 'cred-3',
-        credentialType: 'PASSPORT',
-        fileUrl: 'https://example.com/passport.pdf',
+        credentialType: 'NATIONAL_ID_FRONT',
+        fileUrl: 'https://example.com/national-id-front.pdf',
+        reviewStatus: 'PENDING',
+        expiresAt: null,
+        createdAt: new Date('2026-01-01T00:00:00.000Z'),
+        reviewedAt: null,
+        reviewNotes: null,
+      },
+      {
+        id: 'cred-4',
+        credentialType: 'NATIONAL_ID_BACK',
+        fileUrl: 'https://example.com/national-id-back.pdf',
         reviewStatus: 'PENDING',
         expiresAt: null,
         createdAt: new Date('2026-01-01T00:00:00.000Z'),

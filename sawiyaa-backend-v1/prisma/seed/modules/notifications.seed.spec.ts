@@ -20,29 +20,32 @@ type SeedCall = {
 
 describe('notifications seed', () => {
   it('seeds practitioner signup email verification with both translations', async () => {
-    const typeUpserts: SeedCall[] = [];
-    const templateUpserts: SeedCall[] = [];
-    const translationUpserts: SeedCall[] = [];
+    const typeCreates: Array<{ data: Record<string, unknown> }> = [];
+    const templateCreates: Array<{ data: Record<string, unknown> }> = [];
+    const translationCreates: Array<{ data: Record<string, unknown> }> = [];
 
     const prisma = {
       notificationType: {
-        upsert: jest.fn((args: SeedCall) => {
-          typeUpserts.push(args);
-          return Promise.resolve({ id: `type-${args.where.slug}` });
+        findUnique: jest.fn(() => Promise.resolve(null)),
+        create: jest.fn((args: { data: Record<string, unknown> }) => {
+          typeCreates.push(args);
+          return Promise.resolve({ id: `type-${args.data.slug}` });
         }),
         findUniqueOrThrow: jest.fn(({ where }: { where: { slug: string } }) =>
           Promise.resolve({ id: `type-${where.slug}` }),
         ),
       },
       notificationTemplate: {
-        upsert: jest.fn((args: SeedCall) => {
-          templateUpserts.push(args);
-          return Promise.resolve({ id: `template-${args.where.slug}` });
+        findUnique: jest.fn(() => Promise.resolve(null)),
+        create: jest.fn((args: { data: Record<string, unknown> }) => {
+          templateCreates.push(args);
+          return Promise.resolve({ id: `template-${args.data.slug}` });
         }),
       },
       notificationTemplateTranslation: {
-        upsert: jest.fn((args: SeedCall) => {
-          translationUpserts.push(args);
+        findUnique: jest.fn(() => Promise.resolve(null)),
+        create: jest.fn((args: { data: Record<string, unknown> }) => {
+          translationCreates.push(args);
           return Promise.resolve(args);
         }),
       },
@@ -50,14 +53,13 @@ describe('notifications seed', () => {
 
     await notificationsSeedModule.run(prisma);
 
-    const type = typeUpserts.find(
-      (args) =>
-        args.where.slug === 'auth.practitioner-signup-email-verification',
+    const type = typeCreates.find(
+      (args) => args.data.slug === 'auth.practitioner-signup-email-verification',
     );
     expect(type).toBeDefined();
     if (!type)
       throw new Error('Practitioner signup notification type not found');
-    expect(type.create).toMatchObject({
+    expect(type.data).toMatchObject({
       slug: 'auth.practitioner-signup-email-verification',
       displayName: 'Practitioner Signup Email Verification',
       description: 'OTP verification during practitioner signup',
@@ -70,15 +72,14 @@ describe('notifications seed', () => {
       isMandatory: false,
     });
 
-    const template = templateUpserts.find(
-      (args) =>
-        args.where.slug ===
+    const template = templateCreates.find(
+      (args) => args.data.slug ===
         'auth.practitioner-signup-email-verification.email.v1',
     );
     expect(template).toBeDefined();
     if (!template)
       throw new Error('Practitioner signup email template not found');
-    expect(template.create).toMatchObject({
+    expect(template.data).toMatchObject({
       notificationTypeId: 'type-auth.practitioner-signup-email-verification',
       channel: NotificationChannel.EMAIL,
       slug: 'auth.practitioner-signup-email-verification.email.v1',
@@ -87,23 +88,22 @@ describe('notifications seed', () => {
       version: 1,
     });
 
-    const translations = translationUpserts.filter(
-      (args) =>
-        args.where.notificationTemplateId_locale?.notificationTemplateId ===
+    const translations = translationCreates.filter(
+      (args) => args.data.notificationTemplateId ===
         'template-auth.practitioner-signup-email-verification.email.v1',
     );
-    expect(translations.map((args) => args.create.locale).sort()).toEqual([
+    expect(translations.map((args) => args.data.locale).sort()).toEqual([
       'ar',
       'en',
     ]);
 
     const translationFor = (locale: string): Record<string, unknown> => {
       const translation = translations.find(
-        (args) => args.create.locale === locale,
+        (args) => args.data.locale === locale,
       );
       expect(translation).toBeDefined();
       if (!translation) throw new Error(`Translation not found: ${locale}`);
-      return translation.create;
+      return translation.data;
     };
 
     expect(translationFor('en')).toMatchObject({
@@ -116,5 +116,29 @@ describe('notifications seed', () => {
       titleTemplate: 'تأكيد البريد الإلكتروني',
       bodyTemplate: 'رمز التحقق الخاص بك هو {{code}}.',
     });
+  });
+
+  it('does not overwrite existing notification definitions or create user notifications', async () => {
+    const create = jest.fn();
+    const prisma = {
+      notificationType: {
+        findUnique: jest.fn(() => Promise.resolve({ id: 'existing-type' })),
+        findUniqueOrThrow: jest.fn(() => Promise.resolve({ id: 'existing-type' })),
+        create,
+      },
+      notificationTemplate: {
+        findUnique: jest.fn(() => Promise.resolve({ id: 'existing-template' })),
+        create,
+      },
+      notificationTemplateTranslation: {
+        findUnique: jest.fn(() => Promise.resolve({ id: 'existing-translation' })),
+        create,
+      },
+    } as unknown as PrismaClient;
+
+    await notificationsSeedModule.run(prisma);
+
+    expect(create).not.toHaveBeenCalled();
+    expect((prisma as unknown as { notification: unknown }).notification).toBeUndefined();
   });
 });

@@ -71,6 +71,83 @@ export async function exportToExcel<T = any>(
   }
 }
 
+export type PdfExportOptions = {
+  title?: string;
+  subtitle?: string;
+  countLabel?: string;
+  direction?: "rtl" | "ltr";
+};
+
+/**
+ * Opens a print-ready, paginated PDF view in the browser. The browser's
+ * native print dialog provides the PDF writer and preserves Arabic fonts/RTL.
+ */
+export async function exportToPdf<T = any>(
+  data: T[],
+  columns: ColumnDef<T>[],
+  filename: string = "export",
+  options: PdfExportOptions = {},
+): Promise<void> {
+  if (typeof window === "undefined") {
+    throw new Error("PDF export is only supported in the browser.");
+  }
+
+  if (data.length === 0) {
+    throw new Error("EMPTY_EXPORT");
+  }
+
+  const printWindow = window.open("", "_blank", "width=1200,height=800");
+  if (!printWindow) {
+    throw new Error("PDF_PRINT_WINDOW_BLOCKED");
+  }
+  printWindow.opener = null;
+
+  const direction = options.direction ?? "rtl";
+  const title = options.title ?? "Export";
+  const subtitle = options.subtitle ?? "";
+  const headers = columns.map((column) =>
+    typeof column.header === "string" ? column.header : column.id,
+  );
+  const rows = data
+    .map((row, index) => {
+      const values = columns.map((column) => {
+        const value = column.accessor ? column.accessor(row) : (row as any)[column.id];
+        return escapeHtml(formatValueForExcel(value));
+      });
+      return `<tr><td>${index + 1}</td>${values.map((value) => `<td>${value}</td>`).join("")}</tr>`;
+    })
+    .join("");
+
+  const exportDate = new Date().toLocaleString(undefined, {
+    dateStyle: "medium",
+    timeStyle: "short",
+  });
+  const safeFilename = filename.endsWith(".pdf") ? filename : `${filename}.pdf`;
+  const headerHtml = `<header><div class="brand">Sawiyaa</div><h1>${escapeHtml(title)}</h1>${subtitle ? `<p>${escapeHtml(subtitle)}</p>` : ""}<div class="meta">${escapeHtml(exportDate)} · ${escapeHtml(options.countLabel ?? "Rows")}: ${data.length}</div></header>`;
+  const tableHtml = `<table><thead><tr><th>#</th>${headers.map((header) => `<th>${escapeHtml(header)}</th>`).join("")}</tr></thead><tbody>${rows}</tbody></table>`;
+
+  printWindow.document.open();
+  printWindow.document.write(`<!doctype html><html lang="ar" dir="${direction}"><head><meta charset="utf-8"><title>${escapeHtml(safeFilename)}</title><style>
+    @page { size: A4 landscape; margin: 12mm; }
+    :root { color-scheme: light; }
+    * { box-sizing: border-box; }
+    body { margin: 0; color: #17202a; background: #fff; font-family: Cairo, "Segoe UI", Tahoma, sans-serif; font-size: 10px; direction: ${direction}; }
+    header { margin-bottom: 14px; border-bottom: 2px solid #176b87; padding-bottom: 8px; }
+    .brand { color: #176b87; font-size: 13px; font-weight: 800; letter-spacing: .04em; }
+    h1 { margin: 3px 0; font-size: 18px; }
+    p { margin: 2px 0; color: #59636e; font-size: 11px; }
+    .meta { margin-top: 6px; color: #59636e; font-size: 9px; }
+    table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+    thead { display: table-header-group; }
+    tr { break-inside: avoid; }
+    th, td { border: 1px solid #d7dee4; padding: 5px 6px; vertical-align: top; overflow-wrap: anywhere; text-align: start; }
+    th { background: #edf5f7; color: #16475a; font-weight: 800; }
+    tr:nth-child(even) td { background: #fafcfd; }
+    @media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
+  </style></head><body>${headerHtml}${tableHtml}<script>window.onload=function(){window.focus();setTimeout(function(){window.print();},50);};</script></body></html>`);
+  printWindow.document.close();
+}
+
 /**
  * Export selected rows only.
  */
@@ -165,6 +242,15 @@ function formatValueForExcel(value: any): any {
   }
 
   return JSON.stringify(value);
+}
+
+function escapeHtml(value: any): string {
+  return String(value ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;");
 }
 
 function extractTextFromReactElement(element: any): string {

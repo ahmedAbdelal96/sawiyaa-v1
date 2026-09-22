@@ -80,20 +80,27 @@ export class AcceptInstantBookingRequestUseCase {
       InstantBookingRequestStatus.ACCEPTED,
     );
 
-    const eligibility =
-      await this.validateInstantBookingEligibilityService.assertPractitionerCanReceiveInstantBooking(
-        {
-          practitioner,
-          durationMinutes: request.requestedDurationMinutes,
-          sessionMode: request.preferredMode,
-          nowUtc,
-        },
-      );
-
     let accepted: AcceptedInstantBookingRequest | null = null;
 
     try {
       accepted = await this.prisma.$transaction(async (tx) => {
+        await this.instantBookingRequestRepository.lockPractitionerAvailability(
+          practitioner.id,
+          tx,
+        );
+
+        const eligibility =
+          await this.validateInstantBookingEligibilityService.assertPractitionerCanReceiveInstantBooking(
+            {
+              practitioner,
+              durationMinutes: request.requestedDurationMinutes,
+              sessionMode: request.preferredMode,
+              nowUtc,
+              tx,
+              excludeInstantBookingRequestId: request.id,
+            },
+          );
+
         const claimResult =
           await this.instantBookingRequestRepository.claimPendingRequestForAcceptance(
             {
@@ -208,6 +215,7 @@ export class AcceptInstantBookingRequestUseCase {
       await this.operationalNotificationService.notifyInstantBookingAccepted({
         patientProfileId: accepted.patient.id,
         requestId: accepted.id,
+        createdSessionId: accepted.linkedSessionId,
       });
     }
 

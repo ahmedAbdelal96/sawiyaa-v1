@@ -20,7 +20,7 @@ import {
   StateCard,
 } from "@/components/shared/ContentStates";
 import Button from "@/components/ui/button/Button";
-import { ConfirmModal, DestructiveConfirmModal } from "@/components/ui/modal";
+import { DestructiveConfirmModal } from "@/components/ui/modal";
 import { toAppError } from "@/lib/api/errors";
 import { usePractitionerProfile } from "@/features/practitioners/hooks/use-practitioners";
 import {
@@ -29,7 +29,6 @@ import {
 } from "@/lib/time-formatting";
 import {
   useClosePractitionerSessionRuntime,
-  useMarkPractitionerSessionCompleted,
   useMarkPractitionerSessionNoShow,
   usePreparePractitionerSessionRuntime,
   usePractitionerSession,
@@ -37,36 +36,21 @@ import {
 } from "../hooks/use-sessions";
 import {
   buildProviderLaunchUrl,
-  canPrepareSessionRuntime,
   canLaunchProviderRuntime,
   getRuntimeBlockedReasonKey,
   getRuntimePreparedState,
   getRuntimeProvider,
   getRuntimeRoomName,
   formatProviderDisplayName,
-  hasSessionRuntimeAccess,
-  isJoinWindowOpen,
 } from "../lib/session-runtime";
-import { canOpenSessionChatFromPresentationStatus } from "../lib/session-presentation";
 import { dispatchOpenSessionChatInShell } from "@/features/messages-shell/lib/messages-shell-events";
 import SessionStatusBadge from "./SessionStatusBadge";
 import SessionCodeReference from "@/components/shared/SessionCodeReference";
 import type {
   SessionJoinItem,
   SessionRuntimeItem,
-  SessionPresentationStatus,
 } from "../types/sessions.types";
 import { formatMoney } from "@/lib/finance-format";
-
-const COMPLETE_ALLOWED_PRESENTATION_STATUSES: SessionPresentationStatus[] = [
-  "READY_TO_JOIN",
-  "IN_PROGRESS",
-];
-const NO_SHOW_ALLOWED_PRESENTATION_STATUSES: SessionPresentationStatus[] = [
-  "UPCOMING",
-  "READY_TO_JOIN",
-  "IN_PROGRESS",
-];
 
 type Props = {
   sessionId: string;
@@ -89,10 +73,6 @@ function getRoomCloseErrorMessage(code: string | undefined, t: any) {
   }
 }
 
-function getSafeTranslation(t: any, key: string, fallback: string) {
-  return t.has?.(key) ? t(key) : fallback;
-}
-
 export default function PractitionerSessionDetailPanel({ sessionId }: Props) {
   const t = useTranslations("sessions.practitioner");
   const locale = useLocale();
@@ -100,10 +80,10 @@ export default function PractitionerSessionDetailPanel({ sessionId }: Props) {
   const profileQuery = usePractitionerProfile();
 
   const [confirmingAction, setConfirmingAction] = useState<
-    "complete" | "no-show" | "close-room" | null
+    "no-show" | "close-room" | null
   >(null);
   const [recentAction, setRecentAction] = useState<
-    "complete" | "no-show" | null
+    "no-show" | null
   >(null);
   const [joinResult, setJoinResult] = useState<SessionJoinItem | null>(null);
   const [prepareResult, setPrepareResult] = useState<SessionRuntimeItem | null>(
@@ -119,7 +99,6 @@ export default function PractitionerSessionDetailPanel({ sessionId }: Props) {
     isLoading,
     isError,
   } = usePractitionerSession(sessionId);
-  const completeMutation = useMarkPractitionerSessionCompleted();
   const noShowMutation = useMarkPractitionerSessionNoShow();
   const prepareMutation = usePreparePractitionerSessionRuntime();
   const joinMutation = useResolvePractitionerSessionJoinContract();
@@ -159,50 +138,29 @@ export default function PractitionerSessionDetailPanel({ sessionId }: Props) {
     );
   }
 
-  const isActive = ![
-    "COMPLETED",
-    "CANCELLED",
-    "PATIENT_NO_SHOW",
-    "PRACTITIONER_NO_SHOW",
-    "BOTH_NO_SHOW",
-    "EXPIRED",
-  ].includes(session.status);
-  const hasRuntimeAccess = hasSessionRuntimeAccess(session.status);
-  const canMarkCompleted = COMPLETE_ALLOWED_PRESENTATION_STATUSES.includes(
-    session.presentationStatus,
+  // Detail responses always carry this backend-owned interpretation.  If a
+  // stale cache lacks it, fail closed rather than reconstructing lifecycle
+  // meaning from raw status or timestamps.
+  const operational = session.operational;
+  const operationalState = operational?.state ?? null;
+  const hasRuntimeAccess = Boolean(
+    operational?.actions.canPrepareRuntime || operational?.actions.canJoin,
   );
-  const canMarkNoShow = NO_SHOW_ALLOWED_PRESENTATION_STATUSES.includes(
-    session.status,
-  );
+  const canMarkNoShow = operational?.actions.canMarkPatientNoShow === true;
+  const isActive = hasRuntimeAccess || canMarkNoShow;
   const isBusy =
-    completeMutation.isPending ||
     noShowMutation.isPending ||
     joinMutation.isPending ||
     closeRoomMutation.isPending;
-  // The join-window decision must use the current instant on every render.
-  // eslint-disable-next-line react-hooks/purity
-  const now = Date.now();
-  const scheduledStartTime = session.scheduledStartAt
-    ? new Date(session.scheduledStartAt).getTime()
-    : null;
-  const scheduledEndTime = session.scheduledEndAt
-    ? new Date(session.scheduledEndAt).getTime()
-    : null;
-  const hasSessionStarted =
-    scheduledStartTime !== null && now >= scheduledStartTime;
   const isRoomClosed =
     roomCloseFeedback !== null ||
-    joinResult?.blockedReason === "SESSION_ROOM_CLOSED" ||
-    session.joinAvailability?.blockedReason === "SESSION_ROOM_CLOSED";
-  const roomCloseRequiresReason =
-    hasSessionStarted && scheduledEndTime !== null && now < scheduledEndTime;
+    operational?.room.state === "CLOSED";
+  // Room-close authorization and reason requirements are enforced by the
+  // command. The read contract deliberately has no duplicate canCloseRoom
+  // policy, so this is only an affordance for an open video room.
+  const roomCloseRequiresReason = false;
   const canCloseRoom =
-    hasRuntimeAccess &&
-    hasSessionStarted &&
-    !isRoomClosed &&
-    session.status !== "CANCELLED" &&
-    session.status !== "PATIENT_NO_SHOW" &&
-    session.status !== "COMPLETED";
+    session.sessionMode === "VIDEO" && operational?.room.state === "OPEN" && !isRoomClosed;
   const joinUrl = buildProviderLaunchUrl(joinResult);
   const runtimePrepared = getRuntimePreparedState({
     prepareResult,
@@ -215,65 +173,45 @@ export default function PractitionerSessionDetailPanel({ sessionId }: Props) {
     hasRuntimeAccess &&
     !isRoomClosed &&
     !runtimePrepared &&
-    canPrepareSessionRuntime(session, joinResult);
-  const joinWindowOpen = isJoinWindowOpen(session, joinResult);
+    operational?.join.canPrepareRuntime === true;
+  const joinWindowOpen = operational?.join.allowed === true;
   const canJoinNow =
-    joinResult?.canJoin ?? session.joinAvailability?.canJoin ?? false;
+    joinResult?.canJoin ?? operational?.join.allowed ?? false;
   const blockedJoinReason =
     joinResult?.blockedReason ??
-    session.joinAvailability?.blockedReason ??
+    operational?.join.reasonCode ??
     null;
-  const canOpenSessionChat = canOpenSessionChatFromPresentationStatus(
-    session.status,
-  );
+  const canOpenSessionChat = session.sessionChat?.available === true;
   const presentationTitle = t(
-    `detail.presentation.${session.presentationStatus}.title` as Parameters<
+    `detail.presentation.${operationalState}.title` as Parameters<
       typeof t
     >[0],
   );
   const presentationNote = t(
-    `detail.presentation.${session.presentationStatus}.note` as Parameters<
+    `detail.presentation.${operationalState}.note` as Parameters<
       typeof t
     >[0],
   );
   const presentationCloseout = t(
-    `detail.presentation.${session.presentationStatus}.closeout` as Parameters<
+    `detail.presentation.${operationalState}.closeout` as Parameters<
       typeof t
     >[0],
   );
-  const roomCloseSupportHeading = getSafeTranslation(
-    t,
-    "detail.roomClose.support.heading",
-    locale.startsWith("ar")
-      ? "هل تحتاج إلى مساعدة في هذه الجلسة؟"
-      : "Need help with this session?",
-  );
-  const roomCloseSupportNote = getSafeTranslation(
-    t,
-    "detail.roomClose.support.note",
-    locale.startsWith("ar")
-      ? "إذا أُغلقت الغرفة بشكل غير متوقع أو احتجت إلى مراجعة ما حدث، يمكن للدعم مساعدتك."
-      : "If the room closed unexpectedly or you need help reviewing what happened, support can help.",
-  );
-  const roomCloseActionLabel = getSafeTranslation(
-    t,
-    "detail.roomClose.action",
-    locale.startsWith("ar") ? "إغلاق الجلسة" : "Close room",
-  );
+  const roomCloseSupportHeading = t("detail.roomClose.support.heading");
+  const roomCloseSupportNote = t("detail.roomClose.support.note");
+  const roomCloseActionLabel = t("detail.roomClose.action");
   const shouldShowJoinCheck =
     hasRuntimeAccess &&
     !isRoomClosed &&
     !(joinResult?.canJoin && canLaunchProviderRuntime(joinResult)) &&
     canJoinNow;
-  const openInMessagesLabel = locale.startsWith("ar")
-    ? "فتح داخل الرسائل"
-    : "Open in messages";
+  const openInMessagesLabel = t("detail.ui.openMessages");
 
   const liveFlowKey = !hasRuntimeAccess
     ? "unavailable"
     : isRoomClosed
       ? "unavailable"
-      : session.presentationStatus === "IN_PROGRESS"
+      : operationalState === "IN_PROGRESS"
         ? "liveNow"
         : joinResult?.canJoin && canLaunchProviderRuntime(joinResult)
           ? "readyToJoin"
@@ -283,23 +221,11 @@ export default function PractitionerSessionDetailPanel({ sessionId }: Props) {
               ? "readyToPrepare"
               : "awaitingWindow";
 
-  const handleMarkCompleted = async () => {
-    try {
-      await completeMutation.mutateAsync(session.id);
-      setConfirmingAction(null);
-      setRecentAction("complete");
-      noShowMutation.reset();
-    } catch {
-      setRecentAction(null);
-    }
-  };
-
   const handleMarkNoShow = async () => {
     try {
       await noShowMutation.mutateAsync(session.id);
       setConfirmingAction(null);
       setRecentAction("no-show");
-      completeMutation.reset();
     } catch {
       setRecentAction(null);
     }
@@ -371,7 +297,7 @@ export default function PractitionerSessionDetailPanel({ sessionId }: Props) {
 
   return (
     <div className="space-y-6">
-      {/* ═══ HERO SECTION ═══ */}
+      {/* ??? HERO SECTION ??? */}
       <div className="border-border-light bg-surface-primary rounded-2xl border p-5 shadow-sm dark:bg-white/5">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
@@ -383,10 +309,7 @@ export default function PractitionerSessionDetailPanel({ sessionId }: Props) {
               />
             </span>
             <h2 className="text-text-primary mt-2 text-xl font-bold dark:text-white/95">
-              {locale === "ar" ? "جلسة مع " : "Session with "}
-              <span className="text-primary">
-                {session.patient?.displayName ?? "—"}
-              </span>
+              {t("detail.ui.sessionWith", { name: session.patient?.displayName ?? "—" })}
             </h2>
             <div className="text-text-secondary mt-2.5 flex flex-wrap items-center gap-x-5 gap-y-1.5 text-sm">
               <span className="inline-flex items-center gap-1.5">
@@ -395,27 +318,20 @@ export default function PractitionerSessionDetailPanel({ sessionId }: Props) {
                   ? formatPractitionerOrViewerDateTime(
                       session.scheduledStartAt,
                       practitionerTimeZone,
-                      { locale: numLocale, fallbackText: "—" },
                     )
                   : t("detail.noSchedule")}
               </span>
               <span className="inline-flex items-center gap-1.5">
                 <Clock size={15} className="text-text-muted" />
-                {session.durationMinutes} {locale === "ar" ? "دقيقة" : "mins"}
+                {t("detail.ui.minutes", { count: session.durationMinutes })}
               </span>
               <span className="inline-flex items-center gap-1.5">
                 <Video size={15} className="text-text-muted" />
                 {session.sessionMode === "VIDEO"
-                  ? locale === "ar"
-                    ? "فيديو"
-                    : "Video"
+                  ? t("detail.ui.video")
                   : session.sessionMode === "AUDIO"
-                    ? locale === "ar"
-                      ? "صوتي"
-                      : "Audio"
-                    : locale === "ar"
-                      ? "محادثة"
-                      : "Chat"}
+                    ? t("detail.ui.audio")
+                    : t("detail.ui.chatMode")}
               </span>
             </div>
           </div>
@@ -423,7 +339,7 @@ export default function PractitionerSessionDetailPanel({ sessionId }: Props) {
           <div className="flex items-center gap-3">
             <SessionStatusBadge
               status={session.status}
-              presentationStatus={session.presentationStatus}
+              operational={session.operational}
             />
             {/* Quick Action: Join Button */}
             {joinResult?.canJoin && joinUrl && (
@@ -441,62 +357,56 @@ export default function PractitionerSessionDetailPanel({ sessionId }: Props) {
         </div>
       </div>
 
-      {/* ═══ TWO COLUMN LAYOUT ═══ */}
+      {/* ??? TWO COLUMN LAYOUT ??? */}
       <div className="grid gap-6 lg:grid-cols-[1fr_380px]">
-        {/* ═══ LEFT COLUMN: SUMMARY, MEETING, CLINICAL, TIMELINE (65-70%) ═══ */}
+        {/* ??? LEFT COLUMN: SUMMARY, MEETING, CLINICAL, TIMELINE (65-70%) ??? */}
         <div className="space-y-6">
           {/* Session Summary Card */}
           <div className="border-border-light bg-surface-primary rounded-2xl border p-5 shadow-sm dark:bg-white/5">
             <h3 className="text-text-primary mb-4 text-base font-semibold dark:text-white/90">
-              {locale === "ar" ? "ملخص الجلسة" : "Session Summary"}
+              {t("detail.currentStateHeading")}
             </h3>
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="bg-surface-tertiary flex flex-col gap-1 rounded-xl p-3 dark:bg-white/5">
                 <span className="text-text-muted text-xs">
-                  {locale === "ar" ? "تاريخ الحجز" : "Booked At"}
+                  {t("detail.bookedAt")}
                 </span>
                 <span className="text-text-primary text-sm font-medium dark:text-white/95">
                   {formatPractitionerOrViewerDateTime(
                     session.createdAt,
                     practitionerTimeZone,
-                    { locale: numLocale, fallbackText: "—" },
                   )}
                 </span>
               </div>
               <div className="bg-surface-tertiary flex flex-col gap-1 rounded-xl p-3 dark:bg-white/5">
                 <span className="text-text-muted text-xs">
-                  {locale === "ar" ? "نوع التدفق" : "Flow Type"}
+                  {t("detail.ui.flowType")}
                 </span>
                 <span className="text-text-primary text-sm font-medium dark:text-white/95">
-                  {session.flowType === "INSTANT"
-                    ? locale === "ar"
-                      ? "جلسة فورية"
-                      : "Instant Session"
-                    : locale === "ar"
-                      ? "جلسة مجدولة"
-                      : "Scheduled Session"}
+                    {session.flowType === "INSTANT"
+                      ? t("detail.ui.instantSession")
+                      : t("detail.ui.scheduledSession")}
                 </span>
               </div>
               <div className="bg-surface-tertiary flex flex-col gap-1 rounded-xl p-3 dark:bg-white/5">
                 <span className="text-text-muted text-xs">
-                  {locale === "ar" ? "المنطقة الزمنية" : "Timezone"}
+                  {t("detail.summary.timezoneLabel")}
                 </span>
                 <span className="text-text-primary text-sm font-medium dark:text-white/95">
-                  {practitionerTimeZoneLabel ?? session.timezone ?? "—"}
+                  {practitionerTimeZoneLabel ?? session.timezone ?? "�"}
                 </span>
               </div>
               <div className="bg-surface-tertiary flex flex-col gap-1 rounded-xl p-3 dark:bg-white/5">
                 <span className="text-text-muted text-xs">
-                  {locale === "ar" ? "تاريخ الانتهاء المتوقع" : "Scheduled End"}
+                  {t("detail.ui.expectedEnd")}
                 </span>
                 <span className="text-text-primary text-sm font-medium dark:text-white/95">
                   {session.scheduledEndAt
                     ? formatPractitionerOrViewerDateTime(
                         session.scheduledEndAt,
                         practitionerTimeZone,
-                        { locale: numLocale, fallbackText: "—" },
                       )
-                    : "—"}
+                    : "�"}
                 </span>
               </div>
             </div>
@@ -512,7 +422,7 @@ export default function PractitionerSessionDetailPanel({ sessionId }: Props) {
               <div className="border-border-light mb-4 flex flex-wrap items-center justify-between gap-4 rounded-xl border p-3 dark:border-white/10">
                 <div>
                   <p className="text-text-muted text-xs">
-                    {locale === "ar" ? "حالة الغرفة" : "Room Status"}
+                    {t("detail.ui.roomStatus")}
                   </p>
                   <p className="text-text-primary mt-0.5 text-sm font-semibold dark:text-white/90">
                     {t(
@@ -683,9 +593,7 @@ export default function PractitionerSessionDetailPanel({ sessionId }: Props) {
           {session.notesInternal && (
             <div className="border-border-light bg-surface-primary rounded-2xl border p-5 shadow-sm dark:bg-white/5">
               <h3 className="text-text-primary mb-3 text-base font-semibold dark:text-white/90">
-                {locale === "ar"
-                  ? "ملاحظات إدارية داخلية"
-                  : "Internal Admin Notes"}
+                {t("detail.ui.internalNotes")}
               </h3>
               <p className="text-text-secondary bg-surface-tertiary rounded-xl p-4 text-sm leading-relaxed whitespace-pre-wrap dark:bg-white/5">
                 {session.notesInternal}
@@ -697,9 +605,7 @@ export default function PractitionerSessionDetailPanel({ sessionId }: Props) {
           {session.timeline && session.timeline.length > 0 && (
             <div className="border-border-light bg-surface-primary rounded-2xl border p-5 shadow-sm dark:bg-white/5">
               <h3 className="text-text-primary mb-4 text-base font-semibold dark:text-white/90">
-                {locale === "ar"
-                  ? "سجل الأحداث والجدول الزمني"
-                  : "Event Timeline & History"}
+                {t("detail.ui.timeline")}
               </h3>
               <div className="border-border-light relative ml-2 space-y-5 border-l pl-4 rtl:mr-2 rtl:border-r rtl:border-l-0 rtl:pr-4 rtl:pl-0 dark:border-white/10">
                 {session.timeline.map((event, idx) => (
@@ -711,18 +617,15 @@ export default function PractitionerSessionDetailPanel({ sessionId }: Props) {
                         {formatPractitionerOrViewerDateTime(
                           event.occurredAt,
                           practitionerTimeZone,
-                          { locale: numLocale, fallbackText: "—" },
                         )}
                       </span>
                       <p className="text-text-primary mt-0.5 text-sm font-semibold dark:text-white/90">
-                        {locale === "ar"
-                          ? formatEventTypeAr(event.eventType)
-                          : formatEventTypeEn(event.eventType)}
+                        {formatEventType(event.eventType, t)}
                       </p>
-                      {event.reason && (
+                      {formatCleanReason(event.reason) && (
                         <p className="text-text-secondary bg-surface-tertiary mt-1 inline-block rounded px-2 py-1 text-xs dark:bg-white/5">
-                          {locale === "ar" ? "السبب: " : "Reason: "}
-                          {event.reason}
+                          {t("detail.ui.reason")} {" "}
+                          {formatCleanReason(event.reason)}
                         </p>
                       )}
                     </div>
@@ -733,327 +636,187 @@ export default function PractitionerSessionDetailPanel({ sessionId }: Props) {
           )}
         </div>
 
-        {/* ═══ RIGHT COLUMN: PATIENT, BILLING, MESSAGING, ACTIONS (30-35%) ═══ */}
-        <div className="space-y-6">
-          {/* Patient Card */}
-          <div className="border-border-light bg-surface-primary rounded-2xl border p-5 shadow-sm dark:bg-white/5">
-            <h3 className="text-text-primary mb-4 text-base font-semibold dark:text-white/90">
-              {locale === "ar" ? "بيانات المريض" : "Patient Profile"}
-            </h3>
-            <div className="border-border-light flex items-center gap-3.5 border-b pb-4 dark:border-white/10">
-              {/* Initial Avatar */}
-              <div className="bg-primary/10 text-primary flex h-12 w-12 shrink-0 items-center justify-center rounded-full text-lg font-bold">
-                {session.patient?.displayName?.charAt(0).toUpperCase() ?? "P"}
+        {/* ??? RIGHT COLUMN: UNIFIED SIDEBAR (COMPACT) ??? */}
+        <div className="space-y-4">
+          <div className="border-border-light bg-surface-primary rounded-2xl border p-4 shadow-sm space-y-4 divide-y divide-border-light/60 dark:bg-white/5 dark:divide-white/10">
+            {/* 1. Patient Profile */}
+            <div>
+              <h3 className="text-text-primary mb-3 text-sm font-bold dark:text-white/90">
+                {t("detail.ui.patientProfile")}
+              </h3>
+              <div className="flex items-center gap-3">
+                <div className="bg-primary/10 text-primary flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-base font-bold">
+                  {session.patient?.displayName?.charAt(0).toUpperCase() ?? "P"}
+                </div>
+                <div className="min-w-0">
+                  <p className="text-text-primary truncate text-sm font-bold dark:text-white/95">
+                    {session.patient?.displayName ?? "�"}
+                  </p>
+                  <p className="text-text-muted text-[11px]">
+                    ID: {session.patient?.id.substring(0, 8)}...
+                  </p>
+                </div>
               </div>
-              <div className="min-w-0">
-                <p className="text-text-primary truncate font-bold dark:text-white/95">
-                  {session.patient?.displayName ?? "—"}
-                </p>
-                <p className="text-text-muted mt-0.5 text-xs">
-                  ID: {session.patient?.id.substring(0, 8)}...
-                </p>
+
+              <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
+                {session.patientDetails?.gender && (
+                  <div className="bg-surface-tertiary rounded-lg p-2 dark:bg-white/5">
+                    <span className="text-text-muted block text-[10px]">
+                      {t("detail.ui.gender")}
+                    </span>
+                    <span className="text-text-primary font-semibold dark:text-white/90">
+                      {session.patientDetails.gender === "MALE"
+                        ? t("detail.ui.male")
+                        : session.patientDetails.gender === "FEMALE"
+                          ? t("detail.ui.female")
+                          : session.patientDetails.gender}
+                    </span>
+                  </div>
+                )}
+                {session.patientDetails?.dateOfBirth && (
+                  <div className="bg-surface-tertiary rounded-lg p-2 dark:bg-white/5">
+                    <span className="text-text-muted block text-[10px]">
+                      {t("detail.ui.age")}
+                    </span>
+                    <span className="text-text-primary font-semibold dark:text-white/90">
+                      {calculateAge(session.patientDetails.dateOfBirth)}{" "}
+                      {t("detail.ui.years")}
+                    </span>
+                  </div>
+                )}
+                {session.patientDetails?.preferredLanguage && (
+                  <div className="bg-surface-tertiary rounded-lg p-2 dark:bg-white/5">
+                    <span className="text-text-muted block text-[10px]">
+                      {t("detail.ui.preferredLanguage")}
+                    </span>
+                    <span className="text-text-primary font-semibold dark:text-white/90">
+                      {session.patientDetails.preferredLanguage === "ar" ? t("detail.ui.arabic") : t("detail.ui.english")}
+                    </span>
+                  </div>
+                )}
+                {session.patientDetails?.country && (
+                  <div className="bg-surface-tertiary rounded-lg p-2 dark:bg-white/5">
+                    <span className="text-text-muted block text-[10px]">
+                      {t("detail.ui.country")}
+                    </span>
+                    <span className="text-text-primary font-semibold dark:text-white/90 truncate block">
+                      {locale === "ar" && session.patientDetails.country.nativeName
+                        ? session.patientDetails.country.nativeName
+                        : session.patientDetails.country.name}
+                    </span>
+                  </div>
+                )}
               </div>
             </div>
 
-            <div className="mt-4 space-y-3.5 text-sm">
-              {session.patientDetails?.gender && (
-                <div className="flex items-center justify-between gap-2">
-                  <span className="text-text-secondary text-xs">
-                    {locale === "ar" ? "الجنس" : "Gender"}
-                  </span>
+            {/* 2. Booking & Payment */}
+            <div className="pt-3">
+              <h3 className="text-text-primary mb-2 text-sm font-bold dark:text-white/90">
+                {t("detail.ui.bookingPayment")}
+              </h3>
+              <div className="space-y-2 text-xs">
+                <div className="flex items-center justify-between">
+                  <span className="text-text-muted">{t("detail.ui.coverage")}</span>
                   <span className="text-text-primary font-medium dark:text-white/90">
-                    {session.patientDetails.gender === "MALE"
-                      ? locale === "ar"
-                        ? "ذكر"
-                        : "Male"
-                      : session.patientDetails.gender === "FEMALE"
-                        ? locale === "ar"
-                          ? "أنثى"
-                          : "Female"
-                        : session.patientDetails.gender}
-                  </span>
-                </div>
-              )}
-              {session.patientDetails?.dateOfBirth && (
-                <div className="flex items-center justify-between gap-2">
-                  <span className="text-text-secondary text-xs">
-                    {locale === "ar" ? "العمر" : "Age"}
-                  </span>
-                  <span className="text-text-primary font-medium dark:text-white/90">
-                    {calculateAge(session.patientDetails.dateOfBirth)}{" "}
-                    {locale === "ar" ? "سنة" : "years"}
-                  </span>
-                </div>
-              )}
-              {session.patientDetails?.preferredLanguage && (
-                <div className="flex items-center justify-between gap-2">
-                  <span className="text-text-secondary text-xs">
-                    {locale === "ar" ? "اللغة المفضلة" : "Preferred Language"}
-                  </span>
-                  <span className="text-text-primary font-medium dark:text-white/90">
-                    {session.patientDetails.preferredLanguage === "ar"
-                      ? "العربية"
-                      : "English"}
-                  </span>
-                </div>
-              )}
-              {session.patientDetails?.country && (
-                <div className="flex items-center justify-between gap-2">
-                  <span className="text-text-secondary text-xs">
-                    {locale === "ar" ? "الدولة" : "Country"}
-                  </span>
-                  <span className="text-text-primary font-medium dark:text-white/90">
-                    {locale === "ar" &&
-                    session.patientDetails.country.nativeName
-                      ? session.patientDetails.country.nativeName
-                      : session.patientDetails.country.name}
-                  </span>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Booking & Payment Card */}
-          <div className="border-border-light bg-surface-primary rounded-2xl border p-5 shadow-sm dark:bg-white/5">
-            <h3 className="text-text-primary mb-4 text-base font-semibold dark:text-white/90">
-              {locale === "ar" ? "الحجز والمالية" : "Booking & Payment"}
-            </h3>
-
-            <div className="space-y-4 text-sm">
-              <div className="border-border-light/75 flex items-center justify-between border-b pb-3 dark:border-white/5">
-                <span className="text-text-secondary text-xs">
-                  {locale === "ar" ? "نوع التغطية" : "Coverage Type"}
-                </span>
-                <span className="text-text-primary font-medium dark:text-white/90">
-                  {session.paymentCoverageType === "PACKAGE"
-                    ? locale === "ar"
-                      ? "باقة علاجية"
-                      : "Package"
-                    : session.paymentCoverageType === "CORPORATE_SPONSORSHIP"
-                      ? locale === "ar"
-                        ? "رعاية شركات"
-                        : "Corporate Sponsorship"
-                      : locale === "ar"
-                        ? "دفع مباشر"
-                        : "Direct Payment"}
-                </span>
-              </div>
-
-              {/* Package Details */}
-              {session.paymentCoverageType === "PACKAGE" &&
-                session.packagePurchase && (
-                  <div className="bg-surface-tertiary space-y-2 rounded-xl p-3 dark:bg-white/5">
-                    <p className="text-text-primary text-xs font-semibold dark:text-white/90">
-                      {locale === "ar" ? "بيانات الباقة:" : "Package Details:"}
-                    </p>
-                    <div className="flex justify-between text-xs">
-                      <span className="text-text-secondary">
-                        {locale === "ar" ? "اسم الباقة" : "Plan"}
-                      </span>
-                      <span className="text-text-primary font-medium dark:text-white/90">
-                        {session.packagePurchase.packagePlan.title}
-                      </span>
-                    </div>
-                  </div>
-                )}
-
-              {/* Corporate Sponsorship Details */}
-              {session.paymentCoverageType === "CORPORATE_SPONSORSHIP" &&
-                session.corporateSponsorshipDetails && (
-                  <div className="bg-surface-tertiary space-y-2 rounded-xl p-3 dark:bg-white/5">
-                    <p className="text-text-primary text-xs font-semibold dark:text-white/90">
-                      {locale === "ar"
-                        ? "بيانات الرعاية:"
-                        : "Sponsorship Details:"}
-                    </p>
-                    <div className="flex justify-between text-xs">
-                      <span className="text-text-secondary">
-                        {locale === "ar" ? "الشركة الراعية" : "Organization"}
-                      </span>
-                      <span className="text-text-primary font-medium dark:text-white/90">
-                        {session.corporateSponsorshipDetails.organizationName}
-                      </span>
-                    </div>
-                    <div className="flex justify-between text-xs">
-                      <span className="text-text-secondary">
-                        {locale === "ar" ? "خطة المنافع" : "Benefit Plan"}
-                      </span>
-                      <span className="text-text-primary font-medium dark:text-white/90">
-                        {session.corporateSponsorshipDetails.benefitPlanName}
-                      </span>
-                    </div>
-                  </div>
-                )}
-
-              {/* Billing and Amount */}
-              <div className="flex items-center justify-between pt-1">
-                <span className="text-text-secondary text-xs">
-                  {locale === "ar" ? "حالة الدفع" : "Payment Status"}
-                </span>
-                <span className="text-text-primary font-semibold dark:text-white/90">
-                  {session.paymentDetails
-                    ? locale === "ar"
-                      ? formatPaymentStatusAr(session.paymentDetails.status)
-                      : session.paymentDetails.status
-                    : session.paymentCoverageType === "PACKAGE"
-                      ? locale === "ar"
-                        ? "مغطى بالباقة"
-                        : "Package Covered"
+                    {session.paymentCoverageType === "PACKAGE"
+                      ? t("detail.ui.package")
                       : session.paymentCoverageType === "CORPORATE_SPONSORSHIP"
-                        ? locale === "ar"
-                          ? "مغطى بالرعاية"
-                          : "Sponsor Covered"
-                        : locale === "ar"
-                          ? "لم يتم الدفع"
-                          : "Unpaid"}
-                </span>
-              </div>
-
-              {session.paymentDetails && (
-                <div className="flex items-center justify-between pt-1">
-                  <span className="text-text-secondary text-xs">
-                    {locale === "ar" ? "المبلغ الإجمالي" : "Total Amount"}
-                  </span>
-                  <span className="text-primary dark:text-primary-light text-base font-bold">
-                    {formatMoney(
-                      locale,
-                      session.paymentDetails.amountTotal,
-                      session.paymentDetails.currencyCode,
-                    )}
+                        ? t("detail.ui.corporate")
+                        : t("detail.ui.directPayment")}
                   </span>
                 </div>
-              )}
+                <div className="flex items-center justify-between">
+                  <span className="text-text-muted">{t("detail.ui.paymentStatus")}</span>
+                  <span className="text-text-primary font-semibold dark:text-white/90">
+                    {session.paymentDetails
+                      ? formatPaymentStatus(session.paymentDetails.status, t)
+                      : session.paymentCoverageType === "PACKAGE"
+                        ? t("detail.ui.packageCovered")
+                        : t("detail.ui.unpaid")}
+                  </span>
+                </div>
+                {session.paymentDetails && (
+                  <div className="flex items-center justify-between border-t border-border-light/40 pt-2 dark:border-white/5">
+                    <span className="text-text-muted">{t("detail.ui.total")}</span>
+                    <span className="text-primary font-bold text-sm">
+                      {formatMoney(locale, session.paymentDetails.amountTotal, session.paymentDetails.currencyCode)}
+                    </span>
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
 
-          {/* Messaging Card */}
-          <div className="border-border-light bg-surface-primary rounded-2xl border p-5 shadow-sm dark:bg-white/5">
-            <h3 className="text-text-primary mb-2 text-base font-semibold dark:text-white/90">
-              {t("detail.chatCard.heading")}
-            </h3>
-            <p className="text-text-secondary text-xs leading-relaxed">
-              {canOpenSessionChat
-                ? t("detail.chatCard.note")
-                : t("detail.chatCard.disabledNote")}
-            </p>
-            <div className="mt-4 flex flex-wrap gap-2">
-              {canOpenSessionChat ? (
-                <>
-                  <button
-                    type="button"
-                    onClick={() =>
-                      dispatchOpenSessionChatInShell({ sessionId: session.id })
-                    }
-                    className="bg-primary hover:bg-primary/95 inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl px-3 py-2 text-xs font-semibold text-white shadow-sm transition"
+            {/* 3. Messaging Trigger */}
+            <div className="pt-3">
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="text-text-primary text-sm font-bold dark:text-white/90">
+                  {t("detail.chatCard.heading")}
+                </h3>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {canOpenSessionChat ? (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => dispatchOpenSessionChatInShell({ sessionId: session.id })}
+                      className="bg-primary hover:bg-primary-hover flex-1 rounded-xl py-2 px-3 text-xs font-semibold text-white shadow-xs transition"
+                    >
+                      {openInMessagesLabel}
+                    </button>
+                    <Link
+                      href={`/practitioner/sessions/${session.id}/chat` as never}
+                      className="border border-border-light rounded-xl py-2 px-3 text-xs font-medium text-text-primary hover:bg-surface-tertiary transition dark:text-white/90"
+                    >
+                      {t("detail.chatCard.open")}
+                    </Link>
+                  </>
+                ) : (
+                  <p className="text-xs text-text-muted">
+                    {t("detail.chatCard.disabledNote")}
+                  </p>
+                )}
+              </div>
+            </div>
+
+            {/* 4. Session Closeout Actions */}
+            <div className="pt-3">
+              <h3 className="text-text-primary mb-2 text-sm font-bold dark:text-white/90">
+                {t("detail.actions.heading")}
+              </h3>
+
+              {recentAction === "no-show" && !noShowMutation.isError && (
+                <div className="bg-primary-light border border-primary/20 text-xs text-text-primary rounded-lg p-2 mb-2 flex items-center gap-1.5">
+                  <CheckCircle2 size={14} className="text-primary shrink-0" />
+                  <span>{t("detail.actions.noShowSuccess")}</span>
+                </div>
+              )}
+
+              {canMarkNoShow ? (
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="flex-1 text-xs py-2"
+                    onClick={() => {
+                      setConfirmingAction("no-show");
+                      setRecentAction(null);
+                    }}
+                    disabled={isBusy}
                   >
-                    {openInMessagesLabel}
-                  </button>
-                  <Link
-                    href={`/practitioner/sessions/${session.id}/chat` as never}
-                    className="border-border-light text-text-primary hover:border-primary/30 hover:text-primary dark:hover:text-primary-light inline-flex items-center justify-center rounded-xl border px-3 py-2 text-xs font-medium transition dark:text-white/90"
-                  >
-                    {t("detail.chatCard.open")}
-                  </Link>
-                </>
+                    {t("detail.actions.noShow")}
+                  </Button>
+                </div>
               ) : (
-                <button
-                  type="button"
-                  disabled
-                  className="border-border-light text-text-muted inline-flex w-full cursor-not-allowed items-center justify-center rounded-xl border px-3 py-2 text-xs font-medium opacity-60"
-                >
-                  {t("detail.chatCard.open")}
-                </button>
+                <p className="text-xs text-text-muted">
+                  {t("detail.actions.notAllowedYet")}
+                </p>
               )}
             </div>
-          </div>
-
-          {/* Session Closeout Actions Card */}
-          <div className="border-border-light bg-surface-primary rounded-2xl border p-5 shadow-sm dark:bg-white/5">
-            <h3 className="text-text-primary mb-2 text-base font-semibold dark:text-white/90">
-              {t("detail.actions.heading")}
-            </h3>
-            <p className="text-text-secondary mb-4 text-xs leading-relaxed">
-              {t("detail.actions.note")}
-            </p>
-
-            {recentAction === "complete" && !completeMutation.isError && (
-              <div className="border-primary/15 bg-primary-light mb-4 flex items-start gap-2 rounded-xl border px-3 py-2 text-xs">
-                <CheckCircle2
-                  size={14}
-                  className="text-primary mt-0.5 shrink-0"
-                />
-                <p className="text-text-primary dark:text-white/90">
-                  {t("detail.actions.completeSuccess")}
-                </p>
-              </div>
-            )}
-            {recentAction === "no-show" && !noShowMutation.isError && (
-              <div className="border-primary/15 bg-primary-light mb-4 flex items-start gap-2 rounded-xl border px-3 py-2 text-xs">
-                <CheckCircle2
-                  size={14}
-                  className="text-primary mt-0.5 shrink-0"
-                />
-                <p className="text-text-primary dark:text-white/90">
-                  {t("detail.actions.noShowSuccess")}
-                </p>
-              </div>
-            )}
-            {(completeMutation.isError || noShowMutation.isError) && (
-              <div className="border-accent/20 bg-accent/10 mb-4 flex items-start gap-2 rounded-xl border px-3 py-2 text-xs">
-                <AlertCircle
-                  size={14}
-                  className="text-accent mt-0.5 shrink-0"
-                />
-                <p className="text-text-primary dark:text-white/90">
-                  {t("detail.actions.error")}
-                </p>
-              </div>
-            )}
-
-            {canMarkCompleted || canMarkNoShow ? (
-              <div className="space-y-3">
-                <div className="flex flex-wrap gap-2.5">
-                  {canMarkCompleted && (
-                    <Button
-                      size="sm"
-                      className="flex-1"
-                      onClick={() => {
-                        setConfirmingAction("complete");
-                        setRecentAction(null);
-                        noShowMutation.reset();
-                      }}
-                      disabled={isBusy}
-                    >
-                      {t("detail.actions.complete")}
-                    </Button>
-                  )}
-                  {canMarkNoShow && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="flex-1"
-                      onClick={() => {
-                        setConfirmingAction("no-show");
-                        setRecentAction(null);
-                        completeMutation.reset();
-                      }}
-                      disabled={isBusy}
-                    >
-                      {t("detail.actions.noShow")}
-                    </Button>
-                  )}
-                </div>
-              </div>
-            ) : (
-              <div className="bg-surface-tertiary text-text-secondary rounded-xl px-3.5 py-2.5 text-xs dark:bg-white/5">
-                {t("detail.actions.availability.notAvailable")}
-              </div>
-            )}
           </div>
         </div>
       </div>
 
-      {/* Back to sessions — inactive sessions only */}
+      {/* Back to sessions � inactive sessions only */}
       {!isActive && (
         <div className="pt-1">
           <Link
@@ -1065,51 +828,7 @@ export default function PractitionerSessionDetailPanel({ sessionId }: Props) {
         </div>
       )}
 
-      {/* ═══ MODALS ═══ */}
-      <ConfirmModal
-        isOpen={confirmingAction === "complete"}
-        onClose={() => {
-          setConfirmingAction(null);
-          completeMutation.reset();
-        }}
-        size="sm"
-        title={t("detail.actions.completeConfirm.heading")}
-        description={t("detail.actions.completeConfirm.note")}
-        confirmLabel={
-          completeMutation.isPending ? (
-            <>
-              <Loader2 size={14} className="animate-spin" />
-              {t("detail.actions.completePending")}
-            </>
-          ) : (
-            t("detail.actions.completeConfirm.confirm")
-          )
-        }
-        cancelLabel={t("detail.actions.completeConfirm.back")}
-        onConfirm={handleMarkCompleted}
-        loading={isBusy}
-      >
-        <div className="border-primary/15 bg-primary-light text-text-brand dark:border-primary/20 dark:bg-primary/10 dark:text-primary-light rounded-xl border px-4 py-4 text-sm">
-          <div className="flex items-start gap-3">
-            <CheckCircle2 size={16} className="text-primary mt-0.5 shrink-0" />
-            <div>
-              <p className="font-medium">
-                {session.patient?.displayName ?? "-"}
-              </p>
-              <p className="mt-1 text-xs opacity-80">
-                {session.scheduledStartAt
-                  ? formatPractitionerOrViewerDateTime(
-                      session.scheduledStartAt,
-                      practitionerTimeZone,
-                      { locale: numLocale, fallbackText: "—" },
-                    )
-                  : t("detail.noSchedule")}
-              </p>
-            </div>
-          </div>
-        </div>
-      </ConfirmModal>
-
+      {/* ??? MODALS ??? */}
       <DestructiveConfirmModal
         isOpen={confirmingAction === "no-show"}
         onClose={() => {
@@ -1145,7 +864,6 @@ export default function PractitionerSessionDetailPanel({ sessionId }: Props) {
                   ? formatPractitionerOrViewerDateTime(
                       session.scheduledStartAt,
                       practitionerTimeZone,
-                      { locale: numLocale, fallbackText: "—" },
                     )
                   : t("detail.noSchedule")}
               </p>
@@ -1236,109 +954,43 @@ function calculateAge(dateOfBirthString: string | null) {
   return age;
 }
 
-function formatEventTypeAr(eventType: string) {
-  switch (eventType) {
-    case "SESSION_CREATED":
-      return "تم إنشاء الجلسة";
-    case "PAYMENT_PENDING":
-      return "بانتظار الدفع";
-    case "PAYMENT_CONFIRMED":
-      return "تم تأكيد الدفع بنجاح";
-    case "PRACTITIONER_ACCEPTED":
-      return "تم قبول الجلسة من المختص";
-    case "PRACTITIONER_REJECTED":
-      return "تم رفض الجلسة من المختص";
-    case "SESSION_CONFIRMED":
-      return "تم تأكيد موعد الجلسة";
-    case "SESSION_READY_TO_JOIN":
-      return "الجلسة جاهزة للانضمام الآن";
-    case "PATIENT_JOINED":
-      return "انضم المريض للغرفة";
-    case "PRACTITIONER_JOINED":
-      return "انضم المختص للغرفة";
-    case "SESSION_STARTED":
-      return "بدأت الجلسة الفعلية";
-    case "SESSION_AWAITING_COMPLETION_CONFIRMATION":
-      return "بانتظار تأكيد إتمام الجلسة";
-    case "SESSION_COMPLETED":
-      return "اكتملت الجلسة بنجاح";
-    case "CANCELLED_BY_PATIENT":
-      return "تم إلغاء الجلسة من قبل المريض";
-    case "CANCELLED_BY_PRACTITIONER":
-      return "تم إلغاء الجلسة من قبل المختص";
-    case "EXPIRED_UNPAID":
-      return "انتهت الجلسة لعدم إتمام الدفع";
-    case "NO_SHOW_PATIENT":
-      return "لم يحضر المريض";
-    case "NO_SHOW_PRACTITIONER":
-      return "لم يحضر المختص";
-    case "PROVIDER_ROOM_CREATED":
-      return "تم تجهيز غرفة البث المباشر";
-    case "PROVIDER_ROOM_ENDED":
-      return "تم إغلاق غرفة البث المباشر";
-    default:
-      return eventType;
+function formatCleanReason(reason: string | null | undefined): string | null {
+  if (!reason) return null;
+  if (reason.startsWith("sawiyaa.dev") || reason.includes(".v1:") || reason.includes("primary-immediately-joinable")) {
+    return null;
   }
+  return reason;
 }
 
-function formatEventTypeEn(eventType: string) {
-  switch (eventType) {
-    case "SESSION_CREATED":
-      return "Session Created";
-    case "PAYMENT_PENDING":
-      return "Payment Pending";
-    case "PAYMENT_CONFIRMED":
-      return "Payment Confirmed";
-    case "PRACTITIONER_ACCEPTED":
-      return "Session Accepted by Practitioner";
-    case "PRACTITIONER_REJECTED":
-      return "Session Rejected by Practitioner";
-    case "SESSION_CONFIRMED":
-      return "Session Confirmed";
-    case "SESSION_READY_TO_JOIN":
-      return "Session Ready to Join";
-    case "PATIENT_JOINED":
-      return "Patient Joined Room";
-    case "PRACTITIONER_JOINED":
-      return "Practitioner Joined Room";
-    case "SESSION_STARTED":
-      return "Session Started";
-    case "SESSION_AWAITING_COMPLETION_CONFIRMATION":
-      return "Awaiting Completion Confirmation";
-    case "SESSION_COMPLETED":
-      return "Session Completed";
-    case "CANCELLED_BY_PATIENT":
-      return "Cancelled by Patient";
-    case "CANCELLED_BY_PRACTITIONER":
-      return "Cancelled by Practitioner";
-    case "EXPIRED_UNPAID":
-      return "Expired Unpaid";
-    case "NO_SHOW_PATIENT":
-      return "Patient No-Show";
-    case "NO_SHOW_PRACTITIONER":
-      return "Practitioner No-Show";
-    case "PROVIDER_ROOM_CREATED":
-      return "Live Room Created";
-    case "PROVIDER_ROOM_ENDED":
-      return "Live Room Closed";
-    default:
-      return eventType;
-  }
+const EVENT_TYPE_KEYS = new Set([
+  "SESSION_CREATED",
+  "PAYMENT_PENDING",
+  "PAYMENT_CONFIRMED",
+  "PRACTITIONER_ACCEPTED",
+  "PRACTITIONER_REJECTED",
+  "SESSION_CONFIRMED",
+  "SESSION_READY_TO_JOIN",
+  "PATIENT_JOINED",
+  "PRACTITIONER_JOINED",
+  "SESSION_STARTED",
+  "SESSION_AWAITING_COMPLETION_CONFIRMATION",
+  "SESSION_COMPLETED",
+  "CANCELLED_BY_PATIENT",
+  "CANCELLED_BY_PRACTITIONER",
+  "EXPIRED_UNPAID",
+  "NO_SHOW_PATIENT",
+  "NO_SHOW_PRACTITIONER",
+  "PROVIDER_ROOM_CREATED",
+  "PROVIDER_ROOM_ENDED",
+]);
+
+function formatEventType(eventType: string, t: any) {
+  return EVENT_TYPE_KEYS.has(eventType)
+    ? t(`detail.eventTypes.${eventType}`)
+    : eventType;
 }
 
-function formatPaymentStatusAr(status: string) {
-  switch (status) {
-    case "CREATED":
-      return "تم الإنشاء";
-    case "CAPTURED":
-      return "مقبول ومؤكد";
-    case "FAILED":
-      return "فشل الدفع";
-    case "CANCELLED":
-      return "ملغي";
-    case "REFUNDED":
-      return "مسترجع";
-    default:
-      return status;
-  }
+function formatPaymentStatus(status: string, t: any) {
+  const knownStatuses = new Set(["CREATED", "CAPTURED", "FAILED", "CANCELLED", "REFUNDED"]);
+  return knownStatuses.has(status) ? t(`detail.paymentStatuses.${status}`) : status;
 }

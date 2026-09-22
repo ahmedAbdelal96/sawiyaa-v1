@@ -1,6 +1,6 @@
 import { ForbiddenException, NotFoundException } from '@nestjs/common';
 import { AppRole } from '@common/enums/app-role.enum';
-import { ConversationParticipantRole } from '@prisma/client';
+import { ConversationParticipantRole, SessionMode, SessionProvider, SessionStatus } from '@prisma/client';
 import { GeneralChatTargetRoleDto } from '../dto/create-general-chat-conversation.dto';
 import { GeneralChatActorRepository } from '../repositories/general-chat-actor.repository';
 import { GeneralChatRepository } from '../repositories/general-chat.repository';
@@ -192,6 +192,36 @@ describe('CreateOrGetGeneralChatConversationUseCase', () => {
         },
       }),
     ).rejects.toBeInstanceOf(NotFoundException);
+  });
+
+  it('rejects direct linked-session creation before the session is confirmed', async () => {
+    (generalChatActorRepository.findParticipantProfileByUser as jest.Mock)
+      .mockResolvedValueOnce({ id: 'pat_profile_1', userId: 'user_patient' })
+      .mockResolvedValueOnce({ id: 'pr_profile_1', userId: 'user_practitioner' });
+    (generalChatActorRepository.findSessionPairLink as jest.Mock).mockResolvedValue({
+      id: 'session_pending',
+      status: SessionStatus.PENDING_PAYMENT,
+      sessionMode: SessionMode.VIDEO,
+      scheduledStartAt: new Date('2026-08-02T12:00:00.000Z'),
+      scheduledEndAt: new Date('2026-08-02T12:30:00.000Z'),
+      provider: SessionProvider.DAILY,
+      providerRoomId: 'room-1',
+      providerSessionRef: 'room-ref-1',
+    });
+
+    await expect(
+      useCase.execute({
+        authenticatedUser: { id: 'user_patient', roles: [AppRole.PATIENT] },
+        dto: {
+          targetUserId: 'user_practitioner',
+          targetRole: GeneralChatTargetRoleDto.PRACTITIONER,
+          linkedSessionId: 'session_pending',
+        },
+      }),
+    ).rejects.toMatchObject({
+      response: { errorCode: 'GENERAL_CHAT_SESSION_CHAT_READ_ONLY' },
+    });
+    expect(generalChatRepository.createConversation).not.toHaveBeenCalled();
   });
 
   it('rejects boundary leakage when existing conversation is support/care-linked', async () => {

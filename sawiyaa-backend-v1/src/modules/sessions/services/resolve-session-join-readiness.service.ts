@@ -6,8 +6,10 @@ import {
   SessionProvider,
   SessionStatus,
 } from '@prisma/client';
-import { SessionJoinBlockedReason } from '../types/session-video.types';
-import { resolveSessionJoinPolicy } from '../utils/session-join-policy.util';
+import {
+  resolveSessionJoinPolicy,
+  SessionJoinPolicyResolution,
+} from '../utils/session-join-policy.util';
 
 @Injectable()
 export class ResolveSessionJoinReadinessService {
@@ -28,24 +30,18 @@ export class ResolveSessionJoinReadinessService {
       providerRoomId: string | null;
       providerSessionRef: string | null;
       videoRoomClosedAt?: Date | null;
+      joinOpenAt?: Date | null;
+      joinCloseAt?: Date | null;
       joinEarlyMinutes?: number;
       joinAfterEndGraceMinutes?: number;
       finalManualDecision?: SessionAdminDecisionType | null;
       now: Date;
-    }): {
-    canPrepareRuntime: boolean;
-    canJoin: boolean;
-    blockedReason: SessionJoinBlockedReason | null;
-  } {
-    const resolution = resolveSessionJoinPolicy({
+  }): SessionJoinPolicyResolution {
+    // This is the single injected read-policy boundary. Commands call it again
+    // with fresh Session facts before any provider or credential side effect.
+    return resolveSessionJoinPolicy({
       ...input,
       runtimePrepareLeadMinutes: this.prepareLeadMinutes,
     });
-
-    return {
-      canPrepareRuntime: resolution.canPrepareRuntime,
-      canJoin: resolution.canJoin,
-      blockedReason: resolution.blockedReason,
-    };
   }
 }

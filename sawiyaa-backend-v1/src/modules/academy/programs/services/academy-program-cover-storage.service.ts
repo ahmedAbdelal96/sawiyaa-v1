@@ -1,86 +1,38 @@
 import { Injectable } from '@nestjs/common';
-import { createReadStream } from 'fs';
-import { promises as fs } from 'fs';
+import { createReadStream, promises as fs } from 'fs';
 import * as path from 'path';
-import { randomUUID } from 'crypto';
+import { StoredFilePurpose } from '@prisma/client';
+import { UnifiedFileStorageService } from '@modules/files/unified-file-storage.service';
 
-const MIME_TO_EXTENSION: Record<string, string> = {
-  'image/jpeg': '.jpg',
-  'image/png': '.png',
-  'image/webp': '.webp',
-};
-
-export type StoredAcademyProgramCover = {
-  absolutePath: string;
-  mimeType: string;
-  fileName: string;
-};
+const MIME_TO_EXTENSION: Record<string, string> = { 'image/jpeg': '.jpg', 'image/png': '.png', 'image/webp': '.webp' };
+export type StoredAcademyProgramCover = { absolutePath: string; mimeType: string; fileName: string };
 
 @Injectable()
 export class AcademyProgramCoverStorageService {
-  private readonly baseDir = path.resolve(
-    process.cwd(),
-    'storage',
-    'academy-program-covers',
-  );
-
-  getAllowedMimeTypes(): string[] {
-    return Object.keys(MIME_TO_EXTENSION);
-  }
-
-  isAllowedMimeType(mimeType?: string | null): boolean {
-    if (!mimeType) {
-      return false;
-    }
-
-    return mimeType in MIME_TO_EXTENSION;
-  }
+  private readonly legacyDir = path.resolve(process.cwd(), 'storage', 'academy-program-covers');
+  constructor(private readonly files: UnifiedFileStorageService) {}
+  getAllowedMimeTypes(): string[] { return Object.keys(MIME_TO_EXTENSION); }
+  isAllowedMimeType(mimeType?: string | null): boolean { return !!mimeType && mimeType in MIME_TO_EXTENSION; }
 
   async saveCover(fileBuffer: Buffer, mimeType: string): Promise<string> {
-    const extension = MIME_TO_EXTENSION[mimeType];
-    if (!extension) {
-      throw new Error('Unsupported academy program cover mime type');
-    }
-
-    await fs.mkdir(this.baseDir, { recursive: true });
-    const fileName = `${Date.now()}-${randomUUID()}${extension}`;
-    const absolutePath = path.join(this.baseDir, fileName);
-    await fs.writeFile(absolutePath, fileBuffer);
-    return this.toApiUrl(fileName);
+    const stored = await this.files.store({ purpose: StoredFilePurpose.ACADEMY_PROGRAM_COVER, fileBuffer, mimeType, maxBytes: 10 * 1024 * 1024, allowedMimeTypes: this.getAllowedMimeTypes() });
+    return `/api/v1/academy/program-covers/${stored.id}${stored.extension}`;
   }
 
   async getCoverFile(fileName: string): Promise<StoredAcademyProgramCover | null> {
-    const safeName = fileName.replace(/[^a-zA-Z0-9._-]/g, '');
-    if (!safeName) {
-      return null;
+    const candidate = path.basename(fileName).replace(/[^a-zA-Z0-9._-]/g, '');
+    const id = candidate.slice(0, candidate.lastIndexOf('.'));
+    if (/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id)) {
+      const stored = await this.files.resolve(id);
+      if (stored?.purpose === StoredFilePurpose.ACADEMY_PROGRAM_COVER) return { absolutePath: stored.absolutePath, mimeType: stored.mimeType, fileName: candidate };
     }
-
-    const extension = path.extname(safeName).toLowerCase();
-    const mimeType = Object.entries(MIME_TO_EXTENSION).find(
-      ([, ext]) => ext === extension,
-    )?.[0];
-    if (!mimeType) {
-      return null;
-    }
-
-    const absolutePath = path.join(this.baseDir, safeName);
+    const ext = path.extname(candidate).toLowerCase();
+    const mimeType = Object.entries(MIME_TO_EXTENSION).find(([, value]) => value === ext)?.[0];
+    if (!mimeType) return null;
+    const absolutePath = path.join(this.legacyDir, candidate);
     const stat = await fs.stat(absolutePath).catch(() => null);
-    if (!stat?.isFile()) {
-      return null;
-    }
-
-    return {
-      absolutePath,
-      mimeType,
-      fileName: safeName,
-    };
+    return stat?.isFile() ? { absolutePath, mimeType, fileName: candidate } : null;
   }
 
-  createFileStream(absolutePath: string) {
-    return createReadStream(absolutePath);
-  }
-
-  private toApiUrl(fileName: string): string {
-    return `/api/v1/academy/program-covers/${fileName}`;
-  }
+  createFileStream(absolutePath: string) { return createReadStream(absolutePath); }
 }

@@ -1,5 +1,6 @@
 import { NestFactory } from '@nestjs/core';
-import { ValidationPipe } from '@nestjs/common';
+import { BadRequestException, ValidationPipe } from '@nestjs/common';
+import type { ValidationError } from 'class-validator';
 import helmet from 'helmet';
 import compression from 'compression';
 import cookieParser from 'cookie-parser';
@@ -9,6 +10,7 @@ import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 import { ResponseInterceptor } from './common/interceptors/response.interceptor';
 import { AppLoggerService } from './common/logging/app-logger.service';
 import { LoggingInterceptor } from './common/logging/logging.interceptor';
+import { summarizeValidationErrors } from './common/validation/summarize-validation-errors';
 
 async function bootstrap(): Promise<void> {
   const app = await NestFactory.create(AppModule, {
@@ -100,6 +102,12 @@ async function bootstrap(): Promise<void> {
       whitelist: true,
       forbidNonWhitelisted: true,
       transform: true,
+      exceptionFactory: (errors: ValidationError[]) =>
+        new BadRequestException({
+          messageKey: 'common.errors.validationFailed',
+          errorCode: 'VALIDATION_FAILED',
+          validationFields: summarizeValidationErrors(errors),
+        }),
     }),
   );
 

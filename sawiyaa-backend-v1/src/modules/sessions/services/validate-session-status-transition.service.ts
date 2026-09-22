@@ -77,4 +77,8 @@ export class ValidateSessionStatusTransitionService {
       });
     }
   }
+
+  canTransition(from: SessionStatus, to: SessionStatus): boolean {
+    return from === to || Boolean(this.allowedTransitions[from]?.includes(to));
+  }
 }

@@ -3,9 +3,20 @@ export type UnifiedMessagingRole = "patient" | "practitioner" | "admin";
 export type UnifiedMessagingLane = "session" | "practitioner" | "support";
 
 export type UnifiedSessionChatStatus =
+  | "DRAFT"
+  | "PENDING_PAYMENT"
+  | "PENDING_PRACTITIONER_CONFIRMATION"
+  | "UPCOMING"
   | "READY_TO_JOIN"
   | "IN_PROGRESS"
-  | "COMPLETED";
+  | "AWAITING_COMPLETION_CONFIRMATION"
+  | "AWAITING_ADMIN_RESOLUTION"
+  | "COMPLETED"
+  | "CANCELLED"
+  | "PATIENT_NO_SHOW"
+  | "PRACTITIONER_NO_SHOW"
+  | "BOTH_NO_SHOW"
+  | "EXPIRED";
 
 export type UnifiedMessagingLaneItem = {
   id: string;
@@ -89,6 +100,9 @@ export interface CanonicalConversation {
   subject: string | null;
   contextLabel: string;
   contextId: string;
+  sessionCode?: string | null;
+  sessionStatus?: string | null;
+  sessionScheduledStartAt?: string | null;
   status: string;
   isResolved: boolean;
   isReadOnly: boolean;

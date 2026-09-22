@@ -1,0 +1,1506 @@
+Mobile i18n validation failed with 1505 issue(s):
+- EN missing locale key: academyMobile.available
+- EN missing locale key: academyMobile.card.accessibilityLabel
+- EN missing locale key: academyMobile.durationDays_few
+- EN missing locale key: academyMobile.durationDays_many
+- EN missing locale key: academyMobile.durationDays_one
+- EN missing locale key: academyMobile.durationDays_other
+- EN missing locale key: academyMobile.durationDays_two
+- EN missing locale key: academyMobile.durationDays_zero
+- EN missing locale key: academyMobile.lectureCount_few
+- EN missing locale key: academyMobile.lectureCount_many
+- EN missing locale key: academyMobile.lectureCount_one
+- EN missing locale key: academyMobile.lectureCount_other
+- EN missing locale key: academyMobile.lectureCount_two
+- EN missing locale key: academyMobile.lectureCount_zero
+- EN missing locale key: academyMobile.lectures
+- EN missing locale key: academyMobile.paid
+- EN missing locale key: articlesMobile.detailTitle
+- EN missing locale key: auth.lockout.invalidCredentials
+- EN missing locale key: auth.lockout.invalidCredentialsOne
+- EN missing locale key: auth.lockout.loginTemporarilyLocked
+- EN missing locale key: auth.lockout.loginTemporarilyLockedFallback
+- EN missing locale key: auth.lockout.practitionerLoginTemporarilyLockedFallback
+- EN missing locale key: auth.lockout.practitionerLoginTemporarilyLockedWithSupport
+- EN missing locale key: auth.lockout.practitionerOtpInvalidCredentials
+- EN missing locale key: auth.lockout.practitionerOtpInvalidCredentialsOne
+- EN missing locale key: auth.lockout.practitionerOtpSuperseded
+- EN missing locale key: auth.lockout.practitionerOtpTemporarilyLocked
+- EN missing locale key: auth.lockout.practitionerOtpTemporarilyLockedFallback
+- EN missing locale key: auth.loginError
+- EN missing locale key: auth.otpError
+- EN missing locale key: auth.patientForgotPassword.changeEmail
+- EN missing locale key: auth.patientForgotPassword.confirmPassword
+- EN missing locale key: auth.patientForgotPassword.confirmPasswordPlaceholder
+- EN missing locale key: auth.patientForgotPassword.cooldownMessage
+- EN missing locale key: auth.patientForgotPassword.errorMessage
+- EN missing locale key: auth.patientForgotPassword.errors.passwordsMismatch
+- EN missing locale key: auth.patientForgotPassword.errors.patientAccountNotFound
+- EN missing locale key: auth.patientForgotPassword.errors.patientEmailOnPractitionerPage
+- EN missing locale key: auth.patientForgotPassword.errors.practitionerEmailOnPatientPage
+- EN missing locale key: auth.patientForgotPassword.goToSignIn
+- EN missing locale key: auth.patientForgotPassword.otpEmailInfoLabel
+- EN missing locale key: auth.patientForgotPassword.passwordEmailInfoLabel
+- EN missing locale key: auth.patientForgotPassword.rememberPassword
+- EN missing locale key: auth.patientForgotPassword.resendCode
+- EN missing locale key: auth.patientForgotPassword.step2Description
+- EN missing locale key: auth.patientForgotPassword.step2Title
+- EN missing locale key: auth.patientForgotPassword.step3Description
+- EN missing locale key: auth.patientForgotPassword.step3Title
+- EN missing locale key: auth.patientForgotPassword.verifyOtp
+- EN missing locale key: auth.practitionerForgotPassword.changeEmail
+- EN missing locale key: auth.practitionerForgotPassword.confirmPassword
+- EN missing locale key: auth.practitionerForgotPassword.confirmPasswordPlaceholder
+- EN missing locale key: auth.practitionerForgotPassword.cooldownMessage
+- EN missing locale key: auth.practitionerForgotPassword.errorMessage
+- EN missing locale key: auth.practitionerForgotPassword.errors.passwordsMismatch
+- EN missing locale key: auth.practitionerForgotPassword.errors.patientEmailOnPractitionerPage
+- EN missing locale key: auth.practitionerForgotPassword.errors.practitionerAccountNotFound
+- EN missing locale key: auth.practitionerForgotPassword.errors.practitionerEmailOnPatientPage
+- EN missing locale key: auth.practitionerForgotPassword.otpEmailInfoLabel
+- EN missing locale key: auth.practitionerForgotPassword.passwordEmailInfoLabel
+- EN missing locale key: auth.practitionerForgotPassword.resendCode
+- EN missing locale key: auth.practitionerForgotPassword.step2Description
+- EN missing locale key: auth.practitionerForgotPassword.step2Title
+- EN missing locale key: auth.practitionerForgotPassword.step3Description
+- EN missing locale key: auth.practitionerForgotPassword.step3Title
+- EN missing locale key: auth.practitionerForgotPassword.verifyOtp
+- EN missing locale key: careChat.sessionFollowUp.approvalNote
+- EN missing locale key: careChat.sessionFollowUp.existing.approvedNoConv.action
+- EN missing locale key: careChat.sessionFollowUp.existing.approvedNoConv.body
+- EN missing locale key: careChat.sessionFollowUp.existing.approvedNoConv.title
+- EN missing locale key: careChat.sessionFollowUp.existing.approvedWithConv.action
+- EN missing locale key: careChat.sessionFollowUp.existing.approvedWithConv.body
+- EN missing locale key: careChat.sessionFollowUp.existing.approvedWithConv.title
+- EN missing locale key: careChat.sessionFollowUp.existing.pending.action
+- EN missing locale key: careChat.sessionFollowUp.existing.pending.body
+- EN missing locale key: careChat.sessionFollowUp.existing.pending.title
+- EN missing locale key: careChat.sessionFollowUp.practitionerLabel
+- EN missing locale key: careChat.sessionFollowUp.reasonLabel
+- EN missing locale key: careChat.sessionFollowUp.reasonPlaceholder
+- EN missing locale key: careChat.sessionFollowUp.submit
+- EN missing locale key: careChat.sessionFollowUp.submitting
+- EN missing locale key: careChat.sessionFollowUp.title
+- EN missing locale key: home.featured.badge
+- EN missing locale key: home.featured.title
+- EN missing locale key: home.matching.body
+- EN missing locale key: home.matching.cta
+- EN missing locale key: home.matching.title
+- EN missing locale key: home.mostBookedToday.title
+- EN missing locale key: home.notificationsTab
+- EN missing locale key: home.quickActions.findDoctor
+- EN missing locale key: home.quickActions.mySessions
+- EN missing locale key: home.quickActions.payments
+- EN missing locale key: home.recentlyVisited.badge
+- EN missing locale key: home.recentlyVisited.title
+- EN missing locale key: home.session.duration_few
+- EN missing locale key: home.session.duration_many
+- EN missing locale key: home.session.duration_other
+- EN missing locale key: home.session.duration_two
+- EN missing locale key: home.support.body
+- EN missing locale key: home.support.cta
+- EN missing locale key: home.support.title
+- EN missing locale key: home.topRated.reviewsCount_few
+- EN missing locale key: home.topRated.reviewsCount_many
+- EN missing locale key: home.topRated.reviewsCount_one
+- EN missing locale key: home.topRated.reviewsCount_other
+- EN missing locale key: home.topRated.reviewsCount_two
+- EN missing locale key: home.topRated.reviewsCount_zero
+- EN missing locale key: home.topRated.title
+- EN missing locale key: home.topRated.trustScore
+- EN missing locale key: packagePurchases.card.accessibilityLabel
+- EN missing locale key: packagePurchases.card.continuePayment
+- EN missing locale key: packagePurchases.card.discount
+- EN missing locale key: packagePurchases.card.discountValue
+- EN missing locale key: packagePurchases.card.nextSession
+- EN missing locale key: packagePurchases.card.nextSessionSummary
+- EN missing locale key: packagePurchases.card.noNextSession
+- EN missing locale key: packagePurchases.card.paymentDueBy
+- EN missing locale key: packagePurchases.card.paymentDueByHelper
+- EN missing locale key: packagePurchases.card.paymentDueSummary
+- EN missing locale key: packagePurchases.card.paymentExpired
+- EN missing locale key: packagePurchases.card.priceSummary
+- EN missing locale key: packagePurchases.card.progress
+- EN missing locale key: packagePurchases.card.progressValue
+- EN missing locale key: packagePurchases.card.remainingSessions_few
+- EN missing locale key: packagePurchases.card.remainingSessions_many
+- EN missing locale key: packagePurchases.card.remainingSessions_one
+- EN missing locale key: packagePurchases.card.remainingSessions_other
+- EN missing locale key: packagePurchases.card.remainingSessions_two
+- EN missing locale key: packagePurchases.card.remainingSessions_zero
+- EN missing locale key: packagePurchases.card.sessionIndex
+- EN missing locale key: packagePurchases.card.subtitle
+- EN missing locale key: packagePurchases.card.total
+- EN missing locale key: packagePurchases.card.usedSummary
+- EN missing locale key: packagePurchases.card.viewDetails
+- EN missing locale key: packagePurchases.create.back
+- EN missing locale key: packagePurchases.create.badge
+- EN missing locale key: packagePurchases.create.continue
+- EN missing locale key: packagePurchases.create.creating
+- EN missing locale key: packagePurchases.create.daySelected_few
+- EN missing locale key: packagePurchases.create.daySelected_many
+- EN missing locale key: packagePurchases.create.daySelected_one
+- EN missing locale key: packagePurchases.create.daySelected_other
+- EN missing locale key: packagePurchases.create.daySelected_two
+- EN missing locale key: packagePurchases.create.daySelected_zero
+- EN missing locale key: packagePurchases.create.discount
+- EN missing locale key: packagePurchases.create.duration
+- EN missing locale key: packagePurchases.create.errorMessage
+- EN missing locale key: packagePurchases.create.errorTitle
+- EN missing locale key: packagePurchases.create.errors.generic
+- EN missing locale key: packagePurchases.create.errors.timeout
+- EN missing locale key: packagePurchases.create.errors.unavailableSelection
+- EN missing locale key: packagePurchases.create.headingSubtitle
+- EN missing locale key: packagePurchases.create.headingTitle
+- EN missing locale key: packagePurchases.create.loadError
+- EN missing locale key: packagePurchases.create.loadingSlots
+- EN missing locale key: packagePurchases.create.minutes_few
+- EN missing locale key: packagePurchases.create.minutes_many
+- EN missing locale key: packagePurchases.create.minutes_one
+- EN missing locale key: packagePurchases.create.minutes_other
+- EN missing locale key: packagePurchases.create.minutes_two
+- EN missing locale key: packagePurchases.create.minutes_zero
+- EN missing locale key: packagePurchases.create.noSlots
+- EN missing locale key: packagePurchases.create.noSlotsHint
+- EN missing locale key: packagePurchases.create.notFoundDescription
+- EN missing locale key: packagePurchases.create.notFoundTitle
+- EN missing locale key: packagePurchases.create.package
+- EN missing locale key: packagePurchases.create.parts.afternoon
+- EN missing locale key: packagePurchases.create.parts.evening
+- EN missing locale key: packagePurchases.create.parts.morning
+- EN missing locale key: packagePurchases.create.prefillAdjusted
+- EN missing locale key: packagePurchases.create.retry
+- EN missing locale key: packagePurchases.create.reviewSubtitle
+- EN missing locale key: packagePurchases.create.reviewTitle
+- EN missing locale key: packagePurchases.create.selectedCount
+- EN missing locale key: packagePurchases.create.selectedTimes
+- EN missing locale key: packagePurchases.create.selectionSubtitle
+- EN missing locale key: packagePurchases.create.selectionTitle
+- EN missing locale key: packagePurchases.create.sessions
+- EN missing locale key: packagePurchases.create.total
+- EN missing locale key: packagePurchases.create.validation
+- EN missing locale key: packagePurchases.create.weekNote
+- EN missing locale key: packagePurchases.detail.back
+- EN missing locale key: packagePurchases.detail.bookedSessionsTitle
+- EN missing locale key: packagePurchases.detail.bookedSummary
+- EN missing locale key: packagePurchases.detail.bookedSummary_few
+- EN missing locale key: packagePurchases.detail.bookedSummary_many
+- EN missing locale key: packagePurchases.detail.bookedSummary_one
+- EN missing locale key: packagePurchases.detail.bookedSummary_other
+- EN missing locale key: packagePurchases.detail.bookedSummary_two
+- EN missing locale key: packagePurchases.detail.bookedSummary_zero
+- EN missing locale key: packagePurchases.detail.completed_few
+- EN missing locale key: packagePurchases.detail.completed_many
+- EN missing locale key: packagePurchases.detail.completed_one
+- EN missing locale key: packagePurchases.detail.completed_other
+- EN missing locale key: packagePurchases.detail.completed_two
+- EN missing locale key: packagePurchases.detail.completed_zero
+- EN missing locale key: packagePurchases.detail.continuePayment
+- EN missing locale key: packagePurchases.detail.discountValue
+- EN missing locale key: packagePurchases.detail.duration
+- EN missing locale key: packagePurchases.detail.duration_few
+- EN missing locale key: packagePurchases.detail.duration_many
+- EN missing locale key: packagePurchases.detail.duration_one
+- EN missing locale key: packagePurchases.detail.duration_other
+- EN missing locale key: packagePurchases.detail.duration_two
+- EN missing locale key: packagePurchases.detail.duration_zero
+- EN missing locale key: packagePurchases.detail.endAt
+- EN missing locale key: packagePurchases.detail.errorMessage
+- EN missing locale key: packagePurchases.detail.errorTitle
+- EN missing locale key: packagePurchases.detail.groups.completed
+- EN missing locale key: packagePurchases.detail.groups.live
+- EN missing locale key: packagePurchases.detail.groups.pending
+- EN missing locale key: packagePurchases.detail.groups.terminal
+- EN missing locale key: packagePurchases.detail.groups.upcoming
+- EN missing locale key: packagePurchases.detail.joinAvailableAt
+- EN missing locale key: packagePurchases.detail.live_few
+- EN missing locale key: packagePurchases.detail.live_many
+- EN missing locale key: packagePurchases.detail.live_one
+- EN missing locale key: packagePurchases.detail.live_other
+- EN missing locale key: packagePurchases.detail.live_two
+- EN missing locale key: packagePurchases.detail.live_zero
+- EN missing locale key: packagePurchases.detail.loading
+- EN missing locale key: packagePurchases.detail.minutes_few
+- EN missing locale key: packagePurchases.detail.minutes_many
+- EN missing locale key: packagePurchases.detail.minutes_one
+- EN missing locale key: packagePurchases.detail.minutes_other
+- EN missing locale key: packagePurchases.detail.minutes_two
+- EN missing locale key: packagePurchases.detail.minutes_zero
+- EN missing locale key: packagePurchases.detail.nextSession
+- EN missing locale key: packagePurchases.detail.nextSessionSummary
+- EN missing locale key: packagePurchases.detail.noNextSession
+- EN missing locale key: packagePurchases.detail.notBookedYet
+- EN missing locale key: packagePurchases.detail.notFoundDescription
+- EN missing locale key: packagePurchases.detail.notFoundTitle
+- EN missing locale key: packagePurchases.detail.paymentActive
+- EN missing locale key: packagePurchases.detail.paymentDueBy
+- EN missing locale key: packagePurchases.detail.paymentDueByHelper
+- EN missing locale key: packagePurchases.detail.paymentDueHelper
+- EN missing locale key: packagePurchases.detail.paymentDueSummary
+- EN missing locale key: packagePurchases.detail.paymentExpired
+- EN missing locale key: packagePurchases.detail.paymentSubtitle
+- EN missing locale key: packagePurchases.detail.paymentTitle
+- EN missing locale key: packagePurchases.detail.pending_few
+- EN missing locale key: packagePurchases.detail.pending_many
+- EN missing locale key: packagePurchases.detail.pending_one
+- EN missing locale key: packagePurchases.detail.pending_other
+- EN missing locale key: packagePurchases.detail.pending_two
+- EN missing locale key: packagePurchases.detail.pending_zero
+- EN missing locale key: packagePurchases.detail.priceSummary
+- EN missing locale key: packagePurchases.detail.progress
+- EN missing locale key: packagePurchases.detail.remainingSummary
+- EN missing locale key: packagePurchases.detail.remainingValue
+- EN missing locale key: packagePurchases.detail.retry
+- EN missing locale key: packagePurchases.detail.sessionCodeLabel
+- EN missing locale key: packagePurchases.detail.sessionIndex
+- EN missing locale key: packagePurchases.detail.sessionsSubtitle
+- EN missing locale key: packagePurchases.detail.sessionsTitle
+- EN missing locale key: packagePurchases.detail.startAt
+- EN missing locale key: packagePurchases.detail.subtitle
+- EN missing locale key: packagePurchases.detail.summaryRemainingUnbooked
+- EN missing locale key: packagePurchases.detail.summaryRemainingUnbooked_few
+- EN missing locale key: packagePurchases.detail.summaryRemainingUnbooked_many
+- EN missing locale key: packagePurchases.detail.summaryRemainingUnbooked_one
+- EN missing locale key: packagePurchases.detail.summaryRemainingUnbooked_other
+- EN missing locale key: packagePurchases.detail.summaryRemainingUnbooked_two
+- EN missing locale key: packagePurchases.detail.summaryRemainingUnbooked_zero
+- EN missing locale key: packagePurchases.detail.summaryUsageBooked
+- EN missing locale key: packagePurchases.detail.summaryUsageBooked_few
+- EN missing locale key: packagePurchases.detail.summaryUsageBooked_many
+- EN missing locale key: packagePurchases.detail.summaryUsageBooked_one
+- EN missing locale key: packagePurchases.detail.summaryUsageBooked_other
+- EN missing locale key: packagePurchases.detail.summaryUsageBooked_two
+- EN missing locale key: packagePurchases.detail.summaryUsageBooked_zero
+- EN missing locale key: packagePurchases.detail.terminal_few
+- EN missing locale key: packagePurchases.detail.terminal_many
+- EN missing locale key: packagePurchases.detail.terminal_one
+- EN missing locale key: packagePurchases.detail.terminal_other
+- EN missing locale key: packagePurchases.detail.terminal_two
+- EN missing locale key: packagePurchases.detail.terminal_zero
+- EN missing locale key: packagePurchases.detail.timelineSubtitle
+- EN missing locale key: packagePurchases.detail.timelineTitle
+- EN missing locale key: packagePurchases.detail.title
+- EN missing locale key: packagePurchases.detail.total
+- EN missing locale key: packagePurchases.detail.unbookedSessionSubtitle
+- EN missing locale key: packagePurchases.detail.unbookedSessionsBody
+- EN missing locale key: packagePurchases.detail.unbookedSessionsBody_few
+- EN missing locale key: packagePurchases.detail.unbookedSessionsBody_many
+- EN missing locale key: packagePurchases.detail.unbookedSessionsBody_one
+- EN missing locale key: packagePurchases.detail.unbookedSessionsBody_other
+- EN missing locale key: packagePurchases.detail.unbookedSessionsBody_two
+- EN missing locale key: packagePurchases.detail.unbookedSessionsBody_zero
+- EN missing locale key: packagePurchases.detail.unbookedSessionsTitle
+- EN missing locale key: packagePurchases.detail.unbookedSummary_few
+- EN missing locale key: packagePurchases.detail.unbookedSummary_many
+- EN missing locale key: packagePurchases.detail.unbookedSummary_one
+- EN missing locale key: packagePurchases.detail.unbookedSummary_other
+- EN missing locale key: packagePurchases.detail.unbookedSummary_two
+- EN missing locale key: packagePurchases.detail.unbookedSummary_zero
+- EN missing locale key: packagePurchases.detail.usedSummary
+- EN missing locale key: packagePurchases.detail.viewSession
+- EN missing locale key: packagePurchases.emptyAction
+- EN missing locale key: packagePurchases.emptyDescription
+- EN missing locale key: packagePurchases.emptyTitle
+- EN missing locale key: packagePurchases.errorMessage
+- EN missing locale key: packagePurchases.errorTitle
+- EN missing locale key: packagePurchases.errors.duplicateSlot
+- EN missing locale key: packagePurchases.errors.financialContextUnavailable
+- EN missing locale key: packagePurchases.errors.invalidSlotCount
+- EN missing locale key: packagePurchases.errors.invalidSlotStartAt
+- EN missing locale key: packagePurchases.errors.notFound
+- EN missing locale key: packagePurchases.errors.notPayable
+- EN missing locale key: packagePurchases.errors.overlappingSlots
+- EN missing locale key: packagePurchases.errors.patientNotFound
+- EN missing locale key: packagePurchases.errors.paymentNotFound
+- EN missing locale key: packagePurchases.errors.timezoneResolutionFailed
+- EN missing locale key: packagePurchases.heroSubtitle
+- EN missing locale key: packagePurchases.heroTitle
+- EN missing locale key: packagePurchases.list.endOfList
+- EN missing locale key: packagePurchases.list.loadingMore
+- EN missing locale key: packagePurchases.loading
+- EN missing locale key: packagePurchases.pay.acceptNote
+- EN missing locale key: packagePurchases.pay.acceptRefundPolicy
+- EN missing locale key: packagePurchases.pay.continue
+- EN missing locale key: packagePurchases.pay.errorMessage
+- EN missing locale key: packagePurchases.pay.errorTitle
+- EN missing locale key: packagePurchases.pay.headingSubtitle
+- EN missing locale key: packagePurchases.pay.headingTitle
+- EN missing locale key: packagePurchases.pay.loading
+- EN missing locale key: packagePurchases.pay.nativeUnsupported
+- EN missing locale key: packagePurchases.pay.openFailed
+- EN missing locale key: packagePurchases.pay.paymentDueBy
+- EN missing locale key: packagePurchases.pay.paymentDueByHelper
+- EN missing locale key: packagePurchases.pay.paymentExpired
+- EN missing locale key: packagePurchases.pay.policyClauses_few
+- EN missing locale key: packagePurchases.pay.policyClauses_many
+- EN missing locale key: packagePurchases.pay.policyClauses_one
+- EN missing locale key: packagePurchases.pay.policyClauses_other
+- EN missing locale key: packagePurchases.pay.policyClauses_two
+- EN missing locale key: packagePurchases.pay.policyClauses_zero
+- EN missing locale key: packagePurchases.pay.processing
+- EN missing locale key: packagePurchases.pay.progress
+- EN missing locale key: packagePurchases.pay.redirecting
+- EN missing locale key: packagePurchases.pay.refundLoading
+- EN missing locale key: packagePurchases.pay.refundPolicyMissing
+- EN missing locale key: packagePurchases.pay.refundSubtitle
+- EN missing locale key: packagePurchases.pay.refundTitle
+- EN missing locale key: packagePurchases.pay.refundUnavailable
+- EN missing locale key: packagePurchases.pay.retry
+- EN missing locale key: packagePurchases.pay.subtitle
+- EN missing locale key: packagePurchases.pay.total
+- EN missing locale key: packagePurchases.pay.unsupportedRedirect
+- EN missing locale key: packagePurchases.plans.SESSIONS_4
+- EN missing locale key: packagePurchases.plans.SESSIONS_6
+- EN missing locale key: packagePurchases.plans.SESSIONS_8
+- EN missing locale key: packagePurchases.plans.generic
+- EN missing locale key: packagePurchases.plans.unknown
+- EN missing locale key: packagePurchases.presentationStatuses.CANCELLED
+- EN missing locale key: packagePurchases.presentationStatuses.COMPLETED
+- EN missing locale key: packagePurchases.presentationStatuses.ENDED
+- EN missing locale key: packagePurchases.presentationStatuses.IN_PROGRESS
+- EN missing locale key: packagePurchases.presentationStatuses.JOINABLE
+- EN missing locale key: packagePurchases.presentationStatuses.UNAVAILABLE
+- EN missing locale key: packagePurchases.presentationStatuses.UNKNOWN
+- EN missing locale key: packagePurchases.presentationStatuses.UPCOMING
+- EN missing locale key: packagePurchases.retry
+- EN missing locale key: packagePurchases.sessionModes.AUDIO
+- EN missing locale key: packagePurchases.sessionModes.CHAT
+- EN missing locale key: packagePurchases.sessionModes.UNKNOWN
+- EN missing locale key: packagePurchases.sessionModes.VIDEO
+- EN missing locale key: packagePurchases.sessionStatuses.AWAITING_ADMIN_RESOLUTION
+- EN missing locale key: packagePurchases.sessionStatuses.CANCELLED
+- EN missing locale key: packagePurchases.sessionStatuses.COMPLETED
+- EN missing locale key: packagePurchases.sessionStatuses.CONFIRMED
+- EN missing locale key: packagePurchases.sessionStatuses.DRAFT
+- EN missing locale key: packagePurchases.sessionStatuses.EXPIRED
+- EN missing locale key: packagePurchases.sessionStatuses.IN_PROGRESS
+- EN missing locale key: packagePurchases.sessionStatuses.NO_SHOW
+- EN missing locale key: packagePurchases.sessionStatuses.PENDING_PAYMENT
+- EN missing locale key: packagePurchases.sessionStatuses.PENDING_PRACTITIONER_RESPONSE
+- EN missing locale key: packagePurchases.sessionStatuses.READY_TO_JOIN
+- EN missing locale key: packagePurchases.sessionStatuses.REFUNDED
+- EN missing locale key: packagePurchases.sessionStatuses.REFUND_PENDING
+- EN missing locale key: packagePurchases.sessionStatuses.UNKNOWN
+- EN missing locale key: packagePurchases.sessionStatuses.UPCOMING
+- EN missing locale key: packagePurchases.statuses.ACTIVE
+- EN missing locale key: packagePurchases.statuses.CANCELLED
+- EN missing locale key: packagePurchases.statuses.COMPLETED
+- EN missing locale key: packagePurchases.statuses.EXPIRED
+- EN missing locale key: packagePurchases.statuses.PENDING_PAYMENT
+- EN missing locale key: packagePurchases.statuses.REFUNDED
+- EN missing locale key: packagePurchases.statuses.UNKNOWN
+- EN missing locale key: packagePurchases.summary.active_few
+- EN missing locale key: packagePurchases.summary.active_many
+- EN missing locale key: packagePurchases.summary.active_one
+- EN missing locale key: packagePurchases.summary.active_other
+- EN missing locale key: packagePurchases.summary.active_two
+- EN missing locale key: packagePurchases.summary.active_zero
+- EN missing locale key: packagePurchases.summary.pending_few
+- EN missing locale key: packagePurchases.summary.pending_many
+- EN missing locale key: packagePurchases.summary.pending_one
+- EN missing locale key: packagePurchases.summary.pending_other
+- EN missing locale key: packagePurchases.summary.pending_two
+- EN missing locale key: packagePurchases.summary.pending_zero
+- EN missing locale key: packagePurchases.summary.remaining_few
+- EN missing locale key: packagePurchases.summary.remaining_many
+- EN missing locale key: packagePurchases.summary.remaining_one
+- EN missing locale key: packagePurchases.summary.remaining_other
+- EN missing locale key: packagePurchases.summary.remaining_two
+- EN missing locale key: packagePurchases.summary.remaining_zero
+- EN missing locale key: packagePurchases.title
+- EN missing locale key: patientSessionsFlow.common.sessionMode
+- EN missing locale key: patientSessionsFlow.confirmation.backToSelectTime
+- EN missing locale key: patientSessionsFlow.confirmation.missingParamsBody
+- EN missing locale key: patientSessionsFlow.confirmation.missingParamsTitle
+- EN missing locale key: patientSessionsFlow.confirmation.previewNotice
+- EN missing locale key: patientSessionsFlow.detail.actionSummary.checkJoin
+- EN missing locale key: patientSessionsFlow.detail.actionSummary.closeout
+- EN missing locale key: patientSessionsFlow.detail.actionSummary.messages
+- EN missing locale key: patientSessionsFlow.detail.actionSummary.none
+- EN missing locale key: patientSessionsFlow.detail.actionSummary.openRoom
+- EN missing locale key: patientSessionsFlow.detail.actionSummary.prepareRoom
+- EN missing locale key: patientSessionsFlow.detail.blocked.SESSION_JOIN_WINDOW_CLOSED
+- EN missing locale key: patientSessionsFlow.detail.blocked.SESSION_NOT_JOINABLE_STATUS
+- EN missing locale key: patientSessionsFlow.detail.blocked.SESSION_NOT_VIDEO_MODE
+- EN missing locale key: patientSessionsFlow.detail.blocked.SESSION_ROOM_CLOSED
+- EN missing locale key: patientSessionsFlow.detail.blocked.SESSION_RUNTIME_NOT_PREPARED
+- EN missing locale key: patientSessionsFlow.detail.blocked.SESSION_TIME_WINDOW_NOT_OPEN
+- EN missing locale key: patientSessionsFlow.detail.cancellationReasonLabel
+- EN missing locale key: patientSessionsFlow.detail.checkJoin
+- EN missing locale key: patientSessionsFlow.detail.checkingJoin
+- EN missing locale key: patientSessionsFlow.detail.closeout
+- EN missing locale key: patientSessionsFlow.detail.closeoutError
+- EN missing locale key: patientSessionsFlow.detail.closeoutSummary.CLOSED
+- EN missing locale key: patientSessionsFlow.detail.closeoutSummary.COMPLETED
+- EN missing locale key: patientSessionsFlow.detail.closeoutSummary.NOT_READY
+- EN missing locale key: patientSessionsFlow.detail.closeoutSummary.NO_SHOW
+- EN missing locale key: patientSessionsFlow.detail.completedFeedback
+- EN missing locale key: patientSessionsFlow.detail.completing
+- EN missing locale key: patientSessionsFlow.detail.currentState
+- EN missing locale key: patientSessionsFlow.detail.heroSubtitle
+- EN missing locale key: patientSessionsFlow.detail.joinBlockedReasons.SESSION_JOIN_WINDOW_CLOSED
+- EN missing locale key: patientSessionsFlow.detail.joinBlockedReasons.SESSION_ROOM_CLOSED
+- EN missing locale key: patientSessionsFlow.detail.markCompleted
+- EN missing locale key: patientSessionsFlow.detail.markNoShow
+- EN missing locale key: patientSessionsFlow.detail.markingNoShow
+- EN missing locale key: patientSessionsFlow.detail.mode
+- EN missing locale key: patientSessionsFlow.detail.nextStep.checkJoin
+- EN missing locale key: patientSessionsFlow.detail.nextStep.openRoom
+- EN missing locale key: patientSessionsFlow.detail.nextStep.prepareRoom
+- EN missing locale key: patientSessionsFlow.detail.nextStep.reviewOnly
+- EN missing locale key: patientSessionsFlow.detail.nextStep.waitForConfirmation
+- EN missing locale key: patientSessionsFlow.detail.nextStep.waitForPayment
+- EN missing locale key: patientSessionsFlow.detail.nextStep.waitForWindow
+- EN missing locale key: patientSessionsFlow.detail.nextStepLabel
+- EN missing locale key: patientSessionsFlow.detail.noImmediateAction
+- EN missing locale key: patientSessionsFlow.detail.noShowFeedback
+- EN missing locale key: patientSessionsFlow.detail.openRoom
+- EN missing locale key: patientSessionsFlow.detail.openRoomError
+- EN missing locale key: patientSessionsFlow.detail.openRoomReady
+- EN missing locale key: patientSessionsFlow.detail.paymentSectionTitle
+- EN missing locale key: patientSessionsFlow.detail.prepare
+- EN missing locale key: patientSessionsFlow.detail.prepareError
+- EN missing locale key: patientSessionsFlow.detail.preparePending
+- EN missing locale key: patientSessionsFlow.detail.prepareReady
+- EN missing locale key: patientSessionsFlow.detail.preparing
+- EN missing locale key: patientSessionsFlow.detail.roomClose.action
+- EN missing locale key: patientSessionsFlow.detail.roomClose.afterNote
+- EN missing locale key: patientSessionsFlow.detail.roomClose.afterTitle
+- EN missing locale key: patientSessionsFlow.detail.roomClose.alreadyClosed
+- EN missing locale key: patientSessionsFlow.detail.roomClose.beforeNote
+- EN missing locale key: patientSessionsFlow.detail.roomClose.beforeTitle
+- EN missing locale key: patientSessionsFlow.detail.roomClose.cancel
+- EN missing locale key: patientSessionsFlow.detail.roomClose.continue
+- EN missing locale key: patientSessionsFlow.detail.roomClose.errors.generic
+- EN missing locale key: patientSessionsFlow.detail.roomClose.errors.notAllowed
+- EN missing locale key: patientSessionsFlow.detail.roomClose.errors.onlyAfterStart
+- EN missing locale key: patientSessionsFlow.detail.roomClose.errors.reasonRequired
+- EN missing locale key: patientSessionsFlow.detail.roomClose.options.endedByAgreement
+- EN missing locale key: patientSessionsFlow.detail.roomClose.options.other
+- EN missing locale key: patientSessionsFlow.detail.roomClose.options.patientNoShow
+- EN missing locale key: patientSessionsFlow.detail.roomClose.options.safetyConcern
+- EN missing locale key: patientSessionsFlow.detail.roomClose.options.technicalIssue
+- EN missing locale key: patientSessionsFlow.detail.roomClose.reasonHelp
+- EN missing locale key: patientSessionsFlow.detail.roomClose.reasonLabel
+- EN missing locale key: patientSessionsFlow.detail.roomClose.submitAfter
+- EN missing locale key: patientSessionsFlow.detail.roomClose.submitBefore
+- EN missing locale key: patientSessionsFlow.detail.roomClose.success
+- EN missing locale key: patientSessionsFlow.detail.roomClosed.body
+- EN missing locale key: patientSessionsFlow.detail.roomClosed.cta
+- EN missing locale key: patientSessionsFlow.detail.roomClosed.supportMessage
+- EN missing locale key: patientSessionsFlow.detail.roomClosed.supportSubject
+- EN missing locale key: patientSessionsFlow.detail.roomClosed.title
+- EN missing locale key: patientSessionsFlow.detail.runtime
+- EN missing locale key: patientSessionsFlow.detail.runtimeBody
+- EN missing locale key: patientSessionsFlow.detail.sessionCodeLabel
+- EN missing locale key: patientSessionsFlow.detail.sessionType
+- EN missing locale key: patientSessionsFlow.detail.stateNote.COMPLETED
+- EN missing locale key: patientSessionsFlow.detail.stateNote.DEFAULT
+- EN missing locale key: patientSessionsFlow.detail.stateNote.ENDED
+- EN missing locale key: patientSessionsFlow.detail.stateNote.EXPIRED
+- EN missing locale key: patientSessionsFlow.detail.stateNote.IN_PROGRESS_CLOSED
+- EN missing locale key: patientSessionsFlow.detail.stateNote.IN_PROGRESS_OPEN
+- EN missing locale key: patientSessionsFlow.detail.stateNote.NO_SHOW
+- EN missing locale key: patientSessionsFlow.detail.stateNote.PENDING_PAYMENT
+- EN missing locale key: patientSessionsFlow.detail.stateNote.PENDING_PRACTITIONER_RESPONSE
+- EN missing locale key: patientSessionsFlow.detail.stateNote.READY_TO_JOIN_CHECK
+- EN missing locale key: patientSessionsFlow.detail.stateNote.READY_TO_JOIN_CLOSED
+- EN missing locale key: patientSessionsFlow.detail.stateNote.READY_TO_JOIN_PREPARE
+- EN missing locale key: patientSessionsFlow.detail.stateNote.REFUNDED
+- EN missing locale key: patientSessionsFlow.detail.stateNote.REFUND_PENDING
+- EN missing locale key: patientSessionsFlow.detail.stateNote.REVIEW_REQUIRED
+- EN missing locale key: patientSessionsFlow.detail.stateNote.UPCOMING_NEEDS_PREPARE
+- EN missing locale key: patientSessionsFlow.list.filters.cancelled
+- EN missing locale key: patientSessionsFlow.list.filters.previous
+- EN missing locale key: patientSessionsFlow.list.filters.upcoming
+- EN missing locale key: patientSessionsFlow.list.workspace.viewDetailsWithName
+- EN missing locale key: patientSessionsFlow.selectTime.bookedSlotsUnavailable
+- EN missing locale key: patientSessionsFlow.selectTime.showBookedToggle
+- EN missing locale key: patientSessionsFlow.sessionModes.AUDIO
+- EN missing locale key: patientSessionsFlow.sessionModes.CHAT
+- EN missing locale key: patientSessionsFlow.sessionModes.UNKNOWN
+- EN missing locale key: patientSessionsFlow.sessionModes.VIDEO
+- EN missing locale key: practitioner.account.actions.logout
+- EN missing locale key: practitioner.account.actions.logoutSubtitle
+- EN missing locale key: practitioner.account.actions.messages
+- EN missing locale key: practitioner.account.actions.messagesSubtitle
+- EN missing locale key: practitioner.account.actions.support
+- EN missing locale key: practitioner.account.actions.supportSubtitle
+- EN missing locale key: practitioner.account.fields.applicationReviewedAt
+- EN missing locale key: practitioner.account.fields.applicationSubmittedAt
+- EN missing locale key: practitioner.account.fields.specialty
+- EN missing locale key: practitioner.account.messages.subtitle
+- EN missing locale key: practitioner.account.messages.title
+- EN missing locale key: practitioner.account.moreDetails.applicationTitle
+- EN missing locale key: practitioner.account.moreDetails.credentialsTitle
+- EN missing locale key: practitioner.account.moreDetails.specialtiesTitle
+- EN missing locale key: practitioner.account.placeholders.countryCode
+- EN missing locale key: practitioner.account.placeholders.timezone
+- EN missing locale key: practitioner.account.placeholders.yearsOfExperience
+- EN missing locale key: practitioner.account.readiness.approvedNote
+- EN missing locale key: practitioner.account.readiness.notApprovedNote
+- EN missing locale key: practitioner.account.requirements.academicCertificate
+- EN missing locale key: practitioner.account.requirements.activeAccount
+- EN missing locale key: practitioner.account.requirements.approvedProfile
+- EN missing locale key: practitioner.account.requirements.bio
+- EN missing locale key: practitioner.account.requirements.countryCode
+- EN missing locale key: practitioner.account.requirements.credentials
+- EN missing locale key: practitioner.account.requirements.displayName
+- EN missing locale key: practitioner.account.requirements.identityDocuments
+- EN missing locale key: practitioner.account.requirements.languages
+- EN missing locale key: practitioner.account.requirements.more
+- EN missing locale key: practitioner.account.requirements.other
+- EN missing locale key: practitioner.account.requirements.packagePurchasesEnabled
+- EN missing locale key: practitioner.account.requirements.packagesEnabled
+- EN missing locale key: practitioner.account.requirements.payoutAccountHolderName
+- EN missing locale key: practitioner.account.requirements.payoutDestination
+- EN missing locale key: practitioner.account.requirements.practitionerOtpVerified
+- EN missing locale key: practitioner.account.requirements.primarySpecialtyCategoryId
+- EN missing locale key: practitioner.account.requirements.professionalTitle
+- EN missing locale key: practitioner.account.requirements.sessionPrice30Egp
+- EN missing locale key: practitioner.account.requirements.sessionPrice30Usd
+- EN missing locale key: practitioner.account.requirements.sessionPrice60Egp
+- EN missing locale key: practitioner.account.requirements.sessionPrice60Usd
+- EN missing locale key: practitioner.account.requirements.specialties
+- EN missing locale key: practitioner.account.requirements.yearsOfExperience
+- EN missing locale key: practitioner.account.sections.basicInfo
+- EN missing locale key: practitioner.account.sections.communication
+- EN missing locale key: practitioner.account.sections.communicationSubtitle
+- EN missing locale key: practitioner.account.sections.financial
+- EN missing locale key: practitioner.account.sections.financialSubtitle
+- EN missing locale key: practitioner.account.sections.overview
+- EN missing locale key: practitioner.account.sections.overviewSubtitle
+- EN missing locale key: practitioner.account.sections.professional
+- EN missing locale key: practitioner.account.sections.professionalSubtitle
+- EN missing locale key: practitioner.account.sections.readiness
+- EN missing locale key: practitioner.account.sections.readinessSubtitle
+- EN missing locale key: practitioner.account.sections.workInfo
+- EN missing locale key: practitioner.account.statusCard.approvedNote
+- EN missing locale key: practitioner.account.statusCard.missingTitle
+- EN missing locale key: practitioner.account.statusCard.moreMissing
+- EN missing locale key: practitioner.account.statusCard.moreNotes
+- EN missing locale key: practitioner.account.statusCard.notesTitle
+- EN missing locale key: practitioner.account.statusCard.payoutMissing
+- EN missing locale key: practitioner.account.statusCard.payoutReady
+- EN missing locale key: practitioner.account.statusCard.rows.account
+- EN missing locale key: practitioner.account.statusCard.rows.applicationStatus
+- EN missing locale key: practitioner.account.statusCard.rows.approval
+- EN missing locale key: practitioner.account.statusCard.rows.lastUpdated
+- EN missing locale key: practitioner.account.statusCard.rows.payoutStatus
+- EN missing locale key: practitioner.account.statusCard.subtitle
+- EN missing locale key: practitioner.account.statusCard.title
+- EN missing locale key: practitioner.account.statuses.ACTIVE
+- EN missing locale key: practitioner.account.statuses.DELETED
+- EN missing locale key: practitioner.account.statuses.INACTIVE
+- EN missing locale key: practitioner.account.statuses.PENDING_APPROVAL
+- EN missing locale key: practitioner.account.statuses.PENDING_VERIFICATION
+- EN missing locale key: practitioner.account.statuses.SUSPENDED
+- EN missing locale key: practitioner.account.summary.helper
+- EN missing locale key: practitioner.account.support.subtitle
+- EN missing locale key: practitioner.account.support.title
+- EN missing locale key: practitioner.availability.afternoonGroup
+- EN missing locale key: practitioner.availability.daySlotsCount
+- EN missing locale key: practitioner.availability.durationMinutes
+- EN missing locale key: practitioner.availability.durationSelector
+- EN missing locale key: practitioner.availability.eveningGroup
+- EN missing locale key: practitioner.availability.morningGroup
+- EN missing locale key: practitioner.availability.openWebDashboard
+- EN missing locale key: practitioner.availability.picker.cancel
+- EN missing locale key: practitioner.availability.picker.confirm
+- EN missing locale key: practitioner.availability.picker.endsAt
+- EN missing locale key: practitioner.availability.picker.selectDate
+- EN missing locale key: practitioner.availability.picker.selectHour
+- EN missing locale key: practitioner.availability.picker.selectMinute
+- EN missing locale key: practitioner.availability.picker.selectTime
+- EN missing locale key: practitioner.availability.picker.startsAt
+- EN missing locale key: practitioner.availability.removeSlotsHint
+- EN missing locale key: practitioner.availability.repeatPreviewExceptions_few
+- EN missing locale key: practitioner.availability.repeatPreviewExceptions_many
+- EN missing locale key: practitioner.availability.repeatPreviewExceptions_two
+- EN missing locale key: practitioner.availability.repeatPreviewExceptions_zero
+- EN missing locale key: practitioner.availability.repeatPreviewSlots_few
+- EN missing locale key: practitioner.availability.repeatPreviewSlots_many
+- EN missing locale key: practitioner.availability.repeatPreviewSlots_two
+- EN missing locale key: practitioner.availability.repeatPreviewSlots_zero
+- EN missing locale key: practitioner.availability.repeatPreviewSummary_few
+- EN missing locale key: practitioner.availability.repeatPreviewSummary_many
+- EN missing locale key: practitioner.availability.repeatPreviewSummary_two
+- EN missing locale key: practitioner.availability.repeatPreviewSummary_zero
+- EN missing locale key: practitioner.availability.repeatSelectionCount_few
+- EN missing locale key: practitioner.availability.repeatSelectionCount_many
+- EN missing locale key: practitioner.availability.repeatSelectionCount_two
+- EN missing locale key: practitioner.availability.repeatSelectionCount_zero
+- EN missing locale key: practitioner.availability.scheduleBodyCompact
+- EN missing locale key: practitioner.availability.selectDay
+- EN missing locale key: practitioner.availability.selectedSlots
+- EN missing locale key: practitioner.availability.selectedSlotsEmpty
+- EN missing locale key: practitioner.availability.timeSlots
+- EN missing locale key: practitioner.availability.timezoneUnavailable
+- EN missing locale key: practitioner.availability.totalSlotsThisWeek
+- EN missing locale key: practitioner.availability.totalSlotsZero
+- EN missing locale key: practitioner.availability.webManagedBody
+- EN missing locale key: practitioner.availability.webManagedSafetyNote
+- EN missing locale key: practitioner.availability.webManagedSecondary
+- EN missing locale key: practitioner.availability.webManagedTitle
+- EN missing locale key: practitioner.availability.weeklySummary
+- EN missing locale key: practitioner.availability.weeks.archived.note
+- EN missing locale key: practitioner.availability.weeks.currentLabel
+- EN missing locale key: practitioner.availability.weeks.days.friday
+- EN missing locale key: practitioner.availability.weeks.days.monday
+- EN missing locale key: practitioner.availability.weeks.days.saturday
+- EN missing locale key: practitioner.availability.weeks.days.sunday
+- EN missing locale key: practitioner.availability.weeks.days.thursday
+- EN missing locale key: practitioner.availability.weeks.days.tuesday
+- EN missing locale key: practitioner.availability.weeks.days.wednesday
+- EN missing locale key: practitioner.availability.weeks.durations.m30
+- EN missing locale key: practitioner.availability.weeks.durations.m60
+- EN missing locale key: practitioner.availability.weeks.editor.addSlotBeforePublish
+- EN missing locale key: practitioner.availability.weeks.editor.copyToNext
+- EN missing locale key: practitioner.availability.weeks.editor.copying
+- EN missing locale key: practitioner.availability.weeks.editor.createDraft
+- EN missing locale key: practitioner.availability.weeks.editor.dailySlotCount
+- EN missing locale key: practitioner.availability.weeks.editor.noSlots
+- EN missing locale key: practitioner.availability.weeks.editor.publishWeek
+- EN missing locale key: practitioner.availability.weeks.editor.publishedEditNotice
+- EN missing locale key: practitioner.availability.weeks.editor.publishing
+- EN missing locale key: practitioner.availability.weeks.editor.saveBeforePublish
+- EN missing locale key: practitioner.availability.weeks.editor.saveDraft
+- EN missing locale key: practitioner.availability.weeks.editor.saving
+- EN missing locale key: practitioner.availability.weeks.editor.unsaved
+- EN missing locale key: practitioner.availability.weeks.editor.weeklySlotCount
+- EN missing locale key: practitioner.availability.weeks.empty.body
+- EN missing locale key: practitioner.availability.weeks.empty.title
+- EN missing locale key: practitioner.availability.weeks.feedback.failedCopy
+- EN missing locale key: practitioner.availability.weeks.feedback.failedPublish
+- EN missing locale key: practitioner.availability.weeks.feedback.failedSave
+- EN missing locale key: practitioner.availability.weeks.feedback.successCopied
+- EN missing locale key: practitioner.availability.weeks.feedback.successPublished
+- EN missing locale key: practitioner.availability.weeks.feedback.successSaved
+- EN missing locale key: practitioner.availability.weeks.nextLabel
+- EN missing locale key: practitioner.availability.weeks.periods.afternoon
+- EN missing locale key: practitioner.availability.weeks.periods.evening
+- EN missing locale key: practitioner.availability.weeks.periods.morning
+- EN missing locale key: practitioner.availability.weeks.periods.night
+- EN missing locale key: practitioner.availability.weeks.published.note
+- EN missing locale key: practitioner.availability.weeks.rangeLabel
+- EN missing locale key: practitioner.careChat.conversation.activity
+- EN missing locale key: practitioner.careChat.conversation.detailsTitle
+- EN missing locale key: practitioner.careChat.conversation.expiresAt
+- EN missing locale key: practitioner.careChat.conversation.lastUpdated
+- EN missing locale key: practitioner.careChat.conversation.openRequest
+- EN missing locale key: practitioner.careChat.conversation.sendDisabledNotice
+- EN missing locale key: practitioner.careChat.conversation.sessionLinked
+- EN missing locale key: practitioner.careChat.conversation.statusLabel
+- EN missing locale key: practitioner.careChat.empty.allSubtitle
+- EN missing locale key: practitioner.careChat.empty.closedSubtitle
+- EN missing locale key: practitioner.careChat.empty.newSubtitle
+- EN missing locale key: practitioner.careChat.filters.active
+- EN missing locale key: practitioner.careChat.filters.all
+- EN missing locale key: practitioner.careChat.filters.closed
+- EN missing locale key: practitioner.careChat.filters.new
+- EN missing locale key: practitioner.careChat.lastUpdated
+- EN missing locale key: practitioner.careChat.requestDetail.extraTitle
+- EN missing locale key: practitioner.careChat.requestDetail.noReason
+- EN missing locale key: practitioner.careChat.requestDetail.sessionLinked
+- EN missing locale key: practitioner.careChat.requestDetail.updatedAt
+- EN missing locale key: practitioner.careChat.requestStatus.active
+- EN missing locale key: practitioner.careChat.requestStatus.closed
+- EN missing locale key: practitioner.careChat.requestStatus.new
+- EN missing locale key: practitioner.careChat.summary.active
+- EN missing locale key: practitioner.careChat.summary.closed
+- EN missing locale key: practitioner.careChat.summary.new
+- EN missing locale key: practitioner.careChat.tabs.all
+- EN missing locale key: practitioner.careChat.tabs.closed
+- EN missing locale key: practitioner.careChat.tabs.new
+- EN missing locale key: practitioner.careChat.unknownPractitioner
+- EN missing locale key: practitioner.careChat.unreadMany
+- EN missing locale key: practitioner.careChat.unreadOne
+- EN missing locale key: practitioner.detail.actionSummary.checkJoin
+- EN missing locale key: practitioner.detail.actionSummary.closeout
+- EN missing locale key: practitioner.detail.actionSummary.messages
+- EN missing locale key: practitioner.detail.actionSummary.none
+- EN missing locale key: practitioner.detail.actionSummary.openRoom
+- EN missing locale key: practitioner.detail.actionSummary.prepareRoom
+- EN missing locale key: practitioner.detail.actionsTitle
+- EN missing locale key: practitioner.detail.blocked.SESSION_JOIN_WINDOW_CLOSED
+- EN missing locale key: practitioner.detail.blocked.SESSION_NOT_JOINABLE_STATUS
+- EN missing locale key: practitioner.detail.blocked.SESSION_NOT_VIDEO_MODE
+- EN missing locale key: practitioner.detail.blocked.SESSION_RUNTIME_NOT_PREPARED
+- EN missing locale key: practitioner.detail.blocked.SESSION_TIME_WINDOW_NOT_OPEN
+- EN missing locale key: practitioner.detail.cancellationReasonLabel
+- EN missing locale key: practitioner.detail.checkJoin
+- EN missing locale key: practitioner.detail.checkingJoin
+- EN missing locale key: practitioner.detail.closeout
+- EN missing locale key: practitioner.detail.closeoutError
+- EN missing locale key: practitioner.detail.closeoutSummary.CLOSED
+- EN missing locale key: practitioner.detail.closeoutSummary.COMPLETED
+- EN missing locale key: practitioner.detail.closeoutSummary.NOT_READY
+- EN missing locale key: practitioner.detail.closeoutSummary.NO_SHOW
+- EN missing locale key: practitioner.detail.completedFeedback
+- EN missing locale key: practitioner.detail.completing
+- EN missing locale key: practitioner.detail.currentState
+- EN missing locale key: practitioner.detail.duration
+- EN missing locale key: practitioner.detail.flowType
+- EN missing locale key: practitioner.detail.flowTypeValue.DEFAULT
+- EN missing locale key: practitioner.detail.flowTypeValue.INSTANT
+- EN missing locale key: practitioner.detail.flowTypeValue.SCHEDULED
+- EN missing locale key: practitioner.detail.heroMode
+- EN missing locale key: practitioner.detail.heroSubtitle
+- EN missing locale key: practitioner.detail.join
+- EN missing locale key: practitioner.detail.joinAvailableAt
+- EN missing locale key: practitioner.detail.joinBlocked
+- EN missing locale key: practitioner.detail.joinError
+- EN missing locale key: practitioner.detail.joining
+- EN missing locale key: practitioner.detail.markCompleted
+- EN missing locale key: practitioner.detail.markNoShow
+- EN missing locale key: practitioner.detail.markingNoShow
+- EN missing locale key: practitioner.detail.messages
+- EN missing locale key: practitioner.detail.messagesReadOnly
+- EN missing locale key: practitioner.detail.mode
+- EN missing locale key: practitioner.detail.modeValue.AUDIO
+- EN missing locale key: practitioner.detail.modeValue.CHAT
+- EN missing locale key: practitioner.detail.modeValue.VIDEO
+- EN missing locale key: practitioner.detail.nextStep.checkJoin
+- EN missing locale key: practitioner.detail.nextStep.openRoom
+- EN missing locale key: practitioner.detail.nextStep.prepareRoom
+- EN missing locale key: practitioner.detail.nextStep.reviewOnly
+- EN missing locale key: practitioner.detail.nextStep.waitForConfirmation
+- EN missing locale key: practitioner.detail.nextStep.waitForPayment
+- EN missing locale key: practitioner.detail.nextStep.waitForWindow
+- EN missing locale key: practitioner.detail.nextStepLabel
+- EN missing locale key: practitioner.detail.noImmediateAction
+- EN missing locale key: practitioner.detail.noShowFeedback
+- EN missing locale key: practitioner.detail.openMessagesError
+- EN missing locale key: practitioner.detail.openRoom
+- EN missing locale key: practitioner.detail.openRoomError
+- EN missing locale key: practitioner.detail.openRoomReady
+- EN missing locale key: practitioner.detail.paymentSectionTitle
+- EN missing locale key: practitioner.detail.prepare
+- EN missing locale key: practitioner.detail.prepareError
+- EN missing locale key: practitioner.detail.preparePending
+- EN missing locale key: practitioner.detail.prepareReady
+- EN missing locale key: practitioner.detail.preparing
+- EN missing locale key: practitioner.detail.roomClose.action
+- EN missing locale key: practitioner.detail.roomClose.afterNote
+- EN missing locale key: practitioner.detail.roomClose.afterTitle
+- EN missing locale key: practitioner.detail.roomClose.alreadyClosed
+- EN missing locale key: practitioner.detail.roomClose.beforeNote
+- EN missing locale key: practitioner.detail.roomClose.beforeTitle
+- EN missing locale key: practitioner.detail.roomClose.cancel
+- EN missing locale key: practitioner.detail.roomClose.continue
+- EN missing locale key: practitioner.detail.roomClose.errors.generic
+- EN missing locale key: practitioner.detail.roomClose.errors.notAllowed
+- EN missing locale key: practitioner.detail.roomClose.errors.onlyAfterStart
+- EN missing locale key: practitioner.detail.roomClose.errors.reasonRequired
+- EN missing locale key: practitioner.detail.roomClose.options.endedByAgreement
+- EN missing locale key: practitioner.detail.roomClose.options.other
+- EN missing locale key: practitioner.detail.roomClose.options.patientNoShow
+- EN missing locale key: practitioner.detail.roomClose.options.safetyConcern
+- EN missing locale key: practitioner.detail.roomClose.options.technicalIssue
+- EN missing locale key: practitioner.detail.roomClose.reasonHelp
+- EN missing locale key: practitioner.detail.roomClose.reasonLabel
+- EN missing locale key: practitioner.detail.roomClose.submitAfter
+- EN missing locale key: practitioner.detail.roomClose.submitBefore
+- EN missing locale key: practitioner.detail.roomClose.success
+- EN missing locale key: practitioner.detail.runtime
+- EN missing locale key: practitioner.detail.runtimeBody
+- EN missing locale key: practitioner.detail.sessionAt
+- EN missing locale key: practitioner.detail.sessionCodeLabel
+- EN missing locale key: practitioner.detail.sessionFacts
+- EN missing locale key: practitioner.detail.sessionType
+- EN missing locale key: practitioner.detail.stateNote.CANCELLED
+- EN missing locale key: practitioner.detail.stateNote.COMPLETED
+- EN missing locale key: practitioner.detail.stateNote.DEFAULT
+- EN missing locale key: practitioner.detail.stateNote.ENDED
+- EN missing locale key: practitioner.detail.stateNote.EXPIRED
+- EN missing locale key: practitioner.detail.stateNote.IN_PROGRESS
+- EN missing locale key: practitioner.detail.stateNote.IN_PROGRESS_CLOSED
+- EN missing locale key: practitioner.detail.stateNote.IN_PROGRESS_OPEN
+- EN missing locale key: practitioner.detail.stateNote.NO_SHOW
+- EN missing locale key: practitioner.detail.stateNote.PENDING_PAYMENT
+- EN missing locale key: practitioner.detail.stateNote.PENDING_PRACTITIONER_RESPONSE
+- EN missing locale key: practitioner.detail.stateNote.READY_TO_JOIN_CHECK
+- EN missing locale key: practitioner.detail.stateNote.READY_TO_JOIN_CLOSED
+- EN missing locale key: practitioner.detail.stateNote.READY_TO_JOIN_NOW
+- EN missing locale key: practitioner.detail.stateNote.READY_TO_JOIN_PREPARE
+- EN missing locale key: practitioner.detail.stateNote.REFUNDED
+- EN missing locale key: practitioner.detail.stateNote.REFUND_PENDING
+- EN missing locale key: practitioner.detail.stateNote.UNAVAILABLE
+- EN missing locale key: practitioner.detail.stateNote.UPCOMING
+- EN missing locale key: practitioner.detail.stateNote.UPCOMING_NEEDS_PREPARE
+- EN missing locale key: practitioner.detail.summary
+- EN missing locale key: practitioner.detail.timezone
+- EN missing locale key: practitioner.detail.timezoneValue
+- EN missing locale key: practitioner.detail.title
+- EN missing locale key: practitioner.finance.actions.ledger
+- EN missing locale key: practitioner.finance.actions.promoCodes
+- EN missing locale key: practitioner.finance.actions.settlements
+- EN missing locale key: practitioner.finance.actions.wallet
+- EN missing locale key: practitioner.finance.filters.deduction
+- EN missing locale key: practitioner.finance.filters.income
+- EN missing locale key: practitioner.finance.filters.kind
+- EN missing locale key: practitioner.finance.filters.period
+- EN missing locale key: practitioner.finance.filters.settlement
+- EN missing locale key: practitioner.finance.filters.status
+- EN missing locale key: practitioner.finance.ledger.details.createdAt
+- EN missing locale key: practitioner.finance.ledger.groupSubtitle
+- EN missing locale key: practitioner.finance.ledger.searchPlaceholder
+- EN missing locale key: practitioner.finance.settlements.failedPayout
+- EN missing locale key: practitioner.finance.settlements.labels.updated
+- EN missing locale key: practitioner.finance.settlements.summary.failed
+- EN missing locale key: practitioner.finance.settlements.summary.paid
+- EN missing locale key: practitioner.finance.settlements.summary.ready
+- EN missing locale key: practitioner.finance.settlements.summary.total
+- EN missing locale key: practitioner.finance.summary.balanceHint
+- EN missing locale key: practitioner.finance.summary.subtitle
+- EN missing locale key: practitioner.finance.summary.title
+- EN missing locale key: practitioner.finance.wallet.hints.available
+- EN missing locale key: practitioner.finance.wallet.hints.lifetimePaidOut
+- EN missing locale key: practitioner.finance.wallet.hints.pending
+- EN missing locale key: practitioner.finance.wallet.hints.reserved
+- EN missing locale key: practitioner.finance.wallet.hints.totalEarned
+- EN missing locale key: practitioner.more.rows.careChat.subtitle
+- EN missing locale key: practitioner.more.rows.careChat.title
+- EN missing locale key: practitioner.presentationStatus.ENDED
+- EN missing locale key: practitioner.presentationStatus.JOINABLE
+- EN missing locale key: practitioner.presentationStatus.NO_SHOW
+- EN missing locale key: practitioner.presentationStatus.UNAVAILABLE
+- EN missing locale key: practitioner.presentationStatus.UNDER_REVIEW
+- EN missing locale key: practitioner.promoCodes.actions.activate
+- EN missing locale key: practitioner.promoCodes.activate.body
+- EN missing locale key: practitioner.promoCodes.activate.confirm
+- EN missing locale key: practitioner.promoCodes.activate.title
+- EN missing locale key: practitioner.promoCodes.filters.all
+- EN missing locale key: practitioner.promoCodes.filters.status
+- EN missing locale key: practitioner.promoCodes.form.datePicker.cancel
+- EN missing locale key: practitioner.promoCodes.form.datePicker.clear
+- EN missing locale key: practitioner.promoCodes.form.datePicker.confirm
+- EN missing locale key: practitioner.promoCodes.form.endsAtPlaceholder
+- EN missing locale key: practitioner.promoCodes.form.startsAtPlaceholder
+- EN missing locale key: practitioner.promoCodes.list.usageWithLimit
+- EN missing locale key: practitioner.promoCodes.list.usageWithoutLimit
+- EN missing locale key: practitioner.promoCodes.notifications.actionFailedBody
+- EN missing locale key: practitioner.promoCodes.notifications.actionFailedTitle
+- EN missing locale key: practitioner.promoCodes.notifications.activatedBody
+- EN missing locale key: practitioner.promoCodes.notifications.activatedTitle
+- EN missing locale key: practitioner.promoCodes.searchPlaceholder
+- EN missing locale key: practitioner.promoCodes.status.NOT_STARTED
+- EN missing locale key: practitioner.promoCodes.status.USAGE_LIMIT_REACHED
+- EN missing locale key: practitioner.schedule.periodMeta_few
+- EN missing locale key: practitioner.schedule.periodMeta_many
+- EN missing locale key: practitioner.schedule.periodMeta_two
+- EN missing locale key: practitioner.schedule.periodMeta_zero
+- EN missing locale key: practitioner.sessions.filters.closed
+- EN missing locale key: practitioner.sessions.workspace.emptyFilteredAction
+- EN missing locale key: practitioner.sessions.workspace.emptyFilteredBody
+- EN missing locale key: practitioner.sessions.workspace.emptyFilteredTitle
+- EN missing locale key: practitioner.sessions.workspace.listSubtitle
+- EN missing locale key: practitioner.sessions.workspace.listTitle
+- EN missing locale key: practitioner.sessions.workspace.priorityHeading
+- EN missing locale key: practitioner.sessions.workspace.retry
+- EN missing locale key: practitioner.sessions.workspace.sessionCodeLabel
+- EN missing locale key: practitioner.sessions.workspace.viewDetailsWithName
+- EN missing locale key: practitioner.workToolsSubtitle
+- EN missing locale key: profileScreen.details.avatar.changePhoto
+- EN missing locale key: profileScreen.details.avatar.choosePhoto
+- EN missing locale key: profileScreen.details.avatar.imageTooLarge
+- EN missing locale key: profileScreen.details.avatar.permissionDenied
+- EN missing locale key: profileScreen.details.avatar.permissionNeeded
+- EN missing locale key: profileScreen.details.avatar.photoUpdated
+- EN missing locale key: profileScreen.details.avatar.removePhoto
+- EN missing locale key: profileScreen.details.avatar.unsupportedType
+- EN missing locale key: profileScreen.details.avatar.uploadFailed
+- EN missing locale key: profileScreen.details.editButton
+- EN missing locale key: profileScreen.details.genderOptions.other
+- EN missing locale key: profileScreen.details.genderOptions.prefer_not_to_say
+- EN missing locale key: profileScreen.details.personalSectionTitle
+- EN missing locale key: profileScreen.edit.avatarHint
+- EN missing locale key: profileScreen.edit.cancel
+- EN missing locale key: profileScreen.edit.contactNote
+- EN missing locale key: profileScreen.edit.countryPicker.placeholder
+- EN missing locale key: profileScreen.edit.countryPicker.searchPlaceholder
+- EN missing locale key: profileScreen.edit.datePicker.cancel
+- EN missing locale key: profileScreen.edit.datePicker.confirm
+- EN missing locale key: profileScreen.edit.datePicker.placeholder
+- EN missing locale key: profileScreen.edit.fields.countryCode
+- EN missing locale key: profileScreen.edit.fields.countryRequired
+- EN missing locale key: profileScreen.edit.fields.dateOfBirth
+- EN missing locale key: profileScreen.edit.fields.dateOfBirthPlaceholder
+- EN missing locale key: profileScreen.edit.fields.dateOfBirthRequired
+- EN missing locale key: profileScreen.edit.fields.displayName
+- EN missing locale key: profileScreen.edit.fields.displayNamePlaceholder
+- EN missing locale key: profileScreen.edit.fields.displayNameRequired
+- EN missing locale key: profileScreen.edit.fields.futureDateError
+- EN missing locale key: profileScreen.edit.fields.gender
+- EN missing locale key: profileScreen.edit.fields.genderRequired
+- EN missing locale key: profileScreen.edit.fields.invalidDateFormat
+- EN missing locale key: profileScreen.edit.save
+- EN missing locale key: profileScreen.edit.saveFailedBody
+- EN missing locale key: profileScreen.edit.screenTitle
+- EN missing locale key: profileScreen.edit.sectionTitle
+- EN missing locale key: profileScreen.hub.completion.incompleteTitle_few
+- EN missing locale key: profileScreen.hub.completion.incompleteTitle_many
+- EN missing locale key: profileScreen.hub.completion.incompleteTitle_two
+- EN missing locale key: profileScreen.hub.completion.incompleteTitle_zero
+- EN missing locale key: profileScreen.notifications.categories.general.subtitle
+- EN missing locale key: profileScreen.notifications.categories.general.title
+- EN missing locale key: profileScreen.notifications.categories.messages.subtitle
+- EN missing locale key: profileScreen.notifications.categories.messages.title
+- EN missing locale key: profileScreen.notifications.categories.sessions.subtitle
+- EN missing locale key: profileScreen.notifications.categories.sessions.title
+- EN missing locale key: reviews.patient.reminder.errors.generic
+- EN missing locale key: reviews.patient.reminder.errors.ratingRequired
+- EN missing locale key: support.detail.sendMessage
+- EN missing locale key: support.new.messageRequired
+- EN missing locale key: support.new.samplePrompt
+- EN missing locale key: support.new.sessionContextBody
+- EN missing locale key: support.new.sessionContextTitle
+- AR missing locale key: academyMobile.draft
+- AR missing locale key: academyMobile.published
+- AR missing locale key: patientSessionsFlow.detail.modeValue.UNKNOWN
+- AR missing locale key: patientSessionsFlow.detail.noMessages
+- AR missing locale key: patientSessionsFlow.statuses.AWAITING_ADMIN_RESOLUTION
+- AR missing locale key: practitioner.availability.repeatPreviewExceptions
+- AR missing locale key: practitioner.careChat.empty.historySubtitle
+- AR missing locale key: practitioner.careChat.requestStatus.APPROVED
+- AR missing locale key: practitioner.careChat.requestStatus.CANCELLED
+- AR missing locale key: practitioner.careChat.requestStatus.EXPIRED
+- AR missing locale key: practitioner.careChat.requestStatus.PENDING
+- AR missing locale key: practitioner.careChat.requestStatus.REJECTED
+- AR missing locale key: practitioner.careChat.requestStatus.REVOKED
+- AR missing locale key: practitioner.careChat.systemMessages.approvalNotice
+- AR missing locale key: practitioner.careChat.tabs.history
+- AR missing locale key: practitioner.finance.filters.earnings
+- AR missing locale key: practitioner.finance.filters.transfers
+- AR missing locale key: practitioner.finance.ledger.details.date
+- AR missing locale key: practitioner.finance.ledger.details.status
+- AR missing locale key: practitioner.finance.settlements.labels.status
+- AR missing locale key: practitioner.onboarding.requiredDocuments.idOrPassportHint
+- AR missing locale key: practitioner.presentationStatus.AWAITING_ADMIN_RESOLUTION
+- AR missing locale key: practitioner.presentationStatus.BOTH_NO_SHOW
+- AR missing locale key: practitioner.presentationStatus.EXPIRED
+- AR missing locale key: practitioner.presentationStatus.PATIENT_NO_SHOW
+- AR missing locale key: practitioner.presentationStatus.PRACTITIONER_NO_SHOW
+- AR missing locale key: practitioner.promoCodes.form.datePlaceholder
+- AR missing locale key: practitioner.sessionDetail.actionSummary.checkJoin
+- AR missing locale key: practitioner.sessionDetail.actionSummary.closeout
+- AR missing locale key: practitioner.sessionDetail.actionSummary.none
+- AR missing locale key: practitioner.sessionDetail.actionSummary.openRoom
+- AR missing locale key: practitioner.sessionDetail.actionSummary.prepareRoom
+- AR missing locale key: practitioner.sessionDetail.actionsTitle
+- AR missing locale key: practitioner.sessionDetail.blocked.SESSION_NOT_JOINABLE_STATUS
+- AR missing locale key: practitioner.sessionDetail.blocked.SESSION_NOT_VIDEO_MODE
+- AR missing locale key: practitioner.sessionDetail.blocked.SESSION_RUNTIME_NOT_PREPARED
+- AR missing locale key: practitioner.sessionDetail.blocked.SESSION_TIME_WINDOW_NOT_OPEN
+- AR missing locale key: practitioner.sessionDetail.checkJoin
+- AR missing locale key: practitioner.sessionDetail.checkingJoin
+- AR missing locale key: practitioner.sessionDetail.closeout
+- AR missing locale key: practitioner.sessionDetail.closeoutError
+- AR missing locale key: practitioner.sessionDetail.closeoutSummary.CLOSED
+- AR missing locale key: practitioner.sessionDetail.closeoutSummary.COMPLETED
+- AR missing locale key: practitioner.sessionDetail.closeoutSummary.NOT_READY
+- AR missing locale key: practitioner.sessionDetail.closeoutSummary.NO_SHOW
+- AR missing locale key: practitioner.sessionDetail.currentState
+- AR missing locale key: practitioner.sessionDetail.duration
+- AR missing locale key: practitioner.sessionDetail.flowType
+- AR missing locale key: practitioner.sessionDetail.flowTypeValue.DEFAULT
+- AR missing locale key: practitioner.sessionDetail.flowTypeValue.INSTANT
+- AR missing locale key: practitioner.sessionDetail.flowTypeValue.SCHEDULED
+- AR missing locale key: practitioner.sessionDetail.heroMode
+- AR missing locale key: practitioner.sessionDetail.heroSubtitle
+- AR missing locale key: practitioner.sessionDetail.join
+- AR missing locale key: practitioner.sessionDetail.joinBlocked
+- AR missing locale key: practitioner.sessionDetail.joinError
+- AR missing locale key: practitioner.sessionDetail.joining
+- AR missing locale key: practitioner.sessionDetail.markNoShow
+- AR missing locale key: practitioner.sessionDetail.markingNoShow
+- AR missing locale key: practitioner.sessionDetail.messages
+- AR missing locale key: practitioner.sessionDetail.messagesReadOnly
+- AR missing locale key: practitioner.sessionDetail.mode
+- AR missing locale key: practitioner.sessionDetail.modeValue.AUDIO
+- AR missing locale key: practitioner.sessionDetail.modeValue.CHAT
+- AR missing locale key: practitioner.sessionDetail.modeValue.VIDEO
+- AR missing locale key: practitioner.sessionDetail.nextStep.checkJoin
+- AR missing locale key: practitioner.sessionDetail.nextStep.openRoom
+- AR missing locale key: practitioner.sessionDetail.nextStep.prepareRoom
+- AR missing locale key: practitioner.sessionDetail.nextStep.reviewOnly
+- AR missing locale key: practitioner.sessionDetail.nextStep.waitForConfirmation
+- AR missing locale key: practitioner.sessionDetail.nextStep.waitForPayment
+- AR missing locale key: practitioner.sessionDetail.nextStep.waitForWindow
+- AR missing locale key: practitioner.sessionDetail.nextStepLabel
+- AR missing locale key: practitioner.sessionDetail.noImmediateAction
+- AR missing locale key: practitioner.sessionDetail.noShowFeedback
+- AR missing locale key: practitioner.sessionDetail.openMessagesError
+- AR missing locale key: practitioner.sessionDetail.openRoom
+- AR missing locale key: practitioner.sessionDetail.openRoomError
+- AR missing locale key: practitioner.sessionDetail.openRoomReady
+- AR missing locale key: practitioner.sessionDetail.prepare
+- AR missing locale key: practitioner.sessionDetail.prepareError
+- AR missing locale key: practitioner.sessionDetail.preparePending
+- AR missing locale key: practitioner.sessionDetail.prepareReady
+- AR missing locale key: practitioner.sessionDetail.preparing
+- AR missing locale key: practitioner.sessionDetail.roomClose.action
+- AR missing locale key: practitioner.sessionDetail.roomClose.alreadyClosed
+- AR missing locale key: practitioner.sessionDetail.roomClose.success
+- AR missing locale key: practitioner.sessionDetail.runtime
+- AR missing locale key: practitioner.sessionDetail.runtimeBody
+- AR missing locale key: practitioner.sessionDetail.sessionAt
+- AR missing locale key: practitioner.sessionDetail.sessionFacts
+- AR missing locale key: practitioner.sessionDetail.sessionType
+- AR missing locale key: practitioner.sessionDetail.stateNote.CANCELLED
+- AR missing locale key: practitioner.sessionDetail.stateNote.COMPLETED
+- AR missing locale key: practitioner.sessionDetail.stateNote.DEFAULT
+- AR missing locale key: practitioner.sessionDetail.stateNote.EXPIRED
+- AR missing locale key: practitioner.sessionDetail.stateNote.IN_PROGRESS
+- AR missing locale key: practitioner.sessionDetail.stateNote.IN_PROGRESS_OPEN
+- AR missing locale key: practitioner.sessionDetail.stateNote.NO_SHOW
+- AR missing locale key: practitioner.sessionDetail.stateNote.PENDING_PAYMENT
+- AR missing locale key: practitioner.sessionDetail.stateNote.PENDING_PRACTITIONER_RESPONSE
+- AR missing locale key: practitioner.sessionDetail.stateNote.READY_TO_JOIN_CHECK
+- AR missing locale key: practitioner.sessionDetail.stateNote.READY_TO_JOIN_NOW
+- AR missing locale key: practitioner.sessionDetail.stateNote.READY_TO_JOIN_PREPARE
+- AR missing locale key: practitioner.sessionDetail.stateNote.REFUNDED
+- AR missing locale key: practitioner.sessionDetail.stateNote.REFUND_PENDING
+- AR missing locale key: practitioner.sessionDetail.stateNote.REVIEW_REQUIRED
+- AR missing locale key: practitioner.sessionDetail.stateNote.UPCOMING
+- AR missing locale key: practitioner.sessionDetail.stateNote.UPCOMING_NEEDS_PREPARE
+- AR missing locale key: practitioner.sessionDetail.summary
+- AR missing locale key: practitioner.sessionDetail.timezone
+- AR missing locale key: practitioner.sessionDetail.timezoneValue
+- AR missing locale key: practitioner.sessionDetail.title
+- AR invalid/empty locale value: firstLaunchOnboarding.slides
+- EN invalid/empty locale value: firstLaunchOnboarding.slides
+- EN missing used translation key: academyMobile.card.accessibilityLabel
+- AR missing used translation key: academyMobile.myTrainings
+- EN missing used translation key: academyMobile.myTrainings
+- AR missing used translation key: articlesMobile.articleNotFound
+- EN missing used translation key: articlesMobile.articleNotFound
+- AR missing used translation key: articlesMobile.articleNotFoundDesc
+- EN missing used translation key: articlesMobile.articleNotFoundDesc
+- AR missing used translation key: articlesMobile.backToArticles
+- EN missing used translation key: articlesMobile.backToArticles
+- EN missing used translation key: articlesMobile.detailTitle
+- AR missing used translation key: auth.fields.searchDialCode
+- EN missing used translation key: auth.fields.searchDialCode
+- AR missing used translation key: auth.fields.selectDialCode
+- EN missing used translation key: auth.fields.selectDialCode
+- EN missing used translation key: auth.lockout.invalidCredentials
+- EN missing used translation key: auth.lockout.invalidCredentialsOne
+- EN missing used translation key: auth.lockout.loginTemporarilyLocked
+- EN missing used translation key: auth.lockout.loginTemporarilyLockedFallback
+- EN missing used translation key: auth.lockout.practitionerLoginTemporarilyLockedFallback
+- EN missing used translation key: auth.lockout.practitionerLoginTemporarilyLockedWithSupport
+- EN missing used translation key: auth.lockout.practitionerOtpInvalidCredentials
+- EN missing used translation key: auth.lockout.practitionerOtpInvalidCredentialsOne
+- EN missing used translation key: auth.lockout.practitionerOtpSuperseded
+- EN missing used translation key: auth.lockout.practitionerOtpTemporarilyLocked
+- EN missing used translation key: auth.lockout.practitionerOtpTemporarilyLockedFallback
+- EN missing used translation key: auth.loginError
+- EN missing used translation key: auth.otpError
+- EN missing used translation key: auth.patientForgotPassword.changeEmail
+- EN missing used translation key: auth.patientForgotPassword.cooldownMessage
+- EN missing used translation key: auth.patientForgotPassword.errorMessage
+- EN missing used translation key: auth.patientForgotPassword.errors.passwordsMismatch
+- EN missing used translation key: auth.patientForgotPassword.errors.patientAccountNotFound
+- EN missing used translation key: auth.patientForgotPassword.goToSignIn
+- EN missing used translation key: auth.patientForgotPassword.otpEmailInfoLabel
+- EN missing used translation key: auth.patientForgotPassword.passwordEmailInfoLabel
+- EN missing used translation key: auth.patientForgotPassword.rememberPassword
+- EN missing used translation key: auth.patientForgotPassword.resendCode
+- EN missing used translation key: auth.patientForgotPassword.step2Description
+- EN missing used translation key: auth.patientForgotPassword.step2Title
+- EN missing used translation key: auth.patientForgotPassword.step3Description
+- EN missing used translation key: auth.patientForgotPassword.step3Title
+- EN missing used translation key: auth.patientForgotPassword.verifyOtp
+- EN missing used translation key: auth.practitionerForgotPassword.changeEmail
+- EN missing used translation key: auth.practitionerForgotPassword.confirmPassword
+- EN missing used translation key: auth.practitionerForgotPassword.confirmPasswordPlaceholder
+- EN missing used translation key: auth.practitionerForgotPassword.cooldownMessage
+- EN missing used translation key: auth.practitionerForgotPassword.errorMessage
+- EN missing used translation key: auth.practitionerForgotPassword.errors.passwordsMismatch
+- EN missing used translation key: auth.practitionerForgotPassword.errors.practitionerAccountNotFound
+- EN missing used translation key: auth.practitionerForgotPassword.otpEmailInfoLabel
+- EN missing used translation key: auth.practitionerForgotPassword.passwordEmailInfoLabel
+- EN missing used translation key: auth.practitionerForgotPassword.resendCode
+- EN missing used translation key: auth.practitionerForgotPassword.step2Description
+- EN missing used translation key: auth.practitionerForgotPassword.step2Title
+- EN missing used translation key: auth.practitionerForgotPassword.step3Description
+- EN missing used translation key: auth.practitionerForgotPassword.step3Title
+- EN missing used translation key: auth.practitionerForgotPassword.verifyOtp
+- EN missing used translation key: careChat.sessionFollowUp.approvalNote
+- EN missing used translation key: careChat.sessionFollowUp.existing.approvedNoConv.action
+- EN missing used translation key: careChat.sessionFollowUp.existing.approvedNoConv.body
+- EN missing used translation key: careChat.sessionFollowUp.existing.approvedNoConv.title
+- EN missing used translation key: careChat.sessionFollowUp.existing.approvedWithConv.action
+- EN missing used translation key: careChat.sessionFollowUp.existing.approvedWithConv.body
+- EN missing used translation key: careChat.sessionFollowUp.existing.approvedWithConv.title
+- EN missing used translation key: careChat.sessionFollowUp.existing.pending.action
+- EN missing used translation key: careChat.sessionFollowUp.existing.pending.body
+- EN missing used translation key: careChat.sessionFollowUp.existing.pending.title
+- EN missing used translation key: careChat.sessionFollowUp.practitionerLabel
+- EN missing used translation key: careChat.sessionFollowUp.reasonLabel
+- EN missing used translation key: careChat.sessionFollowUp.reasonPlaceholder
+- EN missing used translation key: careChat.sessionFollowUp.submit
+- EN missing used translation key: careChat.sessionFollowUp.submitting
+- EN missing used translation key: careChat.sessionFollowUp.title
+- AR missing used translation key: common.confirm
+- EN missing used translation key: common.confirm
+- AR missing used translation key: common.discard
+- EN missing used translation key: common.discard
+- AR missing used translation key: common.error
+- EN missing used translation key: common.error
+- AR missing used translation key: common.errorTitle
+- EN missing used translation key: common.errorTitle
+- AR missing used translation key: common.ok
+- EN missing used translation key: common.ok
+- AR missing used translation key: common.remove
+- EN missing used translation key: common.remove
+- AR missing used translation key: error_title
+- EN missing used translation key: error_title
+- AR missing used translation key: firstLaunchOnboarding.accessibility.pagination
+- EN missing used translation key: firstLaunchOnboarding.accessibility.pagination
+- AR missing used translation key: firstLaunchOnboarding.slides.0.chip
+- EN missing used translation key: firstLaunchOnboarding.slides.0.chip
+- AR missing used translation key: firstLaunchOnboarding.slides.0.chip2
+- EN missing used translation key: firstLaunchOnboarding.slides.0.chip2
+- AR missing used translation key: firstLaunchOnboarding.slides.0.description
+- EN missing used translation key: firstLaunchOnboarding.slides.0.description
+- AR missing used translation key: firstLaunchOnboarding.slides.0.title
+- EN missing used translation key: firstLaunchOnboarding.slides.0.title
+- AR missing used translation key: firstLaunchOnboarding.slides.1.confirmed
+- EN missing used translation key: firstLaunchOnboarding.slides.1.confirmed
+- AR missing used translation key: firstLaunchOnboarding.slides.1.description
+- EN missing used translation key: firstLaunchOnboarding.slides.1.description
+- AR missing used translation key: firstLaunchOnboarding.slides.1.title
+- EN missing used translation key: firstLaunchOnboarding.slides.1.title
+- AR missing used translation key: firstLaunchOnboarding.slides.2.description
+- EN missing used translation key: firstLaunchOnboarding.slides.2.description
+- AR missing used translation key: firstLaunchOnboarding.slides.2.privacy
+- EN missing used translation key: firstLaunchOnboarding.slides.2.privacy
+- AR missing used translation key: firstLaunchOnboarding.slides.2.title
+- EN missing used translation key: firstLaunchOnboarding.slides.2.title
+- EN missing used translation key: home.featured.badge
+- EN missing used translation key: home.featured.title
+- EN missing used translation key: home.mostBookedToday.title
+- AR missing used translation key: home.nextSession.details
+- EN missing used translation key: home.nextSession.details
+- AR missing used translation key: home.nextSession.join
+- EN missing used translation key: home.nextSession.join
+- AR missing used translation key: home.nextSession.startsIn
+- EN missing used translation key: home.nextSession.startsIn
+- EN missing used translation key: home.recentlyVisited.badge
+- EN missing used translation key: home.recentlyVisited.title
+- AR missing used translation key: home.topRated.reviewsCount
+- EN missing used translation key: home.topRated.reviewsCount
+- EN missing used translation key: home.topRated.title
+- EN missing used translation key: home.topRated.trustScore
+- EN missing used translation key: packagePurchases.card.continuePayment
+- EN missing used translation key: packagePurchases.card.nextSessionSummary
+- EN missing used translation key: packagePurchases.card.noNextSession
+- EN missing used translation key: packagePurchases.card.paymentDueSummary
+- EN missing used translation key: packagePurchases.card.priceSummary
+- EN missing used translation key: packagePurchases.card.usedSummary
+- EN missing used translation key: packagePurchases.card.viewDetails
+- EN missing used translation key: packagePurchases.create.back
+- EN missing used translation key: packagePurchases.create.badge
+- EN missing used translation key: packagePurchases.create.continue
+- EN missing used translation key: packagePurchases.create.creating
+- AR missing used translation key: packagePurchases.create.daySelected
+- EN missing used translation key: packagePurchases.create.daySelected
+- EN missing used translation key: packagePurchases.create.discount
+- EN missing used translation key: packagePurchases.create.duration
+- EN missing used translation key: packagePurchases.create.errorMessage
+- EN missing used translation key: packagePurchases.create.errorTitle
+- EN missing used translation key: packagePurchases.create.headingSubtitle
+- EN missing used translation key: packagePurchases.create.headingTitle
+- EN missing used translation key: packagePurchases.create.loadError
+- EN missing used translation key: packagePurchases.create.loadingSlots
+- AR missing used translation key: packagePurchases.create.minutes
+- EN missing used translation key: packagePurchases.create.minutes
+- EN missing used translation key: packagePurchases.create.noSlots
+- EN missing used translation key: packagePurchases.create.noSlotsHint
+- AR missing used translation key: packagePurchases.create.normalBookingsPaused
+- EN missing used translation key: packagePurchases.create.normalBookingsPaused
+- AR missing used translation key: packagePurchases.create.normalBookingsPausedBody
+- EN missing used translation key: packagePurchases.create.normalBookingsPausedBody
+- EN missing used translation key: packagePurchases.create.notFoundDescription
+- EN missing used translation key: packagePurchases.create.notFoundTitle
+- EN missing used translation key: packagePurchases.create.package
+- EN missing used translation key: packagePurchases.create.prefillAdjusted
+- EN missing used translation key: packagePurchases.create.retry
+- EN missing used translation key: packagePurchases.create.reviewSubtitle
+- EN missing used translation key: packagePurchases.create.reviewTitle
+- EN missing used translation key: packagePurchases.create.selectedCount
+- EN missing used translation key: packagePurchases.create.selectedTimes
+- EN missing used translation key: packagePurchases.create.selectionSubtitle
+- EN missing used translation key: packagePurchases.create.selectionTitle
+- EN missing used translation key: packagePurchases.create.sessions
+- EN missing used translation key: packagePurchases.create.total
+- EN missing used translation key: packagePurchases.create.validation
+- EN missing used translation key: packagePurchases.create.weekNote
+- EN missing used translation key: packagePurchases.detail.back
+- EN missing used translation key: packagePurchases.detail.bookedSessionsTitle
+- EN missing used translation key: packagePurchases.detail.bookedSummary
+- EN missing used translation key: packagePurchases.detail.continuePayment
+- EN missing used translation key: packagePurchases.detail.duration
+- EN missing used translation key: packagePurchases.detail.errorMessage
+- EN missing used translation key: packagePurchases.detail.errorTitle
+- EN missing used translation key: packagePurchases.detail.joinAvailableAt
+- EN missing used translation key: packagePurchases.detail.loading
+- EN missing used translation key: packagePurchases.detail.notBookedYet
+- EN missing used translation key: packagePurchases.detail.notFoundDescription
+- EN missing used translation key: packagePurchases.detail.notFoundTitle
+- EN missing used translation key: packagePurchases.detail.paymentDueHelper
+- EN missing used translation key: packagePurchases.detail.paymentDueSummary
+- EN missing used translation key: packagePurchases.detail.paymentExpired
+- EN missing used translation key: packagePurchases.detail.paymentTitle
+- EN missing used translation key: packagePurchases.detail.priceSummary
+- EN missing used translation key: packagePurchases.detail.retry
+- EN missing used translation key: packagePurchases.detail.sessionIndex
+- EN missing used translation key: packagePurchases.detail.subtitle
+- EN missing used translation key: packagePurchases.detail.summaryUsageBooked
+- EN missing used translation key: packagePurchases.detail.timelineSubtitle
+- EN missing used translation key: packagePurchases.detail.timelineTitle
+- EN missing used translation key: packagePurchases.detail.title
+- EN missing used translation key: packagePurchases.detail.unbookedSessionSubtitle
+- EN missing used translation key: packagePurchases.detail.unbookedSessionsBody
+- EN missing used translation key: packagePurchases.detail.unbookedSessionsTitle
+- EN missing used translation key: packagePurchases.detail.viewSession
+- EN missing used translation key: packagePurchases.emptyAction
+- EN missing used translation key: packagePurchases.emptyDescription
+- EN missing used translation key: packagePurchases.emptyTitle
+- EN missing used translation key: packagePurchases.errorMessage
+- EN missing used translation key: packagePurchases.errorTitle
+- EN missing used translation key: packagePurchases.heroSubtitle
+- EN missing used translation key: packagePurchases.heroTitle
+- EN missing used translation key: packagePurchases.list.endOfList
+- EN missing used translation key: packagePurchases.list.loadingMore
+- EN missing used translation key: packagePurchases.loading
+- EN missing used translation key: packagePurchases.pay.acceptNote
+- EN missing used translation key: packagePurchases.pay.acceptRefundPolicy
+- EN missing used translation key: packagePurchases.pay.continue
+- EN missing used translation key: packagePurchases.pay.errorMessage
+- EN missing used translation key: packagePurchases.pay.errorTitle
+- EN missing used translation key: packagePurchases.pay.headingSubtitle
+- EN missing used translation key: packagePurchases.pay.headingTitle
+- EN missing used translation key: packagePurchases.pay.loading
+- EN missing used translation key: packagePurchases.pay.nativeUnsupported
+- EN missing used translation key: packagePurchases.pay.openFailed
+- EN missing used translation key: packagePurchases.pay.paymentDueBy
+- EN missing used translation key: packagePurchases.pay.paymentDueByHelper
+- EN missing used translation key: packagePurchases.pay.paymentExpired
+- AR missing used translation key: packagePurchases.pay.policyClauses
+- EN missing used translation key: packagePurchases.pay.policyClauses
+- EN missing used translation key: packagePurchases.pay.processing
+- EN missing used translation key: packagePurchases.pay.progress
+- EN missing used translation key: packagePurchases.pay.redirecting
+- EN missing used translation key: packagePurchases.pay.refundLoading
+- EN missing used translation key: packagePurchases.pay.refundPolicyMissing
+- EN missing used translation key: packagePurchases.pay.refundSubtitle
+- EN missing used translation key: packagePurchases.pay.refundTitle
+- EN missing used translation key: packagePurchases.pay.refundUnavailable
+- EN missing used translation key: packagePurchases.pay.retry
+- EN missing used translation key: packagePurchases.pay.subtitle
+- EN missing used translation key: packagePurchases.pay.total
+- EN missing used translation key: packagePurchases.pay.unsupportedRedirect
+- EN missing used translation key: packagePurchases.plans.generic
+- AR missing used translation key: packagePurchases.presentationStatuses.AWAITING_COMPLETION_CONFIRMATION
+- EN missing used translation key: packagePurchases.presentationStatuses.AWAITING_COMPLETION_CONFIRMATION
+- AR missing used translation key: packagePurchases.presentationStatuses.BOTH_NO_SHOW
+- EN missing used translation key: packagePurchases.presentationStatuses.BOTH_NO_SHOW
+- EN missing used translation key: packagePurchases.presentationStatuses.CANCELLED
+- EN missing used translation key: packagePurchases.presentationStatuses.COMPLETED
+- AR missing used translation key: packagePurchases.presentationStatuses.EXPIRED
+- EN missing used translation key: packagePurchases.presentationStatuses.EXPIRED
+- EN missing used translation key: packagePurchases.presentationStatuses.IN_PROGRESS
+- AR missing used translation key: packagePurchases.presentationStatuses.PATIENT_NO_SHOW
+- EN missing used translation key: packagePurchases.presentationStatuses.PATIENT_NO_SHOW
+- AR missing used translation key: packagePurchases.presentationStatuses.PRACTITIONER_NO_SHOW
+- EN missing used translation key: packagePurchases.presentationStatuses.PRACTITIONER_NO_SHOW
+- AR missing used translation key: packagePurchases.presentationStatuses.READY_TO_JOIN
+- EN missing used translation key: packagePurchases.presentationStatuses.READY_TO_JOIN
+- EN missing used translation key: packagePurchases.presentationStatuses.UNKNOWN
+- EN missing used translation key: packagePurchases.presentationStatuses.UPCOMING
+- EN missing used translation key: packagePurchases.retry
+- EN missing used translation key: packagePurchases.title
+- AR missing used translation key: patientPaymentsFlow.return.checkAgain
+- EN missing used translation key: patientPaymentsFlow.return.checkAgain
+- AR missing used translation key: patientPaymentsFlow.return.pendingStill.heading
+- EN missing used translation key: patientPaymentsFlow.return.pendingStill.heading
+- AR missing used translation key: patientPaymentsFlow.return.pendingStill.note
+- EN missing used translation key: patientPaymentsFlow.return.pendingStill.note
+- AR missing used translation key: patientPaymentsFlow.transactions.errorNote
+- EN missing used translation key: patientPaymentsFlow.transactions.errorNote
+- EN missing used translation key: patientSessionsFlow.detail.actionSummary.messages
+- EN missing used translation key: patientSessionsFlow.detail.cancellationReasonLabel
+- AR missing used translation key: patientSessionsFlow.detail.modeValue.UNKNOWN
+- EN missing used translation key: patientSessionsFlow.detail.noImmediateAction
+- AR missing used translation key: patientSessionsFlow.detail.noMessages
+- EN missing used translation key: patientSessionsFlow.detail.roomClosed.body
+- EN missing used translation key: patientSessionsFlow.detail.roomClosed.cta
+- EN missing used translation key: patientSessionsFlow.detail.roomClosed.supportMessage
+- EN missing used translation key: patientSessionsFlow.detail.roomClosed.supportSubject
+- EN missing used translation key: patientSessionsFlow.detail.roomClosed.title
+- EN missing used translation key: practitioner.account.actions.logout
+- EN missing used translation key: practitioner.account.actions.logoutSubtitle
+- EN missing used translation key: practitioner.account.actions.messages
+- EN missing used translation key: practitioner.account.actions.messagesSubtitle
+- EN missing used translation key: practitioner.account.actions.support
+- EN missing used translation key: practitioner.account.actions.supportSubtitle
+- EN missing used translation key: practitioner.account.fields.applicationReviewedAt
+- EN missing used translation key: practitioner.account.fields.applicationSubmittedAt
+- EN missing used translation key: practitioner.account.fields.specialty
+- EN missing used translation key: practitioner.account.moreDetails.applicationTitle
+- EN missing used translation key: practitioner.account.moreDetails.credentialsTitle
+- EN missing used translation key: practitioner.account.moreDetails.specialtiesTitle
+- EN missing used translation key: practitioner.account.requirements.academicCertificate
+- EN missing used translation key: practitioner.account.requirements.activeAccount
+- EN missing used translation key: practitioner.account.requirements.approvedProfile
+- EN missing used translation key: practitioner.account.requirements.bio
+- EN missing used translation key: practitioner.account.requirements.countryCode
+- EN missing used translation key: practitioner.account.requirements.credentials
+- EN missing used translation key: practitioner.account.requirements.displayName
+- EN missing used translation key: practitioner.account.requirements.identityDocuments
+- EN missing used translation key: practitioner.account.requirements.languages
+- EN missing used translation key: practitioner.account.requirements.other
+- EN missing used translation key: practitioner.account.requirements.packagePurchasesEnabled
+- EN missing used translation key: practitioner.account.requirements.packagesEnabled
+- EN missing used translation key: practitioner.account.requirements.payoutAccountHolderName
+- EN missing used translation key: practitioner.account.requirements.payoutDestination
+- EN missing used translation key: practitioner.account.requirements.practitionerOtpVerified
+- EN missing used translation key: practitioner.account.requirements.primarySpecialtyCategoryId
+- EN missing used translation key: practitioner.account.requirements.professionalTitle
+- EN missing used translation key: practitioner.account.requirements.sessionPrice30Egp
+- EN missing used translation key: practitioner.account.requirements.sessionPrice30Usd
+- EN missing used translation key: practitioner.account.requirements.sessionPrice60Egp
+- EN missing used translation key: practitioner.account.requirements.sessionPrice60Usd
+- EN missing used translation key: practitioner.account.requirements.specialties
+- EN missing used translation key: practitioner.account.requirements.yearsOfExperience
+- EN missing used translation key: practitioner.account.sections.communication
+- EN missing used translation key: practitioner.account.sections.communicationSubtitle
+- EN missing used translation key: practitioner.account.sections.financial
+- EN missing used translation key: practitioner.account.sections.financialSubtitle
+- EN missing used translation key: practitioner.account.sections.professional
+- EN missing used translation key: practitioner.account.sections.professionalSubtitle
+- EN missing used translation key: practitioner.account.statusCard.approvedNote
+- EN missing used translation key: practitioner.account.statusCard.missingTitle
+- EN missing used translation key: practitioner.account.statusCard.moreNotes
+- EN missing used translation key: practitioner.account.statusCard.payoutMissing
+- EN missing used translation key: practitioner.account.statusCard.payoutReady
+- EN missing used translation key: practitioner.account.statusCard.rows.account
+- EN missing used translation key: practitioner.account.statusCard.rows.applicationStatus
+- EN missing used translation key: practitioner.account.statusCard.rows.approval
+- EN missing used translation key: practitioner.account.statusCard.rows.lastUpdated
+- EN missing used translation key: practitioner.account.statusCard.rows.payoutStatus
+- EN missing used translation key: practitioner.account.statusCard.subtitle
+- EN missing used translation key: practitioner.account.statusCard.title
+- EN missing used translation key: practitioner.account.statuses.ACTIVE
+- EN missing used translation key: practitioner.account.statuses.DELETED
+- EN missing used translation key: practitioner.account.statuses.INACTIVE
+- EN missing used translation key: practitioner.account.statuses.PENDING_APPROVAL
+- EN missing used translation key: practitioner.account.statuses.PENDING_VERIFICATION
+- EN missing used translation key: practitioner.account.statuses.SUSPENDED
+- AR missing used translation key: practitioner.availability.repeatPreviewExceptions
+- AR missing used translation key: practitioner.availability.weeks.alert.lockedTitle
+- EN missing used translation key: practitioner.availability.weeks.alert.lockedTitle
+- EN missing used translation key: practitioner.careChat.conversation.activity
+- EN missing used translation key: practitioner.careChat.conversation.detailsTitle
+- EN missing used translation key: practitioner.careChat.conversation.expiresAt
+- EN missing used translation key: practitioner.careChat.conversation.lastUpdated
+- EN missing used translation key: practitioner.careChat.conversation.openRequest
+- EN missing used translation key: practitioner.careChat.conversation.sendDisabledNotice
+- EN missing used translation key: practitioner.careChat.conversation.sessionLinked
+- EN missing used translation key: practitioner.careChat.conversation.statusLabel
+- EN missing used translation key: practitioner.careChat.unknownPractitioner
+- EN missing used translation key: practitioner.detail.checkingJoin
+- EN missing used translation key: practitioner.detail.duration
+- AR missing used translation key: practitioner.detail.endedWarningNote
+- EN missing used translation key: practitioner.detail.endedWarningNote
+- EN missing used translation key: practitioner.detail.flowTypeValue.DEFAULT
+- EN missing used translation key: practitioner.detail.flowTypeValue.INSTANT
+- EN missing used translation key: practitioner.detail.flowTypeValue.SCHEDULED
+- EN missing used translation key: practitioner.detail.joinAvailableAt
+- EN missing used translation key: practitioner.detail.joinBlocked
+- EN missing used translation key: practitioner.detail.markNoShow
+- EN missing used translation key: practitioner.detail.markingNoShow
+- EN missing used translation key: practitioner.detail.messagesReadOnly
+- EN missing used translation key: practitioner.detail.mode
+- EN missing used translation key: practitioner.detail.preparing
+- EN missing used translation key: practitioner.detail.roomClose.afterNote
+- EN missing used translation key: practitioner.detail.roomClose.afterTitle
+- EN missing used translation key: practitioner.detail.roomClose.alreadyClosed
+- EN missing used translation key: practitioner.detail.roomClose.beforeNote
+- EN missing used translation key: practitioner.detail.roomClose.beforeTitle
+- EN missing used translation key: practitioner.detail.roomClose.cancel
+- EN missing used translation key: practitioner.detail.roomClose.continue
+- EN missing used translation key: practitioner.detail.roomClose.errors.generic
+- EN missing used translation key: practitioner.detail.roomClose.errors.notAllowed
+- EN missing used translation key: practitioner.detail.roomClose.errors.onlyAfterStart
+- EN missing used translation key: practitioner.detail.roomClose.errors.reasonRequired
+- EN missing used translation key: practitioner.detail.roomClose.options.endedByAgreement
+- EN missing used translation key: practitioner.detail.roomClose.options.other
+- EN missing used translation key: practitioner.detail.roomClose.options.patientNoShow
+- EN missing used translation key: practitioner.detail.roomClose.options.safetyConcern
+- EN missing used translation key: practitioner.detail.roomClose.options.technicalIssue
+- EN missing used translation key: practitioner.detail.roomClose.reasonHelp
+- EN missing used translation key: practitioner.detail.roomClose.reasonLabel
+- EN missing used translation key: practitioner.detail.roomClose.submitAfter
+- EN missing used translation key: practitioner.detail.roomClose.submitBefore
+- EN missing used translation key: practitioner.detail.roomClose.success
+- EN missing used translation key: practitioner.detail.sessionType
+- EN missing used translation key: practitioner.detail.timezone
+- AR missing used translation key: practitioner.presentationStatus.BOTH_NO_SHOW
+- AR missing used translation key: practitioner.presentationStatus.EXPIRED
+- AR missing used translation key: practitioner.presentationStatus.PATIENT_NO_SHOW
+- AR missing used translation key: practitioner.presentationStatus.PRACTITIONER_NO_SHOW
+- EN missing used translation key: practitioner.promoCodes.actions.activate
+- EN missing used translation key: practitioner.promoCodes.filters.all
+- EN missing used translation key: practitioner.promoCodes.filters.status
+- EN missing used translation key: practitioner.promoCodes.form.datePicker.cancel
+- EN missing used translation key: practitioner.promoCodes.form.datePicker.clear
+- EN missing used translation key: practitioner.promoCodes.form.datePicker.confirm
+- EN missing used translation key: practitioner.promoCodes.form.endsAtPlaceholder
+- EN missing used translation key: practitioner.promoCodes.form.startsAtPlaceholder
+- EN missing used translation key: practitioner.promoCodes.list.usageWithLimit
+- EN missing used translation key: practitioner.promoCodes.list.usageWithoutLimit
+- EN missing used translation key: practitioner.promoCodes.notifications.actionFailedBody
+- EN missing used translation key: practitioner.promoCodes.notifications.actionFailedTitle
+- EN missing used translation key: practitioner.promoCodes.notifications.activatedBody
+- EN missing used translation key: practitioner.promoCodes.notifications.activatedTitle
+- EN missing used translation key: practitioner.promoCodes.searchPlaceholder
+- EN missing used translation key: practitioner.promoCodes.status.NOT_STARTED
+- EN missing used translation key: practitioner.promoCodes.status.USAGE_LIMIT_REACHED
+- AR missing used translation key: practitioner.schedule.periodMeta
+- EN missing used translation key: practitioner.schedule.periodMeta
+- EN missing used translation key: profileScreen.details.avatar.choosePhoto
+- EN missing used translation key: profileScreen.details.avatar.imageTooLarge
+- EN missing used translation key: profileScreen.details.avatar.permissionDenied
+- EN missing used translation key: profileScreen.details.avatar.permissionNeeded
+- EN missing used translation key: profileScreen.details.avatar.removePhoto
+- EN missing used translation key: profileScreen.details.avatar.unsupportedType
+- EN missing used translation key: profileScreen.details.avatar.uploadFailed
+- EN missing used translation key: profileScreen.details.editButton
+- EN missing used translation key: profileScreen.details.personalSectionTitle
+- EN missing used translation key: profileScreen.edit.avatarHint
+- EN missing used translation key: profileScreen.edit.cancel
+- EN missing used translation key: profileScreen.edit.contactNote
+- EN missing used translation key: profileScreen.edit.countryPicker.searchPlaceholder
+- EN missing used translation key: profileScreen.edit.datePicker.cancel
+- EN missing used translation key: profileScreen.edit.datePicker.confirm
+- EN missing used translation key: profileScreen.edit.datePicker.placeholder
+- EN missing used translation key: profileScreen.edit.fields.countryCode
+- EN missing used translation key: profileScreen.edit.fields.dateOfBirth
+- EN missing used translation key: profileScreen.edit.fields.dateOfBirthRequired
+- EN missing used translation key: profileScreen.edit.fields.displayName
+- EN missing used translation key: profileScreen.edit.fields.displayNamePlaceholder
+- EN missing used translation key: profileScreen.edit.fields.displayNameRequired
+- EN missing used translation key: profileScreen.edit.fields.futureDateError
+- EN missing used translation key: profileScreen.edit.fields.gender
+- EN missing used translation key: profileScreen.edit.fields.genderRequired
+- EN missing used translation key: profileScreen.edit.fields.invalidDateFormat
+- EN missing used translation key: profileScreen.edit.save
+- EN missing used translation key: profileScreen.edit.saveFailedBody
+- EN missing used translation key: profileScreen.edit.screenTitle
+- EN missing used translation key: profileScreen.edit.sectionTitle
+- AR missing used translation key: settings.language.restartNotice
+- EN missing used translation key: settings.language.restartNotice

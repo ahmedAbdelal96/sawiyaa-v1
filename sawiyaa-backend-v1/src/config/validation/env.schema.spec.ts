@@ -70,6 +70,44 @@ describe('env.schema payment validation', () => {
     expect(env.AVAILABILITY_RETENTION_MONTHS).toBe(12);
   });
 
+  it('keeps the log-size default and accepted units aligned with the parser', () => {
+    expect(validate(buildValidEnv()).LOG_MAX_FILE_SIZE).toBe('20mb');
+    for (const value of ['20mb', '512kb', '1gb', '2048b']) {
+      expect(validate(buildValidEnv({ LOG_MAX_FILE_SIZE: value })).LOG_MAX_FILE_SIZE).toBe(value);
+    }
+    expect(() => validate(buildValidEnv({ LOG_MAX_FILE_SIZE: '20m' }))).toThrow(
+      /LOG_MAX_FILE_SIZE/,
+    );
+  });
+
+  it('normalizes blank optional numeric environment values to undefined', () => {
+    const env = validate(
+      buildValidEnv({
+        AUTH_PASSWORD_LOCKOUT_MAX_ATTEMPTS: '',
+        AUTH_PASSWORD_LOCKOUT_DURATION_MINUTES: '   ',
+        AUTH_OTP_LOCKOUT_MAX_ATTEMPTS: '',
+        AUTH_OTP_LOCKOUT_DURATION_MINUTES: undefined,
+        MAIL_PORT: '',
+      }),
+    );
+    expect(env.AUTH_PASSWORD_LOCKOUT_MAX_ATTEMPTS).toBeUndefined();
+    expect(env.AUTH_PASSWORD_LOCKOUT_DURATION_MINUTES).toBeUndefined();
+    expect(env.AUTH_OTP_LOCKOUT_MAX_ATTEMPTS).toBeUndefined();
+    expect(env.AUTH_OTP_LOCKOUT_DURATION_MINUTES).toBeUndefined();
+    expect(env.MAIL_PORT).toBeUndefined();
+  });
+
+  it('rejects invalid optional numeric values instead of coercing them to zero', () => {
+    for (const [name, value] of [
+      ['AUTH_PASSWORD_LOCKOUT_MAX_ATTEMPTS', '0'],
+      ['AUTH_PASSWORD_LOCKOUT_DURATION_MINUTES', '-1'],
+      ['AUTH_OTP_LOCKOUT_MAX_ATTEMPTS', 'abc'],
+      ['AUTH_OTP_LOCKOUT_DURATION_MINUTES', '1441'],
+    ]) {
+      expect(() => validate(buildValidEnv({ [name]: value }))).toThrow(name);
+    }
+  });
+
   it('validates the session runtime preparation lead window', () => {
     expect(validate(buildValidEnv()).SESSION_RUNTIME_PREPARE_LEAD_MINUTES).toBe(
       1440,
@@ -210,6 +248,32 @@ describe('env.schema payment validation', () => {
         }),
       ),
     ).toThrow(/DAILY_WEBHOOK_SECRET/);
+  });
+
+  it('requires reconciliation alerts when automatic reconciliation is enabled in production', () => {
+    expect(() =>
+      validate(
+        buildValidEnv({
+          APP_ENV: 'production',
+          NODE_ENV: 'production',
+          APP_URL: 'https://api.example.com',
+          APP_BASE_URL: 'https://www.example.com',
+          PAYMENT_SUCCESS_URL: 'https://www.example.com/payment/success',
+          PAYMENT_FAILED_URL: 'https://www.example.com/payment/failed',
+          PAYMENT_PENDING_URL: 'https://www.example.com/payment/pending',
+          MAIL_PROVIDER: 'brevo',
+          MAIL_FROM: 'noreply@example.com',
+          BREVO_API_KEY: 'brevo-key',
+          BREVO_API_URL: 'https://api.brevo.com',
+          DAILY_API_KEY: 'daily-key',
+          DAILY_API_BASE_URL: 'https://api.daily.co/v1',
+          DAILY_WEBHOOK_SECRET: 'daily-webhook-secret',
+          CORPORATE_CODE_PEPPER: 'x'.repeat(32),
+          ACCOUNTING_RECONCILIATION_ENABLED: 'true',
+          ACCOUNTING_RECONCILIATION_ALERTS_ENABLED: 'false',
+        }),
+      ),
+    ).toThrow(/ACCOUNTING_RECONCILIATION_ALERTS_ENABLED/);
   });
 
   it('rejects unsafe production OTP controls and development URLs', () => {

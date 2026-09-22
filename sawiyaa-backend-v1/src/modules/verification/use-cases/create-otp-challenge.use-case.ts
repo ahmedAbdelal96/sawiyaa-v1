@@ -74,7 +74,11 @@ export class CreateOtpChallengeUseCase {
 
     const challenge = await this.otpChallengeRepository.withTransaction(
       async (tx) => {
-        if (input.userId && input.purpose === OtpPurpose.PRACTITIONER_LOGIN) {
+        if (
+          input.userId &&
+          (input.purpose === OtpPurpose.PRACTITIONER_LOGIN ||
+            input.purpose === OtpPurpose.PASSWORD_RESET)
+        ) {
           const scopeKey = `otp-challenge:${input.purpose}:user:${input.userId}`;
           await this.otpChallengeRepository.lockScope(tx, scopeKey);
           await this.otpChallengeRepository.invalidateActiveChallengesByScope(
@@ -115,6 +119,7 @@ export class CreateOtpChallengeUseCase {
       channel: input.channel,
       maskedTarget: maskTarget(input.target),
       expiresAt,
+      resendAvailableAt: new Date(Date.now() + policy.resendCooldownSeconds * 1000),
       code,
       target: input.target,
     };

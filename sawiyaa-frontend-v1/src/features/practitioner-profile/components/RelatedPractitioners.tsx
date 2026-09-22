@@ -3,6 +3,7 @@ import { Link } from "@/i18n/navigation";
 import { Star, BadgeCheck, ArrowRight } from "lucide-react";
 import type { PublicPractitioner } from "@/features/practitioners-discovery/types/practitioner";
 import PractitionerAvatar from "@/components/shared/PractitionerAvatar";
+import { hasPublicPractitionerRating } from "@/features/practitioners-discovery/lib/practitioner-rating";
 
 type Props = {
   practitioners: PublicPractitioner[];
@@ -22,78 +23,78 @@ export default async function RelatedPractitioners({
   if (practitioners.length === 0) return null;
 
   return (
-    <div className="border-t border-border-light bg-background px-6 py-12 dark:border-border-light dark:bg-background">
-      <div className="mx-auto max-w-7xl">
-        <div className="mb-6 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
-          <div>
-            <h2 className="text-2xl font-bold text-text-primary dark:text-white/90">
-              {t("sections.related")}
-            </h2>
-          </div>
-          <Link
-            href="/practitioners"
-            className="inline-flex items-center gap-2 text-sm font-semibold text-primary transition-colors hover:text-primary-hover"
-          >
-            {t("related.viewAll")}
-            <ArrowRight size={14} className="rtl:rotate-180" />
-          </Link>
-        </div>
+    <div className="mt-8 border-t border-border-light/60 pt-8 dark:border-white/10">
+      <div className="mb-5 flex items-center justify-between">
+        <h2 className="text-lg font-bold text-[#1C2F2B] dark:text-white/90">
+          {t("sections.related")}
+        </h2>
+        <Link
+          href="/practitioners"
+          className="inline-flex items-center gap-1.5 text-xs font-bold text-[#24564F] transition hover:underline"
+        >
+          <span>{locale === "ar" ? "عرض كل المختصين" : "View all specialists"}</span>
+          <ArrowRight size={13} className={isAr ? "rotate-180" : ""} />
+        </Link>
+      </div>
 
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {practitioners.map((p) => {
-            const displayName = isAr ? p.nameAr : p.nameEn;
-            const displayTitle = isAr ? p.titleAr : p.titleEn;
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {practitioners.map((p) => {
+          const displayName = isAr ? p.nameAr : p.nameEn;
+          const displayTitle = p.professionalTitle?.trim() || "-";
+          const rating = p.rating;
+          const reviewCount = p.reviewCount || 0;
+          const hasRating = hasPublicPractitionerRating(rating, reviewCount);
 
-            return (
-              <Link
-                key={p.id}
-                href={`/practitioners/${p.slug}`}
-                className="app-panel app-lift group flex items-center gap-4 rounded-[26px] p-4 hover:-translate-y-0.5"
-              >
-                <div
-                  className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border border-border-light bg-surface-secondary text-lg font-bold text-primary dark:bg-primary/15 dark:text-primary-light"
-                >
-                  <PractitionerAvatar
-                    src={p.avatarUrl}
-                    alt={displayName}
-                    initials={p.initials}
-                    className="h-full w-full rounded-2xl object-cover"
-                  />
+          return (
+            <Link
+              key={p.id}
+              href={`/practitioners/${p.slug}`}
+              className="app-lift flex items-center gap-3.5 rounded-[20px] border border-border-light/70 bg-white p-4 shadow-2xs transition hover:-translate-y-0.5 hover:border-[#24564F]/30 dark:bg-surface-secondary dark:border-white/10"
+            >
+              <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-full border border-[#24564F]/20 p-0.5 bg-[#FCFAF6] dark:bg-white/5">
+                <PractitionerAvatar
+                  src={p.avatarUrl}
+                  alt={displayName}
+                  initials={p.initials}
+                  className="h-full w-full rounded-full object-cover"
+                />
+              </div>
+
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-1">
+                  <h3 className="truncate text-sm font-bold text-[#1C2F2B] dark:text-white/90">
+                    {displayName}
+                  </h3>
+                  {p.isVerified && (
+                    <BadgeCheck size={13} className="shrink-0 text-[#24564F]" />
+                  )}
                 </div>
+                <p className="truncate text-xs font-medium text-text-secondary">
+                  {displayTitle}
+                </p>
 
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-1">
-                    <span className="truncate text-sm font-semibold text-text-primary transition-colors group-hover:text-primary dark:text-white/90">
-                      {displayName}
-                    </span>
-                    {p.isVerified && (
-                      <BadgeCheck size={13} className="shrink-0 text-primary" />
-                    )}
-                  </div>
-                  <p className="truncate text-xs text-text-secondary">
-                    {displayTitle}
-                  </p>
-                  <div className="mt-2 flex items-center justify-between">
-                    <span className="app-chip rounded-full px-2.5 py-1 text-[11px] font-medium">
+                <div className="mt-1 flex items-center gap-2 text-xs">
+                  {p.specialties[0] && (
+                    <span className="rounded-full bg-[#EEF4EF] px-2 py-0.5 text-[10px] font-semibold text-[#24564F] dark:bg-white/5 dark:text-[#A7BFAE]">
                       {specialtyLabels[p.specialties[0]] ?? p.specialties[0]}
                     </span>
-                    <div className="flex items-center gap-0.5">
-                      <Star size={11} className="fill-secondary text-secondary" />
-                      <span className="text-xs font-bold text-text-primary dark:text-white/80">
-                        {p.rating.toFixed(1)}
-                      </span>
+                  )}
+                  {hasRating ? (
+                    <div className="flex items-center gap-0.5 text-[11px] font-bold text-amber-700 dark:text-amber-400">
+                      <Star size={10} className="fill-amber-400 text-amber-400" />
+                      <span>{rating.toFixed(1)}</span>
                     </div>
-                  </div>
+                  ) : null}
                 </div>
+              </div>
 
-                <ArrowRight
-                  size={14}
-                  className="shrink-0 text-text-muted rtl:rotate-180 transition-colors group-hover:text-primary"
-                />
-              </Link>
-            );
-          })}
-        </div>
+              <ArrowRight
+                size={14}
+                className="shrink-0 text-text-muted transition group-hover:text-[#24564F] rtl:rotate-180"
+              />
+            </Link>
+          );
+        })}
       </div>
     </div>
   );

@@ -1,6 +1,8 @@
 import { Module } from '@nestjs/common';
 import { JwtAccessAuthGuard } from '@common/guards/authentication/jwt-access-auth.guard';
 import { RolesGuard } from '@common/guards/authorization/roles.guard';
+import { PermissionResolverService } from '@common/guards/authorization/permission-resolver.service';
+import { PermissionsGuard } from '@common/guards/authorization/permissions.guard';
 import { AdminArticleCategoriesController } from './controllers/admin-article-categories.controller';
 import { AdminArticlesController } from './controllers/admin-articles.controller';
 import { PublicArticlesController } from './controllers/public-articles.controller';
@@ -33,6 +35,8 @@ import { UpdateArticleUseCase } from './use-cases/update-article.use-case';
   providers: [
     JwtAccessAuthGuard,
     RolesGuard,
+    PermissionsGuard,
+    PermissionResolverService,
     BuildPublicArticleTrustMetadataService,
     ArticleCoverStorageService,
     ArticlePresenter,

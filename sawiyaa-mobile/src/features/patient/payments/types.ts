@@ -42,6 +42,7 @@ export interface PaymentAction {
 export interface PaymentItem {
   id: string;
   sessionId: string | null;
+  sessionCode?: string | null;
   provider: PaymentProvider;
   status: PaymentStatus;
   /** Original base amount (pre-discount, pre-wallet) */
@@ -223,6 +224,14 @@ export interface FinancialBreakdownCoupon {
 }
 
 export interface SessionFinancialBreakdown {
+  /** Authoritative backend funding quote. Existing payment attempts are locked. */
+  fundingPreview?: {
+    walletUsed: string;
+    gatewayAmount: string;
+    gatewayAmountWithoutWallet: string;
+    walletAvailable: string;
+    locked: boolean;
+  };
   sessionId: string;
   currency: string;
   regionalPricingMode: "EGYPT_LOCAL" | "INTERNATIONAL";

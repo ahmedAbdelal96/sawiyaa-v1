@@ -2,7 +2,7 @@ import React from 'react';
 import { View, StyleSheet, TouchableOpacity, type StyleProp, type ViewStyle } from 'react-native';
 import { Text } from './Text';
 import { useTheme } from '../../providers/ThemeProvider';
-import { I18nManager } from 'react-native';
+import { useAppDirection } from '../../i18n/direction';
 import { Ionicons } from '@expo/vector-icons';
 
 export interface ListRowProps {
@@ -25,11 +25,11 @@ export const ListRow = ({
   style,
 }: ListRowProps) => {
   const { theme } = useTheme();
-  const isRTL = I18nManager.isRTL;
+  const { isRtl: isRTL, chevronForward } = useAppDirection();
 
   const Chevron = () => (
     <Ionicons 
-      name={isRTL ? "chevron-back" : "chevron-forward"} 
+      name={chevronForward}
       size={20} 
       color={theme.colors.textMuted} 
       style={{ opacity: 0.5 }} 

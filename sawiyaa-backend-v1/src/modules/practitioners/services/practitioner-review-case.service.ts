@@ -11,6 +11,7 @@ import {
   ReviewSectionStatus,
 } from '@prisma/client';
 import { PrismaService } from '@common/prisma/prisma.service';
+import { addOperationalBusinessDays } from '../utils/operational-business-calendar.util';
 
 type DbClient = PrismaService | Prisma.TransactionClient;
 
@@ -28,16 +29,25 @@ export type ReviewRequirementInput = {
 
 export type PractitionerReviewCaseViewModel = {
   id: string;
+  caseType?: ReviewCaseType;
   status: ReviewCaseStatus;
+  submittedAt?: Date | null;
+  dueAt?: Date | null;
   proposedSnapshot: Prisma.JsonValue;
   sections: Array<{ section: ReviewSection; status: ReviewSectionStatus }>;
   requirements: Array<{
     id: string;
     section: ReviewSection;
     fieldPath: string | null;
+    credentialType: CredentialType | null;
     status: ReviewRequirementStatus;
     title: string;
     reason: string;
+    instructions?: string | null;
+    requestedAt?: Date | null;
+    dueAt?: Date | null;
+    severity?: ReviewRequirementSeverity;
+    operationalImpact?: ReviewOperationalImpact[];
   }>;
 };
 
@@ -77,16 +87,46 @@ export class PractitionerReviewCaseService {
             id: true,
             section: true,
             fieldPath: true,
+            credentialType: true,
             status: true,
             title: true,
             reason: true,
+            instructions: true,
+            createdAt: true,
+            dueAt: true,
+            severity: true,
+            operationalImpact: true,
           },
           orderBy: { createdAt: 'asc' },
         },
       },
     });
 
-    return reviewCase;
+    return reviewCase
+      ? { ...reviewCase, requirements: reviewCase.requirements.filter((requirement) => ([ReviewRequirementStatus.OPEN, ReviewRequirementStatus.SUBMITTED, ReviewRequirementStatus.REJECTED] as ReviewRequirementStatus[]).includes(requirement.status)).map(({ createdAt, ...requirement }) => ({ ...requirement, requestedAt: createdAt })) }
+      : null;
+  }
+
+  async findActiveApplicationCase(applicationId: string, tx?: Prisma.TransactionClient) {
+    const db: DbClient = tx ?? this.prisma;
+    const reviewCase = await db.practitionerReviewCase.findFirst({
+      where: {
+        applicationId,
+        caseType: ReviewCaseType.ONBOARDING,
+        status: { in: ACTIVE_STATUSES },
+      },
+      orderBy: { updatedAt: 'desc' },
+      include: {
+        sections: { select: { section: true, status: true } },
+        requirements: {
+          select: { id: true, section: true, fieldPath: true, credentialType: true, status: true, title: true, reason: true, instructions: true, createdAt: true, dueAt: true, severity: true, operationalImpact: true },
+          orderBy: { createdAt: 'asc' },
+        },
+      },
+    });
+    return reviewCase
+      ? { ...reviewCase, requirements: reviewCase.requirements.filter((requirement) => ([ReviewRequirementStatus.OPEN, ReviewRequirementStatus.SUBMITTED, ReviewRequirementStatus.REJECTED] as ReviewRequirementStatus[]).includes(requirement.status)).map(({ createdAt, ...requirement }) => ({ ...requirement, requestedAt: createdAt })) }
+      : null;
   }
 
   assertTransition(from: ReviewCaseStatus, to: ReviewCaseStatus): void {
@@ -241,15 +281,89 @@ export class PractitionerReviewCaseService {
     });
   }
 
-  async ensureOnboardingCase(input: {
-    practitionerId: string;
+  async markApplicationRequirementSubmitted(input: {
+    applicationId: string;
+    section: ReviewSection;
+    credentialType?: CredentialType;
+    fieldPath?: string;
+    tx?: Prisma.TransactionClient;
+  }): Promise<void> {
+    const db: DbClient = input.tx ?? this.prisma;
+    const reviewCase = await db.practitionerReviewCase.findFirst({
+      where: {
+        applicationId: input.applicationId,
+        caseType: ReviewCaseType.ONBOARDING,
+        status: { in: ACTIVE_STATUSES },
+      },
+      orderBy: { updatedAt: 'desc' },
+      select: { id: true },
+    });
+    if (!reviewCase) return;
+
+    const requirement = await db.practitionerReviewRequirement.findFirst({
+      where: {
+        caseId: reviewCase.id,
+        section: input.section,
+        ...(input.credentialType !== undefined
+          ? { credentialType: input.credentialType }
+          : { fieldPath: input.fieldPath ?? null }),
+        status: {
+          in: [
+            ReviewRequirementStatus.OPEN,
+            ReviewRequirementStatus.SUBMITTED,
+            ReviewRequirementStatus.REJECTED,
+          ],
+        },
+      },
+      orderBy: { createdAt: 'asc' },
+      select: { id: true },
+    });
+    if (!requirement) return;
+
+    await db.practitionerReviewRequirement.update({
+      where: { id: requirement.id },
+      data: {
+        status: ReviewRequirementStatus.SUBMITTED,
+        resolvedAt: null,
+        resolvedByUserId: null,
+      },
+    });
+    await db.practitionerReviewSection.updateMany({
+      where: { caseId: reviewCase.id, section: input.section },
+      data: { status: ReviewSectionStatus.PENDING },
+    });
+  }
+
+  async resubmitApplicationCase(input: {
+    applicationId: string;
     proposedSnapshot: Prisma.InputJsonValue;
+    tx?: Prisma.TransactionClient;
+  }): Promise<void> {
+    const db: DbClient = input.tx ?? this.prisma;
+    const current = await db.practitionerReviewCase.findFirst({
+      where: { applicationId: input.applicationId, caseType: ReviewCaseType.ONBOARDING, status: ReviewCaseStatus.CHANGES_REQUESTED },
+      orderBy: { updatedAt: 'desc' },
+    });
+    if (!current) return;
+    this.assertTransition(current.status, ReviewCaseStatus.RESUBMITTED);
+    await db.practitionerReviewCase.update({
+      where: { id: current.id },
+      data: { status: ReviewCaseStatus.RESUBMITTED, submittedAt: new Date(), proposedSnapshot: input.proposedSnapshot },
+    });
+  }
+
+  async ensureOnboardingCase(input: {
+    practitionerId?: string;
+    applicationId?: string;
+    userId?: string;
+    proposedSnapshot: Prisma.InputJsonValue;
+    dueAt?: Date;
     tx?: Prisma.TransactionClient;
   }) {
     const db: DbClient = input.tx ?? this.prisma;
     const existing = await db.practitionerReviewCase.findFirst({
       where: {
-        practitionerId: input.practitionerId,
+        ...(input.applicationId ? { applicationId: input.applicationId } : { practitionerId: input.practitionerId }),
         caseType: ReviewCaseType.ONBOARDING,
         status: { notIn: [ReviewCaseStatus.CANCELLED] },
       },
@@ -260,10 +374,13 @@ export class PractitionerReviewCaseService {
     const reviewCase = await db.practitionerReviewCase.create({
       data: {
         practitionerId: input.practitionerId,
+        applicationId: input.applicationId,
+        userId: input.userId,
         caseType: ReviewCaseType.ONBOARDING,
         status: ReviewCaseStatus.PENDING_REVIEW,
         submittedAt: new Date(),
         proposedSnapshot: input.proposedSnapshot,
+        dueAt: input.dueAt ?? this.addBusinessDays(new Date(), 1),
       },
     });
 
@@ -285,6 +402,14 @@ export class PractitionerReviewCaseService {
       });
     }
     return reviewCase;
+  }
+
+  private addBusinessDays(start: Date, days: number): Date {
+    return addOperationalBusinessDays(start, days);
+  }
+
+  getReviewDueAt(start = new Date(), businessDays = 1): Date {
+    return this.addBusinessDays(start, businessDays);
   }
 
   async requestChanges(input: {
@@ -320,7 +445,13 @@ export class PractitionerReviewCaseService {
           section: requirement.section,
           fieldPath: requirement.fieldPath ?? null,
           credentialType: requirement.credentialType ?? null,
-          status: { in: [ReviewRequirementStatus.OPEN, ReviewRequirementStatus.REJECTED] },
+          status: {
+            in: [
+              ReviewRequirementStatus.OPEN,
+              ReviewRequirementStatus.SUBMITTED,
+              ReviewRequirementStatus.REJECTED,
+            ],
+          },
         },
       });
       if (existing) {

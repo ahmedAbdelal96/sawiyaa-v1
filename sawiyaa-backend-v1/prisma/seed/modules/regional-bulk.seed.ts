@@ -966,12 +966,10 @@ export const regionalBulkSeedModule: SeedModule = {
         const gross = Number(money(1200, 280, i + monthOffset));
         const adj = i % 7 === 0 ? -50 : 0;
         const net = gross + adj;
-        const settlementWhere = {
-          batchId_practitionerId: {
-            batchId,
-            practitionerId: practitioner.profileId,
-          },
-        } as const;
+        const settlementId = uuid(
+          `regional-bulk-practitioner-settlement-${batchId}-${practitioner.profileId}`,
+        );
+        const settlementWhere = { id: settlementId } as const;
         const existingSettlement =
           await prisma.practitionerSettlement.findUnique({
             where: settlementWhere,
@@ -1001,9 +999,7 @@ export const regionalBulkSeedModule: SeedModule = {
         } else {
           await prisma.practitionerSettlement.create({
             data: {
-              id: uuid(
-                `regional-bulk-practitioner-settlement-${batchId}-${practitioner.profileId}`,
-              ),
+              id: settlementId,
               batchId,
               practitionerId: practitioner.profileId,
               walletId: walletIds.get(practitioner.profileId) ?? null,
@@ -1617,6 +1613,5 @@ export const regionalBulkSeedModule: SeedModule = {
         },
       });
     }
-
   },
 };

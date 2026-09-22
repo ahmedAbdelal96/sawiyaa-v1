@@ -8,6 +8,7 @@ type NavigationHistoryContextValue = {
   canGoBackInApp: boolean;
   goBackInApp: () => boolean;
   popPreviousRoute: () => string | null;
+  suppressNextRouteRecord: () => void;
   debugSnapshot: () => { current: string | null; history: string[] };
 };
 
@@ -121,6 +122,9 @@ export function NavigationHistoryProvider({ children }: { children: React.ReactN
         if (stack.length === 0) return null;
         suppressNextPushRef.current = true;
         return stack.pop() ?? null;
+      },
+      suppressNextRouteRecord: () => {
+        suppressNextPushRef.current = true;
       },
       debugSnapshot: () => ({
         current: currentRouteRef.current,

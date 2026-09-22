@@ -17,7 +17,7 @@ import {
   SessionStatus,
   UserRoleType,
 } from '@prisma/client';
-import { createHash, randomUUID } from 'crypto';
+import { createHash } from 'crypto';
 import { reserveSeedSessionCode } from '../session-code-fixture';
 import { developmentDemoAccounts, seedIds } from '../shared/seed.constants';
 import { SeedModule } from '../shared/seed.types';
@@ -169,7 +169,24 @@ async function scheduleReminders(prisma: PrismaClient, input: { sessionId: strin
 
 async function ensureCapturedPayment(prisma: PrismaClient, input: { key: string; sessionId?: string | null; patientId: string; practitionerId: string; amount: string; currency: string; purpose: PaymentPurpose }) {
   const id = deterministicUuid(marker(`payment:${input.key}`));
-  await prisma.payment.upsert({ where: { id }, create: { id, sessionId: input.sessionId ?? null, patientId: input.patientId, practitionerId: input.practitionerId, paymentPurpose: input.purpose, provider: PaymentProvider.PAYMOB, status: PaymentStatus.CAPTURED, amountSubtotal: input.amount, amountDiscount: '0', amountTotal: input.amount, amountFromWallet: '0', amountFromGateway: input.amount, currencyCode: input.currency, providerPaymentRef: marker(`payment-ref:${input.key}`), providerOrderRef: marker(`order:${input.key}`), initiatedAt: new Date(), authorizedAt: new Date(), capturedAt: new Date(), metadataJson: { namespace: SESSION_ACCESS_SEED_NAMESPACE, scenarioKey: input.key } }, update: { sessionId: input.sessionId ?? null, status: PaymentStatus.CAPTURED, amountTotal: input.amount, amountFromGateway: input.amount, capturedAt: new Date(), metadataJson: { namespace: SESSION_ACCESS_SEED_NAMESPACE, scenarioKey: input.key } } });
+  const amount = new Prisma.Decimal(input.amount);
+  const platformCommission = amount.mul(20).div(100).toDecimalPlaces(2);
+  const practitionerShare = amount.sub(platformCommission).toDecimalPlaces(2);
+  const metadataJson = {
+    namespace: SESSION_ACCESS_SEED_NAMESPACE,
+    scenarioKey: input.key,
+    financialBreakdown: {
+      sessionId: input.sessionId ?? null,
+      paymentPurpose: input.purpose,
+      currency: input.currency,
+      grossAmount: amount.toFixed(2),
+      discountAmount: '0.00',
+      netPaidAmount: amount.toFixed(2),
+      platformCommissionAmount: platformCommission.toFixed(2),
+      practitionerShareAmount: practitionerShare.toFixed(2),
+    },
+  };
+  await prisma.payment.upsert({ where: { id }, create: { id, sessionId: input.sessionId ?? null, patientId: input.patientId, practitionerId: input.practitionerId, paymentPurpose: input.purpose, provider: PaymentProvider.PAYMOB, status: PaymentStatus.CAPTURED, amountSubtotal: input.amount, amountDiscount: '0', amountTotal: input.amount, amountFromWallet: '0', amountFromGateway: input.amount, currencyCode: input.currency, commissionPlatformRatePercent: '20.00', commissionPractitionerRatePercent: '80.00', providerPaymentRef: marker(`payment-ref:${input.key}`), providerOrderRef: marker(`order:${input.key}`), initiatedAt: new Date(), authorizedAt: new Date(), capturedAt: new Date(), metadataJson }, update: { sessionId: input.sessionId ?? null, status: PaymentStatus.CAPTURED, amountSubtotal: input.amount, amountDiscount: '0', amountTotal: input.amount, amountFromGateway: input.amount, commissionPlatformRatePercent: '20.00', commissionPractitionerRatePercent: '80.00', capturedAt: new Date(), metadataJson } });
   return id;
 }
 
@@ -202,7 +219,7 @@ async function seedSessionAccessFixtures(prisma: PrismaClient): Promise<void> {
   const practitionerUserId = developmentDemoAccounts.primaryPractitioner.userId;
   const primaryTimes = buildSessionAccessTimes(now, policy.join.joinEarlyMinutes, policy.join.joinAfterEndGraceMinutes);
   const primaryStart = primaryTimes.startsAt;
-  const primaryId = await ensureSession({ prisma, key: sessionAccessScenarioKeys.primary, sessionId: randomUUID(), patientId, practitionerId, startsAt: primaryStart, status: SessionStatus.UPCOMING, policy });
+  const primaryId = await ensureSession({ prisma, key: sessionAccessScenarioKeys.primary, patientId, practitionerId, startsAt: primaryStart, status: SessionStatus.UPCOMING, policy });
   await ensureCapturedPayment(prisma, { key: sessionAccessScenarioKeys.primary, sessionId: primaryId, patientId, practitionerId, amount: '650.00', currency: 'EGP', purpose: PaymentPurpose.SESSION_BOOKING });
 
   const notificationType = await prisma.notificationType.findUnique({ where: { slug: 'sessions.session-join-available' }, select: { id: true } });
@@ -246,7 +263,11 @@ async function seedSessionAccessFixtures(prisma: PrismaClient): Promise<void> {
   const inProgressId = await ensureSession({ prisma, key: sessionAccessScenarioKeys.inProgress, patientId: seedIds.patientProfiles.patientB, practitionerId: seedIds.practitionerProfiles.practitionerE, startsAt: addMinutes(now, -180), status: SessionStatus.IN_PROGRESS, policy });
   await ensureCapturedPayment(prisma, { key: sessionAccessScenarioKeys.inProgress, sessionId: inProgressId, patientId: seedIds.patientProfiles.patientB, practitionerId: seedIds.practitionerProfiles.practitionerE, amount: '600.00', currency: 'USD', purpose: PaymentPurpose.SESSION_BOOKING });
   await ensureSession({ prisma, key: sessionAccessScenarioKeys.expired, patientId: seedIds.patientProfiles.patientB, practitionerId: seedIds.practitionerProfiles.practitionerF, startsAt: addMinutes(now, -300), status: SessionStatus.EXPIRED, policy });
-  const rescheduledStart = addMinutes(now, 240);
+  // Keep this patient-B fixture one full session interval before the curated
+  // patient-B ready-to-join fixture at now + 5h. The gap prevents a later
+  // refresh from overlapping the previous run's moving curated interval while
+  // preserving a dynamic, upcoming rescheduled scenario.
+  const rescheduledStart = addMinutes(now, 180);
   const rescheduledId = await ensureSession({ prisma, key: sessionAccessScenarioKeys.rescheduled, patientId: seedIds.patientProfiles.patientB, practitionerId: seedIds.practitionerProfiles.practitionerF, startsAt: rescheduledStart, status: SessionStatus.UPCOMING, policy, scheduleRevision: 2 });
   await scheduleReminders(prisma, { sessionId: rescheduledId, startsAt: rescheduledStart, policy, patientUserId: seedIds.users.patientB, practitionerUserId: seedIds.users.practitionerF, revision: 2 });
   const originalStart = addMinutes(now, 360);

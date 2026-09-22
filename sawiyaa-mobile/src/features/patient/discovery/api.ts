@@ -3,16 +3,18 @@ import { apiClient } from "../../../lib/api";
 import {
   ListPublicPractitionersFilters,
   PublicPractitionerDetailsResponse,
+  PublicPractitionerInstantBookingAvailabilityResponse,
   PublicPractitionerPresenceResponse,
   PublicPractitionersListResponse,
 } from "./types";
 import { toPublicPractitionerQueryParams } from "./query";
+import i18n from "../../../i18n";
 
 export const useGetPublicPractitioners = (
   filters: ListPublicPractitionersFilters,
 ) => {
   return useQuery({
-    queryKey: ["public-practitioners", filters],
+    queryKey: ["public-practitioners", i18n.language, filters],
     queryFn: async () => {
       const response = await apiClient.get<PublicPractitionersListResponse>(
         "/public/practitioners",
@@ -31,7 +33,7 @@ export const useGetPublicPractitionersInfinite = (
   filters: InfinitePublicPractitionersFilters,
 ) => {
   return useInfiniteQuery({
-    queryKey: ["public-practitioners", "infinite", filters],
+    queryKey: ["public-practitioners", "infinite", i18n.language, filters],
     initialPageParam: 1,
     queryFn: async ({ pageParam }) => {
       const response = await apiClient.get<PublicPractitionersListResponse>(
@@ -60,7 +62,7 @@ export const useGetPublicPractitionersInfinite = (
 
 export const useGetPublicPractitionerDetails = (slug: string | null) => {
   return useQuery({
-    queryKey: ["public-practitioner", slug],
+    queryKey: ["public-practitioner", i18n.language, slug],
     queryFn: async () => {
       const response = await apiClient.get<PublicPractitionerDetailsResponse>(
         `/public/practitioners/${slug}`,
@@ -82,5 +84,21 @@ export const useGetPublicPractitionerPresence = (slug: string | null) => {
     },
     enabled: !!slug,
     staleTime: 60_000,
+  });
+};
+
+export const useGetPublicPractitionerInstantBookingAvailability = (slug: string | null) => {
+  return useQuery({
+    queryKey: ["public-practitioner-instant-booking-availability", slug],
+    queryFn: async () => {
+      const response = await apiClient.get<PublicPractitionerInstantBookingAvailabilityResponse>(
+        `/public/practitioners/${slug}/instant-booking-availability`,
+      );
+      return response.data;
+    },
+    enabled: !!slug,
+    staleTime: 5_000,
+    refetchInterval: 10_000,
+    refetchIntervalInBackground: false,
   });
 };

@@ -13,14 +13,19 @@ describe('OpenSessionGeneralChatUseCase', () => {
   const createOrGetGeneralChatConversationUseCase = {
     execute: jest.fn(),
   } as unknown as CreateOrGetGeneralChatConversationUseCase;
+  const resolveSessionChatAvailability = {
+    resolve: jest.fn().mockReturnValue({ available: true }),
+  };
 
   const useCase = new OpenSessionGeneralChatUseCase(
     prisma,
     createOrGetGeneralChatConversationUseCase,
+    resolveSessionChatAvailability as never,
   );
 
   beforeEach(() => {
     jest.clearAllMocks();
+    resolveSessionChatAvailability.resolve.mockReturnValue({ available: true });
   });
 
   it('opens a completed session chat in read-only mode', async () => {
@@ -98,5 +103,19 @@ describe('OpenSessionGeneralChatUseCase', () => {
         sessionId: 'session_1',
       }),
     ).rejects.toBeInstanceOf(ForbiddenException);
+  });
+
+  it('revalidates Chat availability before creating a conversation', async () => {
+    resolveSessionChatAvailability.resolve.mockReturnValue({ available: false });
+    (prisma.session.findUnique as jest.Mock).mockResolvedValue({
+      id: 'session_1', status: 'UPCOMING', sessionMode: 'VIDEO',
+      scheduledStartAt: null, scheduledEndAt: null, provider: 'DAILY',
+      providerRoomId: null, providerSessionRef: null,
+      patient: { userId: 'patient_1' }, practitioner: { userId: 'practitioner_1' },
+    });
+
+    await expect(useCase.execute({ authenticatedUser: { id: 'patient_1', roles: [] }, sessionId: 'session_1' }))
+      .rejects.toBeInstanceOf(ForbiddenException);
+    expect(createOrGetGeneralChatConversationUseCase.execute).not.toHaveBeenCalled();
   });
 });

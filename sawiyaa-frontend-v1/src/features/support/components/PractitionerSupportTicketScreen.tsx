@@ -166,9 +166,9 @@ export default function PractitionerSupportTicketScreen({
                 </span>
               </div>
               <p className="text-text-muted mt-0.5 text-[11px] font-medium">
-                {locale === "ar"
-                  ? `رقم التذكرة: ${item.id} • تم الإنشاء: ${formatDateTime(item.createdAt, locale, viewerTimeZone)}`
-                  : `Ticket ID: ${item.id} • Created: ${formatDateTime(item.createdAt, locale, viewerTimeZone)}`}
+                {t("detail.createdAt", {
+                  date: formatDateTime(item.createdAt, locale, viewerTimeZone),
+                })}
               </p>
             </div>
           }

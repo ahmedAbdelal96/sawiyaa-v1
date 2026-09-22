@@ -50,6 +50,26 @@ export interface PaymentViewModel {
   refundedAt: string | null;
   createdAt: string;
   paymentAction: PaymentAction;
+  /** Patient-safe refund lifecycle projection. Provider reconciliation data is intentionally omitted. */
+  refunds?: PatientRefundViewModel[];
+}
+
+export interface PatientRefundViewModel {
+  id: string;
+  paymentId: string;
+  sessionId: string | null;
+  sessionCode: string | null;
+  refundType: RefundType;
+  destination: RefundDestination;
+  status: RefundStatus;
+  amount: string;
+  currency: string;
+  reason: string | null;
+  requestedAt: string;
+  processedAt: string | null;
+  failedAt: string | null;
+  customerWalletCreditedAt: string | null;
+  createdAt: string;
 }
 
 export interface RefundViewModel {
@@ -69,6 +89,10 @@ export interface RefundViewModel {
   failedAt: string | null;
   customerWalletCreditedAt: string | null;
   createdAt: string;
+  manualProviderFinalizationAvailable: boolean;
+  providerReconciliationOutcome: string | null;
+  providerReconciliationLastAttemptAt: string | null;
+  providerReconciliationEvidence: string | null;
 }
 
 export interface AdminPaymentOpsViewModel {
@@ -93,7 +117,26 @@ export interface AdminPaymentOpsViewModel {
     capturedAt: string | null;
     failedAt: string | null;
     expiredAt: string | null;
+    patientId: string | null;
+    patientName: string | null;
   };
+  packagePurchase: {
+    id: string;
+    title: string | null;
+    planCode: string | null;
+    status: string;
+    settlementId: string | null;
+  } | null;
+  academyEnrollment: {
+    id: string;
+    programId: string;
+    programSlug: string;
+    programTitleAr: string;
+    programTitleEn: string;
+    status: string;
+    paymentStatus: string;
+    registeredAt: string;
+  } | null;
   session: {
     id: string;
     sessionCode: string;
@@ -105,6 +148,26 @@ export interface AdminPaymentOpsViewModel {
     providerRoomId: string | null;
     providerSessionRef: string | null;
   } | null;
+  sessionSummary: {
+    id: string;
+    sessionCode: string;
+    status: string;
+    scheduledStartAt: string | null;
+    scheduledEndAt: string | null;
+    durationMinutes: number;
+    practitionerName: string | null;
+    bookingState: string;
+    paymentState: string;
+    cancellationState: string;
+  } | null;
+  failureDiagnosis: {
+    category: string | null;
+    provider: PaymentProvider;
+    attemptNumber: number;
+    lastAttemptAt: string | null;
+    retryAvailable: boolean;
+    recommendedNextAction: 'RETRY_PAYMENT' | 'AWAIT_PROVIDER' | 'REVIEW_EXCEPTION' | 'NONE';
+  };
   refundSummary: {
     totalCount: number;
     requestedCount: number;
@@ -121,6 +184,24 @@ export interface AdminPaymentOpsViewModel {
     eventType: string;
     providerEventRef: string | null;
     createdAt: string;
+  }>;
+  timeline: Array<{
+    id: string;
+    type: string;
+    occurredAt: string;
+    reference: string | null;
+    reason: string | null;
+  }>;
+  exceptions: Array<{
+    id: string;
+    type: string;
+    status: string;
+    provider: string;
+    ownerUserId: string | null;
+    reason: string;
+    resolutionNote: string | null;
+    createdAt: string;
+    resolvedAt: string | null;
   }>;
   relatedSettlement?: {
     id: string;

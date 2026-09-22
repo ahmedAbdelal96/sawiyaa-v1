@@ -86,7 +86,10 @@ export class NotificationPushExecutionService {
 
     try {
       const requestBatches = this.chunkArray(expoDevices, 100);
-      const allTickets: ExpoPushTicket[] = [];
+      const allTicketResults: Array<{
+        ticket: ExpoPushTicket;
+        device: (typeof expoDevices)[number];
+      }> = [];
 
       for (const batch of requestBatches) {
         const messages = batch.map((device) => ({
@@ -160,10 +163,19 @@ export class NotificationPushExecutionService {
           };
         }
 
-        allTickets.push(...tickets);
+        // Expo returns tickets in the same order as the request batch. Keep
+        // each ticket paired with the device from that batch so that token
+        // revocation remains correct when more than one 100-device request is
+        // sent (global indexes no longer align with the current batch).
+        tickets.forEach((ticket, index) => {
+          const device = batch[index];
+          if (device) {
+            allTicketResults.push({ ticket, device });
+          }
+        });
       }
 
-      if (allTickets.length === 0) {
+      if (allTicketResults.length === 0) {
         return {
           success: false,
           provider: 'PUSH',
@@ -181,7 +193,7 @@ export class NotificationPushExecutionService {
       let successCount = 0;
       let failureCount = 0;
 
-      allTickets.forEach((ticket, index) => {
+      allTicketResults.forEach(({ ticket, device }) => {
         if (ticket.status === 'ok') {
           successCount += 1;
           if (ticket.id) {
@@ -194,10 +206,7 @@ export class NotificationPushExecutionService {
         const expoError =
           ticket.details?.error ?? ticket.message ?? 'EXPO_PUSH_SEND_FAILED';
         if (expoError === 'DeviceNotRegistered') {
-          const device = expoDevices[index];
-          if (device) {
-            invalidTokens.add(device.deviceToken);
-          }
+          invalidTokens.add(device.deviceToken);
         }
       });
 
@@ -213,12 +222,12 @@ export class NotificationPushExecutionService {
       }
 
       if (successCount === 0) {
-        const firstFailure = allTickets.find(
-          (ticket) => ticket.status !== 'ok',
+        const firstFailure = allTicketResults.find(
+          ({ ticket }) => ticket.status !== 'ok',
         );
         const errorCode =
-          firstFailure?.details?.error ??
-          firstFailure?.message ??
+          firstFailure?.ticket.details?.error ??
+          firstFailure?.ticket.message ??
           'EXPO_PUSH_SEND_FAILED';
 
         return {

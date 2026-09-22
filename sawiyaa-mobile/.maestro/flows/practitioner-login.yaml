@@ -1,0 +1,16 @@
+appId: com.sawiyaa.mobile
+---
+- launchApp:
+    clearState: true
+- tapOn:
+    text: "Practitioner|ممارس"
+- tapOn:
+    text: "Email|البريد الإلكتروني"
+- inputText: ${PRACTITIONER_EMAIL}
+- tapOn:
+    text: "Password|كلمة المرور"
+- inputText: ${PRACTITIONER_PASSWORD}
+- tapOn:
+    text: "Sign in|تسجيل الدخول"
+- assertVisible:
+    text: "Home|الرئيسية"

@@ -1,6 +1,9 @@
 export const AVAILABILITY_DURATIONS = [30, 60] as const;
 export type AvailabilityDuration = (typeof AVAILABILITY_DURATIONS)[number];
 
+/** Canonical weekly capacity: 7 days × (48 half-hour starts + 24 hourly starts). */
+export const AVAILABILITY_WEEK_MAX_SLOTS = 7 * ((24 * 60) / 30 + (24 * 60) / 60);
+
 export type AvailabilityTimeOption = {
   startMinuteOfDay: number;
   endMinuteOfDay: number;

@@ -265,6 +265,14 @@
       "rawLogs": "Raw Diagnostics Logs"
     },
     "slugs": {
+      "instant-booking-request-created": {
+        "title": "New instant booking request",
+        "subtitle": "Instant Booking · Request"
+      },
+      "sessions-session-late-join": {
+        "title": "Late session join alert",
+        "subtitle": "Session · Late Join"
+      },
       "admin-practitioner-application-approved": {
         "title": "Practitioner application approved",
         "subtitle": "Practitioner · Application"

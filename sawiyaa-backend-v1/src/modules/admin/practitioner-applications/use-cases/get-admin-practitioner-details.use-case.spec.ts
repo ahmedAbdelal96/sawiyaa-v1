@@ -1,5 +1,8 @@
 import { NotFoundException } from '@nestjs/common';
 import { GetAdminPractitionerDetailsUseCase } from './get-admin-practitioner-details.use-case';
+import { PractitionerProfessionalContentAuthoringService } from '@modules/practitioners/services/practitioner-professional-content-authoring.service';
+import { PractitionerProfessionalContentResolver } from '@modules/practitioners/services/practitioner-professional-content-resolver.service';
+import { AdminPractitionerProfessionalContentReadinessService } from '../services/admin-practitioner-professional-content-readiness.service';
 
 describe('GetAdminPractitionerDetailsUseCase', () => {
   const prismaMock = {
@@ -21,14 +24,13 @@ describe('GetAdminPractitionerDetailsUseCase', () => {
     t: jest.fn((key: string) => key),
   };
 
-  const mapperMock = {
-    toDetails: jest.fn((input) => input),
-  };
-
   const useCase = new GetAdminPractitionerDetailsUseCase(
     prismaMock as any,
     i18nServiceMock as any,
-    mapperMock as any,
+    new AdminPractitionerProfessionalContentReadinessService(
+      new PractitionerProfessionalContentResolver(),
+      new PractitionerProfessionalContentAuthoringService(),
+    ),
   );
 
   beforeEach(() => {
@@ -116,6 +118,7 @@ describe('GetAdminPractitionerDetailsUseCase', () => {
     expect(result.details.operations.totalSessions).toBe(10);
     expect(result.details.payoutDestination?.bankAccountNumber).toBe('1234****');
     expect(result.details.payoutDestination?.iban).toBe('EG1234******5678');
+    expect(result.details.professionalContentReadiness.bilingualComplete).toBe(false);
   });
 
   it('throws NotFoundException when practitioner profile does not exist', async () => {

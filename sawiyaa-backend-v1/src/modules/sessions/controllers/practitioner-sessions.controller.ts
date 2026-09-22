@@ -46,7 +46,6 @@ import { GetMyPractitionerSessionsUseCase } from '../use-cases/get-my-practition
 import { GetMyPractitionerSessionSummaryUseCase } from '../use-cases/get-my-practitioner-session-summary.use-case';
 import { GetSessionDetailsUseCase } from '../use-cases/get-session-details.use-case';
 import { CloseSessionVideoRoomByPractitionerUseCase } from '../use-cases/close-session-video-room-by-practitioner.use-case';
-import { MarkSessionCompletedByPractitionerUseCase } from '../use-cases/mark-session-completed-by-practitioner.use-case';
 import { MarkSessionNoShowByPractitionerUseCase } from '../use-cases/mark-session-no-show-by-practitioner.use-case';
 import { PrepareSessionRuntimeUseCase } from '../use-cases/prepare-session-runtime.use-case';
 import { ResolveSessionJoinContractUseCase } from '../use-cases/resolve-session-join-contract.use-case';
@@ -71,7 +70,6 @@ export class PractitionerSessionsController {
     private readonly getMyPractitionerSessionSummaryUseCase: GetMyPractitionerSessionSummaryUseCase,
     private readonly getSessionDetailsUseCase: GetSessionDetailsUseCase,
     private readonly closeSessionVideoRoomByPractitionerUseCase: CloseSessionVideoRoomByPractitionerUseCase,
-    private readonly markSessionCompletedByPractitionerUseCase: MarkSessionCompletedByPractitionerUseCase,
     private readonly markSessionNoShowByPractitionerUseCase: MarkSessionNoShowByPractitionerUseCase,
     private readonly prepareSessionRuntimeUseCase: PrepareSessionRuntimeUseCase,
     private readonly resolveSessionJoinContractUseCase: ResolveSessionJoinContractUseCase,
@@ -226,36 +224,6 @@ export class PractitionerSessionsController {
     });
   }
 
-  @Post(':id/mark-completed')
-  @HttpCode(200)
-  @ApiOperation({
-    summary: 'Mark a practitioner-owned session as completed',
-    description:
-      'Transitions a practitioner-owned session to COMPLETED when the current lifecycle state allows it.',
-  })
-  @ApiParam({ name: 'id', description: 'Session id' })
-  @ApiResponse({ status: 200, type: SessionItemSuccessResponseDto })
-  @ApiUnauthorizedResponse({ description: 'Access token is required' })
-  @ApiForbiddenResponse({
-    description:
-      'Route requires practitioner role, active account, OTP-verified access, and owned session',
-  })
-  @ApiNotFoundResponse({ description: 'Session was not found' })
-  @ApiConflictResponse({
-    description: 'Current lifecycle status cannot transition to COMPLETED',
-  })
-  markCompleted(
-    @CurrentUser() currentUser: AuthenticatedUser,
-    @CurrentLocale() locale: SupportedLocale,
-    @Param('id') sessionId: string,
-  ) {
-    return this.markSessionCompletedByPractitionerUseCase.execute({
-      userId: currentUser.id,
-      locale,
-      sessionId,
-    });
-  }
-
   @Post(':id/mark-no-show')
   @HttpCode(200)
   @ApiOperation({
@@ -279,9 +247,10 @@ export class PractitionerSessionsController {
     @CurrentLocale() locale: SupportedLocale,
     @Param('id') sessionId: string,
   ) {
-    throw new ConflictException({
-      messageKey: 'sessions.errors.adminResolutionRequired',
-      error: 'SESSION_RESOLUTION_REQUIRED',
+    return this.markSessionNoShowByPractitionerUseCase.execute({
+      userId: currentUser.id,
+      locale,
+      sessionId,
     });
   }
 }

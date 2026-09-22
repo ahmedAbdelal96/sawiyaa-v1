@@ -15,7 +15,6 @@ import {
 import { useAuth } from "../../src/providers/AuthProvider";
 import {
   usePractitionerApplicationStatus,
-  usePractitionerProfile,
 } from "../../src/features/practitioner/profile/hooks";
 import { useTheme } from "../../src/providers/ThemeProvider";
 import type { ThemeShape } from "../../src/constants/theme";
@@ -30,14 +29,14 @@ export default function PractitionerApprovalStatusScreen() {
   const { theme } = useTheme() as { theme: ThemeShape };
   const router = useRouter();
   const { user, signOut } = useAuth();
-  const profileQuery = usePractitionerProfile();
+  const authProfileStatus = user?.practitionerStatus ?? null;
   const applicationQuery = usePractitionerApplicationStatus();
   const direction = getAppDirection(i18n.language);
   const isRtl = direction === "rtl";
 
-  const profileStatus = profileQuery.data?.profile?.profileStatus;
+  const profileStatus = authProfileStatus;
   const applicationStatus = applicationQuery.data?.application?.status;
-  const isApproved = (profileStatus ?? user?.practitionerStatus) === "APPROVED";
+  const isApproved = (profileStatus ?? authProfileStatus) === "APPROVED";
 
   const statusKey = useMemo(() => {
     if (profileStatus === "REJECTED" || applicationStatus === "REJECTED") {
@@ -76,7 +75,7 @@ export default function PractitionerApprovalStatusScreen() {
 
   if (isApproved) return null;
 
-  if (profileQuery.isLoading || applicationQuery.isLoading) {
+  if (applicationQuery.isLoading) {
     return (
       <Screen bg="background">
         <Header title={t("auth.practitionerApprovalStatus.header")} />
@@ -85,7 +84,7 @@ export default function PractitionerApprovalStatusScreen() {
     );
   }
 
-  if (profileQuery.isError || applicationQuery.isError) {
+  if (applicationQuery.isError) {
     return (
       <Screen bg="background">
         <Header title={t("auth.practitionerApprovalStatus.header")} />
@@ -94,7 +93,6 @@ export default function PractitionerApprovalStatusScreen() {
           title={t("auth.practitionerApprovalStatus.errorTitle")}
           message={t("auth.practitionerApprovalStatus.errorBody")}
           onRetry={() => {
-            profileQuery.refetch();
             applicationQuery.refetch();
           }}
         />

@@ -32,7 +32,6 @@ export type PractitionerApplicationStatus =
 export type PractitionerApplicationCompletionStepKey =
   | "basicProfile"
   | "professionalDetails"
-  | "pricing"
   | "qualifications"
   | "documents"
   | "payoutDetails"
@@ -94,7 +93,13 @@ export type CredentialType =
 
 export type CredentialReviewStatus = "PENDING" | "APPROVED" | "REJECTED" | "EXPIRED";
 
-export type PractitionerPayoutMethodType = "BANK_ACCOUNT" | "IBAN" | "WALLET" | "OTHER";
+export type PractitionerPayoutMethodType =
+  | "BANK_ACCOUNT"
+  | "IBAN"
+  | "WALLET"
+  | "INSTAPAY"
+  | "PAYPAL"
+  | "OTHER";
 
 export interface PractitionerPayoutDestination {
   methodType: PractitionerPayoutMethodType | null;
@@ -240,9 +245,24 @@ export interface PractitionerReadinessChecks {
   isPractitionerOtpVerified: boolean;
 }
 
+export interface PractitionerPayoutCapability {
+  methodType: PractitionerPayoutMethodType;
+  semanticKey: string;
+  countryCodes: string[] | null;
+  requiredFields: string[];
+  optionalFields: string[];
+  providerIntegration: boolean;
+}
+
 export interface PractitionerReadiness {
   isProfileCompleted: boolean;
   canSubmitApplication: boolean;
+  isApproved?: boolean;
+  isProfileComplete?: boolean;
+  hasRequiredSpecialty?: boolean;
+  hasRequiredNormalPricing?: boolean;
+  canPublish?: boolean;
+  publicationMissingRequirements?: string[];
   missingRequirements: string[];
   remediationMissingRequirements: string[];
   checks: PractitionerReadinessChecks;
@@ -255,12 +275,67 @@ export interface PractitionerReadiness {
     remediationComplete: boolean;
   };
   completion?: PractitionerApplicationCompletionViewModel;
+  payoutCapabilities?: PractitionerPayoutCapability[];
 }
 
 export interface PractitionerReadinessSuccessResponse {
   message: string;
   readiness: PractitionerReadiness;
 }
+
+export type ReviewSection =
+  | "IDENTITY"
+  | "QUALIFICATIONS"
+  | "PROFILE"
+  | "SPECIALTIES"
+  | "DOCUMENTS"
+  | "FINANCIAL"
+  | "SECURITY";
+
+export type ReviewRequirementStatus =
+  | "OPEN"
+  | "SUBMITTED"
+  | "SATISFIED"
+  | "REJECTED"
+  | "EXPIRED";
+
+export type ReviewRequirementSeverity =
+  | "CRITICAL"
+  | "STANDARD"
+  | "WARNING"
+  | "INFO";
+
+export interface PractitionerRequirement {
+  id: string;
+  section: ReviewSection;
+  fieldPath: string | null;
+  credentialType: CredentialType | null;
+  status: ReviewRequirementStatus;
+  title: string;
+  reason: string;
+  instructions: string | null;
+  requestedAt: string | null;
+  dueAt: string | null;
+  severity: ReviewRequirementSeverity;
+  operationalImpact: string[];
+}
+
+export interface PractitionerRequirementsResponse {
+  caseId: string | null;
+  caseStatus: string | null;
+  source: "ONBOARDING" | "PRACTITIONER_CHANGE" | null;
+  requirements: PractitionerRequirement[];
+}
+
+export interface PractitionerRequirementsSuccessResponse {
+  message: string;
+  requirements: PractitionerRequirementsResponse;
+}
+
+export type UpdatePractitionerApplicationDraftRequest = Omit<
+  SubmitPractitionerApplicationRequest,
+  | "payoutDestination"
+>;
 
 export interface PractitionerApplicationStatusResponse {
   applicationId: string | null;
@@ -291,6 +366,8 @@ export interface PractitionerPayoutDestinationInput {
   iban?: string | null;
   walletProvider?: string | null;
   walletIdentifier?: string | null;
+  instapayIdentifier?: string | null;
+  paypalEmail?: string | null;
   otherDetails?: string | null;
 }
 
@@ -331,15 +408,8 @@ export interface SubmitPractitionerApplicationRequest {
   countryCode?: string | null;
   yearsOfExperience?: number | null;
   practitionerType?: PractitionerType;
+  practitionerTypeExplicit?: boolean;
   practitionerGender?: PractitionerGender | null;
-  sessionPrice30Egp?: number | null;
-  sessionPrice30Usd?: number | null;
-  sessionPrice60Egp?: number | null;
-  sessionPrice60Usd?: number | null;
-  instantBookingPrice30Egp?: number | null;
-  instantBookingPrice30Usd?: number | null;
-  instantBookingPrice60Egp?: number | null;
-  instantBookingPrice60Usd?: number | null;
   locale?: "ar" | "en";
   timezone?: string;
   languageCodes?: string[];

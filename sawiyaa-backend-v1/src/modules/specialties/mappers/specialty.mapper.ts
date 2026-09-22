@@ -1,6 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { SupportedLocale } from '@common/i18n/types/locale.types';
 import { SpecialtyViewModel } from '../types/specialty.types';
+import { localizeSpecialtyCategoryName } from '../utils/localize-specialty-category.util';
+import { localizeSpecialtyTitle } from '../utils/localize-specialty-title.util';
 
 /**
  * Specialty mapper converts DB records into stable API response shape.
@@ -8,24 +10,6 @@ import { SpecialtyViewModel } from '../types/specialty.types';
  */
 @Injectable()
 export class SpecialtyMapper {
-  private pickLocalizedName(
-    locale: SupportedLocale,
-    values: {
-      nameAr?: string | null;
-      nameEn?: string | null;
-      fallback?: string | null;
-    },
-  ) {
-    const ordered =
-      locale === 'ar'
-        ? [values.nameAr, values.nameEn, values.fallback]
-        : [values.nameEn, values.nameAr, values.fallback];
-
-    return (
-      ordered.find((value) => typeof value === 'string' && value.trim().length > 0) ?? null
-    );
-  }
-
   toViewModel(
     input: {
       id: string;
@@ -54,31 +38,29 @@ export class SpecialtyMapper {
     },
     locale: SupportedLocale,
   ): SpecialtyViewModel {
-    const localized =
-      input.translations.find((item) => item.locale === locale) ??
-      input.translations.find((item) => item.locale === 'en') ??
-      null;
-
-      return {
+    return {
       id: input.id,
-      name:
-        localized?.title ??
-        this.pickLocalizedName(locale, {
-          nameAr: input.nameAr,
-          nameEn: input.nameEn,
-          fallback: input.slug,
-        }),
+      name: localizeSpecialtyTitle({
+        locale,
+        translations: input.translations,
+        nameAr: input.nameAr,
+        nameEn: input.nameEn,
+        fallback: input.slug,
+      }),
       nameAr: input.nameAr ?? null,
       nameEn: input.nameEn ?? null,
       slug: input.slug,
-      description: localized?.description ?? null,
+      description:
+        input.translations.find((item) => item.locale === locale)?.description ??
+        input.translations.find((item) => item.locale === 'en')?.description ??
+        null,
       isActive: input.isActive,
       sortOrder: input.sortOrder,
       category: input.category
         ? {
             id: input.category.id,
             name:
-              this.pickLocalizedName(locale, {
+              localizeSpecialtyCategoryName(locale, {
                 nameAr: input.category.nameAr,
                 nameEn: input.category.nameEn,
                 fallback: input.category.name,

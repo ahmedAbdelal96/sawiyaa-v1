@@ -4,12 +4,16 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { SessionMode } from '@prisma/client';
+import { resolvePaymentRegionalResolution } from '@common/payments/payment-region.resolver';
+import { InstantBookingPolicyService } from '../services/instant-booking-policy.service';
 import { SupportedLocale } from '@common/i18n/types/locale.types';
 import { InstantBookingMapper } from '../mappers/instant-booking.mapper';
 import { InstantBookingPatientRepository } from '../repositories/instant-booking-patient.repository';
 import { InstantBookingPractitionerRepository } from '../repositories/instant-booking-practitioner.repository';
 import { InstantBookingRequestRepository } from '../repositories/instant-booking-request.repository';
 import { ValidateInstantBookingEligibilityService } from '../services/validate-instant-booking-eligibility.service';
+import { OperationalNotificationService } from '@modules/notifications/services/operational-notification.service';
+import { PrismaService } from '@common/prisma/prisma.service';
 
 type InstantBookingPricingSnapshot = {
   EGP?: {
@@ -28,14 +32,15 @@ type InstantBookingPricingSnapshot = {
  */
 @Injectable()
 export class CreateInstantBookingRequestUseCase {
-  private readonly requestTimeoutMinutes = 2;
-
   constructor(
+    private readonly prisma: PrismaService,
     private readonly instantBookingPatientRepository: InstantBookingPatientRepository,
     private readonly instantBookingPractitionerRepository: InstantBookingPractitionerRepository,
     private readonly instantBookingRequestRepository: InstantBookingRequestRepository,
     private readonly validateInstantBookingEligibilityService: ValidateInstantBookingEligibilityService,
     private readonly instantBookingMapper: InstantBookingMapper,
+    private readonly instantBookingPolicyService: InstantBookingPolicyService,
+    private readonly operationalNotificationService: OperationalNotificationService,
   ) {}
 
   async execute(input: {
@@ -43,7 +48,8 @@ export class CreateInstantBookingRequestUseCase {
     locale: SupportedLocale;
     practitionerSlug: string;
     durationMinutes: 30 | 60;
-    sessionMode: SessionMode;
+    countryIsoCode?: string | null;
+    idempotencyKey?: string;
   }) {
     const patient = await this.instantBookingPatientRepository.findByUserId(
       input.userId,
@@ -54,6 +60,12 @@ export class CreateInstantBookingRequestUseCase {
         messageKey: 'instantBooking.errors.patientNotFound',
         error: 'INSTANT_BOOKING_PATIENT_NOT_FOUND',
       });
+    }
+
+    const idempotencyKey = input.idempotencyKey?.trim() || null;
+    if (idempotencyKey) {
+      const replay = await this.instantBookingRequestRepository.findByPatientIdempotencyKey(patient.id, idempotencyKey);
+      if (replay) return { item: this.instantBookingMapper.toViewModel(replay) };
     }
 
     const practitioner =
@@ -70,61 +82,88 @@ export class CreateInstantBookingRequestUseCase {
 
     const nowUtc = new Date();
 
-    await this.instantBookingRequestRepository.markExpired(nowUtc, {
-      patientId: patient.id,
-      practitionerId: practitioner.id,
-    });
+    const request = await this.prisma.$transaction(async (tx) => {
+      await this.instantBookingRequestRepository.lockPractitionerAvailability(
+        practitioner.id,
+        tx,
+      );
 
-    const duplicatePending =
-      await this.instantBookingRequestRepository.findConflictingPendingRequests(
+      await this.instantBookingRequestRepository.markExpired(
+        nowUtc,
+        { patientId: patient.id, practitionerId: practitioner.id },
+        tx,
+      );
+
+      const activeHold =
+        await this.instantBookingRequestRepository.findActivePendingRequestForPractitioner(
+          { practitionerId: practitioner.id, now: nowUtc },
+          tx,
+        );
+
+      if (activeHold) {
+        throw new ConflictException({
+          messageKey: 'instantBooking.errors.practitionerBusy',
+          error: 'INSTANT_BOOKING_PRACTITIONER_BUSY',
+        });
+      }
+
+      const currencyCode = resolvePaymentRegionalResolution({
+        requestCountryIsoCode:
+          input.countryIsoCode ?? patient.country?.isoCode ?? null,
+      }).currencyCode;
+
+      await this.validateInstantBookingEligibilityService.assertPractitionerCanReceiveInstantBooking(
         {
-          patientId: patient.id,
-          practitionerId: practitioner.id,
-          now: nowUtc,
+          practitioner,
+          durationMinutes: input.durationMinutes,
+          sessionMode: SessionMode.VIDEO,
+          nowUtc,
+          currencyCode,
+          tx,
         },
       );
 
-    if (duplicatePending.length > 0) {
-      throw new ConflictException({
-        messageKey: 'instantBooking.errors.pendingRequestAlreadyExists',
-        error: 'INSTANT_BOOKING_PENDING_REQUEST_ALREADY_EXISTS',
-      });
-    }
+      const selectedAmount = currencyCode === 'EGP'
+        ? (input.durationMinutes === 30 ? practitioner.instantBookingPrice30Egp : practitioner.instantBookingPrice60Egp)
+        : (input.durationMinutes === 30 ? practitioner.instantBookingPrice30Usd : practitioner.instantBookingPrice60Usd);
+      const requestTtlMinutes = await this.instantBookingPolicyService.requestTtlMinutes();
+      const pricingSnapshot: InstantBookingPricingSnapshot = {
+        EGP: {
+          30: this.toNullableString(practitioner.instantBookingPrice30Egp),
+          60: this.toNullableString(practitioner.instantBookingPrice60Egp),
+        },
+        USD: {
+          30: this.toNullableString(practitioner.instantBookingPrice30Usd),
+          60: this.toNullableString(practitioner.instantBookingPrice60Usd),
+        },
+      };
 
-    await this.validateInstantBookingEligibilityService.assertPractitionerCanReceiveInstantBooking(
-      {
-        practitioner,
-        durationMinutes: input.durationMinutes,
-        sessionMode: input.sessionMode,
-        nowUtc,
-      },
-    );
+      return this.instantBookingRequestRepository.createRequest(
+        {
+          patientId: patient.id,
+          practitionerId: practitioner.id,
+          requestedDurationMinutes: input.durationMinutes,
+          preferredMode: SessionMode.VIDEO,
+          expiresAt: new Date(
+            nowUtc.getTime() + requestTtlMinutes * 60 * 1000,
+          ),
+          metadataJson: {
+            source: 'instant-booking-request',
+            capturedAt: nowUtc.toISOString(),
+            requestedDurationMinutes: input.durationMinutes,
+            pricingSnapshot,
+            selectedMoney: { amount: this.toNullableString(selectedAmount), currencyCode },
+            requestTtlMinutes,
+          },
+          idempotencyKey,
+        },
+        tx,
+      );
+    });
 
-    const pricingSnapshot: InstantBookingPricingSnapshot = {
-      EGP: {
-        30: this.toNullableString(practitioner.instantBookingPrice30Egp),
-        60: this.toNullableString(practitioner.instantBookingPrice60Egp),
-      },
-      USD: {
-        30: this.toNullableString(practitioner.instantBookingPrice30Usd),
-        60: this.toNullableString(practitioner.instantBookingPrice60Usd),
-      },
-    };
-
-    const request = await this.instantBookingRequestRepository.createRequest({
-      patientId: patient.id,
-      practitionerId: practitioner.id,
-      requestedDurationMinutes: input.durationMinutes,
-      preferredMode: input.sessionMode,
-      expiresAt: new Date(
-        nowUtc.getTime() + this.requestTimeoutMinutes * 60 * 1000,
-      ),
-      metadataJson: {
-        source: 'instant-booking-request',
-        capturedAt: nowUtc.toISOString(),
-        requestedDurationMinutes: input.durationMinutes,
-        pricingSnapshot,
-      },
+    await this.operationalNotificationService.notifyInstantBookingCreated({
+      practitionerProfileId: practitioner.id,
+      requestId: request.id,
     });
 
     return {

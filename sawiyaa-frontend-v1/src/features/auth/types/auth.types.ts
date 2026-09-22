@@ -13,6 +13,7 @@ export type AppRole =
   | "SUPPORT_AGENT"
   | "CONTENT_REVIEWER"
   | "PATIENT"
+  | "TRAINEE"
   | "PRACTITIONER";
 
 export type UserStatus =
@@ -60,6 +61,13 @@ export interface AuthSuccessResponse {
 
 export interface MessageResponse {
   message: string;
+  currentSessionInvalidated?: boolean;
+  nextStep?: "VERIFY_OTP";
+}
+
+export interface ChangePasswordRequest {
+  currentPassword: string;
+  newPassword: string;
 }
 
 export interface OtpChallengeResponse {
@@ -68,6 +76,7 @@ export interface OtpChallengeResponse {
   channel: string;
   maskedTarget: string;
   expiresAt: string;
+  resendAvailableAt?: string;
   requiresOtpVerification: boolean;
   nextStep?: "OTP_REQUIRED";
 }
@@ -137,37 +146,18 @@ export interface PatientLoginRequest {
   deviceId?: string;
 }
 
+export interface TraineeLoginRequest {
+  email: string;
+  password: string;
+  deviceId?: string;
+}
+
 export interface PractitionerRegisterRequest {
   email: string;
   phoneCountryCode?: string;
   phone?: string;
   password: string;
   displayName?: string;
-  practitionerType?:
-    | "PSYCHOLOGIST"
-    | "PSYCHIATRIST"
-    | "NUTRITIONIST"
-    | "WEIGHT_LOSS_SPECIALIST"
-    | "COUNSELOR"
-    | "OTHER";
-  professionalTitle?: string;
-  bio?: string;
-  yearsOfExperience?: number;
-  countryCode?: string;
-  primarySpecialtyCategoryId: string;
-  specialtyIds: string[];
-  initialCredential?: {
-    credentialType:
-      | "LICENSE"
-      | "DEGREE"
-      | "CERTIFICATION"
-      | "NATIONAL_ID"
-      | "PASSPORT"
-      | "MEMBERSHIP"
-      | "OTHER";
-    fileUrl: string;
-    expiresAt?: string;
-  };
 }
 
 export interface PractitionerLoginRequest {
@@ -184,6 +174,10 @@ export interface PractitionerVerifyOtpRequest {
   deviceId?: string;
 }
 
+export interface PractitionerResendLoginOtpRequest {
+  challengeId: string;
+}
+
 export interface PractitionerForgotPasswordRequest {
   email: string;
 }
@@ -195,13 +189,11 @@ export interface PractitionerVerifyPasswordResetOtpRequest {
 
 export interface PractitionerVerifyPasswordResetOtpResponse {
   message: string;
-  resetToken: string;
   expiresAt: string;
   nextStep: string;
 }
 
 export interface PractitionerConfirmPasswordResetRequest {
-  resetToken: string;
   newPassword: string;
 }
 
@@ -222,13 +214,11 @@ export interface PatientVerifyPasswordResetOtpRequest {
 
 export interface PatientVerifyPasswordResetOtpResponse {
   message: string;
-  resetToken: string;
   expiresAt: string;
   nextStep: string;
 }
 
 export interface PatientConfirmPasswordResetRequest {
-  resetToken: string;
   newPassword: string;
 }
 

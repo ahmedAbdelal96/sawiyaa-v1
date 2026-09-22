@@ -13,15 +13,35 @@ describe('ListMyPackagePurchasesUseCase', () => {
       id: input.purchase.id,
     })),
   } as never;
+  const professionalContentRepository = {
+    findByPractitionerProfileIds: jest.fn(),
+  } as never;
+  const professionalContentResolver = {
+    resolve: jest.fn(),
+  } as never;
 
   const useCase = new ListMyPackagePurchasesUseCase(
     patientProfileRepository,
     packagePurchaseRepository,
     packagePurchasePresenter,
+    professionalContentRepository,
+    professionalContentResolver,
   );
 
   beforeEach(() => {
     jest.clearAllMocks();
+    (
+      professionalContentRepository.findByPractitionerProfileIds as jest.Mock
+    ).mockResolvedValue([]);
+    (professionalContentResolver.resolve as jest.Mock).mockImplementation(
+      ({
+        legacyProfessionalTitle,
+      }: {
+        legacyProfessionalTitle?: string | null;
+      }) => ({
+        professionalTitle: legacyProfessionalTitle ?? null,
+      }),
+    );
   });
 
   it('lists only the authenticated patient purchases', async () => {
@@ -29,7 +49,10 @@ describe('ListMyPackagePurchasesUseCase', () => {
       id: 'patient-1',
     });
     (packagePurchaseRepository.listByPatient as jest.Mock).mockResolvedValue([
-      [{ id: 'purchase-1' }, { id: 'purchase-2' }],
+      [
+        { id: 'purchase-1', practitionerId: 'practitioner-1' },
+        { id: 'purchase-2', practitionerId: 'practitioner-1' },
+      ],
       2,
     ]);
 
@@ -46,6 +69,9 @@ describe('ListMyPackagePurchasesUseCase', () => {
       skip: 0,
       take: 20,
     });
+    expect(
+      professionalContentRepository.findByPractitionerProfileIds,
+    ).toHaveBeenCalledWith(['practitioner-1']);
   });
 
   it('fails when the patient profile is missing', async () => {

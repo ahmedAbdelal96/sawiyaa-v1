@@ -13,6 +13,9 @@ import { AccountStateRequirement } from '@common/enums/account-state-requirement
 import { AppRole } from '@common/enums/app-role.enum';
 import { JwtAccessAuthGuard } from '@common/guards/authentication/jwt-access-auth.guard';
 import { RolesGuard } from '@common/guards/authorization/roles.guard';
+import { PermissionsGuard } from '@common/guards/authorization/permissions.guard';
+import { Permissions } from '@common/decorators/permissions.decorator';
+import { PermissionKey } from '@common/enums/permission-key.enum';
 import {
   GetAdminCareRequestsReportOverviewDto,
   ListAdminCareRequestsReportRowsDto,
@@ -22,8 +25,9 @@ import { ListAdminCareRequestsReportRowsUseCase } from '../use-cases/list-admin-
 
 @ApiTags('Admin - Reports')
 @ApiBearerAuth()
-@UseGuards(JwtAccessAuthGuard, RolesGuard)
+@UseGuards(JwtAccessAuthGuard, RolesGuard, PermissionsGuard)
 @Roles(AppRole.ADMIN, AppRole.SUPER_ADMIN, AppRole.SUPPORT_AGENT)
+@Permissions(PermissionKey.CARE_CHAT_REQUEST_READ_ADMIN)
 @RequireAccountStates(AccountStateRequirement.ACTIVE_ACCOUNT)
 @Controller('admin/reports/care-requests')
 export class AdminCareRequestsReportController {

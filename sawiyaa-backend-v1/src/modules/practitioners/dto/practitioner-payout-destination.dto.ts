@@ -68,6 +68,21 @@ export class PractitionerPayoutDestinationInputDto {
   @MaxLength(191)
   walletIdentifier?: string | null;
 
+  @ApiPropertyOptional({ description: 'Manual InstaPay identifier; no provider integration is implied.' })
+  @ValidateIf((input) => input.methodType === PractitionerPayoutMethodType.INSTAPAY)
+  @IsString()
+  @IsNotEmpty()
+  @MinLength(3)
+  @MaxLength(191)
+  instapayIdentifier?: string | null;
+
+  @ApiPropertyOptional({ description: 'Manual PayPal payout email; execution remains finance-controlled.' })
+  @ValidateIf((input) => input.methodType === PractitionerPayoutMethodType.PAYPAL)
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(191)
+  paypalEmail?: string | null;
+
   @ApiPropertyOptional()
   @ValidateIf((input) => input.methodType === PractitionerPayoutMethodType.OTHER)
   @IsString()
@@ -101,6 +116,12 @@ export class PractitionerPayoutDestinationResponseDto {
 
   @ApiPropertyOptional({ nullable: true })
   walletIdentifier!: string | null;
+
+  @ApiPropertyOptional({ nullable: true })
+  instapayIdentifier!: string | null;
+
+  @ApiPropertyOptional({ nullable: true })
+  paypalEmail!: string | null;
 
   @ApiPropertyOptional({ nullable: true })
   otherDetails!: string | null;

@@ -197,6 +197,15 @@ export class AdminSessionRuntimeInspectionItemDto {
   @ApiProperty({ enum: SessionPaymentCoverageType })
   paymentCoverageType!: SessionPaymentCoverageType;
 
+  @ApiProperty({ nullable: true })
+  fundingSource!: string | null;
+
+  @ApiProperty({ nullable: true })
+  earningEntitlementId!: string | null;
+
+  @ApiProperty({ nullable: true })
+  payment!: { amount: string; currency: string; status: string } | null;
+
   @ApiPropertyOptional({ nullable: true })
   packageSessionIndex!: number | null;
 

@@ -22,7 +22,11 @@ describe('ListMyNotificationsUseCase', () => {
     enrichMany: jest.fn().mockResolvedValue(new Map()),
   } as unknown as NotificationContextEnrichmentService;
 
-  const useCase = new ListMyNotificationsUseCase(repository, presenter, enrichmentService);
+  const useCase = new ListMyNotificationsUseCase(
+    repository,
+    presenter,
+    enrichmentService,
+  );
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -36,6 +40,7 @@ describe('ListMyNotificationsUseCase', () => {
 
     await useCase.execute({
       authenticatedUser: { id: 'user_1', roles: [] },
+      locale: 'ar',
       query: { page: 1, limit: 50 },
     });
 
@@ -44,5 +49,6 @@ describe('ListMyNotificationsUseCase', () => {
       page: 1,
       limit: 20,
     });
+    expect(enrichmentService.enrichMany).toHaveBeenCalledWith([], 'ar');
   });
 });

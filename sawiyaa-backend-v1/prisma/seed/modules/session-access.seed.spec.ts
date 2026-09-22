@@ -12,7 +12,7 @@ describe('dynamic session-access seed contract', () => {
 
   it('uses the displayed primary pair and deterministic scenario ownership', () => {
     expect(developmentDemoAccounts.primaryPatient.email).toBe('ahmed.patient@hesba.local');
-    expect(developmentDemoAccounts.primaryPractitioner.email).toBe('dr.mohamed@hesba.local');
+    expect(developmentDemoAccounts.primaryPractitioner.email).toBe('amohamef206@gmail.com');
     expect(developmentDemoAccounts.noSessionPatient.email).toBe('omar.patient@hesba.local');
     expect(new Set(Object.values(sessionAccessScenarioKeys)).size).toBe(Object.values(sessionAccessScenarioKeys).length);
   });

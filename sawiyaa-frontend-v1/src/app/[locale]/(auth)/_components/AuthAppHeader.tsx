@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { Globe } from "lucide-react";
-import { useLocale } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { usePathname, useRouter, Link } from "@/i18n/navigation";
 import { useSearchParams } from "next/navigation";
 import { preservePathAndQuery } from "@/i18n/locale-navigation";
@@ -11,13 +11,14 @@ import AuthThemeToggle from "./AuthThemeToggle";
 
 export default function AuthAppHeader() {
   const locale = useLocale();
+  const t = useTranslations("auth");
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
   const isRtl = locale === "ar";
   const otherLocale = isRtl ? "en" : "ar";
-  const otherLocaleLabel = isRtl ? "English" : "العربية";
+  const otherLocaleLabel = isRtl ? "English" : t("ui.languageArabic");
 
   const toggleLanguage = () => {
     router.replace(preservePathAndQuery(pathname, searchParams), { locale: otherLocale });
@@ -29,7 +30,7 @@ export default function AuthAppHeader() {
         <Link
           href="/"
           className="group flex items-center gap-2.5 transition-transform duration-200 active:scale-[0.98]"
-          title={isRtl ? "الذهاب للرئيسية" : "Go to Home"}
+          title={t("ui.goHome")}
         >
           <div className="relative flex h-10 w-10 items-center justify-center overflow-hidden rounded-2xl border border-border-light/60 bg-white p-1.5 shadow-theme-md transition-transform duration-200 group-hover:scale-[1.03] dark:border-white/10 dark:bg-surface">
             <Image
@@ -46,7 +47,7 @@ export default function AuthAppHeader() {
               {isRtl ? "سويّة" : "Sawiyaa"}
             </span>
             <span className="hidden text-[11px] text-text-muted sm:block">
-              {isRtl ? "منصة رعاية صحية" : "Healthcare platform"}
+              {t("ui.platform")}
             </span>
           </div>
         </Link>
@@ -55,7 +56,7 @@ export default function AuthAppHeader() {
           <button
             onClick={toggleLanguage}
             className="inline-flex h-11 items-center gap-1.5 rounded-2xl border border-border-light bg-surface-secondary/40 px-3.5 text-xs font-semibold text-text-primary shadow-theme-xs transition-all duration-200 hover:-translate-y-[1px] hover:bg-surface-secondary/70 hover:shadow-md active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:border-white/10 dark:bg-white/5 dark:text-white dark:hover:bg-white/10 dark:focus-visible:ring-white/35 dark:focus-visible:ring-offset-surface"
-            title={isRtl ? "Switch to English" : "تغيير إلى العربية"}
+            title={isRtl ? t("ui.switchToEnglish") : t("ui.switchToArabic")}
           >
             <Globe className="h-4 w-4 shrink-0 text-text-muted dark:text-white/80" />
             <span>{otherLocaleLabel}</span>

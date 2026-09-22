@@ -102,4 +102,54 @@ describe('MatchingPresenter', () => {
     expect(result.recommendations[0].type).toBe('COMPLETE_PAYMENT');
     expect(result.recommendations[1].type).toBe('PRACTITIONER_MATCH');
   });
+
+  it('changes only the existing professional title between AR and EN', () => {
+    const baseInput = {
+      sessionId: 'm1',
+      answers: [],
+      recommendations: [
+        {
+          score: 88,
+          rank: 1,
+          rationaleJson: { notes: ['Matched preferred specialty'] },
+          practitionerProfile: {
+            id: 'p1',
+            publicSlug: 'dr-a',
+            professionalTitle: 'Legacy title',
+            sessionPrice30: 500,
+            sessionPrice60: 900,
+            user: { displayName: 'Dr A' },
+            languages: [{ language: { code: 'en' } }],
+            specialties: [
+              { specialty: { translations: [{ title: 'Anxiety' }] } },
+            ],
+          },
+        },
+      ],
+    };
+    const ar = presenter.presentSession({
+      ...baseInput,
+      resolvedProfessionalTitles: new Map([['p1', 'اختصاصي نفسي']]),
+    });
+    const en = presenter.presentSession({
+      ...baseInput,
+      resolvedProfessionalTitles: new Map([['p1', 'Clinical Psychologist']]),
+    });
+    const withoutTitle = (value: typeof ar) => ({
+      ...value,
+      items: value.items.map((item) => ({
+        ...item,
+        practitioner: { ...item.practitioner, professionalTitle: null },
+      })),
+    });
+
+    expect(ar.items[0]?.practitioner.professionalTitle).toBe('اختصاصي نفسي');
+    expect(en.items[0]?.practitioner.professionalTitle).toBe(
+      'Clinical Psychologist',
+    );
+    expect(withoutTitle(ar)).toEqual(withoutTitle(en));
+    expect(ar.items[0]?.practitioner.displayName).toBe(
+      en.items[0]?.practitioner.displayName,
+    );
+  });
 });

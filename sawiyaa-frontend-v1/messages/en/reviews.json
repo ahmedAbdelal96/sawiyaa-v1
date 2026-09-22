@@ -168,6 +168,7 @@
       "subtitle": "Choose a star rating. You can add a note if you want.",
       "starHelperMin": "1 star",
       "starHelperMax": "5 stars",
+      "starAria": "Rate {value} stars",
       "noteLabel": "Optional note",
       "notePlaceholder": "Write a note if you want...",
       "submit": "Submit rating",

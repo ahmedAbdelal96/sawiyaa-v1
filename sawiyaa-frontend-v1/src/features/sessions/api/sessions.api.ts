@@ -214,21 +214,6 @@ export async function closePractitionerSessionRuntime(
 }
 
 /**
- * Marks a practitioner-owned session as completed.
- *
- * POST /practitioners/me/sessions/:sessionId/mark-completed
- */
-export async function markPractitionerSessionCompleted(
-  sessionId: string,
-): Promise<SessionItem> {
-  const response = await httpClient.post<ApiPayload<CreateSessionResponseData>>(
-    `/practitioners/me/sessions/${sessionId}/mark-completed`,
-    {},
-  );
-  return extractData(response.data).item;
-}
-
-/**
  * Marks a practitioner-owned session as patient no-show.
  *
  * POST /practitioners/me/sessions/:sessionId/mark-no-show

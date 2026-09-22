@@ -21,23 +21,25 @@ import {
   StatusChip,
 } from "../../../src/components/ui";
 import { useTheme } from "../../../src/providers/ThemeProvider";
-import { getAppDirection } from "../../../src/i18n/direction";
+import { getAppDirection, getDirectionalIcon } from "../../../src/i18n/direction";
 import {
   usePatientSession,
   useResolvePatientSessionJoinContract,
 } from "../../../src/features/patient/sessions/hooks";
-import type {
-  SessionPresentationStatus,
-} from "../../../src/features/patient/sessions/types";
+import type { SessionDetails, SessionStatus } from "../../../src/features/patient/sessions/types";
 import {
   formatLocalizedDateTime,
   formatLocalizedDate,
   formatLocalizedTime,
 } from "../../../src/features/patient/sessions/slot-utils";
-import { extractApiErrorMessage } from "../../../src/lib/api";
 import { normalizeAllowedExternalUrl } from "../../../src/lib/external-url";
 import { trackAnalyticsEvent } from "../../../src/lib/analytics";
-import { openSessionGeneralChat } from "../../../src/features/messages/api";
+import {
+  getSessionGeneralChatConversation,
+  openSessionGeneralChat,
+} from "../../../src/features/messages/api";
+import { operationalCanCancel, operationalJoinAllowed, operationalState } from "../../../src/features/sessions/operational";
+import { getTimeZoneDisplayLabel } from "../../../src/features/timezone/timezone-options";
 
 export default function SessionDetailScreen() {
   const router = useRouter();
@@ -55,13 +57,13 @@ export default function SessionDetailScreen() {
   const [isOpeningMessages, setIsOpeningMessages] = useState(false);
 
   const canAttemptJoin = useMemo(
-    () => sessionQuery.data?.actions?.canJoin === true,
-    [sessionQuery.data?.actions?.canJoin],
+    () => sessionQuery.data ? operationalJoinAllowed(sessionQuery.data) : false,
+    [sessionQuery.data],
   );
 
   if (sessionQuery.isLoading) {
     return (
-      <Screen bg="background">
+      <Screen bg="background" testID="patient-session-details-screen">
         <Header showBack />
         <LoadingState fullScreen />
       </Screen>
@@ -70,7 +72,7 @@ export default function SessionDetailScreen() {
 
   if (sessionQuery.isError || !sessionQuery.data) {
     return (
-      <Screen bg="background">
+      <Screen bg="background" testID="patient-session-details-screen">
         <Header showBack />
         <ErrorState fullScreen onRetry={sessionQuery.refetch} />
       </Screen>
@@ -78,46 +80,45 @@ export default function SessionDetailScreen() {
   }
 
   const session = sessionQuery.data;
-  const presentationStatus = session.status;
-  const presentationStatusText = formatPresentationStatusLabel(t, presentationStatus);
+  const presentationStatus = operationalState(session) ?? "DRAFT";
+  const presentationStatusText = formatPresentationStatusLabel(t, presentationStatus as SessionStatus);
   // Older persisted query data may predate the backend-owned action contract.
   // Missing flags deny actions instead of recreating lifecycle rules on mobile.
-  const needsPayment = session.actions?.canPay === true;
-  const cancellationEligible = session.actions?.canCancel === true;
+  const needsPayment = session.operational?.actions?.canPay === true;
+  const cancellationEligible = operationalCanCancel(session);
   const canOpenMessages = Boolean(
     session.practitioner?.slug && session.chatAvailability?.canRead === true,
   );
   const showJoinBlockedReason =
     Boolean(
       !canAttemptJoin &&
-        (presentationStatus === "READY_TO_JOIN" ||
-          presentationStatus === "IN_PROGRESS") &&
-        session.joinAvailability.blockedReason,
+        session.operational?.join?.reasonCode,
     );
   const joinBlockedReasonText = showJoinBlockedReason
     ? t(
-        `patientSessionsFlow.detail.blocked.${session.joinAvailability.blockedReason}` as const,
+        `patientSessionsFlow.detail.blocked.${session.operational?.join?.reasonCode}` as const,
       )
     : null;
   const joinAvailableAtText =
-    !canAttemptJoin && session.joinAvailability.availableAt
+    !canAttemptJoin && session.operational?.join?.opensAt
       ? t("patientSessionsFlow.detail.joinAvailableAt", {
-          datetime: formatLocalizedDateTime(session.joinAvailability.availableAt, locale),
+          datetime: formatLocalizedDateTime(session.operational.join.opensAt, locale),
         })
       : null;
   const actionStateText = getActionStateText(
     t,
-    presentationStatus,
+    presentationStatus as SessionStatus,
     canAttemptJoin,
+    needsPayment,
     joinAvailableAtText,
     joinBlockedReasonText,
   );
   const messagesHelperText =
-    session.chatAvailability.readOnly
+    session.chatAvailability?.readOnly
       ? t("patientSessionsFlow.detail.messagesReadOnly")
       : t("patientSessionsFlow.detail.actionSummary.messages");
   const roomClosedHelpVisible =
-    session.joinAvailability.blockedReason === "SESSION_ROOM_CLOSED";
+    session.operational?.room?.state === "CLOSED";
   const roomClosedSupportSubject = t(
     "patientSessionsFlow.detail.roomClosed.supportSubject",
     {
@@ -169,12 +170,12 @@ export default function SessionDetailScreen() {
       trackAnalyticsEvent("session_joined", {
         role: "patient",
         sessionId: session.id,
-        sessionStatus: session.presentationStatus,
+        sessionStatus: presentationStatus,
         provider: contract.provider,
         source: "session_detail",
       });
-    } catch (error) {
-      setJoinError(extractApiErrorMessage(error));
+    } catch {
+      setJoinError(t("patientSessionsFlow.detail.joinError"));
     }
   };
 
@@ -187,29 +188,40 @@ export default function SessionDetailScreen() {
     setIsOpeningMessages(true);
 
     try {
-      const payload = await openSessionGeneralChat(session.id);
-      router.push(`/(patient)/messages/${payload.item.conversationId}` as any);
-    } catch (error) {
-      setMessagesError(extractApiErrorMessage(error));
+      const payload = await getSessionGeneralChatConversation(session.id);
+      if (payload.item?.conversationId) {
+        router.push(`/(patient)/messages/${payload.item.conversationId}` as any);
+      } else if (payload.chatAvailability.canSend) {
+        const opened = await openSessionGeneralChat(session.id);
+        if (opened.item?.conversationId) {
+          router.push(`/(patient)/messages/${opened.item.conversationId}` as any);
+        } else {
+          setMessagesError(t("patientSessionsFlow.detail.noMessages"));
+        }
+      } else {
+        setMessagesError(t("patientSessionsFlow.detail.noMessages"));
+      }
+    } catch {
+      setMessagesError(t("patientSessionsFlow.detail.openMessagesError"));
     } finally {
       setIsOpeningMessages(false);
     }
   };
 
-  const showPaymentSection = needsPayment || cancellationEligible;
   const rowDirection = isRtl ? "row-reverse" : "row";
   const alignSelfStart = isRtl ? "flex-end" : "flex-start";
+  const textAlign = isRtl ? "right" : "left";
   const practitionerName =
     session.practitioner.displayName ??
     t("patientSessionsFlow.common.practitionerFallback");
 
   return (
-    <Screen bg="background">
+    <Screen bg="background" testID="patient-session-details-screen">
       <Header showBack title={t("patientSessionsFlow.detail.title")} />
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         {/* Lifecycle Stepper */}
-        <SessionProgressStepper status={session.status} t={t} isRtl={isRtl} />
+        <SessionProgressStepper status={presentationStatus as SessionStatus} t={t} isRtl={isRtl} />
 
         {/* Summary Card */}
         <Card
@@ -244,7 +256,7 @@ export default function SessionDetailScreen() {
             <View style={styles.cardStatusWrap}>
               <StatusChip
                 label={presentationStatusText}
-                tone={resolveSessionTone(session.status)}
+                tone={resolveSessionTone(presentationStatus as SessionStatus)}
                 showDot={false}
               />
             </View>
@@ -264,12 +276,25 @@ export default function SessionDetailScreen() {
                 minutes: session.durationMinutes,
               })}
             </Text>
-            <Text color="#8F9E98" style={styles.codeText}>
-              {t("patientSessionsFlow.detail.sessionCodeLabel", {
-                sessionCode: session.sessionCode,
-              })}
-            </Text>
           </View>
+
+          {session.paymentCoverageType === "PACKAGE" ? (
+            <View
+              style={[
+                styles.packageCoverageNotice,
+                {
+                  backgroundColor: theme.colors.primaryLight,
+                  borderColor: theme.colors.borderLight,
+                  flexDirection: rowDirection,
+                },
+              ]}
+            >
+              <Ionicons name="layers-outline" size={16} color={theme.colors.primary} />
+              <Text color={theme.colors.primary} style={[styles.packageCoverageText, { textAlign }]}>
+                {t("patientSessionsFlow.detail.packageCovered")}
+              </Text>
+            </View>
+          ) : null}
         </Card>
 
         <Card variant="flat" padding="md" style={styles.sectionCard}>
@@ -292,6 +317,12 @@ export default function SessionDetailScreen() {
               }
               onPress={handleJoin}
               loading={joinMutation.isPending}
+              style={styles.primaryAction}
+            />
+          ) : needsPayment ? (
+            <Button
+              title={t("patientSessionsFlow.list.actions.completePayment")}
+              onPress={() => router.push(`/(patient)/sessions/${session.id}/pay`)}
               style={styles.primaryAction}
             />
           ) : null}
@@ -376,38 +407,17 @@ export default function SessionDetailScreen() {
               {messagesError}
             </Text>
           ) : null}
+          {cancellationEligible ? (
+            <Button
+              title={t("patientSessionsFlow.detail.viewCancellation")}
+              onPress={() =>
+                router.push(`/(patient)/sessions/${session.id}/cancel-preview`)
+              }
+              variant="secondary"
+              style={styles.secondaryButton}
+            />
+          ) : null}
         </Card>
-
-        {showPaymentSection ? (
-          <Card variant="flat" padding="md" style={styles.sectionCard}>
-            <View style={[styles.sectionHeader, directionRowStyle(direction)]}>
-              <Text weight="600" style={styles.sectionTitle}>
-                {t("patientSessionsFlow.detail.paymentSectionTitle")}
-              </Text>
-            </View>
-
-            {needsPayment ? (
-              <Button
-                title={t("patientSessionsFlow.detail.payNow")}
-                onPress={() => {
-                  router.push(`/(patient)/sessions/${session.id}/pay`);
-                }}
-                style={styles.primaryAction}
-              />
-            ) : null}
-
-            {cancellationEligible ? (
-              <Button
-                title={t("patientSessionsFlow.detail.viewCancellation")}
-                onPress={() =>
-                  router.push(`/(patient)/sessions/${session.id}/cancel-preview`)
-                }
-                variant="secondary"
-                style={styles.secondaryButton}
-              />
-            ) : null}
-          </Card>
-        ) : null}
 
         <Card variant="flat" padding="md" style={styles.sectionCard}>
           <View style={[styles.sectionHeader, directionRowStyle(direction)]}>
@@ -465,13 +475,11 @@ export default function SessionDetailScreen() {
             theme={theme}
             icon="globe-outline"
             label={t("patientSessionsFlow.detail.timezone")}
-            value={
-              session.timezone
-                ? t("patientSessionsFlow.detail.timezoneValue", {
-                    city: session.timezone,
-                  })
-                : t("patientSessionsFlow.common.notAvailable")
-            }
+              value={
+                (session.timezone
+                  ? getTimeZoneDisplayLabel(session.timezone, isRtl ? "ar" : "en")
+                  : null) ?? t("patientSessionsFlow.common.notAvailable")
+              }
           />
 
           {session.expiresAt ? (
@@ -484,7 +492,7 @@ export default function SessionDetailScreen() {
             />
           ) : null}
 
-          {session.presentationStatus === "CANCELLED" &&
+          {session.operational?.state === "CANCELLED" &&
           session.cancellationReason ? (
             <DetailRow
               direction={direction}
@@ -494,6 +502,66 @@ export default function SessionDetailScreen() {
               value={session.cancellationReason}
             />
           ) : null}
+        </Card>
+
+        <Card variant="flat" padding="md" style={styles.sectionCard} testID="patient-session-timeline">
+          <View style={[styles.sectionHeader, directionRowStyle(direction)]}>
+            <Text weight="600" style={styles.sectionTitle}>
+              {t("patientSessionsFlow.detail.timelineTitle")}
+            </Text>
+          </View>
+          {session.timeline?.length ? (
+            <View style={styles.timelineList}>
+              {session.timeline.map((event: SessionDetails["timeline"][number], index: number) => {
+                const isRescheduled = event.eventType === "RESCHEDULED";
+                return (
+                  <View key={`${event.occurredAt}-${index}`} style={styles.timelineItem}>
+                    <View style={styles.timelineRail}>
+                      <View style={[styles.timelineDot, { backgroundColor: theme.colors.primary }]} />
+                      {index < session.timeline.length - 1 ? <View style={[styles.timelineLine, { backgroundColor: theme.colors.border }]} /> : null}
+                    </View>
+                    <View style={styles.timelineCopy}>
+                      <Text color={theme.colors.textMuted} style={styles.timelineDate}>
+                        {formatLocalizedDateTime(event.occurredAt, locale)}
+                      </Text>
+                      <Text weight="700" style={[styles.timelineTitle, { textAlign }]}>
+                        {formatPatientEventType(t, event.eventType)}
+                      </Text>
+                      {isRescheduled && (event.previousStartAt || event.newStartAt) ? (
+                        <View style={styles.timelineChangeGrid}>
+                          <View style={[styles.timelineChange, { borderColor: theme.colors.border }]}>
+                            <Text color={theme.colors.textMuted} style={styles.timelineChangeLabel}>
+                              {t("patientSessionsFlow.detail.timelinePrevious")}
+                            </Text>
+                            <Text weight="600" style={[styles.timelineChangeValue, { textAlign }]}>
+                              {event.previousStartAt ? formatLocalizedDateTime(event.previousStartAt, locale) : t("patientSessionsFlow.common.notAvailable")}
+                            </Text>
+                          </View>
+                          <View style={[styles.timelineChange, { borderColor: theme.colors.border }]}>
+                            <Text color={theme.colors.textMuted} style={styles.timelineChangeLabel}>
+                              {t("patientSessionsFlow.detail.timelineNew")}
+                            </Text>
+                            <Text weight="600" style={[styles.timelineChangeValue, { textAlign }]}>
+                              {event.newStartAt ? formatLocalizedDateTime(event.newStartAt, locale) : t("patientSessionsFlow.common.notAvailable")}
+                            </Text>
+                          </View>
+                        </View>
+                      ) : null}
+                      {event.reason ? (
+                        <Text color={theme.colors.textSecondary} style={[styles.timelineReason, { textAlign }]}>
+                          {event.reason}
+                        </Text>
+                      ) : null}
+                    </View>
+                  </View>
+                );
+              })}
+            </View>
+          ) : (
+            <Text color={theme.colors.textSecondary} style={styles.timelineEmpty}>
+              {t("patientSessionsFlow.detail.timelineEmpty")}
+            </Text>
+          )}
         </Card>
 
         {joinError ? (
@@ -506,24 +574,44 @@ export default function SessionDetailScreen() {
   );
 }
 
+function formatPatientEventType(
+  t: ReturnType<typeof useTranslation>["t"],
+  eventType: string,
+) {
+  const known = new Set([
+    "SESSION_CREATED", "RESCHEDULED", "PAYMENT_PENDING", "PAYMENT_CONFIRMED",
+    "PRACTITIONER_ACCEPTED", "PRACTITIONER_REJECTED", "SESSION_CONFIRMED",
+    "SESSION_READY_TO_JOIN", "PATIENT_JOINED", "PRACTITIONER_JOINED",
+    "SESSION_STARTED", "SESSION_AWAITING_COMPLETION_CONFIRMATION", "SESSION_COMPLETED",
+    "CANCELLED_BY_PATIENT", "CANCELLED_BY_PRACTITIONER", "EXPIRED_UNPAID",
+    "NO_SHOW_PATIENT", "NO_SHOW_PRACTITIONER", "PROVIDER_ROOM_CREATED", "PROVIDER_ROOM_ENDED",
+  ]);
+  return known.has(eventType)
+    ? t(`patientSessionsFlow.detail.eventTypes.${eventType}` as const)
+    : t("patientSessionsFlow.detail.eventTypes.UNKNOWN");
+}
+
 function formatPresentationStatusLabel(
   t: ReturnType<typeof useTranslation>["t"],
-  status: SessionPresentationStatus,
+  status: SessionStatus,
 ) {
-  const map: Partial<Record<SessionPresentationStatus, string>> = {
-    UPCOMING: t("patientSessionsFlow.presentationStatus.UPCOMING"),
-    READY_TO_JOIN: t("patientSessionsFlow.presentationStatus.READY_TO_JOIN"),
-    IN_PROGRESS: t("patientSessionsFlow.presentationStatus.IN_PROGRESS"),
-    COMPLETED: t("patientSessionsFlow.presentationStatus.COMPLETED"),
-    CANCELLED: t("patientSessionsFlow.presentationStatus.CANCELLED"),
-    AWAITING_COMPLETION_CONFIRMATION: t("patientSessionsFlow.presentationStatus.AWAITING_COMPLETION_CONFIRMATION"),
-    EXPIRED: t("patientSessionsFlow.presentationStatus.EXPIRED"),
-    PATIENT_NO_SHOW: t("patientSessionsFlow.presentationStatus.PATIENT_NO_SHOW"),
-    PRACTITIONER_NO_SHOW: t("patientSessionsFlow.presentationStatus.PRACTITIONER_NO_SHOW"),
-    BOTH_NO_SHOW: t("patientSessionsFlow.presentationStatus.BOTH_NO_SHOW"),
+  const map: Partial<Record<SessionStatus, string>> = {
+    PENDING_PAYMENT: t("patientSessionsFlow.list.status.paymentRequired"),
+    PENDING_PRACTITIONER_CONFIRMATION: t("patientSessionsFlow.list.status.underReview"),
+    UPCOMING: t("patientSessionsFlow.list.status.upcoming"),
+    READY_TO_JOIN: t("patientSessionsFlow.list.status.readyToJoin"),
+    IN_PROGRESS: t("patientSessionsFlow.list.status.inProgress"),
+    AWAITING_ADMIN_RESOLUTION: t("patientSessionsFlow.list.status.underReview"),
+    AWAITING_COMPLETION_CONFIRMATION: t("patientSessionsFlow.list.status.underReview"),
+    COMPLETED: t("patientSessionsFlow.list.status.completed"),
+    CANCELLED: t("patientSessionsFlow.list.status.cancelled"),
+    PATIENT_NO_SHOW: t("patientSessionsFlow.list.status.noShow"),
+    PRACTITIONER_NO_SHOW: t("patientSessionsFlow.list.status.noShow"),
+    BOTH_NO_SHOW: t("patientSessionsFlow.list.status.noShow"),
+    EXPIRED: t("patientSessionsFlow.list.status.unavailable"),
   };
 
-  return map[status] ?? status;
+  return map[status] ?? t("patientSessionsFlow.list.status.unavailable");
 }
 
 function formatModeLabel(
@@ -538,7 +626,7 @@ function formatModeLabel(
     case "CHAT":
       return t("patientSessionsFlow.detail.modeValue.CHAT");
     default:
-      return mode;
+      return t("patientSessionsFlow.detail.modeValue.UNKNOWN");
   }
 }
 
@@ -554,17 +642,22 @@ function formatFlowTypeLabel(
     case "DEFAULT":
       return t("patientSessionsFlow.detail.flowTypeValue.DEFAULT");
     default:
-      return flowType;
+      return t("patientSessionsFlow.detail.flowTypeValue.DEFAULT");
   }
 }
 
 function getActionStateText(
   t: ReturnType<typeof useTranslation>["t"],
-  presentationStatus: SessionPresentationStatus,
+  presentationStatus: SessionStatus,
   canAttemptJoin: boolean,
+  needsPayment: boolean,
   joinAvailableAtText: string | null,
   joinBlockedReasonText: string | null,
 ) {
+  if (needsPayment) {
+    return t("patientSessionsFlow.detail.paymentRequiredSummary");
+  }
+
   switch (presentationStatus) {
     case "READY_TO_JOIN":
       return canAttemptJoin
@@ -669,7 +762,7 @@ function SecondaryActionRow({
         </View>
 
         <Ionicons
-          name={isRTL ? "chevron-back" : "chevron-forward"}
+          name={getDirectionalIcon("disclosure", isRTL)}
           size={18}
           color={theme.colors.textMuted}
           style={styles.secondaryActionChevron}
@@ -834,19 +927,19 @@ function SessionProgressStepper({
       <View style={[styles.stepperRow, { flexDirection: rowDir }]}>
         {isCancelled ? (
           <>
-            {renderDot(false, true, "طلب الجلسة")}
+            {renderDot(false, true, t("patientSessionsFlow.detail.steps.request"))}
             <View style={styles.stepperLineActiveError} />
             {renderDot(true, false, t("patientSessionsFlow.statuses.CANCELLED"), true)}
           </>
         ) : (
           <>
-            {renderDot(false, step1Done, "طلب الجلسة")}
+            {renderDot(false, step1Done, t("patientSessionsFlow.detail.steps.request"))}
             <View style={[styles.stepperLine, step2Done ? styles.stepperLineActive : null]} />
-            {renderDot(step2Active, step2Done, "تأكيد الموعد")}
+            {renderDot(step2Active, step2Done, t("patientSessionsFlow.detail.steps.confirmation"))}
             <View style={[styles.stepperLine, step3Done ? styles.stepperLineActive : null]} />
-            {renderDot(step3Active, step3Done, "وقت الجلسة")}
+            {renderDot(step3Active, step3Done, t("patientSessionsFlow.detail.steps.sessionTime"))}
             <View style={[styles.stepperLine, step4Done ? styles.stepperLineActive : null]} />
-            {renderDot(step4Active, step4Done, "اكتمال الجلسة")}
+            {renderDot(step4Active, step4Done, t("patientSessionsFlow.detail.steps.completion"))}
           </>
         )}
       </View>
@@ -896,6 +989,20 @@ const styles = StyleSheet.create({
   summaryStack: {
     gap: 4,
   },
+  packageCoverageNotice: {
+    alignItems: "center",
+    gap: 8,
+    borderWidth: 1,
+    borderRadius: 12,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    marginTop: 10,
+  },
+  packageCoverageText: {
+    flex: 1,
+    fontSize: 12.5,
+    lineHeight: 18,
+  },
   codeText: {
     marginTop: 2,
     fontSize: 12,
@@ -926,6 +1033,72 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 15,
     lineHeight: 20,
+  },
+  timelineList: {
+    gap: 16,
+  },
+  timelineItem: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 10,
+  },
+  timelineRail: {
+    width: 14,
+    alignItems: "center",
+    alignSelf: "stretch",
+  },
+  timelineDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    marginTop: 4,
+  },
+  timelineLine: {
+    width: 2,
+    flex: 1,
+    marginTop: 4,
+  },
+  timelineCopy: {
+    flex: 1,
+    gap: 3,
+  },
+  timelineDate: {
+    fontSize: 11.5,
+    lineHeight: 16,
+  },
+  timelineTitle: {
+    fontSize: 14,
+    lineHeight: 19,
+  },
+  timelineChangeGrid: {
+    flexDirection: "row",
+    gap: 8,
+    marginTop: 6,
+  },
+  timelineChange: {
+    flex: 1,
+    borderWidth: 1,
+    borderRadius: 10,
+    paddingHorizontal: 8,
+    paddingVertical: 7,
+    gap: 2,
+  },
+  timelineChangeLabel: {
+    fontSize: 10.5,
+    lineHeight: 14,
+  },
+  timelineChangeValue: {
+    fontSize: 11.5,
+    lineHeight: 16,
+  },
+  timelineReason: {
+    fontSize: 12,
+    lineHeight: 17,
+    marginTop: 4,
+  },
+  timelineEmpty: {
+    fontSize: 13,
+    lineHeight: 19,
   },
   sectionBody: {
     fontSize: 13.5,

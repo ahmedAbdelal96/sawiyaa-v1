@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { Loader2, X } from "lucide-react";
 import {
   createPatientSupportTicket,
@@ -15,10 +16,11 @@ interface Props {
   onSuccess: (conversationId: string) => void;
 }
 
-export default function NewSupportRequestModal({ isOpen, onClose, role, locale, onSuccess }: Props) {
+export default function NewSupportRequestModal({ isOpen, onClose, role, onSuccess }: Props) {
   const [description, setDescription] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const t = useTranslations("support");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -40,19 +42,17 @@ export default function NewSupportRequestModal({ isOpen, onClose, role, locale, 
         setDescription("");
         onClose();
       } else {
-        setError(locale.startsWith("ar") ? "حدث خطأ أثناء إنشاء التذكرة" : "Failed to create support ticket");
+        setError(t("modal.createError"));
       }
     } catch (err) {
       console.error(err);
-      setError(locale.startsWith("ar") ? "فشل الاتصال بالخادم. حاول مجدداً." : "Server connection failed. Try again.");
+      setError(t("modal.connectionError"));
     } finally {
       setIsSubmitting(false);
     }
   };
 
   if (!isOpen) return null;
-
-  const isAr = locale.startsWith("ar");
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4 backdrop-blur-sm">
@@ -61,16 +61,16 @@ export default function NewSupportRequestModal({ isOpen, onClose, role, locale, 
         <button
           onClick={onClose}
           className="absolute top-4 end-4 text-text-muted hover:text-text-primary"
-          aria-label={isAr ? "إغلاق" : "Close"}
+          aria-label={t("modal.close")}
         >
           <X className="h-5 w-5" />
         </button>
 
         <h3 className="text-base font-bold text-text-primary dark:text-white">
-          {isAr ? "طلب دعم جديد" : "New Support Ticket"}
+          {t("modal.title")}
         </h3>
         <p className="mt-1 text-xs text-text-secondary dark:text-white/60">
-          {isAr ? "سيتم توجيه طلبك مباشرة إلى فريق دعم سويّة." : "Your request will be routed to Sawiyaa support."}
+          {t("modal.note")}
         </p>
 
         {error && (
@@ -82,7 +82,7 @@ export default function NewSupportRequestModal({ isOpen, onClose, role, locale, 
         <form onSubmit={handleSubmit} className="mt-4 space-y-4">
           <div className="space-y-1">
             <label htmlFor="description" className="block text-xs font-bold text-text-primary dark:text-white/80">
-              {isAr ? "كيف يمكننا مساعدتك؟ *" : "How can we help you? *"}
+              {t("modal.prompt")}
             </label>
             <textarea
               id="description"
@@ -90,11 +90,7 @@ export default function NewSupportRequestModal({ isOpen, onClose, role, locale, 
               rows={4}
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder={
-                isAr
-                  ? "اكتب تفاصيل المشكلة أو طلبك بوضوح..."
-                  : "Explain the issue or your request clearly..."
-              }
+              placeholder={t("modal.placeholder")}
               className="custom-scrollbar block w-full rounded-xl border border-border-light bg-transparent px-3 py-2 text-sm text-text-primary outline-none focus:border-teal-600 focus:ring-1 focus:ring-teal-600 dark:border-white/10 dark:text-white"
             />
           </div>
@@ -105,7 +101,7 @@ export default function NewSupportRequestModal({ isOpen, onClose, role, locale, 
               onClick={onClose}
               className="rounded-xl border border-border-light px-4 py-2 text-xs font-bold text-text-secondary hover:bg-slate-50 dark:border-white/10 dark:hover:bg-white/5"
             >
-              {isAr ? "إلغاء" : "Cancel"}
+              {t("modal.cancel")}
             </button>
             <button
               type="submit"
@@ -113,7 +109,7 @@ export default function NewSupportRequestModal({ isOpen, onClose, role, locale, 
               className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-teal-600 px-4 py-2 text-xs font-bold text-white transition hover:bg-teal-700 disabled:opacity-50"
             >
               {isSubmitting && <Loader2 className="h-4.5 w-4.5 animate-spin" />}
-              {isAr ? "إرسال الطلب" : "Send Request"}
+              {isSubmitting ? t("modal.submitting") : t("modal.submit")}
             </button>
           </div>
         </form>

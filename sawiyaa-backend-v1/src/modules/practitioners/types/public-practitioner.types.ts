@@ -33,6 +33,10 @@ export interface PublicPractitionerListItemViewModel {
   sessionPrice30Usd: number | null;
   sessionPrice60Egp: number | null;
   sessionPrice60Usd: number | null;
+  instantBookingPrice30Egp: number | null;
+  instantBookingPrice30Usd: number | null;
+  instantBookingPrice60Egp: number | null;
+  instantBookingPrice60Usd: number | null;
   displaySessionPrice30: number | null;
   displaySessionPrice60: number | null;
   isOnlineNow: boolean;
@@ -56,6 +60,9 @@ export interface PublicPractitionerDetailsViewModel {
   displayName: string | null;
   professionalTitle: string | null;
   fullBio: string | null;
+  /** Approved localized biographies from the public professional-content projection. */
+  bioAr: string | null;
+  bioEn: string | null;
   specialties: Array<{
     specialtyId: string;
     slug: string;
@@ -78,6 +85,10 @@ export interface PublicPractitionerDetailsViewModel {
   sessionPrice30Usd: number | null;
   sessionPrice60Egp: number | null;
   sessionPrice60Usd: number | null;
+  instantBookingPrice30Egp: number | null;
+  instantBookingPrice30Usd: number | null;
+  instantBookingPrice60Egp: number | null;
+  instantBookingPrice60Usd: number | null;
   displaySessionPrice30: number | null;
   displaySessionPrice60: number | null;
   ratingSummary: {
@@ -86,10 +97,6 @@ export interface PublicPractitionerDetailsViewModel {
     publishedRatingsCount: number;
     writtenReviewsCount: number;
     totalReviews: number;
-  };
-  credentialsSummary: {
-    totalCredentials: number;
-    approvedCredentials: number;
   };
   isVerified: boolean;
   avatarUrl: string | null;

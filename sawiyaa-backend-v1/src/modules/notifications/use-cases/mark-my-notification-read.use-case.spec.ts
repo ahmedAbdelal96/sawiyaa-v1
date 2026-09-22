@@ -14,10 +14,16 @@ describe('MarkMyNotificationReadUseCase', () => {
     presentReadResult: jest.fn().mockImplementation((item) => ({ item })),
   } as unknown as UserNotificationsPresenter;
   const enrichmentService = {
-    enrichOne: jest.fn().mockResolvedValue({ context: {}, primaryAction: { kind: 'details' } }),
+    enrichOne: jest
+      .fn()
+      .mockResolvedValue({ context: {}, primaryAction: { kind: 'details' } }),
   } as unknown as NotificationContextEnrichmentService;
 
-  const useCase = new MarkMyNotificationReadUseCase(repository, presenter, enrichmentService);
+  const useCase = new MarkMyNotificationReadUseCase(
+    repository,
+    presenter,
+    enrichmentService,
+  );
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -46,11 +52,16 @@ describe('MarkMyNotificationReadUseCase', () => {
 
     const result = await useCase.execute({
       authenticatedUser: { id: 'user_1', roles: [] },
+      locale: 'en',
       notificationId: 'notif_1',
     });
 
     expect(result.item.id).toBe('notif_1');
     expect(repository.markMyNotificationRead).not.toHaveBeenCalled();
+    expect(enrichmentService.enrichOne).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 'notif_1' }),
+      'en',
+    );
   });
 
   it('throws not found for missing notifications', async () => {

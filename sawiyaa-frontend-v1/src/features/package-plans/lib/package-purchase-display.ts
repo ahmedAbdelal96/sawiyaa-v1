@@ -1,30 +1,9 @@
 import { formatPatientDateTime, formatViewerDate, formatViewerDateTime } from "@/lib/time-formatting";
-import type { SessionStatus } from "@/features/sessions/types/sessions.types";
 import type {
   PatientPackagePurchaseItem,
   PatientPackagePurchaseSessionSummary,
   PackagePurchaseStatus,
 } from "../types/package-purchases.types";
-
-const LIVE_SESSION_STATUSES = new Set<SessionStatus>([
-  "UPCOMING",
-  "READY_TO_JOIN",
-  "IN_PROGRESS",
-]);
-
-const COMPLETED_SESSION_STATUSES = new Set<SessionStatus>(["COMPLETED"]);
-const PENDING_SESSION_STATUSES = new Set<SessionStatus>([
-  "PENDING_PAYMENT",
-  "PENDING_PRACTITIONER_CONFIRMATION",
-]);
-const TERMINAL_SESSION_STATUSES = new Set<SessionStatus>([
-  "CANCELLED",
-  "EXPIRED",
-  "PATIENT_NO_SHOW",
-  "PRACTITIONER_NO_SHOW",
-  "BOTH_NO_SHOW",
-  "AWAITING_COMPLETION_CONFIRMATION",
-]);
 
 const SESSION_STATUS_ORDER = {
   live: 0,
@@ -113,32 +92,32 @@ export function formatPackageDisplayTitle(input: {
 export function getPackagePurchaseCompletionCount(
   purchase: Pick<PatientPackagePurchaseItem, "linkedSessions" | "progress">,
 ): number {
-  return purchase.progress?.completedSessions ?? purchase.linkedSessions.items.filter((session) => session.status === "COMPLETED").length;
+  return purchase.progress?.completedSessions ?? purchase.linkedSessions.items.filter((session) => session.operational.timelineBucket === "COMPLETED").length;
 }
 
 export function getPackagePurchasePendingCount(
   purchase: Pick<PatientPackagePurchaseItem, "linkedSessions">,
 ): number {
-  return purchase.linkedSessions.items.filter((session) => PENDING_SESSION_STATUSES.has(session.status)).length;
+  return purchase.linkedSessions.items.filter((session) => session.operational.timelineBucket === "PENDING").length;
 }
 
 export function getPackagePurchaseLiveCount(
   purchase: Pick<PatientPackagePurchaseItem, "linkedSessions">,
 ): number {
-  return purchase.linkedSessions.items.filter((session) => LIVE_SESSION_STATUSES.has(session.status)).length;
+  return purchase.linkedSessions.items.filter((session) => session.operational.timelineBucket === "ACTIONABLE").length;
 }
 
 export function getPackagePurchaseTerminalCount(
   purchase: Pick<PatientPackagePurchaseItem, "linkedSessions">,
 ): number {
-  return purchase.linkedSessions.items.filter((session) => TERMINAL_SESSION_STATUSES.has(session.status)).length;
+  return purchase.linkedSessions.items.filter((session) => session.operational.timelineBucket === "TERMINAL").length;
 }
 
 function getSessionBucket(session: PatientPackagePurchaseSessionSummary) {
-  if (LIVE_SESSION_STATUSES.has(session.status)) return "live";
-  if (COMPLETED_SESSION_STATUSES.has(session.status)) return "completed";
-  if (PENDING_SESSION_STATUSES.has(session.status)) return "pending";
-  if (TERMINAL_SESSION_STATUSES.has(session.status)) return "terminal";
+  if (session.operational.timelineBucket === "ACTIONABLE") return "live";
+  if (session.operational.timelineBucket === "COMPLETED") return "completed";
+  if (session.operational.timelineBucket === "PENDING") return "pending";
+  if (session.operational.timelineBucket === "TERMINAL") return "terminal";
   return "other";
 }
 
@@ -169,7 +148,7 @@ export function getNextUpcomingPackageSession(
 ): PatientPackagePurchaseSessionSummary | null {
   return (
     sortPackagePurchaseSessions(purchase.linkedSessions.items).find((session) =>
-      LIVE_SESSION_STATUSES.has(session.status),
+      session.operational.timelineBucket === "ACTIONABLE",
     ) ?? null
   );
 }
@@ -185,16 +164,10 @@ export function groupPackagePurchaseSessions(
 } {
   const sorted = sortPackagePurchaseSessions(purchase.linkedSessions.items);
   return {
-    live: sorted.filter((session) => LIVE_SESSION_STATUSES.has(session.status)),
-    completed: sorted.filter((session) => COMPLETED_SESSION_STATUSES.has(session.status)),
-    pending: sorted.filter((session) => PENDING_SESSION_STATUSES.has(session.status)),
-    terminal: sorted.filter((session) => TERMINAL_SESSION_STATUSES.has(session.status)),
-    other: sorted.filter(
-      (session) =>
-        !LIVE_SESSION_STATUSES.has(session.status) &&
-        !COMPLETED_SESSION_STATUSES.has(session.status) &&
-        !PENDING_SESSION_STATUSES.has(session.status) &&
-        !TERMINAL_SESSION_STATUSES.has(session.status),
-    ),
+    live: sorted.filter((session) => session.operational.timelineBucket === "ACTIONABLE"),
+    completed: sorted.filter((session) => session.operational.timelineBucket === "COMPLETED"),
+    pending: sorted.filter((session) => session.operational.timelineBucket === "PENDING"),
+    terminal: sorted.filter((session) => session.operational.timelineBucket === "TERMINAL"),
+    other: sorted.filter((session) => session.operational.timelineBucket === "OTHER"),
   };
 }

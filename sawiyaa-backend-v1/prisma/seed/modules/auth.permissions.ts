@@ -167,6 +167,16 @@ export const permissionDefinitions: Array<{
       'Update patient profile data in back-office (e.g. country change for pricing correction)',
   },
   {
+    key: 'academy.read',
+    description:
+      'Read Academy programs, participants, attendance, and certificates',
+  },
+  {
+    key: 'academy.manage',
+    description:
+      'Manage Academy programs, participants, attendance, and certificates',
+  },
+  {
     key: 'academy.enrollments.create.manual',
     description:
       'Create manual academy program enrollments from the back-office',
@@ -179,6 +189,10 @@ export const permissionDefinitions: Array<{
   {
     key: 'support.ticket.assign',
     description: 'Assign or reassign support tickets to admin/support users',
+  },
+  {
+    key: 'user.credentials.reset',
+    description: 'Reset user credentials from the support console',
   },
   {
     key: 'practitionerApplications.read',
@@ -196,6 +210,71 @@ export const permissionDefinitions: Array<{
   {
     key: 'practitionerApplications.requestChanges',
     description: 'Send applications back to practitioner for changes',
+  },
+  {
+    key: 'practitionerPublication.read',
+    description: 'Read practitioner publication state and readiness',
+  },
+  {
+    key: 'practitionerPublication.write',
+    description: 'Publish or unpublish practitioner profiles',
+  },
+  {
+    key: 'articles.read',
+    description: 'Read Admin articles and article categories',
+  },
+  {
+    key: 'articles.manage',
+    description: 'Create, update, publish, archive, and upload article content',
+  },
+  {
+    key: 'help.read',
+    description: 'Read Admin Help Center categories and questions',
+  },
+  {
+    key: 'help.manage',
+    description: 'Create, update, delete, and reorder Help Center content',
+  },
+  {
+    key: 'reviews.read',
+    description: 'Read patient and practitioner reviews in Admin',
+  },
+  {
+    key: 'reviews.moderate',
+    description: 'Apply review moderation and public reputation decisions',
+  },
+  {
+    key: 'specialties.read',
+    description: 'Read specialty and specialty-category taxonomy in Admin',
+  },
+  {
+    key: 'specialties.manage',
+    description: 'Create, update, and activate or deactivate specialties',
+  },
+  {
+    key: 'package-plans.read',
+    description: 'Read standardized package plan catalog details',
+  },
+  {
+    key: 'package-plans.manage',
+    description: 'Update package plan display fields and availability state',
+  },
+  {
+    key: 'assessments.authoring.read',
+    description:
+      'Read assessment definitions, questions, and scoring configuration',
+  },
+  {
+    key: 'assessments.authoring.manage',
+    description: 'Create, edit, publish, and unpublish assessment definitions',
+  },
+  {
+    key: 'customer-wallets.read',
+    description: 'Read customer wallet balances and ledger entries in Admin',
+  },
+  {
+    key: 'coupons.manage',
+    description: 'Create and configure discount coupons and revenue shares',
   },
   {
     key: 'admin-users.read',
@@ -320,6 +399,8 @@ export const rolePermissionBundles: Array<{
       'practitioner-statements.read',
       'refunds.approve',
       'refunds.retry',
+      'customer-wallets.read',
+      'package-plans.read',
     ],
   },
   {
@@ -340,6 +421,9 @@ export const rolePermissionBundles: Array<{
       'practitionerApplications.approve',
       'practitionerApplications.reject',
       'practitionerApplications.requestChanges',
+      'practitionerPublication.read',
+      'practitionerPublication.write',
+      'specialties.read',
     ],
   },
   {
@@ -358,6 +442,13 @@ export const rolePermissionBundles: Array<{
     role: UserRoleType.CONTENT_REVIEWER,
     permissions: [
       'audit-log.read',
+      'articles.read',
+      'articles.manage',
+      'help.read',
+      'help.manage',
+      'reviews.read',
+      'reviews.moderate',
+      'specialties.read',
       'moderation.reports.view',
       'moderation.evidence.view',
       'moderation.actions.execute',
@@ -367,6 +458,7 @@ export const rolePermissionBundles: Array<{
   {
     role: UserRoleType.SUPPORT,
     permissions: [
+      'user.credentials.reset',
       'sessions.read.supportSummary',
       'patients.read.admin',
       'careChat.request.read.admin',
@@ -384,6 +476,10 @@ export const rolePermissionBundles: Array<{
   },
   {
     role: UserRoleType.PATIENT,
+    permissions: [],
+  },
+  {
+    role: UserRoleType.TRAINEE,
     permissions: [],
   },
   {

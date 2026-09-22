@@ -23,6 +23,9 @@ import { AccountStateRequirement } from '@common/enums/account-state-requirement
 import { AppRole } from '@common/enums/app-role.enum';
 import { JwtAccessAuthGuard } from '@common/guards/authentication/jwt-access-auth.guard';
 import { RolesGuard } from '@common/guards/authorization/roles.guard';
+import { PermissionsGuard } from '@common/guards/authorization/permissions.guard';
+import { Permissions } from '@common/decorators/permissions.decorator';
+import { PermissionKey } from '@common/enums/permission-key.enum';
 import { AuthenticatedUser } from '@common/interfaces/authenticated-user.interface';
 import { ListAdminReviewsDto } from '../dto/list-admin-reviews.dto';
 import { ModerateReviewDto } from '../dto/moderate-review.dto';
@@ -37,7 +40,7 @@ import { ModerateReviewUseCase } from '../use-cases/moderate-review.use-case';
 
 @ApiTags('Reviews')
 @ApiBearerAuth()
-@UseGuards(JwtAccessAuthGuard, RolesGuard)
+@UseGuards(JwtAccessAuthGuard, RolesGuard, PermissionsGuard)
 @RequireAccountStates(AccountStateRequirement.ACTIVE_ACCOUNT)
 @Roles(AppRole.ADMIN, AppRole.SUPER_ADMIN, AppRole.CONTENT_REVIEWER)
 @Controller('admin/reviews')
@@ -49,6 +52,7 @@ export class AdminReviewsController {
   ) {}
 
   @Get()
+  @Permissions(PermissionKey.REVIEWS_READ)
   @ApiOperation({
     summary: 'List reviews for moderation/admin operations',
   })
@@ -66,6 +70,7 @@ export class AdminReviewsController {
   }
 
   @Get(':id')
+  @Permissions(PermissionKey.REVIEWS_READ)
   @ApiOperation({
     summary: 'Get one review details for moderation',
   })
@@ -78,6 +83,7 @@ export class AdminReviewsController {
   }
 
   @Patch(':id/moderation')
+  @Permissions(PermissionKey.REVIEWS_MODERATE)
   @ApiOperation({
     summary: 'Apply moderation action to one review',
   })

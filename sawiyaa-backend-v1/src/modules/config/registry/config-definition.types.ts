@@ -70,7 +70,9 @@ export type ConfigSeedValue =
   | string
   | number
   | boolean
-  | readonly (string | number | boolean)[];
+  | null
+  | readonly ConfigSeedValue[]
+  | { readonly [key: string]: ConfigSeedValue };
 
 export type ConfigSeedPolicy =
   | { readonly createInitialValue: false }

@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PractitionerStatus, UserStatus } from '@prisma/client';
 import { PrismaService } from '@common/prisma/prisma.service';
+import { publicPractitionerPricingWhere } from '@modules/practitioners/utils/public-practitioner-pricing-readiness.util';
 
 @Injectable()
 export class CareChatActorRepository {
@@ -41,6 +42,8 @@ export class CareChatActorRepository {
       where: {
         publicSlug: slug.trim().toLowerCase(),
         status: PractitionerStatus.APPROVED,
+        isPublicProfilePublished: true,
+        ...publicPractitionerPricingWhere(),
         user: {
           status: UserStatus.ACTIVE,
         },

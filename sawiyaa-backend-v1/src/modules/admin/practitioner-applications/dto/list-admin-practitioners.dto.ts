@@ -30,6 +30,27 @@ export enum AdminPractitionerGenderDto {
   FEMALE = 'female',
 }
 
+export enum AdminPractitionerApplicationStatusDto {
+  NO_APPLICATION = 'NO_APPLICATION',
+  DRAFT = 'DRAFT',
+  SUBMITTED = 'SUBMITTED',
+  UNDER_REVIEW = 'UNDER_REVIEW',
+  CHANGES_REQUESTED = 'CHANGES_REQUESTED',
+  APPROVED = 'APPROVED',
+  REJECTED = 'REJECTED',
+  ARCHIVED = 'ARCHIVED',
+}
+
+export enum AdminPractitionerPublicationStatusDto {
+  PUBLISHED = 'PUBLISHED',
+  UNPUBLISHED = 'UNPUBLISHED',
+}
+
+export enum AdminPractitionerReadinessStatusDto {
+  READY = 'READY',
+  BLOCKED = 'BLOCKED',
+}
+
 const toBoolean = (value: unknown): boolean | undefined => {
   if (value === undefined || value === null || value === '') return undefined;
   if (typeof value === 'boolean') return value;
@@ -61,6 +82,21 @@ export class ListAdminPractitionersDto {
   @IsOptional()
   @IsEnum(AdminPractitionerGenderDto)
   gender?: AdminPractitionerGenderDto;
+
+  @ApiPropertyOptional({ enum: AdminPractitionerApplicationStatusDto })
+  @IsOptional()
+  @IsEnum(AdminPractitionerApplicationStatusDto)
+  applicationStatus?: AdminPractitionerApplicationStatusDto;
+
+  @ApiPropertyOptional({ enum: AdminPractitionerPublicationStatusDto })
+  @IsOptional()
+  @IsEnum(AdminPractitionerPublicationStatusDto)
+  publicationStatus?: AdminPractitionerPublicationStatusDto;
+
+  @ApiPropertyOptional({ enum: AdminPractitionerReadinessStatusDto })
+  @IsOptional()
+  @IsEnum(AdminPractitionerReadinessStatusDto)
+  readinessStatus?: AdminPractitionerReadinessStatusDto;
 
   @ApiPropertyOptional()
   @IsOptional()

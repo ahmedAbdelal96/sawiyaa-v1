@@ -11,6 +11,7 @@ import { UpdateArticleDto } from '../dto/update-article.dto';
 import { ArticlePresenter } from '../presenters/article.presenter';
 import { ArticleRepository } from '../repositories/article.repository';
 import { ARTICLE_DEFAULT_LOCALE } from '../types/articles.types';
+import { extractStoredFileIdFromUrl } from '@modules/files/file-reference.utils';
 
 @Injectable()
 export class UpdateArticleUseCase {
@@ -70,7 +71,10 @@ export class UpdateArticleUseCase {
             ? { primaryCategoryId: resolvedCategoryId }
             : {}),
           ...(input.payload.coverImageUrl !== undefined
-            ? { coverImageUrl: input.payload.coverImageUrl?.trim() || null }
+            ? {
+                coverImageUrl: input.payload.coverImageUrl?.trim() || null,
+                coverStoredFileId: extractStoredFileIdFromUrl(input.payload.coverImageUrl, 'article-covers'),
+              }
             : {}),
           ...(input.payload.featuredImageAlt !== undefined
             ? {

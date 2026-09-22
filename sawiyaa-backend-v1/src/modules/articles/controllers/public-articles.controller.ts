@@ -46,6 +46,7 @@ export class PublicArticlesController {
     }
 
     response.setHeader('Content-Type', file.mimeType);
+    response.setHeader('X-Content-Type-Options', 'nosniff');
     response.setHeader('Cache-Control', 'public, max-age=86400');
     return new StreamableFile(
       this.articleCoverStorageService.createFileStream(file.absolutePath),

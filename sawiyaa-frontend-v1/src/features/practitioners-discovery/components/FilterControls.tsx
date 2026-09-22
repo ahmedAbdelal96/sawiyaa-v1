@@ -4,7 +4,7 @@ import { useCallback, useMemo, useRef, useState, useTransition } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { usePathname, useRouter } from "@/i18n/navigation";
 import { useSearchParams } from "next/navigation";
-import { ChevronDown, Search, SlidersHorizontal, X } from "lucide-react";
+import { ChevronDown, Search, SlidersHorizontal, X, RotateCcw } from "lucide-react";
 import { Drawer, ModalBody, ModalFooter, ModalHeader } from "@/components/ui/modal";
 import { SearchableCombobox } from "@/components/form/SearchableCombobox";
 import MultiSelect from "@/components/form/MultiSelect";
@@ -21,54 +21,8 @@ type BooleanValue = "" | "true" | "false";
 type Props = {
   filters: PractitionerFiltersMetadata;
   limitOptions: readonly number[];
-  desktopMode?: "inline" | "sidebar";
+  desktopMode?: "sidebar" | "mobile" | "inline";
 };
-
-function FilterSelect({
-  value,
-  onChange,
-  options,
-  compact = false,
-}: {
-  value: string;
-  onChange: (value: string) => void;
-  options: Array<{ value: string; label: string }>;
-  compact?: boolean;
-}) {
-  const uniqueOptions = useMemo(() => {
-    const seen = new Set<string>();
-    return options.filter((option) => {
-      const key = option.value;
-      if (seen.has(key)) return false;
-      seen.add(key);
-      return true;
-    });
-  }, [options]);
-
-  return (
-    <div className="relative">
-      <select
-        value={value}
-        onChange={(event) => onChange(event.target.value)}
-        className={`w-full cursor-pointer appearance-none rounded-xl border border-border-light bg-surface ps-3 pe-8 text-sm text-text-primary ${compact ? "h-11" : "h-12"}`}
-      >
-        {uniqueOptions.map((option, index) => (
-          <option key={`${option.value || "empty"}:${index}`} value={option.value}>
-            {option.label}
-          </option>
-        ))}
-      </select>
-      <ChevronDown
-        size={14}
-        className="pointer-events-none absolute end-3 top-1/2 -translate-y-1/2 text-text-muted"
-      />
-    </div>
-  );
-}
-
-function FilterSectionTitle({ title }: { title: string }) {
-  return <p className="mb-2 text-sm font-semibold text-text-brand">{title}</p>;
-}
 
 function formatFeeValue(
   locale: string,
@@ -77,30 +31,6 @@ function formatFeeValue(
 ) {
   const money = mapPractitionerFilterMoney({ amount: value, currencyCode: currency });
   return money ? <MoneyText money={money} /> : null;
-}
-
-function getFeeFilterCopy(
-  t: ReturnType<typeof useTranslations<"practitioners-listing">>,
-  duration: string,
-) {
-  if (duration === "30") {
-    return {
-      title: t("filter.sessionFee30"),
-      helper: t("filter.sessionFeeDurationExactHelper"),
-    };
-  }
-
-  if (duration === "60") {
-    return {
-      title: t("filter.sessionFee60"),
-      helper: t("filter.sessionFeeDurationExactHelper"),
-    };
-  }
-
-  return {
-    title: t("filter.sessionFee"),
-    helper: t("filter.sessionFeeAnyDurationHelper"),
-  };
 }
 
 function FeeRangeSlider({
@@ -143,7 +73,7 @@ function FeeRangeSlider({
 
   if (!hasBounds) {
     return (
-      <div className="rounded-xl border border-dashed border-border-light bg-surface-secondary px-3 py-4 text-sm text-text-muted">
+      <div className="rounded-xl border border-dashed border-border-light bg-[#FCFAF6] px-3 py-2.5 text-xs text-text-muted">
         {unavailableLabel}
       </div>
     );
@@ -153,16 +83,16 @@ function FeeRangeSlider({
   const offsetPercent = ((draftMin - minBound) / Math.max(maxBound - minBound, 1)) * 100;
 
   return (
-    <div className="space-y-3 rounded-xl border border-border-light bg-surface-secondary p-3">
-      <div className="flex items-center justify-between gap-3 text-sm font-medium text-text-secondary">
+    <div className="space-y-2 rounded-xl border border-border-light/70 bg-[#FCFAF6] p-3 dark:bg-white/5">
+      <div className="flex items-center justify-between gap-2 text-xs font-bold text-[#1C2F2B] dark:text-white/90">
         <span>{formatFeeValue(locale, draftMin, bounds.currency)}</span>
         <span>{formatFeeValue(locale, draftMax, bounds.currency)}</span>
       </div>
 
-      <div className="relative h-12">
-        <div className="absolute inset-x-1 top-1/2 h-2 -translate-y-1/2 rounded-full bg-border-light" />
+      <div className="relative h-8">
+        <div className="absolute inset-x-1 top-1/2 h-1.5 -translate-y-1/2 rounded-full bg-border-light" />
         <div
-          className="absolute top-1/2 h-2 -translate-y-1/2 rounded-full bg-primary"
+          className="absolute top-1/2 h-1.5 -translate-y-1/2 rounded-full bg-[#24564F]"
           style={{
             insetInlineStart: `${offsetPercent}%`,
             width: `${rangePercent}%`,
@@ -179,7 +109,9 @@ function FeeRangeSlider({
             const nextValue = Math.min(Number(event.target.value), draftMax);
             setDraftMin(nextValue);
           }}
-          className="pointer-events-none absolute inset-0 h-12 w-full appearance-none bg-transparent [&::-webkit-slider-runnable-track]:h-2 [&::-webkit-slider-runnable-track]:bg-transparent [&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:mt-[-6px] [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-primary [&::-webkit-slider-thumb]:bg-surface [&::-webkit-slider-thumb]:shadow-sm [&::-moz-range-track]:h-2 [&::-moz-range-track]:bg-transparent [&::-moz-range-thumb]:pointer-events-auto [&::-moz-range-thumb]:h-5 [&::-moz-range-thumb]:w-5 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:border-2 [&::-moz-range-thumb]:border-primary [&::-moz-range-thumb]:bg-surface"
+          onMouseUp={() => onChange(String(draftMin), String(draftMax))}
+          onTouchEnd={() => onChange(String(draftMin), String(draftMax))}
+          className="pointer-events-none absolute inset-0 h-8 w-full appearance-none bg-transparent [&::-webkit-slider-runnable-track]:h-1.5 [&::-webkit-slider-runnable-track]:bg-transparent [&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:mt-[-5px] [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-[#24564F] [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:shadow-xs"
         />
         <input
           type="range"
@@ -192,23 +124,27 @@ function FeeRangeSlider({
             const nextValue = Math.max(Number(event.target.value), draftMin);
             setDraftMax(nextValue);
           }}
-          className="pointer-events-none absolute inset-0 h-12 w-full appearance-none bg-transparent [&::-webkit-slider-runnable-track]:h-2 [&::-webkit-slider-runnable-track]:bg-transparent [&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:mt-[-6px] [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-primary [&::-webkit-slider-thumb]:bg-surface [&::-webkit-slider-thumb]:shadow-sm [&::-moz-range-track]:h-2 [&::-moz-range-track]:bg-transparent [&::-moz-range-thumb]:pointer-events-auto [&::-moz-range-thumb]:h-5 [&::-moz-range-thumb]:w-5 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:border-2 [&::-moz-range-thumb]:border-primary [&::-moz-range-thumb]:bg-surface"
+          onMouseUp={() => onChange(String(draftMin), String(draftMax))}
+          onTouchEnd={() => onChange(String(draftMin), String(draftMax))}
+          className="pointer-events-none absolute inset-0 h-8 w-full appearance-none bg-transparent [&::-webkit-slider-runnable-track]:h-1.5 [&::-webkit-slider-runnable-track]:bg-transparent [&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:mt-[-5px] [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-[#24564F] [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:shadow-xs"
         />
       </div>
 
-      <div className="flex items-center justify-between text-xs text-text-muted">
+      <div className="flex items-center justify-between text-[11px] text-text-muted">
         <span>{formatFeeValue(locale, minBound, bounds.currency)}</span>
-        <button
-          type="button"
-          onClick={() => {
-            setDraftMin(minBound);
-            setDraftMax(maxBound);
-            onChange("", "");
-          }}
-          className="font-semibold text-text-secondary transition hover:text-primary"
-        >
-          {resetLabel}
-        </button>
+        {(currentMinFee || currentMaxFee) && (
+          <button
+            type="button"
+            onClick={() => {
+              setDraftMin(minBound);
+              setDraftMax(maxBound);
+              onChange("", "");
+            }}
+            className="font-bold text-[#24564F] transition hover:underline"
+          >
+            {resetLabel}
+          </button>
+        )}
         <span>{formatFeeValue(locale, maxBound, bounds.currency)}</span>
       </div>
     </div>
@@ -217,8 +153,7 @@ function FeeRangeSlider({
 
 export default function FilterControls({
   filters,
-  limitOptions,
-  desktopMode = "inline",
+  desktopMode = "sidebar",
 }: Props) {
   const t = useTranslations("practitioners-listing");
   const locale = useLocale();
@@ -226,7 +161,6 @@ export default function FilterControls({
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [, startTransition] = useTransition();
-  const searchFormRef = useRef<HTMLFormElement>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const searchTimeoutRef = useRef<number | null>(null);
 
@@ -245,8 +179,6 @@ export default function FilterControls({
     ),
   );
   const currentCountry = searchParams.get("country") ?? "";
-  const currentSort = searchParams.get("sort") ?? "recommended";
-  const currentLimit = searchParams.get("limit") ?? "12";
   const currentPractitionerKind = searchParams.get("practitionerKind") ?? "";
   const currentGender = searchParams.get("gender") ?? "";
   const currentDuration = searchParams.get("duration") ?? "";
@@ -288,21 +220,17 @@ export default function FilterControls({
     }, 350);
   };
 
-  const activeFiltersCount = [
-    currentSearch.trim(),
-    currentSpecialtyCategorySlug,
-    currentSpecialtySlug,
-    currentLanguageCodes.join(","),
-    currentCountry,
-    currentPractitionerKind,
-    currentGender,
-    currentDuration,
-    currentOnlineNow,
-    currentMinRating,
-    currentMinSessionFee,
-    currentMaxSessionFee,
-  ].filter(Boolean).length;
-  const hasActiveFilters = activeFiltersCount > 0;
+  const clearAll = () => {
+    startTransition(() => {
+      router.push(pathname, { scroll: false });
+    });
+    if (searchTimeoutRef.current) {
+      window.clearTimeout(searchTimeoutRef.current);
+      searchTimeoutRef.current = null;
+    }
+    setSearchInput("");
+    setDrawerOpen(false);
+  };
 
   const onCategoryChange = (nextCategorySlug: string) => {
     const selectedSpecialty = filters.specialties.find(
@@ -319,31 +247,7 @@ export default function FilterControls({
     });
   };
 
-  const clearAll = () => {
-    startTransition(() => {
-      router.push(pathname, { scroll: false });
-    });
-    if (searchTimeoutRef.current) {
-      window.clearTimeout(searchTimeoutRef.current);
-      searchTimeoutRef.current = null;
-    }
-    setSearchInput("");
-    setDrawerOpen(false);
-  };
-
-  const onSearchSubmit = (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    updateParam("search", searchInput.trim());
-  };
-
-  const categoryOptions = [
-    { value: "", label: t("filter.allCategories") },
-    ...filters.specialtyCategories.map((item) => ({
-      value: item.value,
-      label: item.label,
-    })),
-  ];
-  const specialtyOptions = [
+  const specialtyOptions = useMemo(() => [
     { value: "", label: t("filter.allSpecialties") },
     ...filters.specialties
       .filter((item) =>
@@ -361,13 +265,31 @@ export default function FilterControls({
           locale,
         ),
       })),
-  ];
-  const languageOptions = filters.languages.map((item) => ({
+  ], [currentSpecialtyCategorySlug, filters.specialties, locale, t]);
+
+  const categoryOptions = useMemo(() => [
+    { value: "", label: t("filter.allCategories") },
+    ...filters.specialtyCategories.map((item) => ({
+      value: item.value,
+      label: item.label,
+    })),
+  ], [filters.specialtyCategories, t]);
+
+  const genderOptions = useMemo(() => [
+    { value: "", label: t("filter.allGenders") },
+    ...filters.genders.map((item) => ({
+      value: item.value,
+      label: item.label,
+    })),
+  ], [filters.genders, t]);
+
+  const languageOptions = useMemo(() => filters.languages.map((item) => ({
     value: item.value,
     text: item.label,
     selected: currentLanguageCodes.includes(item.value),
-  }));
-  const countryOptions = [
+  })), [currentLanguageCodes, filters.languages]);
+
+  const countryOptions = useMemo(() => [
     { value: "", label: t("filter.allCountries") },
     ...filters.countries.map((item) => ({
       value: item.value,
@@ -375,192 +297,198 @@ export default function FilterControls({
       description: item.description ?? undefined,
       searchText: [item.label, item.description, item.value].filter(Boolean).join(" "),
     })),
-  ];
-  const sortOptions = [
-    { value: "recommended", label: t("sort.recommended") },
-    { value: "rating", label: t("sort.rating") },
-    { value: "experience", label: t("sort.experience") },
-  ];
-  const kindOptions = [
+  ], [filters.countries, t]);
+
+  const kindOptions = useMemo(() => [
     { value: "", label: t("filter.allTypes") },
     ...filters.practitionerKinds.map((item) => ({
       value: item.value,
       label: item.label,
     })),
-  ];
-  const genderOptions = [
-    { value: "", label: t("filter.allGenders") },
-    ...filters.genders.map((item) => ({
-      value: item.value,
-      label: item.label,
-    })),
-  ];
-  const durationOptions = [
+  ], [filters.practitionerKinds, t]);
+
+  const durationOptions = useMemo(() => [
     { value: "", label: t("filter.allDurations") },
     ...filters.durations.map((item) => ({
       value: String(item.value),
       label: item.label,
     })),
-  ];
-  const ratingOptions = [
+  ], [filters.durations, t]);
+
+  const ratingOptions = useMemo(() => [
     { value: "", label: t("filter.anyRating") },
     ...filters.ratingThresholds.map((item) => ({
       value: String(item.value),
       label: item.label,
     })),
-  ];
-  const yesNoAllOptions = [
-    { value: "", label: t("filter.any") },
-    { value: "true", label: t("filter.yes") },
-    { value: "false", label: t("filter.no") },
-  ];
-  const limitOptionsList = limitOptions.map((option) => ({
-    value: String(option),
-    label: t("pagination.perPageOption", { count: option }),
-  }));
-  const feeFilterCopy = getFeeFilterCopy(t, currentDuration);
+  ], [filters.ratingThresholds, t]);
 
-  const filtersPanel = (
-    <aside className="rounded-[22px] border border-border-light bg-surface p-5">
-      <div className="mb-4 flex items-center justify-between">
-        <p className="text-2xl font-semibold text-text-brand">{t("filter.title")}</p>
-        {hasActiveFilters ? (
-          <button
-            type="button"
-            onClick={clearAll}
-            className="text-xs font-semibold text-text-muted transition hover:text-primary"
-          >
-            {t("filter.clearAll")}
-          </button>
-        ) : null}
-      </div>
+  const activeFiltersCount = [
+    currentSpecialtyCategorySlug,
+    currentSpecialtySlug,
+    currentLanguageCodes.join(","),
+    currentCountry,
+    currentPractitionerKind,
+    currentGender,
+    currentDuration,
+    currentOnlineNow,
+    currentMinRating,
+    currentMinSessionFee,
+    currentMaxSessionFee,
+  ].filter(Boolean).length;
 
-      <div className="space-y-4">
-        <div>
-          <FilterSectionTitle title={t("sort.label")} />
-          <FilterSelect value={currentSort} onChange={(value) => updateParam("sort", value)} options={sortOptions} />
+  // Render Compact Desktop Sidebar
+  if (desktopMode === "sidebar") {
+    return (
+      <div className="rounded-[24px] border border-border-light/70 bg-white p-4 shadow-2xs dark:bg-surface-secondary dark:border-white/10 space-y-4">
+        {/* Sidebar Header */}
+        <div className="flex items-center justify-between border-b border-border-light/60 pb-3">
+          <div className="flex items-center gap-2">
+            <SlidersHorizontal size={16} className="text-[#24564F]" />
+            <h3 className="text-sm font-bold text-[#1C2F2B] dark:text-white">
+              {t("filter.title")}
+            </h3>
+            {activeFiltersCount > 0 && (
+              <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#24564F] text-[10px] font-bold text-white">
+                {activeFiltersCount}
+              </span>
+            )}
+          </div>
+
+          {activeFiltersCount > 0 && (
+            <button
+              type="button"
+              onClick={clearAll}
+              className="inline-flex items-center gap-1 text-xs font-bold text-[#24564F] hover:underline"
+            >
+              <RotateCcw size={11} />
+              <span>{t("filter.clearAll")}</span>
+            </button>
+          )}
         </div>
 
-        {/* Available today / this week are hidden until rebuilt on public published availability windows. */}
-        {filters.availability.onlineNowSupported ? (
-          <div>
-            <FilterSectionTitle title={t("filter.availability")} />
-            <div className="space-y-3 rounded-xl border border-border-light bg-surface-secondary p-3">
-              <p className="text-xs font-medium text-text-secondary">{t("filter.onlineNow")}</p>
-              <FilterSelect
-                value={currentOnlineNow}
-                onChange={(value) => updateParam("onlineNow", value)}
-                options={yesNoAllOptions}
-              />
-            </div>
-          </div>
-        ) : null}
-
-        {filters.specialtyCategories.length > 0 ? (
-          <div>
-            <FilterSectionTitle title={t("filter.category")} />
-            <FilterSelect
-              value={currentSpecialtyCategorySlug}
-              onChange={onCategoryChange}
-              options={categoryOptions}
-            />
-          </div>
-        ) : null}
-
-        {filters.specialties.length > 0 ? (
-          <div>
-            <FilterSectionTitle title={t("filter.specialty")} />
-            <FilterSelect
-              value={currentSpecialtySlug}
-              onChange={(value) => updateParam("specialtySlug", value)}
-              options={specialtyOptions}
-            />
-          </div>
-        ) : null}
-
-        {filters.languages.length > 0 ? (
-          <div>
-            <FilterSectionTitle title={t("filter.language")} />
-            <MultiSelect
-              label=""
-              placeholder={t("filter.allLanguages")}
-              options={languageOptions}
-              defaultSelected={currentLanguageCodes}
-              onChange={(values) => updateParam("languageCodes", values.join(","))}
-            />
-          </div>
-        ) : null}
-
-        {filters.countries.length > 0 ? (
-          <div>
-            <FilterSectionTitle title={t("filter.country")} />
-            <SearchableCombobox
-              value={currentCountry || null}
-              onChange={(value) => updateParam("country", value)}
-              options={countryOptions}
-              placeholder={t("filter.country")}
-              searchPlaceholder={locale === "ar" ? "ابحث عن دولة..." : "Search countries..."}
-              emptyMessage={locale === "ar" ? "لا توجد دول مطابقة" : "No countries found"}
-              clearable
-            />
-          </div>
-        ) : null}
-
-        {filters.practitionerKinds.length > 0 ? (
-          <div>
-            <FilterSectionTitle title={t("filter.practitionerType")} />
-            <FilterSelect
-              value={currentPractitionerKind}
-              onChange={(value) => updateParam("practitionerKind", value)}
-              options={kindOptions}
-            />
-          </div>
-        ) : null}
-
-        {filters.genders.length > 0 ? (
-          <div>
-            <FilterSectionTitle title={t("filter.gender")} />
-            <FilterSelect value={currentGender} onChange={(value) => updateParam("gender", value)} options={genderOptions} />
-          </div>
-        ) : null}
-
-        {filters.durations.length > 0 ? (
-          <div>
-            <FilterSectionTitle title={t("filter.sessionDuration")} />
-            <FilterSelect
-              value={currentDuration}
-              onChange={(value) => updateParam("duration", value)}
-              options={durationOptions}
-            />
-          </div>
-        ) : null}
-
-        {filters.ratingThresholds.length > 0 ? (
-          <div>
-            <FilterSectionTitle title={t("filter.rating")} />
-            <FilterSelect
-              value={currentMinRating}
-              onChange={(value) => updateParam("minRating", value)}
-              options={ratingOptions}
-            />
-          </div>
-        ) : null}
-
+        {/* 1. Search */}
         <div>
-          <FilterSectionTitle title={feeFilterCopy.title} />
-          <p className="mb-2 text-xs leading-5 text-text-muted">
-            {feeFilterCopy.helper}
-          </p>
+          <label className="block mb-1 text-xs font-bold text-text-secondary">
+            {t("search.button")}
+          </label>
+          <div className="relative">
+            <Search
+              size={15}
+              className="pointer-events-none absolute start-3 top-1/2 -translate-y-1/2 text-text-muted"
+            />
+            <input
+              type="text"
+              value={searchInput}
+              onChange={(e) => updateSearchInput(e.target.value)}
+              placeholder={t("search.placeholder")}
+              className="h-10 w-full rounded-xl border border-border-light/80 bg-[#FCFAF6] ps-9 pe-7 text-xs text-[#1C2F2B] placeholder:text-text-muted focus:border-[#24564F] focus:bg-white focus:outline-none dark:bg-white/5 dark:text-white dark:border-white/10"
+            />
+            {searchInput ? (
+              <button
+                type="button"
+                onClick={() => updateSearchInput("")}
+                className="absolute end-2.5 top-1/2 -translate-y-1/2 text-text-muted hover:text-text-primary"
+              >
+                <X size={13} />
+              </button>
+            ) : null}
+          </div>
+        </div>
+
+        {/* 2. Availability (Instant / Online) */}
+        <div>
+          <label className="block mb-1 text-xs font-bold text-text-secondary">
+            {t("filter.availability")}
+          </label>
+          <button
+            type="button"
+            onClick={() => {
+              const next = currentOnlineNow === "true" ? "" : "true";
+              updateParam("onlineNow", next);
+            }}
+            className={`sawiyaa-btn-press flex w-full items-center justify-between rounded-xl border px-3 py-2 text-xs font-bold transition ${
+              currentOnlineNow === "true"
+                ? "border-[#24564F] bg-[#EEF4EF] text-[#24564F] dark:bg-primary/20 dark:text-primary-light"
+                : "border-border-light/80 bg-[#FCFAF6] text-text-secondary hover:border-[#24564F]/40 dark:bg-white/5 dark:text-white/80"
+            }`}
+          >
+            <div className="flex items-center gap-2">
+              <span
+                className={`h-2 w-2 rounded-full ${
+                  currentOnlineNow === "true" ? "bg-emerald-500 animate-pulse" : "bg-text-muted/60"
+                }`}
+              />
+              <span>{t("filter.onlineNow")}</span>
+            </div>
+            {currentOnlineNow === "true" && <X size={12} />}
+          </button>
+        </div>
+
+        {/* 3. Specialty */}
+        <div>
+          <label className="block mb-1 text-xs font-bold text-text-secondary">
+            {t("filter.specialty")}
+          </label>
+          <div className="relative">
+            <select
+              value={currentSpecialtySlug}
+              onChange={(e) => updateParam("specialtySlug", e.target.value)}
+              className="h-10 w-full cursor-pointer appearance-none rounded-xl border border-border-light/80 bg-[#FCFAF6] ps-3 pe-7 text-xs font-semibold text-[#1C2F2B] dark:bg-white/5 dark:text-white dark:border-white/10 focus:border-[#24564F] focus:outline-none"
+            >
+              {specialtyOptions.map((opt, i) => (
+                <option key={`${opt.value}-${i}`} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
+            <ChevronDown
+              size={13}
+              className="pointer-events-none absolute end-2.5 top-1/2 -translate-y-1/2 text-text-muted"
+            />
+          </div>
+        </div>
+
+        {/* 4. Gender */}
+        <div>
+          <label className="block mb-1 text-xs font-bold text-text-secondary">
+            {t("filter.gender")}
+          </label>
+          <div className="grid grid-cols-3 gap-1 rounded-xl bg-[#FCFAF6] p-1 border border-border-light/80 dark:bg-white/5">
+            {genderOptions.map((opt) => {
+              const isSelected = currentGender === opt.value;
+              return (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => updateParam("gender", opt.value)}
+                  className={`rounded-lg py-1.5 text-xs font-bold transition ${
+                    isSelected
+                      ? "bg-white text-[#24564F] shadow-2xs dark:bg-white/15 dark:text-white"
+                      : "text-text-muted hover:text-text-primary"
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* 5. Fee Range Slider */}
+        <div>
+          <label className="block mb-1 text-xs font-bold text-text-secondary">
+            {t("filter.sessionFee")}
+          </label>
           <FeeRangeSlider
-            key={`${currentMinSessionFee || "min"}:${currentMaxSessionFee || "max"}:${filters.feeBounds.min}:${filters.feeBounds.max}`}
             locale={locale}
             bounds={filters.feeBounds}
             currentMinFee={currentMinSessionFee}
             currentMaxFee={currentMaxSessionFee}
-            onChange={(nextMin, nextMax) =>
+            onChange={(min, max) =>
               updateParams({
-                minSessionFee: nextMin,
-                maxSessionFee: nextMax,
+                minSessionFee: min,
+                maxSessionFee: max,
               })
             }
             minLabel={t("filter.minFeeLabel")}
@@ -570,91 +498,307 @@ export default function FilterControls({
           />
         </div>
 
+        {/* 6. Language */}
         <div>
-          <FilterSectionTitle title={t("pagination.perPage")} />
-          <FilterSelect value={currentLimit} onChange={(value) => updateParam("limit", value)} options={limitOptionsList} />
+          <MultiSelect
+            label={t("filter.language")}
+            options={languageOptions}
+            value={currentLanguageCodes}
+            onChange={(selected) => updateParam("languageCodes", selected.join(","))}
+            placeholder={t("filter.language")}
+          />
+        </div>
+
+        {/* 7. Country */}
+        <div>
+          <label className="block mb-1 text-xs font-bold text-text-secondary">
+            {t("filter.country")}
+          </label>
+          <SearchableCombobox
+            options={countryOptions}
+            value={currentCountry}
+            onChange={(val) => updateParam("country", val)}
+            placeholder={t("filter.countrySearchPlaceholder")}
+            emptyMessage={t("filter.countryEmpty")}
+          />
+        </div>
+
+        {/* 8. Duration */}
+        <div>
+          <label className="block mb-1 text-xs font-bold text-text-secondary">
+            {t("filter.sessionDuration")}
+          </label>
+          <div className="relative">
+            <select
+              value={currentDuration}
+              onChange={(e) => updateParam("duration", e.target.value)}
+              className="h-10 w-full cursor-pointer appearance-none rounded-xl border border-border-light/80 bg-[#FCFAF6] ps-3 pe-7 text-xs font-semibold text-[#1C2F2B] dark:bg-white/5 dark:text-white dark:border-white/10 focus:border-[#24564F] focus:outline-none"
+            >
+              {durationOptions.map((opt, i) => (
+                <option key={`${opt.value}-${i}`} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
+            <ChevronDown
+              size={13}
+              className="pointer-events-none absolute end-2.5 top-1/2 -translate-y-1/2 text-text-muted"
+            />
+          </div>
+        </div>
+
+        {/* 9. Rating */}
+        <div>
+          <label className="block mb-1 text-xs font-bold text-text-secondary">
+            {t("filter.rating")}
+          </label>
+          <div className="relative">
+            <select
+              value={currentMinRating}
+              onChange={(e) => updateParam("minRating", e.target.value)}
+              className="h-10 w-full cursor-pointer appearance-none rounded-xl border border-border-light/80 bg-[#FCFAF6] ps-3 pe-7 text-xs font-semibold text-[#1C2F2B] dark:bg-white/5 dark:text-white dark:border-white/10 focus:border-[#24564F] focus:outline-none"
+            >
+              {ratingOptions.map((opt, i) => (
+                <option key={`${opt.value}-${i}`} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
+            <ChevronDown
+              size={13}
+              className="pointer-events-none absolute end-2.5 top-1/2 -translate-y-1/2 text-text-muted"
+            />
+          </div>
         </div>
       </div>
-    </aside>
-  );
-
-  if (desktopMode === "sidebar") {
-    return <div className="hidden lg:block">{filtersPanel}</div>;
+    );
   }
 
+  // Mobile Top Bar
   return (
-    <>
-      <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_auto]">
-        <form
-          ref={searchFormRef}
-          onSubmit={onSearchSubmit}
-          className="flex items-center gap-2 rounded-xl border border-border-light bg-surface px-3 py-2.5 focus-within:border-primary"
-        >
-          <Search size={16} className="shrink-0 text-text-muted" />
+    <div className="space-y-3">
+      <div className="flex items-center gap-2">
+        <div className="relative flex-1">
+          <Search
+            size={16}
+            className="pointer-events-none absolute start-3 top-1/2 -translate-y-1/2 text-text-muted"
+          />
           <input
-            name="search"
-            type="search"
+            type="text"
             value={searchInput}
-            onChange={(event) => updateSearchInput(event.target.value)}
+            onChange={(e) => updateSearchInput(e.target.value)}
             placeholder={t("search.placeholder")}
-            className="min-w-0 flex-1 bg-transparent text-sm text-text-primary placeholder:text-text-muted focus:outline-none"
+            className="h-11 w-full rounded-xl border border-border-light/80 bg-white ps-9 pe-8 text-xs text-[#1C2F2B] focus:border-[#24564F] focus:outline-none dark:bg-surface-secondary dark:text-white dark:border-white/10"
           />
           {searchInput ? (
             <button
               type="button"
-              onClick={() => {
-                setSearchInput("");
-                updateParam("search", "");
-              }}
-              className="text-text-muted transition hover:text-text-primary"
-              aria-label={t("search.clear")}
+              onClick={() => updateSearchInput("")}
+              className="absolute end-2.5 top-1/2 -translate-y-1/2 text-text-muted"
             >
-              <X size={14} />
+              <X size={13} />
             </button>
           ) : null}
-        </form>
+        </div>
 
         <button
           type="button"
           onClick={() => setDrawerOpen(true)}
-          className="relative inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-border-light bg-surface px-4 text-sm font-semibold text-text-secondary transition hover:border-primary hover:text-primary lg:hidden"
+          className={`sawiyaa-btn-press inline-flex h-11 items-center gap-1.5 rounded-xl border px-3.5 text-xs font-bold transition ${
+            activeFiltersCount > 0
+              ? "border-[#24564F] bg-[#24564F] text-white"
+              : "border-border-light/80 bg-white text-[#1C2F2B] dark:bg-surface-secondary dark:text-white dark:border-white/10"
+          }`}
         >
-          <SlidersHorizontal size={16} />
-          {t("filter.openFilters")}
+          <SlidersHorizontal size={14} />
+          <span>{t("filter.openFilters")}</span>
           {activeFiltersCount > 0 ? (
-            <span className="absolute -end-1.5 -top-1.5 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-bold text-white">
+            <span className="flex h-4.5 w-4.5 items-center justify-center rounded-full bg-white text-[10px] font-bold text-[#24564F]">
               {activeFiltersCount}
             </span>
           ) : null}
         </button>
       </div>
 
-      <Drawer
-        isOpen={drawerOpen}
-        onClose={() => setDrawerOpen(false)}
-        side="bottom"
-        className="lg:hidden"
-        ariaLabel={t("filter.title")}
-      >
-        <ModalHeader title={t("filter.title")} description={t("filter.activeFilters")} />
-        <ModalBody>{filtersPanel}</ModalBody>
-        <ModalFooter className="sticky bottom-0">
-          <button
-            type="button"
-            onClick={clearAll}
-            className="flex-1 rounded-xl border border-border-light py-3 text-sm font-semibold text-text-secondary transition hover:border-primary hover:text-primary"
-          >
-            {t("filter.clearAll")}
-          </button>
-          <button
-            type="button"
-            onClick={() => setDrawerOpen(false)}
-            className="flex-1 rounded-xl bg-primary py-3 text-sm font-semibold text-white transition hover:bg-primary-hover"
-          >
-            {t("filter.apply")}
-          </button>
+      {/* Mobile Drawer */}
+      <Drawer isOpen={drawerOpen} onClose={() => setDrawerOpen(false)}>
+        <ModalHeader
+          title={
+            <div className="flex items-center gap-2">
+              <SlidersHorizontal size={18} className="text-[#24564F]" />
+              <span className="text-base font-bold text-[#1C2F2B] dark:text-white">
+                {t("filter.title")}
+              </span>
+            </div>
+          }
+        />
+
+        <ModalBody>
+          <div className="space-y-4 p-1">
+            {/* Category */}
+            <div>
+              <label className="block mb-1 text-xs font-bold text-text-secondary">
+                {t("filter.category")}
+              </label>
+              <div className="relative">
+                <select
+                  value={currentSpecialtyCategorySlug}
+                  onChange={(e) => onCategoryChange(e.target.value)}
+                  className="h-10 w-full cursor-pointer appearance-none rounded-xl border border-border-light bg-[#FCFAF6] ps-3 pe-8 text-xs text-[#1C2F2B] dark:bg-white/5 dark:text-white"
+                >
+                  {categoryOptions.map((opt, i) => (
+                    <option key={`${opt.value}-${i}`} value={opt.value}>
+                      {opt.label}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown
+                  size={13}
+                  className="pointer-events-none absolute end-3 top-1/2 -translate-y-1/2 text-text-muted"
+                />
+              </div>
+            </div>
+
+            {/* Specialty */}
+            <div>
+              <label className="block mb-1 text-xs font-bold text-text-secondary">
+                {t("filter.specialty")}
+              </label>
+              <div className="relative">
+                <select
+                  value={currentSpecialtySlug}
+                  onChange={(e) => updateParam("specialtySlug", e.target.value)}
+                  className="h-10 w-full cursor-pointer appearance-none rounded-xl border border-border-light bg-[#FCFAF6] ps-3 pe-8 text-xs text-[#1C2F2B] dark:bg-white/5 dark:text-white"
+                >
+                  {specialtyOptions.map((opt, i) => (
+                    <option key={`${opt.value}-${i}`} value={opt.value}>
+                      {opt.label}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown
+                  size={13}
+                  className="pointer-events-none absolute end-3 top-1/2 -translate-y-1/2 text-text-muted"
+                />
+              </div>
+            </div>
+
+            {/* Availability */}
+            <div>
+              <button
+                type="button"
+                onClick={() => {
+                  const next = currentOnlineNow === "true" ? "" : "true";
+                  updateParam("onlineNow", next);
+                }}
+                className={`flex w-full items-center justify-between rounded-xl border px-3 py-2.5 text-xs font-bold transition ${
+                  currentOnlineNow === "true"
+                    ? "border-[#24564F] bg-[#EEF4EF] text-[#24564F]"
+                    : "border-border-light bg-[#FCFAF6] text-text-secondary"
+                }`}
+              >
+                <span>{t("filter.onlineNow")}</span>
+                <span
+                  className={`h-2 w-2 rounded-full ${
+                    currentOnlineNow === "true" ? "bg-emerald-500 animate-pulse" : "bg-text-muted/60"
+                  }`}
+                />
+              </button>
+            </div>
+
+            {/* Gender */}
+            <div>
+              <label className="block mb-1 text-xs font-bold text-text-secondary">
+                {t("filter.gender")}
+              </label>
+              <div className="relative">
+                <select
+                  value={currentGender}
+                  onChange={(e) => updateParam("gender", e.target.value)}
+                  className="h-10 w-full cursor-pointer appearance-none rounded-xl border border-border-light bg-[#FCFAF6] ps-3 pe-8 text-xs text-[#1C2F2B]"
+                >
+                  {genderOptions.map((opt, i) => (
+                    <option key={`${opt.value}-${i}`} value={opt.value}>
+                      {opt.label}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown
+                  size={13}
+                  className="pointer-events-none absolute end-3 top-1/2 -translate-y-1/2 text-text-muted"
+                />
+              </div>
+            </div>
+
+            {/* Fee Range Slider */}
+            <div>
+              <label className="block mb-1 text-xs font-bold text-text-secondary">
+                {t("filter.sessionFee")}
+              </label>
+              <FeeRangeSlider
+                locale={locale}
+                bounds={filters.feeBounds}
+                currentMinFee={currentMinSessionFee}
+                currentMaxFee={currentMaxSessionFee}
+                onChange={(min, max) =>
+                  updateParams({
+                    minSessionFee: min,
+                    maxSessionFee: max,
+                  })
+                }
+                minLabel={t("filter.minFeeLabel")}
+                maxLabel={t("filter.maxFeeLabel")}
+                resetLabel={t("filter.feeReset")}
+                unavailableLabel={t("filter.feeUnavailable")}
+              />
+            </div>
+
+            {/* Languages */}
+            <div>
+              <MultiSelect
+                label={t("filter.language")}
+                options={languageOptions}
+                value={currentLanguageCodes}
+                onChange={(selected) => updateParam("languageCodes", selected.join(","))}
+                placeholder={t("filter.language")}
+              />
+            </div>
+
+            {/* Country */}
+            <div>
+              <label className="block mb-1 text-xs font-bold text-text-secondary">
+                {t("filter.country")}
+              </label>
+              <SearchableCombobox
+                options={countryOptions}
+                value={currentCountry}
+                onChange={(val) => updateParam("country", val)}
+                placeholder={t("filter.countrySearchPlaceholder")}
+                emptyMessage={t("filter.countryEmpty")}
+              />
+            </div>
+          </div>
+        </ModalBody>
+
+        <ModalFooter>
+          <div className="flex items-center justify-between w-full gap-3">
+            <button
+              type="button"
+              onClick={clearAll}
+              className="text-xs font-bold text-text-secondary hover:text-text-primary"
+            >
+              {t("filter.clearAll")}
+            </button>
+            <button
+              type="button"
+              onClick={() => setDrawerOpen(false)}
+              className="sawiyaa-btn-press inline-flex items-center justify-center rounded-xl bg-[#24564F] px-6 py-2 text-xs font-bold text-white shadow-xs"
+            >
+              {t("filter.apply")}
+            </button>
+          </div>
         </ModalFooter>
       </Drawer>
-    </>
+    </div>
   );
 }

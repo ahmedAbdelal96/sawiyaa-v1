@@ -150,6 +150,7 @@ describe('CreateScheduledSessionUseCase', () => {
       scheduledStartAt: '2999-01-01T10:00:00.000Z',
       durationMinutes: 60,
       sessionMode: SessionMode.VIDEO,
+      requestCountryIsoCode: 'EG',
     });
 
     expect(sessionRepository.createSession).toHaveBeenCalledWith(
@@ -160,6 +161,7 @@ describe('CreateScheduledSessionUseCase', () => {
         durationMinutes: 60,
         scheduledStartAt: new Date('2999-01-01T10:00:00.000Z'),
         scheduledEndAt: new Date('2999-01-01T11:00:00.000Z'),
+        pricingCurrencyCode: 'EGP',
       }),
       expect.anything(),
       'scheduled',

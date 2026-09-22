@@ -42,8 +42,8 @@ export function AuthGatewayProvider({ children }: { children: React.ReactNode })
       }
 
       const defaultDesc = isRTL
-        ? "يرجى تسجيل الدخول أو إنشاء حساب مريض للمتابعة."
-        : "Please sign in or create a patient account to continue.";
+        ? "يرجى تسجيل الدخول أو إنشاء حساب جديد للمتابعة."
+        : "Please sign in or create an account to continue.";
       const desc = explanationKey ? t(explanationKey) : defaultDesc;
 
       setExplanation(desc);
@@ -127,7 +127,7 @@ export function AuthGatewayProvider({ children }: { children: React.ReactNode })
                 accessibilityRole="button"
               >
                 <Text style={styles.primaryBtnText} color="#FFFFFF">
-                  {isRTL ? "إنشاء حساب مريض" : "Create Patient Account"}
+                  {isRTL ? "إنشاء حساب جديد" : "Create Account"}
                 </Text>
               </TouchableOpacity>
 
@@ -137,7 +137,7 @@ export function AuthGatewayProvider({ children }: { children: React.ReactNode })
                 accessibilityRole="button"
               >
                 <Text style={styles.secondaryBtnText} color={publicTheme.primaryText}>
-                  {isRTL ? "تسجيل الدخول كمريض" : "Patient Sign In"}
+                  {isRTL ? "تسجيل الدخول" : "Sign In"}
                 </Text>
               </TouchableOpacity>
 

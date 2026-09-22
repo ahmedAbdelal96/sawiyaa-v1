@@ -1,4 +1,8 @@
-import type { SessionMode, SessionStatus } from "@/features/sessions/types/sessions.types";
+import type {
+  SessionMode,
+  SessionOperationalInterpretation,
+  SessionStatus,
+} from "@/features/sessions/types/sessions.types";
 import type { PaymentItemResponseData } from "@/features/payments/types/payments.types";
 
 export type PackagePurchaseSessionSlot = {
@@ -24,6 +28,7 @@ export type PatientPackagePurchaseSessionSummary = {
   id: string;
   sessionCode: string;
   status: SessionStatus;
+  operational: SessionOperationalInterpretation;
   scheduledStartAt: string | null;
   scheduledEndAt: string | null;
   durationMinutes: number;
@@ -49,10 +54,14 @@ export type PatientPackagePurchaseItem = {
   };
   progress?: {
     totalSessions: number;
+    consumedSessions?: number;
     completedSessions: number;
+    reservedSessions: number;
+    availableSessions: number;
     remainingSessions: number;
     scheduledSessions: number;
     progressPercent: number;
+    nextSessionStartAt: string | null;
   };
   durationMinutes: number;
   sessionMode: SessionMode;
@@ -71,6 +80,42 @@ export type PatientPackagePurchaseItem = {
   };
   createdAt: string;
   updatedAt: string;
+  payment: {
+    id: string;
+    status: string;
+    amountTotal: string;
+    amountFromWallet: string;
+    amountFromGateway: string;
+    currency: string;
+    initiatedAt: string;
+    capturedAt: string | null;
+    failedAt: string | null;
+    expiredAt: string | null;
+    refundedAt: string | null;
+    refunds: Array<{
+      id: string;
+      status: string;
+      destination: string;
+      amount: string;
+      currency: string;
+      reason: string | null;
+      requestedAt: string;
+      processedAt: string | null;
+      failedAt: string | null;
+      customerWalletCreditedAt: string | null;
+      sessionId: string | null;
+    }>;
+  } | null;
+  entitlementHistory: Array<{
+    id: string;
+    sessionId: string;
+    sessionCode: string | null;
+    decisionType: string;
+    reasonCode: string;
+    sessionStatus: string;
+    decidedAt: string;
+    scheduledStartAt: string | null;
+  }>;
 };
 
 export type CreatePatientPackagePurchaseRequest = {
@@ -78,8 +123,11 @@ export type CreatePatientPackagePurchaseRequest = {
   practitionerSlug: string;
   durationMinutes: 30 | 60;
   sessionMode: SessionMode;
-  selectedSessionSlots: PackagePurchaseSessionSlot[];
+  /** Optional first appointment; remaining sessions are booked later. */
+  selectedSessionSlots?: PackagePurchaseSessionSlot[];
 };
+
+export type BookPatientPackageSessionRequest = PackagePurchaseSessionSlot;
 
 export type InitiatePatientPackagePurchasePaymentInput = {
   acceptedRefundPolicyId: string;

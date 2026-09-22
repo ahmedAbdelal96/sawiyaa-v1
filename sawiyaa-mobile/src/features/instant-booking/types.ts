@@ -56,6 +56,7 @@ export interface InstantBookingEligiblePractitionersMeta {
 export interface InstantBookingEligiblePractitionersResponse {
   items: InstantBookingEligiblePractitionerItem[];
   meta: InstantBookingEligiblePractitionersMeta;
+  currencyCode: InstantBookingDiscoveryCurrency;
 }
 
 export interface CreatePatientInstantBookingRequestInput {

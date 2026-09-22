@@ -57,6 +57,11 @@ export class UserRepository {
             status: true,
           },
         },
+        practitionerApplications: {
+          orderBy: [{ updatedAt: 'desc' }, { createdAt: 'desc' }],
+          take: 1,
+          select: { id: true, status: true },
+        },
       },
     });
   }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
 import {
@@ -33,6 +34,7 @@ export default function SupportLaneThread({
   onThreadActive,
   isVisible = true,
 }: Props) {
+  const t = useTranslations("messages-shell");
   const queryClient = useQueryClient();
   const [description, setDescription] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -85,26 +87,20 @@ export default function SupportLaneThread({
           onCreatedTicket(res.item.conversationId);
         }
       } else {
-        setError(locale.startsWith("ar")
-          ? "تعذر إرسال رسالتك إلى الدعم. حاول مرة أخرى."
-          : "Could not send your message to support. Please try again.");
+        setError(t("supportError"));
       }
     } catch {
-      setError(locale.startsWith("ar")
-        ? "تعذر إرسال رسالتك إلى الدعم. حاول مرة أخرى."
-        : "Could not send your message to support. Please try again.");
+      setError(t("supportError"));
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const isAr = locale.startsWith("ar");
-
   if (ticketId) {
     if (listQuery.isLoading) {
       return (
         <div className="flex h-full items-center justify-center p-8 text-center text-text-muted animate-pulse">
-          <span>{isAr ? "جاري تحميل الدعم..." : "Loading support..."}</span>
+          <span>{t("loading")}</span>
         </div>
       );
     }
@@ -121,7 +117,7 @@ export default function SupportLaneThread({
           />
         ) : (
           <div className="flex h-full items-center justify-center p-8 text-center text-text-muted">
-            <span>{isAr ? "المحادثة غير متوفرة." : "Conversation not available."}</span>
+            <span>{t("notAvailable")}</span>
           </div>
         )}
       </div>
@@ -132,12 +128,10 @@ export default function SupportLaneThread({
   return (
     <div className="flex h-full flex-col rounded-2xl border border-border-light/80 bg-white p-6 shadow-sm dark:border-white/10 dark:bg-slate-900/40">
       <h3 className="text-base font-bold text-text-primary dark:text-white">
-        {isAr ? "ابدأ محادثة جديدة مع الدعم" : "Start a new support conversation"}
+        {t("supportCreateHeading")}
       </h3>
       <p className="mt-1 text-xs text-text-secondary dark:text-white/60">
-        {isAr
-          ? "اطرح مشكلتك أو استفسارك هنا وسيرد عليك أحد ممثلي الدعم الفني في أقرب وقت."
-          : "Write your message and it will be sent to the support team."}
+        {t("supportCreateNote")}
       </p>
 
       {error && (
@@ -149,7 +143,7 @@ export default function SupportLaneThread({
       <form onSubmit={handleSubmit} className="mt-4 flex-1 flex flex-col justify-between">
         <div className="space-y-1">
           <label htmlFor="support-desc" className="block text-xs font-bold text-text-primary dark:text-white/80">
-            {isAr ? "كيف يمكننا مساعدتك؟ *" : "How can we help you? *"}
+            {t("supportCreateMessage")} *
           </label>
           <textarea
             id="support-desc"
@@ -159,9 +153,7 @@ export default function SupportLaneThread({
             onChange={(e) => setDescription(e.target.value)}
             autoFocus
             placeholder={
-              isAr
-                ? "اكتب تفاصيل المشكلة أو طلبك بوضوح..."
-                : "Explain the issue or your request clearly..."
+              t("supportComposerPlaceholder")
             }
             className="custom-scrollbar block w-full rounded-xl border border-border-light bg-transparent px-3 py-2 text-sm text-text-primary outline-none focus:border-teal-600 focus:ring-1 focus:ring-teal-600 dark:border-white/10 dark:text-white"
           />
@@ -175,10 +167,10 @@ export default function SupportLaneThread({
           {isSubmitting ? (
             <>
               <Loader2 className="h-4 w-4 animate-spin" />
-              <span>{isAr ? "جاري الإرسال..." : "Sending..."}</span>
+              <span>{t("supportCreating")}</span>
             </>
           ) : (
-            <span>{isAr ? "إرسال طلب الدعم" : "Submit Request"}</span>
+            <span>{t("supportCreateAction")}</span>
           )}
         </button>
       </form>

@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import AdminReviewDetailScreen from "@/features/reviews/components/AdminReviewDetailScreen";
+import AdminPermissionGate from "@/components/admin/AdminPermissionGate";
+import { PermissionKey } from "@/lib/auth/permissions";
 
 type Props = {
   params: Promise<{ locale: string; id: string }>;
@@ -18,5 +20,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function AdminReviewDetailPage({ params }: Props) {
   const { locale, id } = await params;
   setRequestLocale(locale);
-  return <AdminReviewDetailScreen reviewId={id} />;
+  return (
+    <AdminPermissionGate requiredPermissions={[PermissionKey.REVIEWS_READ]}>
+      <AdminReviewDetailScreen reviewId={id} />
+    </AdminPermissionGate>
+  );
 }
