@@ -58,12 +58,12 @@ export class SessionMapper {
         canPrepareRoom: false,
         canJoin: operational?.actions.canJoin ?? false,
         canPay:
-          session.status === 'PENDING_PAYMENT' &&
+          (operational?.state ?? session.status) === 'PENDING_PAYMENT' &&
           Boolean(session.expiresAt && session.expiresAt > now),
         canReview: false,
       },
       chatAvailability: resolveSessionChatAvailability({
-        status: session.status,
+        status: operational?.state ?? session.status,
         sessionMode: session.sessionMode,
         scheduledStartAt: session.scheduledStartAt,
         scheduledEndAt: session.scheduledEndAt,
@@ -153,12 +153,33 @@ export class SessionMapper {
       submittedAt: primaryReview.submittedAt ? primaryReview.submittedAt.toISOString() : null,
     } : null;
 
-    const timeline = (rich.events || []).map((e: any) => ({
-      eventType: e.eventType,
-      occurredAt: e.occurredAt?.toISOString() ?? e.createdAt.toISOString(),
-      actorType: e.actorType ?? null,
-      reason: e.reason ?? null,
-    }));
+    const timeline = (rich.events || []).map((e: any) => {
+      const metadata = e.metadataJson && typeof e.metadataJson === 'object'
+        ? (e.metadataJson as Record<string, unknown>)
+        : null;
+      const readTimestamp = (key: string) =>
+        typeof metadata?.[key] === 'string' ? metadata[key] : null;
+      return {
+        eventType: e.eventType,
+        occurredAt: e.occurredAt?.toISOString() ?? e.createdAt.toISOString(),
+        actorType: e.actorType ?? null,
+        reason: e.reason ?? null,
+        ...(e.eventType === 'RESCHEDULED'
+          ? {
+              previousStartAt:
+                readTimestamp('previousStartAt') ??
+                readTimestamp('previousScheduledStartAt'),
+              previousEndAt:
+                readTimestamp('previousEndAt') ??
+                readTimestamp('previousScheduledEndAt'),
+              newStartAt:
+                readTimestamp('newStartAt') ?? readTimestamp('newScheduledStartAt'),
+              newEndAt:
+                readTimestamp('newEndAt') ?? readTimestamp('newScheduledEndAt'),
+            }
+          : {}),
+      };
+    });
 
     const conversationId = rich.conversations && rich.conversations.length > 0 ? rich.conversations[0].id : null;
 

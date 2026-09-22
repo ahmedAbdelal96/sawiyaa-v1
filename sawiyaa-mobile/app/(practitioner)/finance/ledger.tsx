@@ -20,7 +20,10 @@ import {
   monthYearLabel,
   safeFinanceText,
 } from "../../../src/features/practitioner/finance/utils";
-import type { PractitionerLedgerEntry } from "../../../src/features/practitioner/finance/types";
+import type {
+  PractitionerLedgerEntry,
+  PractitionerLedgerListResponse,
+} from "../../../src/features/practitioner/finance/types";
 import { useTheme } from "../../../src/providers/ThemeProvider";
 
 const PAGE_SIZE = 20;
@@ -40,9 +43,13 @@ export default function PractitionerTransactionsScreen() {
   useEffect(() => {
     if (!query.data) return;
     setItems((current) => {
-      if (page === 1) return query.data.items;
+      const response = query.data as PractitionerLedgerListResponse;
+      if (page === 1) return response.items;
       const seen = new Set(current.map((item) => item.id));
-      return [...current, ...query.data.items.filter((item) => !seen.has(item.id))];
+      return [
+        ...current,
+        ...response.items.filter((item) => !seen.has(item.id)),
+      ];
     });
   }, [page, query.data]);
 
@@ -59,8 +66,12 @@ export default function PractitionerTransactionsScreen() {
       )
       .filter((item) => {
         if (filter === "ALL") return true;
-        if (filter === "TRANSFERS") return item.entryType.includes("SETTLEMENT");
-        return item.entryType.includes("EARNING") || item.entryType === "SESSION_GROSS";
+        if (filter === "TRANSFERS")
+          return item.entryType.includes("SETTLEMENT");
+        return (
+          item.entryType.includes("EARNING") ||
+          item.entryType === "SESSION_GROSS"
+        );
       });
   }, [filter, items]);
 
@@ -73,7 +84,11 @@ export default function PractitionerTransactionsScreen() {
     }
     return Array.from(groups.entries()).map(([key, groupItems]) => {
       const [year, month] = key.split("-").map(Number);
-      return { key, label: monthYearLabel(year, month, locale), items: groupItems };
+      return {
+        key,
+        label: monthYearLabel(year, month, locale),
+        items: groupItems,
+      };
     });
   }, [filteredItems, locale]);
 
@@ -87,8 +102,14 @@ export default function PractitionerTransactionsScreen() {
   if (query.isLoading && page === 1) {
     return (
       <Screen bg="background">
-        <Header title={t("practitioner.finance.product.transactions")} showBack />
-        <LoadingState fullScreen message={t("practitioner.finance.common.loading")} />
+        <Header
+          title={t("practitioner.finance.product.transactions")}
+          showBack
+        />
+        <LoadingState
+          fullScreen
+          message={t("practitioner.finance.common.loading")}
+        />
       </Screen>
     );
   }
@@ -96,7 +117,10 @@ export default function PractitionerTransactionsScreen() {
   if (query.isError && page === 1) {
     return (
       <Screen bg="background">
-        <Header title={t("practitioner.finance.product.transactions")} showBack />
+        <Header
+          title={t("practitioner.finance.product.transactions")}
+          showBack
+        />
         <ErrorState
           fullScreen
           title={t("practitioner.finance.ledger.errorTitle")}
@@ -118,7 +142,11 @@ export default function PractitionerTransactionsScreen() {
             onPress={refresh}
             style={styles.headerAction}
           >
-            <Ionicons name="refresh-outline" size={22} color={theme.colors.textPrimary} />
+            <Ionicons
+              name="refresh-outline"
+              size={22}
+              color={theme.colors.textPrimary}
+            />
           </TouchableOpacity>
         }
       />
@@ -148,7 +176,12 @@ export default function PractitionerTransactionsScreen() {
               <Text color={theme.colors.textMuted} style={styles.groupTitle}>
                 {group.label}
               </Text>
-              <View style={[styles.list, { borderTopColor: theme.colors.borderLight }]}>
+              <View
+                style={[
+                  styles.list,
+                  { borderTopColor: theme.colors.borderLight },
+                ]}
+              >
                 {group.items.map((item) => (
                   <TransactionRow
                     key={item.id}
@@ -157,7 +190,9 @@ export default function PractitionerTransactionsScreen() {
                     t={t}
                     expanded={expandedId === item.id}
                     onToggle={() =>
-                      setExpandedId((current) => (current === item.id ? null : item.id))
+                      setExpandedId((current) =>
+                        current === item.id ? null : item.id,
+                      )
                     }
                   />
                 ))}
@@ -172,7 +207,11 @@ export default function PractitionerTransactionsScreen() {
 
         {query.data && page < query.data.pagination.totalPages ? (
           <Button
-            title={query.isFetching ? t("practitioner.finance.common.loadingMore") : t("practitioner.finance.common.loadMore")}
+            title={
+              query.isFetching
+                ? t("practitioner.finance.common.loadingMore")
+                : t("practitioner.finance.common.loadMore")
+            }
             onPress={() => setPage((current) => current + 1)}
             variant="secondary"
             disabled={query.isFetching}
@@ -197,7 +236,10 @@ function TransactionRow({
   onToggle: () => void;
 }) {
   const { theme } = useTheme();
-  const title = safeFinanceText(item.description, ledgerEntryTypeLabel(item.entryType, t));
+  const title = safeFinanceText(
+    item.description,
+    ledgerEntryTypeLabel(item.entryType, t),
+  );
   const amount = formatSignedMoney(
     item.amount,
     item.currency,
@@ -218,7 +260,11 @@ function TransactionRow({
           <Text weight="600" style={styles.rowTitle} numberOfLines={1}>
             {title}
           </Text>
-          <Text color={theme.colors.textMuted} style={styles.rowMeta} numberOfLines={1}>
+          <Text
+            color={theme.colors.textMuted}
+            style={styles.rowMeta}
+            numberOfLines={1}
+          >
             {formatDateShort(item.effectiveAt, locale)} · {status}
           </Text>
         </View>
@@ -236,8 +282,14 @@ function TransactionRow({
 
       {expanded ? (
         <View style={styles.details}>
-          <DetailRow label={t("practitioner.finance.ledger.details.type")} value={title} />
-          <DetailRow label={t("practitioner.finance.ledger.details.bucket")} value={status} />
+          <DetailRow
+            label={t("practitioner.finance.ledger.details.type")}
+            value={title}
+          />
+          <DetailRow
+            label={t("practitioner.finance.ledger.details.bucket")}
+            value={status}
+          />
           <DetailRow
             label={t("practitioner.finance.ledger.details.effectiveAt")}
             value={formatDateShort(item.effectiveAt, locale)}
@@ -255,7 +307,9 @@ function TransactionRow({
 function DetailRow({ label, value }: { label: string; value: string }) {
   const { theme } = useTheme();
   return (
-    <View style={[styles.detailRow, { borderTopColor: theme.colors.borderLight }]}>
+    <View
+      style={[styles.detailRow, { borderTopColor: theme.colors.borderLight }]}
+    >
       <Text color={theme.colors.textMuted} style={styles.detailLabel}>
         {label}
       </Text>
@@ -269,7 +323,13 @@ function DetailRow({ label, value }: { label: string; value: string }) {
 function referenceLabel(value: string | null, t: TranslateFn) {
   const normalized = value?.trim().toLowerCase();
   if (!normalized) return t("practitioner.finance.ledger.details.none");
-  const known = ["session", "payment", "settlement", "coupon", "manual"] as const;
+  const known = [
+    "session",
+    "payment",
+    "settlement",
+    "coupon",
+    "manual",
+  ] as const;
   return known.includes(normalized as (typeof known)[number])
     ? t(`practitioner.finance.ledger.referenceTypes.${normalized}`)
     : t("practitioner.finance.ledger.referenceTypes.unknown");

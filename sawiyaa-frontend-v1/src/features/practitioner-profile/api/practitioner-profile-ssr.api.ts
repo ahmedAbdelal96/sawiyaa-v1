@@ -20,10 +20,8 @@ import type {
 
 type BackendPublicPractitionerDetailsItem = BackendPublicPractitionerListItem & {
   fullBio: string | null;
-  credentialsSummary: {
-    totalCredentials: number;
-    approvedCredentials: number;
-  };
+  bioAr: string | null;
+  bioEn: string | null;
 };
 
 /** Extended practitioner data as returned by the detail endpoint. */
@@ -44,11 +42,10 @@ function mapBackendDetailsToUi(
   return {
     ...base,
     bio: item.fullBio ?? null,
-    bioAr: item.fullBio ?? "",
-    bioEn: item.fullBio ?? "",
+    bioAr: item.bioAr ?? null,
+    bioEn: item.bioEn ?? null,
     approachAr: "",
     approachEn: "",
-    credentialsSummary: item.credentialsSummary,
   };
 }
 

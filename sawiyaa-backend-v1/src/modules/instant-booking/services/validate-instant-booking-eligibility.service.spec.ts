@@ -8,7 +8,8 @@ describe('ValidateInstantBookingEligibilityService', () => {
   const timezone = { resolve: jest.fn() } as any;
   const duration = { validate: jest.fn() } as any;
   const conflicts = { assertNoPractitionerConflict: jest.fn() } as any;
-  const service = new ValidateInstantBookingEligibilityService(visibility, presence, timezone, duration, conflicts);
+  const requests = { findActivePendingRequestForPractitioner: jest.fn() } as any;
+  const service = new ValidateInstantBookingEligibilityService(visibility, presence, timezone, duration, conflicts, requests);
 
   const baseInput = {
     practitioner: {
@@ -30,6 +31,7 @@ describe('ValidateInstantBookingEligibilityService', () => {
     timezone.resolve.mockReturnValue('Africa/Cairo');
     duration.validate.mockReturnValue(undefined);
     conflicts.assertNoPractitionerConflict.mockResolvedValue(undefined);
+    requests.findActivePendingRequestForPractitioner.mockResolvedValue(null);
   });
 
   it('rejects stale online presence', async () => {
@@ -49,5 +51,17 @@ describe('ValidateInstantBookingEligibilityService', () => {
   it('rejects busy practitioners before accepting a request', async () => {
     presence.createOrGetByPractitionerProfileId.mockResolvedValueOnce({ status: PresenceStatus.BUSY, isInstantBookingEnabled: true, lastSeenAtUtc: new Date('2026-05-07T11:59:30.000Z') });
     await expect(service.assertPractitionerCanReceiveInstantBooking(baseInput)).rejects.toMatchObject({ response: { error: 'INSTANT_BOOKING_PRACTITIONER_BUSY' } });
+  });
+
+  it('rejects a practitioner with an active pending instant booking hold', async () => {
+    requests.findActivePendingRequestForPractitioner.mockResolvedValueOnce({ id: 'request-1' });
+    await expect(service.assertPractitionerCanReceiveInstantBooking(baseInput)).rejects.toMatchObject({
+      response: { error: 'INSTANT_BOOKING_PRACTITIONER_BUSY' },
+    });
+  });
+
+  it('allows a practitioner when the pending hold is expired', async () => {
+    requests.findActivePendingRequestForPractitioner.mockResolvedValueOnce(null);
+    await expect(service.assertPractitionerCanReceiveInstantBooking(baseInput)).resolves.toBeDefined();
   });
 });

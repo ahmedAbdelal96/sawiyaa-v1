@@ -7,6 +7,86 @@
 
 ---
 
+## Sawiyaa Design Preflight — Mandatory
+
+Before performing ANY task in this repository, the coding agent must read:
+
+1. `AGENTS.md`
+2. `DESIGN.md`
+3. `.agents/skills/taste-skill/SKILL.md`
+4. Any additional files explicitly required by the Taste Skill
+
+This preflight is mandatory for every task in Sawiyaa Web/Mobile.
+
+For ANY task that creates, modifies, reviews, fixes, or refactors:
+
+- UI
+- UX
+- customer-facing copy
+- components
+- pages/screens
+- layouts
+- navigation
+- responsive behavior
+- RTL
+- typography
+- spacing
+- colors
+- forms
+- empty states
+- loading states
+- errors
+- booking UX
+- session UX
+- messaging UX
+- customer account UX
+
+the Taste Skill must actively guide the implementation.
+
+Do not merely read the skill and ignore it.
+
+Apply its principles to the implementation.
+
+Before changing an existing customer-facing screen, understand:
+
+- why the screen exists
+- what business function it performs
+- what data it consumes
+- what actions are available
+- what states are supported
+- what permissions/guards affect it
+- what happens before this screen
+- what happens after this screen
+
+A visual redesign must never accidentally remove business functionality.
+
+Radical visual change is allowed.
+
+Business regression is not.
+
+The agent must never interpret "preserve existing functionality" as:
+
+"keep the old layout and only change colors."
+
+For the upcoming Sawiyaa redesign, deep structural UI changes are explicitly allowed and expected.
+
+The agent may:
+
+- change page composition
+- change hierarchy
+- change component structure
+- change visual language
+- move information
+- simplify presentation
+- replace old cards/sections
+- rewrite customer-facing copy
+- reduce unnecessary UI noise
+- create new frontend components
+
+as long as the business capability of the screen remains intact.
+
+---
+
 # 1. Product Model
 
 Sawiyaa ships as **one mobile application** containing two independent product experiences:
@@ -69,11 +149,12 @@ A screen should normally answer **one dominant user question**.
 For mobile UI/UX work, read and follow:
 
 1. the user's current explicit requirement;
-2. current backend/API contracts and canonical operational capabilities;
-3. `SAWIYAA_MOBILE_PRODUCT_UX_TRACKER.md`;
-4. `DESIGN.md`;
-5. existing project conventions;
-6. generic external skills/guidance.
+2. `AGENTS.md` and `DESIGN.md`;
+3. `.agents/skills/taste-skill/SKILL.md` (mandatory design quality bar);
+4. current backend/API contracts and canonical operational capabilities;
+5. `SAWIYAA_MOBILE_PRODUCT_UX_TRACKER.md`;
+6. existing project conventions;
+7. generic external skills/guidance.
 
 `SAWIYAA_MOBILE_PRODUCT_UX_TRACKER.md` is the active execution tracker.
 
@@ -89,7 +170,7 @@ Instead:
 
 ---
 
-# 4. Sawiyaa Mobile UI Skill
+# 4. Sawiyaa Mobile UI Skill & Taste Skill
 
 For any task involving:
 
@@ -105,19 +186,16 @@ For any task involving:
 - screen polish;
 - accessibility;
 
-use the repository skill:
+use the repository skills:
 
+1. **Taste Skill (Mandatory Quality Bar):**
 ```text
-$sawiyaa-mobile-ui
+.agents/skills/taste-skill/SKILL.md
 ```
-
-Location:
-
+2. **Sawiyaa Mobile UI Skill:**
 ```text
-.agents/skills/sawiyaa-mobile-ui/
+.agents/skills/sawiyaa-mobile-ui/SKILL.md
 ```
-
-It is the governing mobile product UI skill.
 
 Consult installed companion skills only when relevant:
 
@@ -154,7 +232,14 @@ Do not perform broad refactors unless they are necessary for the requested workf
 
 # 6. Safe Change Rules
 
-Always prefer the smallest safe coherent change.
+Always prefer the smallest safe coherent change for code structure, while allowing deep UX/UI visual transformations.
+
+> **"Before redesigning an existing Sawiyaa screen, preserve the screen's BUSINESS CONTRACT, not its current VISUAL IMPLEMENTATION."**
+
+The agent must never interpret "preserve existing functionality" as:
+"keep the old layout and only change colors."
+
+For the upcoming Sawiyaa redesign, deep structural UI changes are explicitly allowed and expected.
 
 Never:
 
@@ -288,9 +373,7 @@ Use progressive disclosure.
 
 A normal mobile workflow should be understandable without reading an essay.
 
----
-
-# 11. Sawiyaa Design System
+# 11. Sawiyaa Design System & Primary Benchmark
 
 Use existing project tokens and primitives before introducing new ones.
 
@@ -317,10 +400,18 @@ Sawiyaa visual direction should remain:
 - appropriate for healthcare;
 - comfortable under stress.
 
-Do not visually clone Shezlong, Esaal, or another competitor.
+### Primary Benchmark — Shezlong
+**Shezlong** (https://www.shezlong.com/ar?target=%2Far%2Fhome) is the primary benchmark for:
+- customer-facing language and emotional warmth;
+- page hierarchy and human-centered presentation;
+- simple CTAs and early practitioner visibility;
+- trust-building and helping uncertain users choose;
+- low cognitive load and supportive Arabic wording.
+
+Sawiyaa should strongly learn from Shezlong's product communication model while developing its own modern, refined identity.
+**Secondary Reference:** **Esaal** (https://esaal.me/home) serves as a secondary reference for conversion clarity and rapid decision pathways.
 
 Competitor references may inform:
-
 - workflow;
 - density;
 - interaction sequence;
@@ -372,30 +463,57 @@ Financial or destructive actions must be especially explicit.
 
 ---
 
-# 14. Product Copy
+# 14. Product Copy & Voice Rules
 
 Localization is product writing, not literal translation.
 
-## Arabic
+## Never Use "مريض" in Customer UI
+Internally, the Backend, domain models, database entities, routes, APIs, and TypeScript types may still use terminology such as `PATIENT`. **Do NOT rename backend roles, database entities, APIs, permissions, routes, contracts, enums, or domain concepts.**
 
-Use concise, natural Modern Standard Arabic.
+However, customer-facing UI must **never** call the person:
+- ❌ `"مريض"`
+- ❌ `"حساب المريض"`
+- ❌ `"لوحة المريض"`
+- ❌ `"اختيار المختص المناسب للمريض"`
 
-Avoid:
+Prefer speaking directly to the person (second-person language):
+- ✅ `"اختار المختص المناسب لك"`
+- ✅ `"جلساتك"`
+- ✅ `"رسائلك"`
+- ✅ `"حسابك"`
+- ✅ `"مواعيدك"`
+- ✅ `"محتاج مساعدة تختار؟"`
 
-- backend vocabulary;
-- bureaucratic phrasing;
-- technical English mixed into Arabic;
-- unnecessary paragraphs;
-- literal translation of internal terms.
+## Arabic Voice Quality Bar
+Arabic copy must feel:
+- **Human, calm, warm, simple, respectful, reassuring.**
+- Conversational and natural without becoming slang-heavy (close to everyday Egyptian/Arabic speech).
+- Avoid overly formal institutional/hospital Arabic and technical product jargon.
+- Examples of target voice:
+  - `"مش عارف تبدأ منين؟ نساعدك."`
+  - `"اختار المختص المناسب لك."`
+  - `"اتكلم براحتك."`
+  - `"احجز في الوقت المناسب لك."`
+  - `"خصوصيتك محفوظة."`
+  - `"شوف الخبرة والتخصص والمواعيد قبل ما تحجز."`
+  - `"محتاج تتكلم دلوقتي؟ شوف المختصين المتاحين."`
+
+## Words and Patterns to Avoid
+Avoid repeating product/technical abstractions such as:
+- ❌ `"مسار واضح"` / `"رحلة واضحة"` / `"سياق واضح"` / `"قواعد واضحة"`
+- ❌ `"حالة الدفع واضحة"` / `"المعاينات الشكلية"` / `"إدارة رحلة الرعاية"` / `"مسار الرعاية"`
+- ❌ Do not tell customers that the platform is "clear" — **make it clear.**
+- ❌ Never expose payment state machines, runtime rules, chat eligibility constraints, or backend failure terms in marketing/customer copy.
+
+## Do Not Diagnose the Customer
+Customer copy must not assume diagnoses.
+- Prefer: `"إيه اللي محتاج مساعدة فيه؟"`
+- Frame concerns around human feelings and daily life (قلق، نوم، ضغط، علاقات، مشاكل أسرية، مشاكل أطفال، توتر، مزاج) before clinical specialties.
 
 ## English
-
-Use concise product English.
-
-Do not mechanically mirror Arabic sentence structure.
+Use concise product English. Do not mechanically mirror Arabic sentence structure.
 
 ## Never expose directly
-
 - raw enums;
 - provider names;
 - route names;
@@ -422,6 +540,51 @@ Africa/Cairo
 ```
 
 Error codes remain available for logs/support, not normal product UI.
+
+---
+
+# 14.1. Important Sawiyaa Domain Rules
+
+1. **Backend is Authoritative:** Business logic, access control, state transitions, and calculations originate from the backend.
+2. **Internal Terminology:** Domain entities (e.g. `Patient`, `Practitioner`) remain intact in types, hooks, routes, and APIs.
+3. **No Unapproved Business Changes:**
+   - Practitioner publication and verification rules must NOT be changed.
+   - Booking validation and slot calculation rules must NOT be changed.
+   - Pricing rules and currency conversion must NOT be changed.
+   - Session eligibility and room join rules must NOT be changed.
+   - Messaging eligibility rules must NOT be changed.
+   - Payment state machines must NOT be changed.
+   - Authentication and authorization guards must NOT be weakened.
+4. **No Fake UI:** Never render fake filters, fake reviews, fake ratings, fake online counts, fake testimonials, or hardcoded mock lists when live data is expected.
+
+---
+
+# 14.2. Future Screen Redesign Workflow (Mandatory)
+
+For every future customer-facing redesign task, the agent must strictly follow this 9-step workflow:
+
+1. **STEP 1 — Preflight:** Read `AGENTS.md`, `DESIGN.md`, `.agents/skills/taste-skill/SKILL.md`, and `.agents/skills/sawiyaa-mobile-ui/SKILL.md`.
+2. **STEP 2 — Component Inspection:** Inspect the requested screen and all related subcomponents, sheets, modals, and wrappers.
+3. **STEP 3 — Flow Inspection:** Trace the complete existing business flow (where the user came from, where they go next).
+4. **STEP 4 — Requirements Audit:** Identify:
+   - screen purpose & customer goal
+   - primary CTA & secondary CTA
+   - current business features & interactions
+   - API/hook dependencies & route parameters
+   - states (idle, loading, empty, error, disabled, success)
+   - permissions and auth guards
+5. **STEP 5 — Problem Analysis:** Identify UX friction, visual noise, clutter, weak hierarchy, and robotic copy.
+6. **STEP 6 — Design Solution:** Design an improved customer experience inspired by `DESIGN.md`, the Shezlong communication model, and Taste Skill standards.
+7. **STEP 7 — Implementation:** Implement the new components/layouts cleanly without breaking existing props, hooks, or business logic.
+8. **STEP 8 — Capability Verification:** Audit and verify that no business capability or edge-case handling was dropped.
+9. **STEP 9 — Multi-Dimensional Review:**
+   - Arabic copy (natural, warm, second-person)
+   - English copy (clear, concise)
+   - RTL & LTR layout mirroring
+   - Safe area handling and mobile interaction
+   - Loading skeletons, empty states, error fallbacks
+   - Accessibility (touch targets, readable contrast)
+   - Visual hierarchy & CTA prominence
 
 ---
 

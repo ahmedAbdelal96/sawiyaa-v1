@@ -82,6 +82,18 @@ export function useCreateScheduledSession() {
         queryKey: patientSessionsQueryKeys.details(payload.item.id),
       });
     },
+    onError: (_error, variables) => {
+      // If another patient won the selected slot, invalidate only the
+      // availability queries for that practitioner. The next screen render
+      // must not keep presenting a stale slot from the cache.
+      queryClient.invalidateQueries({
+        queryKey: [
+          ...patientSessionsQueryKeys.all,
+          "availability",
+          variables.practitionerSlug,
+        ],
+      });
+    },
   });
 }
 
@@ -93,6 +105,7 @@ export function usePatientSessions(query?: ListSessionsQuery) {
     queryFn: () => getPatientSessions(query),
     enabled,
     staleTime: 30_000,
+    refetchOnWindowFocus: true,
   });
 }
 
@@ -110,6 +123,7 @@ export function usePatientSessionSummary() {
     },
     enabled,
     staleTime: 30_000,
+    refetchOnWindowFocus: true,
   });
 }
 
@@ -136,6 +150,7 @@ export function useInfinitePatientSessions(
     },
     enabled,
     staleTime: 30_000,
+    refetchOnWindowFocus: true,
   });
 }
 
@@ -152,6 +167,7 @@ export function usePatientSession(sessionId: string | null) {
     },
     enabled: enabled && Boolean(sessionId),
     staleTime: 30_000,
+    refetchOnWindowFocus: true,
   });
 }
 
@@ -193,9 +209,19 @@ export function useCancelPatientSession() {
 }
 
 export function useResolvePatientSessionJoinContract() {
+  const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (sessionId: string) =>
       resolvePatientSessionJoinContract(sessionId),
+    onSuccess: async (payload) => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: patientSessionsQueryKeys.all }),
+        queryClient.invalidateQueries({ queryKey: patientJourneyQueryKey }),
+        queryClient.invalidateQueries({
+          queryKey: patientSessionsQueryKeys.details(payload.item.sessionId),
+        }),
+      ]);
+    },
   });
 }
 

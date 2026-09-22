@@ -39,6 +39,9 @@ export class CreateSessionFromInstantBookingService {
     // never consume the patient's 30/60 purchased minutes.
     const scheduledStartAt = expiresAt;
     const scheduledEndAt = new Date(scheduledStartAt.getTime() + input.request.requestedDurationMinutes * 60 * 1000);
+    const selectedCurrencyCode = this.resolveSelectedCurrencyCode(
+      input.request.metadataJson,
+    );
 
     const run = async (tx: Prisma.TransactionClient) => {
       const session = await this.sessionRepository.createSession(
@@ -54,6 +57,7 @@ export class CreateSessionFromInstantBookingService {
           scheduledEndAt,
           expiresAt,
           timezoneSnapshot: input.timezone,
+          pricingCurrencyCode: selectedCurrencyCode,
         },
         tx,
         'instant_booking',
@@ -94,5 +98,19 @@ export class CreateSessionFromInstantBookingService {
     }
 
     return this.prisma.$transaction(run);
+  }
+
+  private resolveSelectedCurrencyCode(
+    metadataJson: unknown,
+  ): 'EGP' | 'USD' | null {
+    if (!metadataJson || typeof metadataJson !== 'object') return null;
+    const selectedMoney = (metadataJson as Record<string, unknown>)
+      .selectedMoney;
+    if (!selectedMoney || typeof selectedMoney !== 'object') return null;
+    const currencyCode = (selectedMoney as Record<string, unknown>)
+      .currencyCode;
+    return currencyCode === 'EGP' || currencyCode === 'USD'
+      ? currencyCode
+      : null;
   }
 }

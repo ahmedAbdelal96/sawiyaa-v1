@@ -476,6 +476,44 @@ describe('AccountingReconciliationDiagnosticsService', () => {
     expect(result.issues).toHaveLength(0);
   });
 
+  it('raises a critical provider-uncertainty issue for a dispatched refund without a final outcome', async () => {
+    const setup = buildService();
+    setup.prisma.refund.findUnique.mockResolvedValue({
+      id: 'refund_uncertain',
+      paymentId: 'payment_1',
+      sessionId: 'session_1',
+      currencyCode: 'EGP',
+      amount: new Prisma.Decimal('100.00'),
+      status: RefundStatus.PROCESSING,
+      destination: RefundDestination.ORIGINAL_METHOD,
+      processedAt: null,
+      metadataJson: null,
+      payment: {
+        id: 'payment_1',
+        status: PaymentStatus.REFUND_PENDING,
+        practitionerId: 'pract_1',
+        amountTotal: new Prisma.Decimal('500.00'),
+        amountSubtotal: new Prisma.Decimal('600.00'),
+        amountDiscount: new Prisma.Decimal('100.00'),
+        currencyCode: 'EGP',
+        commissionPlatformRatePercent: new Prisma.Decimal('20.00'),
+        metadataJson: null,
+      },
+    });
+    setup.prisma.journalEntry.findUnique.mockResolvedValue(null);
+    setup.ledgerRepository.findByRefundId.mockResolvedValue([]);
+
+    const result = await setup.service.reconcileRefund('refund_uncertain');
+
+    expect(result.ok).toBe(false);
+    expect(result.issues).toContainEqual(
+      expect.objectContaining({
+        code: 'REFUND_PROVIDER_OUTCOME_UNCERTAIN',
+        severity: 'CRITICAL',
+      }),
+    );
+  });
+
   function basePayment(overrides: Record<string, unknown> = {}) {
     return {
       id: 'payment_phase1',

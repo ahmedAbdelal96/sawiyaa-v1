@@ -27,6 +27,8 @@ import {
 } from "../../../src/features/patient/assessments/api";
 import {
   AssessmentSubmissionStatus,
+  AssessmentDefinition,
+  AssessmentDefinitionDetails,
   PatientAssessmentHistoryItem,
 } from "../../../src/features/patient/assessments/types";
 import { AssessmentStatusCard } from "../../../src/features/patient/assessments/components/AssessmentStatusCard";
@@ -34,6 +36,30 @@ import { getAssessmentCompatibility } from "../../../src/features/patient/assess
 import { formatViewerDate } from "../../../src/lib/time-formatting";
 
 type ListFilter = "all" | "current" | "history";
+type AssessmentCardCompatibility = ReturnType<
+  typeof getAssessmentCompatibility
+> extends infer Compatibility
+  ? Omit<Compatibility, "isCompatible" | "reason"> & {
+      questionCount: number | null;
+      isCompatible: boolean | null;
+      reason: ReturnType<typeof getAssessmentCompatibility>["reason"];
+    }
+  : never;
+type AssessmentCard = {
+  definition: AssessmentDefinition;
+  latest: PatientAssessmentHistoryItem | undefined;
+  status: "COMPLETED" | "IN_PROGRESS" | "NOT_STARTED";
+  compatibility: AssessmentCardCompatibility;
+};
+
+const pendingCompatibility: AssessmentCardCompatibility = {
+  questionCount: null,
+  isCompatible: null,
+  reason: null,
+  supportedQuestionCount: 0,
+  unsupportedQuestionCount: 0,
+  totalQuestionCount: 0,
+};
 
 function getLatestHistoryBySlug(items: PatientAssessmentHistoryItem[]) {
   const map = new Map<string, PatientAssessmentHistoryItem>();
@@ -73,8 +99,10 @@ export default function PatientAssessmentsListScreen() {
   const assessmentsQuery = useGetPublicAssessments();
   const historyQuery = useGetMyAssessmentsHistory({ page: 1, limit: 20 });
 
-  const assessmentItems = assessmentsQuery.data?.data.items ?? [];
-  const historyItems = historyQuery.data?.data.items ?? [];
+  const assessmentItems: AssessmentDefinition[] =
+    assessmentsQuery.data?.data.items ?? [];
+  const historyItems: PatientAssessmentHistoryItem[] =
+    historyQuery.data?.data.items ?? [];
   const latestHistoryBySlug = useMemo(
     () => getLatestHistoryBySlug(historyItems),
     [historyItems],
@@ -94,48 +122,37 @@ export default function PatientAssessmentsListScreen() {
   const detailMap = useMemo(() => {
     const map = new Map<
       string,
-      {
-        questionCount: number | null;
-        isCompatible: boolean | null;
-        reason: string | null;
-      }
+      AssessmentCardCompatibility
     >();
 
     assessmentItems.forEach((item, index) => {
-      const detail = detailQueries[index]?.data;
+      const detail = detailQueries[index]?.data as
+        | AssessmentDefinitionDetails
+        | undefined;
 
       if (!detail) {
-        map.set(item.slug, {
-          questionCount: null,
-          isCompatible: null,
-          reason: null,
-        });
+        map.set(item.slug, pendingCompatibility);
         return;
       }
 
       const compatibility = getAssessmentCompatibility(detail);
       map.set(item.slug, {
+        ...compatibility,
         questionCount: compatibility.totalQuestionCount,
-        isCompatible: compatibility.isCompatible,
-        reason: compatibility.reason,
       });
     });
 
     return map;
   }, [assessmentItems, detailQueries]);
 
-  const enrichedCards = useMemo(() => {
+  const enrichedCards = useMemo<AssessmentCard[]>(() => {
     return assessmentItems.map((item) => {
       const latest = latestHistoryBySlug.get(item.slug);
       return {
         definition: item,
         latest,
         status: mapStatus(latest?.status),
-        compatibility: detailMap.get(item.slug) ?? {
-          questionCount: null,
-          isCompatible: null,
-          reason: null,
-        },
+        compatibility: detailMap.get(item.slug) ?? pendingCompatibility,
       };
     });
   }, [assessmentItems, latestHistoryBySlug, detailMap]);

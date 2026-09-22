@@ -391,6 +391,7 @@ enum SessionAdminDecisionType {
 
 enum SessionEventType {
   SESSION_CREATED
+  RESCHEDULED
   PAYMENT_PENDING
   PAYMENT_CONFIRMED
   PRACTITIONER_ACCEPTED
@@ -496,8 +497,23 @@ enum PaymentEventType {
   PAYMENT_FAILED
   PAYMENT_CANCELLED
   PAYMENT_EXPIRED
+  PAYMENT_LATE_SUCCESS_REVIEW_REQUIRED
   REFUND_REQUESTED
   REFUND_PROCESSED
+}
+
+enum PaymentOperationalExceptionType {
+  LATE_PROVIDER_SUCCESS
+  WEBHOOK_CONFLICT
+  RECONCILIATION_ISSUE
+  UNKNOWN_PAYMENT_STATE
+}
+
+enum PaymentOperationalExceptionStatus {
+  OPEN
+  IN_REVIEW
+  RESOLVED
+  DISMISSED
 }
 
 enum RefundType {
@@ -863,6 +879,7 @@ enum LedgerAccountScope {
 
 enum JournalEntrySourceType {
   PAYMENT_CAPTURED
+  SESSION_EARNING_RECOGNIZED
   REFUND_SUCCEEDED
   PRACTITIONER_PAYOUT
 }
@@ -3277,6 +3294,7 @@ model Payment {
   coupon         Coupon?              @relation(fields: [couponId], references: [id], onDelete: SetNull)
 
   events                       PaymentEvent[]
+  operationalExceptions        PaymentOperationalException[]
   webhookReceipts              PaymentWebhookReceipt[]
   refunds                      Refund[]
   refundEvents                 RefundEvent[]
@@ -3296,6 +3314,31 @@ model Payment {
   @@index([practitionerId, status])
   @@index([provider, status, createdAt])
   @@index([currencyCode, status])
+}
+
+/// Safe, auditable back-office case record. This is operational metadata only;
+/// it never mutates payment state, wallet balances, or accounting entries.
+model PaymentOperationalException {
+  id             String                              @id @default(uuid()) @db.Uuid
+  paymentId      String                              @db.Uuid
+  type           PaymentOperationalExceptionType
+  status         PaymentOperationalExceptionStatus  @default(OPEN)
+  provider       PaymentProvider
+  ownerUserId    String?                             @db.Uuid
+  reason         String                              @db.VarChar(1000)
+  resolutionNote String?                             @db.VarChar(2000)
+  dedupeKey      String                              @unique @db.VarChar(191)
+  createdByUserId String?                            @db.Uuid
+  createdAt      DateTime                            @default(now())
+  updatedAt      DateTime                            @updatedAt
+  resolvedAt     DateTime?
+
+  payment Payment @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+
+  @@index([status, type, createdAt])
+  @@index([provider, status, createdAt])
+  @@index([paymentId, createdAt])
+  @@index([ownerUserId, status])
 }
 
 model PaymentWebhookReceipt {
@@ -3780,7 +3823,7 @@ model PractitionerSettlement {
   financialOperations    FinancialOperationIdempotency[]
   rejectedByUser         User?                           @relation("PractitionerSettlementRejectedByUser", fields: [rejectedByUserId], references: [id], onDelete: SetNull)
 
-  @@unique([batchId, practitionerId])
+  @@index([batchId, practitionerId])
   @@index([practitionerId, status])
   @@index([paidAt])
   @@index([approvedByUserId, approvedAt])

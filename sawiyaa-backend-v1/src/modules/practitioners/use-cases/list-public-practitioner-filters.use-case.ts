@@ -276,8 +276,11 @@ export class ListPublicPractitionerFiltersUseCase {
       },
       availability: {
         onlineNowSupported: true as const,
-        availableTodaySupported: false as const,
-        availableThisWeekSupported: false as const,
+        // These predicates are evaluated by the public repository against
+        // published availability windows. Keep the metadata truthful so
+        // clients can safely expose the existing filters.
+        availableTodaySupported: true as const,
+        availableThisWeekSupported: true as const,
       },
     };
   }

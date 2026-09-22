@@ -21,6 +21,7 @@ import { PractitionerRecoveryService } from '../services/practitioner-recovery.s
 import { PractitionerManualPayoutBalanceService } from '../services/practitioner-manual-payout-balance.service';
 import { RefreshPractitionerWalletService } from '../services/refresh-practitioner-wallet.service';
 import { AccountingJournalPostingService } from '../services/accounting-journal-posting.service';
+import { lockPractitionerFinance } from '../utils/lock-practitioner-finance';
 
 @Injectable()
 export class PostRefundLedgerEntriesUseCase {
@@ -68,13 +69,39 @@ export class PostRefundLedgerEntriesUseCase {
       });
     }
 
-    const breakdown = this.extractPaymentLedgerBreakdownService.extract(
-      refund.payment,
-    );
+    const paymentMetadata = (refund.payment.metadataJson ?? {}) as Record<
+      string,
+      unknown
+    >;
+    const breakdown =
+      refund.payment.commissionPlatformRatePercent != null ||
+      paymentMetadata.financialBreakdown
+        ? this.extractPaymentLedgerBreakdownService.extract(refund.payment)
+        : {
+            practitionerShareAmount: '0.00',
+            platformCommissionAmount: refund.payment.amountTotal.toFixed(2),
+          };
     const paymentTotal = this.moneyAmountService.toDecimal(
       refund.payment.amountTotal,
     );
     const refundAmount = this.moneyAmountService.toDecimal(refund.amount);
+    const refundMetadata = (refund.metadataJson ?? {}) as Record<
+      string,
+      unknown
+    >;
+    const isPackagePolicyRefund = refundMetadata.packageRefundPolicy === true;
+    if (
+      !paymentTotal.isFinite() ||
+      paymentTotal.lte(0) ||
+      (!isPackagePolicyRefund && refundAmount.lte(0)) ||
+      (isPackagePolicyRefund && refundAmount.lt(0)) ||
+      refundAmount.gt(paymentTotal) ||
+      refund.currencyCode !== refund.payment.currencyCode
+    ) {
+      throw new BadRequestException({
+        error: 'FINANCIAL_OPERATIONS_REFUND_SNAPSHOT_INVALID',
+      });
+    }
     const ratio = refundAmount.div(paymentTotal);
     const practitionerRefundAmount = this.moneyAmountService
       .toDecimal(breakdown.practitionerShareAmount)
@@ -86,6 +113,9 @@ export class PostRefundLedgerEntriesUseCase {
       .toDecimalPlaces(2);
 
     const result = await this.withTx(input.tx, async (tx) => {
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${refund.payment.id})::bigint)`;
+      if (refund.payment.practitionerId)
+        await lockPractitionerFinance(tx, refund.payment.practitionerId);
       await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${refund.id})::bigint)`;
 
       const existing = await this.ledgerRepository.findByRefundId(
@@ -93,10 +123,39 @@ export class PostRefundLedgerEntriesUseCase {
         tx,
       );
       const wasAlreadyPosted = existing.length > 0;
+      const currentRefund = await tx.refund.findUniqueOrThrow({
+        where: { id: refund.id },
+        select: { metadataJson: true },
+      });
+      const currentRefundMetadata = (currentRefund.metadataJson ?? {}) as Record<
+        string,
+        unknown
+      >;
+      if (
+        wasAlreadyPosted ||
+        currentRefundMetadata.financialReversalVersion === 2
+      ) {
+        return { items: existing, wasAlreadyPosted: true };
+      }
+      let journalRecognition = {
+        allocatedRefundAmount: '0.00',
+        practitionerSourceRefundAmount: '0.00',
+        platformRefundAmount: '0.00',
+        walletCurrency: refund.currencyCode,
+        walletRefundAmount: '0.00',
+        availableDebit: '0.00',
+        recoveryAmount: '0.00',
+      };
 
       if (!wasAlreadyPosted) {
-        const approvedReview = refund.payment.practitionerId
-          ? await tx.sessionEarningReview.findFirst({
+        // Package-policy refunds return only the unused package economics. Any
+        // approved earning for a completed package Session is legitimate and
+        // must remain untouched; the deferred package balance absorbs the
+        // refund instead of creating practitioner reversals/recoveries.
+        const approvedReviews = isPackagePolicyRefund
+          ? []
+          : refund.payment.practitionerId
+          ? await tx.sessionEarningReview.findMany({
               where: {
                 paymentId: refund.payment.id,
                 practitionerId: refund.payment.practitionerId,
@@ -108,55 +167,227 @@ export class PostRefundLedgerEntriesUseCase {
                 paymentId: true,
                 practitionerId: true,
                 approvedAt: true,
+                paymentAmount: true,
+                accountantApprovedSourceAmount: true,
+                settlementId: true,
+                ledgerEntries: {
+                  where: {
+                    entryType: LedgerEntryType.PRACTITIONER_EARNING,
+                    direction: LedgerDirection.CREDIT,
+                  },
+                  select: {
+                    amount: true,
+                    currencyCode: true,
+                    settlementId: true,
+                  },
+                },
               },
-              orderBy: [{ approvedAt: 'desc' }, { createdAt: 'desc' }, { id: 'desc' }],
+              orderBy: [
+                { approvedAt: 'desc' },
+                { createdAt: 'desc' },
+                { id: 'desc' },
+              ],
             })
+          : [];
+        const currencies = new Set(
+          approvedReviews.flatMap((review) =>
+            review.ledgerEntries.map((entry) => entry.currencyCode),
+          ),
+        );
+        if (currencies.size > 1)
+          throw new BadRequestException({
+            error: 'REFUND_REQUIRES_MULTI_CURRENCY_RECOVERY_REVIEW',
+          });
+        const approvedReview = approvedReviews.length
+          ? {
+              ...approvedReviews[0],
+              paymentAmount: approvedReviews.reduce(
+                (sum, review) => sum.add(review.paymentAmount),
+                new Prisma.Decimal(0),
+              ),
+              accountantApprovedSourceAmount: approvedReviews.reduce(
+                (sum, review) =>
+                  sum.add(review.accountantApprovedSourceAmount ?? 0),
+                new Prisma.Decimal(0),
+              ),
+            }
           : null;
+        const individualEarnings = approvedReviews.flatMap(
+          (review) => review.ledgerEntries,
+        );
+        const earning = individualEarnings.length
+          ? {
+              amount: individualEarnings.reduce(
+                (sum, entry) => sum.add(entry.amount),
+                new Prisma.Decimal(0),
+              ),
+              currencyCode: individualEarnings[0].currencyCode,
+              settlementId:
+                individualEarnings.length === 1
+                  ? individualEarnings[0].settlementId
+                  : null,
+            }
+          : null;
+        const reversalCurrency = earning?.currencyCode ?? refund.currencyCode;
+        for (const review of approvedReviews) {
+          const credited = review.ledgerEntries[0];
+          await this.accountingJournalPostingService.postSessionEarningRecognized(
+            {
+              reviewId: review.id,
+              paymentId: refund.payment.id,
+              practitionerId: review.practitionerId,
+              allocatedAmount: review.paymentAmount,
+              practitionerSourceAmount:
+                review.accountantApprovedSourceAmount ?? new Prisma.Decimal(0),
+              sourceCurrency: refund.currencyCode,
+              walletCurrency: credited?.currencyCode ?? refund.currencyCode,
+              walletCredit: credited?.amount ?? new Prisma.Decimal(0),
+              occurredAt: review.approvedAt ?? new Date(),
+              tx,
+            },
+          );
+        }
+        const prior = await tx.refund.aggregate({
+          where: {
+            paymentId: refund.payment.id,
+            status: RefundStatus.SUCCEEDED,
+            id: { not: refund.id },
+          },
+          _sum: { amount: true },
+        });
+        const priorAmount = prior._sum.amount ?? new Prisma.Decimal(0);
+        const cumulative = priorAmount.add(refundAmount);
+        if (cumulative.gt(paymentTotal))
+          throw new BadRequestException({
+            error: 'PAYMENT_REFUND_AMOUNT_EXCEEDS_REMAINING',
+          });
+        const recognizedRefund = individualEarnings.reduce(
+          (sum, entry) =>
+            sum.add(
+              entry.amount
+                .mul(cumulative)
+                .div(paymentTotal)
+                .toDecimalPlaces(2)
+                .sub(
+                  entry.amount
+                    .mul(priorAmount)
+                    .div(paymentTotal)
+                    .toDecimalPlaces(2),
+                ),
+            ),
+          new Prisma.Decimal(0),
+        );
+        const approvedSource =
+          approvedReview?.accountantApprovedSourceAmount ??
+          new Prisma.Decimal(0);
+        const sourcePractitionerReversal = approvedSource
+          .mul(cumulative)
+          .div(paymentTotal)
+          .toDecimalPlaces(2)
+          .sub(
+            approvedSource
+              .mul(priorAmount)
+              .div(paymentTotal)
+              .toDecimalPlaces(2),
+          );
+        const allocatedSource =
+          approvedReview?.paymentAmount ?? new Prisma.Decimal(0);
+        const allocatedReversal = allocatedSource
+          .mul(cumulative)
+          .div(paymentTotal)
+          .toDecimalPlaces(2)
+          .sub(
+            allocatedSource
+              .mul(priorAmount)
+              .div(paymentTotal)
+              .toDecimalPlaces(2),
+          );
+        const sourcePlatformReversal = allocatedReversal.sub(
+          sourcePractitionerReversal,
+        );
         const currentBalance =
           refund.payment.practitionerId && approvedReview
             ? await this.balanceService.getBalance({
                 practitionerId: refund.payment.practitionerId,
-                currencyCode: refund.currencyCode,
+                currencyCode: reversalCurrency,
                 tx,
               })
             : null;
         const currentPayableAmount = currentBalance
           ? new Prisma.Decimal(currentBalance.totalPayableAmount)
           : new Prisma.Decimal(0);
-        const absorbablePractitionerRefundAmount =
-          currentBalance && currentPayableAmount.lt(practitionerRefundAmount)
-            ? currentPayableAmount
-            : practitionerRefundAmount;
-        const practitionerRecoveryShortfall = practitionerRefundAmount.sub(
+        const absorbablePractitionerRefundAmount = !earning
+          ? new Prisma.Decimal(0)
+          : Prisma.Decimal.max(
+              0,
+              Prisma.Decimal.min(currentPayableAmount, recognizedRefund),
+            );
+        const practitionerRecoveryShortfall = recognizedRefund.sub(
           absorbablePractitionerRefundAmount,
         );
+        journalRecognition = {
+          allocatedRefundAmount: allocatedReversal.toFixed(2),
+          practitionerSourceRefundAmount: sourcePractitionerReversal.toFixed(2),
+          platformRefundAmount: sourcePlatformReversal.toFixed(2),
+          walletCurrency: reversalCurrency,
+          walletRefundAmount: recognizedRefund.toFixed(2),
+          availableDebit: absorbablePractitionerRefundAmount.toFixed(2),
+          recoveryAmount: practitionerRecoveryShortfall.toFixed(2),
+        };
 
+        let remainingAbsorbable = absorbablePractitionerRefundAmount;
+        const practitionerEntries = approvedReviews.flatMap((review) => {
+          const credited = review.ledgerEntries[0];
+          if (!credited) return [];
+          const entitled = credited.amount
+            .mul(cumulative)
+            .div(paymentTotal)
+            .toDecimalPlaces(2)
+            .sub(
+              credited.amount
+                .mul(priorAmount)
+                .div(paymentTotal)
+                .toDecimalPlaces(2),
+            );
+          const debit = Prisma.Decimal.min(remainingAbsorbable, entitled);
+          remainingAbsorbable = remainingAbsorbable.sub(debit);
+          return debit.gt(0)
+            ? [
+                {
+                  practitionerId: review.practitionerId,
+                  sessionId: review.sessionId,
+                  paymentId: refund.payment.id,
+                  settlementId: credited.settlementId,
+                  sessionEarningReviewId: review.id,
+                  entryType: LedgerEntryType.REFUND_PRACTITIONER_REVERSAL,
+                  direction: LedgerDirection.DEBIT,
+                  amount: debit,
+                  currencyCode: reversalCurrency,
+                  balanceBucket: WalletBalanceBucket.AVAILABLE,
+                  referenceType: 'refund',
+                  referenceId: refund.id,
+                  description:
+                    'Approved practitioner earning reversed by refund.',
+                  metadataJson: {
+                    source: 'refund-succeeded',
+                    refundId: refund.id,
+                    paymentId: refund.payment.id,
+                  },
+                },
+              ]
+            : [];
+        });
         const refundLedgerEntries = [
-          {
-            practitionerId: refund.payment.practitionerId,
-            sessionId: refund.payment.sessionId,
-            paymentId: refund.payment.id,
-            entryType: LedgerEntryType.REFUND_PRACTITIONER_REVERSAL,
-            direction: LedgerDirection.DEBIT,
-            amount: absorbablePractitionerRefundAmount,
-            currencyCode: refund.currencyCode,
-            balanceBucket: WalletBalanceBucket.AVAILABLE,
-            referenceType: 'refund',
-            referenceId: refund.id,
-            description: 'Practitioner earnings reversal from refund.',
-            metadataJson: {
-              source: 'refund-succeeded',
-              refundId: refund.id,
-              paymentId: refund.payment.id,
-            },
-          },
+          ...practitionerEntries,
           {
             practitionerId: null,
             sessionId: refund.payment.sessionId,
             paymentId: refund.payment.id,
             entryType: LedgerEntryType.REFUND_PLATFORM_REVERSAL,
             direction: LedgerDirection.DEBIT,
-            amount: platformRefundAmount,
+            amount: approvedReview
+              ? sourcePlatformReversal
+              : new Prisma.Decimal(0),
             currencyCode: refund.currencyCode,
             balanceBucket: WalletBalanceBucket.AVAILABLE,
             referenceType: 'refund',
@@ -183,13 +414,15 @@ export class PostRefundLedgerEntriesUseCase {
               : PractitionerRecoveryReasonCode.REFUND_AFTER_APPROVAL;
 
           await this.practitionerRecoveryService.createRecoveryForRefund({
-            practitionerId: refund.payment.practitionerId ?? approvedReview.practitionerId,
+            practitionerId:
+              refund.payment.practitionerId ?? approvedReview.practitionerId,
             refundId: refund.id,
             paymentId: refund.payment.id,
             sessionId: approvedReview.sessionId ?? refund.payment.sessionId,
-            sessionEarningReviewId: approvedReview.id,
+            sessionEarningReviewId:
+              approvedReviews.length === 1 ? approvedReview.id : null,
             amount: practitionerRecoveryShortfall,
-            currencyCode: refund.currencyCode,
+            currencyCode: reversalCurrency,
             reasonCode,
             internalReason: 'REFUND_REQUIRES_PRACTITIONER_RECOVERY',
             practitionerFacingNote: null,
@@ -198,7 +431,16 @@ export class PostRefundLedgerEntriesUseCase {
         }
       }
 
-      if (refund.payment.practitionerId) {
+      if (
+        refund.payment.practitionerId &&
+        (await tx.practitionerWallet.findFirst({
+          where: {
+            practitionerId: refund.payment.practitionerId,
+            status: 'ACTIVE',
+          },
+          select: { id: true },
+        }))
+      ) {
         await this.refreshPractitionerWalletService.refresh(
           refund.payment.practitionerId,
           tx,
@@ -220,7 +462,19 @@ export class PostRefundLedgerEntriesUseCase {
           practitionerRefundAmount: practitionerRefundAmount.toFixed(2),
           platformRefundAmount: platformRefundAmount.toFixed(2),
         },
+        recognition: journalRecognition,
         tx,
+      });
+
+      await tx.refund.update({
+        where: { id: refund.id },
+        data: {
+          metadataJson: {
+            ...currentRefundMetadata,
+            financialReversalVersion: 2,
+            financialReversal: journalRecognition,
+          } as Prisma.InputJsonValue,
+        },
       });
 
       return {

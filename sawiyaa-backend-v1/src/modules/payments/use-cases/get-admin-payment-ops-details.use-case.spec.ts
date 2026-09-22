@@ -83,6 +83,9 @@ describe('GetAdminPaymentOpsDetailsUseCase', () => {
         .mockReturnValue({ payment: { id: 'payment_1' } }),
     };
     const prisma = {
+      journalEntry: {
+        findMany: jest.fn().mockResolvedValue([]),
+      },
       sessionEarningReview: {
         findFirst: jest.fn().mockResolvedValue(null),
       },

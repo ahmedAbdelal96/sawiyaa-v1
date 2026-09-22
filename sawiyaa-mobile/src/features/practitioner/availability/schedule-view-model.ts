@@ -3,7 +3,7 @@ import {
   getDatePartsInTimeZone,
   normalizeIanaTimeZone,
 } from "../../../lib/time-formatting/time-formatting";
-import type { AvailabilityWeekSlot } from "./types";
+import type { AvailabilityWeekSlot, AvailabilityWeekWindowEntry } from "./types";
 import type { DayOfWeek, DurationMinutes } from "./utils";
 
 export type ScheduleDurationFilter = "all" | DurationMinutes;
@@ -84,6 +84,39 @@ export function getTodayDateInTimeZone(timeZone: string | null | undefined): str
 
 export function getTodayDayOfWeek(timeZone: string | null | undefined): DayOfWeek {
   return (getDatePartsInTimeZone(new Date(), timeZone)?.weekdayIndex ?? new Date().getDay()) as DayOfWeek;
+}
+
+/** A week can be edited when the week itself is active, even if every
+ * existing slot is protected. Slot-level protection is enforced separately. */
+export function canEditScheduleWeek(
+  week: Pick<AvailabilityWeekWindowEntry, "status" | "canCreate">,
+): boolean {
+  return week.status === "DRAFT" || week.status === "PUBLISHED" || (week.status === "NOT_SET" && week.canCreate);
+}
+
+export function isScheduleSlotStartInPast(
+  weekStartDate: string,
+  timeZone: string | null | undefined,
+  dayOfWeek: DayOfWeek,
+  startMinuteOfDay: number,
+  now: Date = new Date(),
+): boolean {
+  const localNow = getDatePartsInTimeZone(now, timeZone);
+  if (!localNow) return false;
+  const day = getWeekDays(
+    weekStartDate,
+    "en-US",
+    [localNow.year, localNow.month, localNow.day]
+      .map((part, index) => (index === 0 ? String(part) : String(part).padStart(2, "0")))
+      .join("-"),
+  ).find((entry) => entry.dayOfWeek === dayOfWeek);
+  if (!day) return false;
+  const today = [localNow.year, localNow.month, localNow.day]
+    .map((part, index) => (index === 0 ? String(part) : String(part).padStart(2, "0")))
+    .join("-");
+  if (day.date < today) return true;
+  if (day.date > today) return false;
+  return startMinuteOfDay <= localNow.minuteOfDay;
 }
 
 export function getDefaultScheduleDay(isCurrentWeek: boolean, todayDay: DayOfWeek): DayOfWeek {

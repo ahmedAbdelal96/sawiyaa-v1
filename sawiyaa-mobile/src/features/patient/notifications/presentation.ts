@@ -14,9 +14,12 @@ type PatientNotificationCopyKey =
   | "supportMessage"
   | "followUpMessage"
   | "paymentSuccess"
-  | "paymentCaptured"
   | "paymentFailed"
+  | "refundRequested"
   | "refundProcessed"
+  | "refundFailed"
+  | "packagePayment"
+  | "academyPayment"
   | "instantBookingRequest"
   | "instantBookingAccepted"
   | "instantBookingRejected"
@@ -33,10 +36,16 @@ const COPY_KEYS: Record<string, PatientNotificationCopyKey> = {
   "messages.session-message-received": "sessionMessage",
   "messages.support-message-received": "supportMessage",
   "messages.follow-up-message-received": "followUpMessage",
+  "payments.payment-succeeded": "paymentSuccess",
   "payments.payment-success": "paymentSuccess",
-  "payments.payment-captured": "paymentCaptured",
+  "payments.payment-captured": "paymentSuccess",
   "payments.payment-failed": "paymentFailed",
+  "payments.refund-requested": "refundRequested",
+  "payments.refund-succeeded": "refundProcessed",
   "payments.refund-processed": "refundProcessed",
+  "payments.refund-failed": "refundFailed",
+  "payments.package-purchase-succeeded": "packagePayment",
+  "payments.academy-payment-succeeded": "academyPayment",
   "instant-booking.request-created": "instantBookingRequest",
   "instant-booking.request-accepted": "instantBookingAccepted",
   "instant-booking.request-rejected": "instantBookingRejected",
@@ -92,8 +101,22 @@ export function resolvePatientNotificationPresentation(
     packageContext: packageContext(item, t),
   };
 
+  const amount = typeof item.payload?.amount === "string" || typeof item.payload?.amount === "number"
+    ? String(item.payload.amount)
+    : null;
+  const currencyCode = typeof item.payload?.currencyCode === "string"
+    ? item.payload.currencyCode
+    : null;
+  const financialOptions = amount && currencyCode
+    ? { ...options, amount, currencyCode }
+    : options;
+
+  const bodyKey = amount && currencyCode
+    ? `patientNotifications.feedTypes.${copyKey}AmountBody`
+    : `patientNotifications.feedTypes.${copyKey}Body`;
+
   return {
     title: t(`patientNotifications.feedTypes.${copyKey}Title`),
-    body: t(`patientNotifications.feedTypes.${copyKey}Body`, options),
+    body: t(bodyKey, financialOptions),
   };
 }

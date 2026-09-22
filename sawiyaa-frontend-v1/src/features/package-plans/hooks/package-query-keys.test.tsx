@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { packageOfferQueryKeys } from "./use-package-offers";
 import { packagePurchaseQueryKeys } from "./use-package-purchases";
+import { packagePlanQueryKeys } from "./use-package-plans";
 
 describe("package projection query identities", () => {
   it("isolates public offer reads by locale while preserving the root prefix", () => {
@@ -27,5 +28,36 @@ describe("package projection query identities", () => {
     expect(arabicDetail.slice(0, packagePurchaseQueryKeys.all.length)).toEqual(
       packagePurchaseQueryKeys.all,
     );
+  });
+
+  it("isolates practitioner discovery reads by practitioner and quote context", () => {
+    const doctorA = packagePlanQueryKeys.publicByPractitionerSlug(
+      "doctor-a",
+      { durationMinutes: 60, sessionMode: "VIDEO" },
+      "guest",
+    );
+    const doctorB = packagePlanQueryKeys.publicByPractitionerSlug(
+      "doctor-b",
+      { durationMinutes: 60, sessionMode: "VIDEO" },
+      "guest",
+    );
+    expect(doctorA).not.toEqual(doctorB);
+    expect(doctorA.slice(0, packagePlanQueryKeys.all.length)).toEqual(
+      packagePlanQueryKeys.all,
+    );
+  });
+
+  it("invalidates a changed duration as a distinct discovery quote", () => {
+    const video = packagePlanQueryKeys.publicByPractitionerSlug(
+      "doctor-a",
+      { durationMinutes: 60, sessionMode: "VIDEO" },
+      "guest",
+    );
+    const audio = packagePlanQueryKeys.publicByPractitionerSlug(
+      "doctor-a",
+      { durationMinutes: 30, sessionMode: "VIDEO" },
+      "guest",
+    );
+    expect(video).not.toEqual(audio);
   });
 });

@@ -60,7 +60,7 @@ export default function CareChatListScreen() {
   const [tab, setTab] = useState<TabFilter>("active");
 
   const query = useMyCareChatRequests({ page: 1, limit: 20 });
-  const allItems = query.data?.items ?? [];
+  const allItems: CareChatRequestItemDto[] = query.data?.items ?? [];
 
   const filtered = allItems.filter((req) => {
     if (tab === "active") return ACTIVE_STATUSES.includes(req.status);

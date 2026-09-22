@@ -15,10 +15,13 @@ import { useTheme } from "../../../../src/providers/ThemeProvider";
 import { usePatientSession } from "../../../../src/features/patient/sessions/hooks";
 import { useReconcileSessionPaymentReturn } from "../../../../src/features/patient/payments/hooks";
 import { normalizePaymentRedirectStatus } from "../../../../src/features/patient/payments/return-utils";
+import { isCanonicallyCapturedPayment } from "../../../../src/features/patient/payments/checkout-funding";
 import { trackAnalyticsEvent } from "../../../../src/lib/analytics";
+import {
+  PAYMENT_RETURN_MAX_POLL_DURATION_MS,
+  PAYMENT_RETURN_POLL_INTERVAL_MS,
+} from "../../../../src/features/patient/payments/return-polling";
 
-const POLL_INTERVAL_MS = 3_000;
-const MAX_POLL_DURATION_MS = 45_000; // Extended from 15s to allow for delayed webhook processing
 
 export default function SessionPaymentReturnScreen() {
   const router = useRouter();
@@ -66,7 +69,7 @@ export default function SessionPaymentReturnScreen() {
 
     const timeoutId = setTimeout(() => {
       setPollingActive(false);
-    }, MAX_POLL_DURATION_MS);
+    }, PAYMENT_RETURN_MAX_POLL_DURATION_MS);
 
     return () => clearTimeout(timeoutId);
   }, [shouldStartPolling]);
@@ -90,7 +93,7 @@ export default function SessionPaymentReturnScreen() {
     void sessionQuery.refetch();
     const intervalId = setInterval(() => {
       void sessionQuery.refetch();
-    }, POLL_INTERVAL_MS);
+    }, PAYMENT_RETURN_POLL_INTERVAL_MS);
 
     return () => clearInterval(intervalId);
   }, [pollingActive, sessionId, sessionQuery, sessionQuery.data?.operational]);
@@ -129,7 +132,7 @@ export default function SessionPaymentReturnScreen() {
   useEffect(() => {
     if (!sessionQuery.data) return;
     const paymentStatus = reconcileMutation.data?.item?.status;
-    if (!(paymentStatus === "CAPTURED" || paymentStatus === "AUTHORIZED")) return;
+    if (!isCanonicallyCapturedPayment(paymentStatus ?? "")) return;
     if (sessionQuery.data.operational?.timelineBucket === "PENDING") return;
 
     router.replace({
@@ -153,7 +156,7 @@ export default function SessionPaymentReturnScreen() {
     const currentIsPayable = sessionQuery.data.operational?.actions.canPay === true;
     const paymentStatus = reconcileMutation.data?.item?.status;
 
-    if ((paymentStatus === "CAPTURED" || paymentStatus === "AUTHORIZED") &&
+    if (isCanonicallyCapturedPayment(paymentStatus ?? "") &&
       sessionQuery.data.operational?.timelineBucket !== "PENDING") {
       if (trackedOutcomeRef.current !== "succeeded") {
         trackedOutcomeRef.current = "succeeded";
@@ -195,7 +198,7 @@ export default function SessionPaymentReturnScreen() {
 
   const operational = sessionQuery.data?.operational;
   const paymentStatus = reconcileMutation.data?.item?.status;
-  const isConfirmed = (paymentStatus === "CAPTURED" || paymentStatus === "AUTHORIZED") &&
+  const isConfirmed = isCanonicallyCapturedPayment(paymentStatus ?? "") &&
     operational?.timelineBucket !== "PENDING";
   const isPendingPayment = operational?.actions.canPay === true;
   const isExpired = operational?.state === "EXPIRED";

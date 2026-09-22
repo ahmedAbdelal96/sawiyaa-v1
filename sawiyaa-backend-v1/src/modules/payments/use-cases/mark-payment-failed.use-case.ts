@@ -15,7 +15,10 @@ import { OrchestrateSessionPaymentStatusService } from '../services/orchestrate-
 import { OrchestrateAcademyProgramEnrollmentPaymentStatusService } from '../services/orchestrate-academy-program-enrollment-payment-status.service';
 import { ValidatePaymentStatusTransitionService } from '../services/validate-payment-status-transition.service';
 import { ReconcilePackagePurchasePaymentUseCase } from '@modules/package-plans/use-cases/reconcile-package-purchase-payment.use-case';
-import { SecurityAuditActorType as AuditActorType, SecurityAuditSource } from '@common/security-audit/security-audit.types';
+import {
+  SecurityAuditActorType as AuditActorType,
+  SecurityAuditSource,
+} from '@common/security-audit/security-audit.types';
 
 @Injectable()
 export class MarkPaymentFailedUseCase {
@@ -52,6 +55,14 @@ export class MarkPaymentFailedUseCase {
     );
 
     const updated = await this.prisma.$transaction(async (tx) => {
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${payment.id})::bigint)`;
+      const current = await this.paymentRepository.findById(payment.id, tx);
+      if (!current) throw new NotFoundException({ error: 'PAYMENT_NOT_FOUND' });
+      this.validatePaymentStatusTransitionService.assertCanTransition(
+        current.status,
+        PaymentStatus.FAILED,
+      );
+      if (current.status === PaymentStatus.FAILED) return current;
       await this.paymentRepository.createWebhookReceipt(
         {
           provider: payment.provider,
@@ -97,6 +108,20 @@ export class MarkPaymentFailedUseCase {
         tx,
       );
 
+      if (
+        failed.paymentPurpose !== PaymentPurpose.SESSION_PACKAGE_PURCHASE &&
+        failed.paymentPurpose !== PaymentPurpose.ACADEMY_PROGRAM_ENROLLMENT &&
+        failed.amountFromWallet.gt(0)
+      ) {
+        await this.customerWalletAccountingService.releaseReservationForPayment(
+          {
+            paymentId: failed.id,
+            currencyCode: failed.currencyCode,
+            releaseReason: 'PAYMENT_FAILED',
+            tx,
+          },
+        );
+      }
       return failed;
     });
 
@@ -121,17 +146,6 @@ export class MarkPaymentFailedUseCase {
       return {
         item: this.paymentMapper.toViewModel(updated),
       };
-    }
-
-    if (
-      payment.paymentPurpose !== PaymentPurpose.ACADEMY_PROGRAM_ENROLLMENT &&
-      updated.amountFromWallet.gt(0)
-    ) {
-      await this.customerWalletAccountingService.releaseReservationForPayment({
-        paymentId: updated.id,
-        currencyCode: updated.currencyCode,
-        releaseReason: 'PAYMENT_FAILED',
-      });
     }
 
     this.logger.warn(

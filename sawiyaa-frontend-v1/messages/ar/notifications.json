@@ -97,6 +97,14 @@
       "title": "تمت عملية الدفع بنجاح",
       "subtitle": "الدفع · دفع جلسة"
     },
+    "payments-package-purchase-succeeded": {
+      "title": "اكتمل دفع الباقة",
+      "subtitle": "الدفع · باقة"
+    },
+    "payments-academy-payment-succeeded": {
+      "title": "اكتمل دفع التدريب",
+      "subtitle": "الدفع · تدريب"
+    },
     "payments-payment-failed": {
       "title": "فشلت عملية الدفع",
       "subtitle": "الدفع · دفع جلسة"

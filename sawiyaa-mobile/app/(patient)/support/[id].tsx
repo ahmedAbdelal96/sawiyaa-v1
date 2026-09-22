@@ -21,7 +21,10 @@ import {
   useAddSupportMessage,
 } from "../../../src/features/patient/support/hooks";
 import { extractApiErrorMessage } from "../../../src/lib/api";
-import type { SupportTicketStatus } from "../../../src/features/patient/support/types";
+import type {
+  SupportTicketDetailsDto,
+  SupportTicketStatus,
+} from "../../../src/features/patient/support/types";
 import { useAuth } from "../../../src/providers/AuthProvider";
 import {
   ConversationBubble,
@@ -52,7 +55,7 @@ export default function SupportTicketDetailScreen() {
   const [sendError, setSendError] = useState<string | null>(null);
   const scrollRef = useRef<ScrollView>(null);
 
-  const ticket = ticketQuery.data;
+  const ticket = ticketQuery.data as SupportTicketDetailsDto | undefined;
   const isClosed = ticket ? CLOSED_STATUSES.includes(ticket.status) : false;
   const canReply = Boolean(ticket) && !isClosed;
 

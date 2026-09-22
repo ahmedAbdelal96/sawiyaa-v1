@@ -22,7 +22,11 @@ import {
   settlementStatusLabel,
   settlementStatusTone,
 } from "../../../src/features/practitioner/finance/utils";
-import type { PractitionerSettlementItem } from "../../../src/features/practitioner/finance/types";
+import type {
+  PractitionerSettlementItem,
+  PractitionerSettlementListResponse,
+  PractitionerWalletSummary,
+} from "../../../src/features/practitioner/finance/types";
 import { useTheme } from "../../../src/providers/ThemeProvider";
 import { resolvePractitionerTone } from "../../../src/features/practitioner/ui/compact";
 
@@ -35,14 +39,24 @@ export default function PractitionerEarningsScreen() {
   const { theme } = useTheme();
   const locale = i18n.language?.startsWith("ar") ? "ar-SA" : "en-US";
   const walletQuery = usePractitionerWalletSummary();
-  const transfersQuery = usePractitionerSettlementItems({ page: 1, limit: PREVIEW_LIMIT });
-  const wallet = walletQuery.data?.item ?? null;
+  const transfersQuery = usePractitionerSettlementItems({
+    page: 1,
+    limit: PREVIEW_LIMIT,
+  });
+  const wallet = (walletQuery.data?.item ??
+    null) as PractitionerWalletSummary | null;
+  const transfers = ((
+    transfersQuery.data as PractitionerSettlementListResponse | undefined
+  )?.items ?? []) as PractitionerSettlementItem[];
 
   if (walletQuery.isLoading) {
     return (
       <Screen bg="background" testID="practitioner-earnings-screen">
         <Header title={t("practitioner.finance.product.earnings")} showBack />
-        <LoadingState fullScreen message={t("practitioner.finance.common.loading")} />
+        <LoadingState
+          fullScreen
+          message={t("practitioner.finance.common.loading")}
+        />
       </Screen>
     );
   }
@@ -72,7 +86,11 @@ export default function PractitionerEarningsScreen() {
             onPress={() => void walletQuery.refetch()}
             style={styles.headerAction}
           >
-            <Ionicons name="refresh-outline" size={22} color={theme.colors.textPrimary} />
+            <Ionicons
+              name="refresh-outline"
+              size={22}
+              color={theme.colors.textPrimary}
+            />
           </TouchableOpacity>
         }
       />
@@ -90,7 +108,12 @@ export default function PractitionerEarningsScreen() {
               t("practitioner.finance.common.currencyUnavailable"),
             )}
           </Text>
-          <View style={[styles.summaryList, { borderColor: theme.colors.borderLight }]}>
+          <View
+            style={[
+              styles.summaryList,
+              { borderColor: theme.colors.borderLight },
+            ]}
+          >
             <SummaryLine
               label={t("practitioner.finance.product.underReview")}
               value={formatMoney(
@@ -128,10 +151,15 @@ export default function PractitionerEarningsScreen() {
             </Text>
             <TouchableOpacity
               accessibilityRole="button"
-              accessibilityLabel={t("practitioner.finance.product.viewAllTransfers")}
+              accessibilityLabel={t(
+                "practitioner.finance.product.viewAllTransfers",
+              )}
               onPress={() => router.push("/(practitioner)/finance/settlements")}
             >
-              <Text weight="600" style={[styles.actionLink, { color: theme.colors.primary }]}>
+              <Text
+                weight="600"
+                style={[styles.actionLink, { color: theme.colors.primary }]}
+              >
                 {t("practitioner.finance.common.viewAll")}
               </Text>
             </TouchableOpacity>
@@ -145,9 +173,14 @@ export default function PractitionerEarningsScreen() {
               message={t("practitioner.finance.settlements.errorBody")}
               onRetry={transfersQuery.refetch}
             />
-          ) : transfersQuery.data?.items.length ? (
-            <View style={[styles.transferList, { borderTopColor: theme.colors.borderLight }]}>
-              {transfersQuery.data.items.map((item) => (
+          ) : transfers.length ? (
+            <View
+              style={[
+                styles.transferList,
+                { borderTopColor: theme.colors.borderLight },
+              ]}
+            >
+              {transfers.map((item) => (
                 <TransferRow key={item.id} item={item} locale={locale} t={t} />
               ))}
             </View>
@@ -165,7 +198,12 @@ export default function PractitionerEarningsScreen() {
 function SummaryLine({ label, value }: { label: string; value: string }) {
   const { theme } = useTheme();
   return (
-    <View style={[styles.summaryLine, { borderBottomColor: theme.colors.borderLight }]}>
+    <View
+      style={[
+        styles.summaryLine,
+        { borderBottomColor: theme.colors.borderLight },
+      ]}
+    >
       <Text color={theme.colors.textSecondary} style={styles.summaryLabel}>
         {label}
       </Text>
@@ -205,21 +243,38 @@ function TransferRow({
     <View
       accessible
       accessibilityLabel={`${t("practitioner.finance.product.transfers")}. ${amount}. ${settlementStatusLabel(item.status, t)}. ${formatDateShort(item.paidAt ?? item.failedAt ?? item.createdAt, locale)}`}
-      style={[styles.transferRow, { borderBottomColor: theme.colors.borderLight }]}
+      style={[
+        styles.transferRow,
+        { borderBottomColor: theme.colors.borderLight },
+      ]}
     >
       <View style={styles.transferCopy}>
         <Text weight="600" style={styles.transferTitle} numberOfLines={1}>
           {t("practitioner.finance.product.transfer")}
         </Text>
-        <Text color={theme.colors.textMuted} style={styles.transferMeta} numberOfLines={1}>
-          {formatDateShort(item.paidAt ?? item.failedAt ?? item.createdAt, locale)}
+        <Text
+          color={theme.colors.textMuted}
+          style={styles.transferMeta}
+          numberOfLines={1}
+        >
+          {formatDateShort(
+            item.paidAt ?? item.failedAt ?? item.createdAt,
+            locale,
+          )}
         </Text>
       </View>
       <View style={styles.transferAmountWrap}>
-        <Text weight="600" style={[styles.transferAmount, { color: palette.accent }]} numberOfLines={1}>
+        <Text
+          weight="600"
+          style={[styles.transferAmount, { color: palette.accent }]}
+          numberOfLines={1}
+        >
           {amount}
         </Text>
-        <StatusBadge label={settlementStatusLabel(item.status, t)} status={settlementStatusTone(item.status)} />
+        <StatusBadge
+          label={settlementStatusLabel(item.status, t)}
+          status={settlementStatusTone(item.status)}
+        />
       </View>
     </View>
   );

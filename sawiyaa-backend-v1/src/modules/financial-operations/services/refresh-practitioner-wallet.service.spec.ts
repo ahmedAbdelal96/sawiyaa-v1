@@ -5,6 +5,8 @@ import { RefreshPractitionerWalletService } from './refresh-practitioner-wallet.
 describe('RefreshPractitionerWalletService', () => {
   it('projects practitioner wallet balances from practitioner earning entries only', async () => {
     const prisma = {
+      $transaction: jest.fn().mockImplementation(async (fn) => fn(prisma)),
+      $executeRaw: jest.fn().mockResolvedValue(1),
       practitionerWallet: {
         findFirst: jest.fn().mockResolvedValue({
           id: 'wallet-egp',
@@ -54,7 +56,7 @@ describe('RefreshPractitionerWalletService', () => {
 
     expect(ledgerRepository.aggregatePractitionerBalances).toHaveBeenCalledWith(
       'practitioner-1',
-      undefined,
+      prisma,
     );
     expect(walletRepository.upsertWallet).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -62,7 +64,7 @@ describe('RefreshPractitionerWalletService', () => {
         currencyCode: 'EGP',
         lifetimeEarned: '70.00',
       }),
-      undefined,
+      prisma,
     );
   });
 });

@@ -5,6 +5,7 @@ import { InstantBookingPractitionerRepository } from '../repositories/instant-bo
 import { InstantBookingRequestRepository } from '../repositories/instant-booking-request.repository';
 import { ValidateInstantBookingEligibilityService } from '../services/validate-instant-booking-eligibility.service';
 import { CreateInstantBookingRequestUseCase } from './create-instant-booking-request.use-case';
+import { PrismaService } from '@common/prisma/prisma.service';
 
 describe('CreateInstantBookingRequestUseCase', () => {
   const patientRepository = {
@@ -16,10 +17,15 @@ describe('CreateInstantBookingRequestUseCase', () => {
   } as unknown as InstantBookingPractitionerRepository;
 
   const requestRepository = {
+    lockPractitionerAvailability: jest.fn(),
     markExpired: jest.fn(),
-    findConflictingPendingRequests: jest.fn(),
+    findActivePendingRequestForPractitioner: jest.fn(),
     createRequest: jest.fn(),
   } as unknown as InstantBookingRequestRepository;
+
+  const prisma = {
+    $transaction: jest.fn((callback) => callback({})),
+  } as unknown as PrismaService;
 
   const eligibilityService = {
     assertPractitionerCanReceiveInstantBooking: jest.fn(),
@@ -41,6 +47,7 @@ describe('CreateInstantBookingRequestUseCase', () => {
   } as unknown as InstantBookingMapper;
 
   const useCase = new CreateInstantBookingRequestUseCase(
+    prisma,
     patientRepository,
     practitionerRepository,
     requestRepository,
@@ -63,9 +70,7 @@ describe('CreateInstantBookingRequestUseCase', () => {
       instantBookingPrice30Usd: '24.00',
       instantBookingPrice60Usd: '42.00',
     });
-    (requestRepository.findConflictingPendingRequests as jest.Mock).mockResolvedValue(
-      [],
-    );
+    (requestRepository.findActivePendingRequestForPractitioner as jest.Mock).mockResolvedValue(null);
     (requestRepository.createRequest as jest.Mock).mockImplementation(async (input) => ({
       id: 'request-1',
       requestedDurationMinutes: input.requestedDurationMinutes,
@@ -103,6 +108,7 @@ describe('CreateInstantBookingRequestUseCase', () => {
           },
         }),
       }),
+      expect.anything(),
     );
 
     expect(result.item.id).toBe('request-1');
@@ -124,6 +130,31 @@ describe('CreateInstantBookingRequestUseCase', () => {
     });
   });
 
+  it('uses the patient country when the request country is unavailable', async () => {
+    (patientRepository.findByUserId as jest.Mock).mockResolvedValueOnce({
+      id: 'patient-1',
+      country: { isoCode: 'EG' },
+    });
+
+    await useCase.execute({
+      userId: 'user-1',
+      locale: 'ar',
+      practitionerSlug: 'dr-youssef',
+      durationMinutes: 30,
+      sessionMode: SessionMode.VIDEO,
+      countryIsoCode: null,
+    });
+
+    expect(requestRepository.createRequest).toHaveBeenCalledWith(
+      expect.objectContaining({
+        metadataJson: expect.objectContaining({
+          selectedMoney: { amount: '410.00', currencyCode: 'EGP' },
+        }),
+      }),
+      expect.anything(),
+    );
+  });
+
   it('bubbles eligibility rejection without creating a request', async () => {
     (eligibilityService.assertPractitionerCanReceiveInstantBooking as jest.Mock).mockRejectedValueOnce(
       new Error('not-available'),
@@ -139,6 +170,25 @@ describe('CreateInstantBookingRequestUseCase', () => {
       }),
     ).rejects.toThrow('not-available');
 
+    expect(requestRepository.createRequest).not.toHaveBeenCalled();
+  });
+
+  it('rejects a second active request for the same practitioner', async () => {
+    (requestRepository.findActivePendingRequestForPractitioner as jest.Mock).mockResolvedValueOnce({
+      id: 'existing-request',
+    });
+
+    await expect(
+      useCase.execute({
+        userId: 'user-1',
+        locale: 'ar',
+        practitionerSlug: 'dr-youssef',
+        durationMinutes: 30,
+        sessionMode: SessionMode.VIDEO,
+      }),
+    ).rejects.toMatchObject({
+      response: { error: 'INSTANT_BOOKING_PRACTITIONER_BUSY' },
+    });
     expect(requestRepository.createRequest).not.toHaveBeenCalled();
   });
 });

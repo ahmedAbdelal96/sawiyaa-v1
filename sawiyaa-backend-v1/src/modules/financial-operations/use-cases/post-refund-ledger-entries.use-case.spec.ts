@@ -12,15 +12,20 @@ describe('PostRefundLedgerEntriesUseCase', () => {
       lastPayoutAt?: string | null;
     } | null;
   }) {
+    const approvedReview = input && 'approvedReview' in input ? input.approvedReview : { id: 'review_1', sessionId: 'session_1', practitionerId: 'pr_1' };
+    if (approvedReview) {
+      approvedReview.accountantApprovedSourceAmount = new Prisma.Decimal('120');
+      approvedReview.paymentAmount = new Prisma.Decimal('200');
+      approvedReview.ledgerEntries = [{ amount: new Prisma.Decimal('120'), currencyCode: 'USD', settlementId: 'settlement_1' }];
+    }
+    const tx = {
+      $executeRaw: jest.fn().mockResolvedValue(1),
+      sessionEarningReview: { findMany: jest.fn().mockResolvedValue(approvedReview ? [approvedReview] : []) },
+      refund: { findUniqueOrThrow: jest.fn().mockResolvedValue({ metadataJson: {} }), update: jest.fn().mockResolvedValue({}), aggregate: jest.fn().mockResolvedValue({ _sum: { amount: new Prisma.Decimal(0) } }) },
+      practitionerWallet: { findFirst: jest.fn().mockResolvedValue({ id: 'wallet_1' }) },
+    };
     const prisma = {
-      $transaction: jest.fn().mockImplementation(async (fn) =>
-        fn({
-          $executeRaw: jest.fn().mockResolvedValue(undefined),
-          sessionEarningReview: {
-            findFirst: jest.fn().mockResolvedValue(input?.approvedReview ?? null),
-          },
-        }),
-      ),
+      $transaction: jest.fn().mockImplementation(async (fn) => fn(tx)),
     };
     const financialOperationsPaymentRepository = {
       findRefundForPosting: jest.fn().mockResolvedValue(
@@ -90,6 +95,7 @@ describe('PostRefundLedgerEntriesUseCase', () => {
       },
     };
     const accountingJournalPostingService = {
+      postSessionEarningRecognized: jest.fn().mockResolvedValue(undefined),
       postRefundSucceeded: jest.fn().mockResolvedValue({}),
     };
 
@@ -107,6 +113,7 @@ describe('PostRefundLedgerEntriesUseCase', () => {
 
     return {
       useCase,
+      tx,
       prisma,
       financialOperationsPaymentRepository,
       ledgerRepository,
@@ -147,10 +154,10 @@ describe('PostRefundLedgerEntriesUseCase', () => {
     ).not.toHaveBeenCalled();
     expect(
       setup.refreshPractitionerWalletService.refresh,
-    ).toHaveBeenCalledTimes(1);
+    ).not.toHaveBeenCalled();
     expect(
       setup.accountingJournalPostingService.postRefundSucceeded,
-    ).toHaveBeenCalledTimes(1);
+    ).not.toHaveBeenCalled();
     expect(setup.balanceService.getBalance).toHaveBeenCalledTimes(0);
     expect(
       setup.practitionerRecoveryService.createRecoveryForRefund,
@@ -199,6 +206,15 @@ describe('PostRefundLedgerEntriesUseCase', () => {
     );
   });
 
+
+  it('does not reverse unearned money or create a recovery before approval', async () => {
+    const setup = buildUseCase({ approvedReview: null });
+    await setup.useCase.execute({ refundId: 'refund_1' });
+    expect(setup.ledgerRepository.createManyLedgerEntries).not.toHaveBeenCalled();
+    expect(setup.practitionerRecoveryService.createRecoveryForRefund).not.toHaveBeenCalled();
+    expect(setup.balanceService.getBalance).not.toHaveBeenCalled();
+  });
+
   it('rejects non-succeeded refund posting', async () => {
     const setup = buildUseCase({
       refund: {
@@ -225,12 +241,7 @@ describe('PostRefundLedgerEntriesUseCase', () => {
 
   it('uses the provided transaction when one is supplied', async () => {
     const setup = buildUseCase();
-    const tx = {
-      $executeRaw: jest.fn().mockResolvedValue(undefined),
-      sessionEarningReview: {
-        findFirst: jest.fn().mockResolvedValue(null),
-      },
-    } as never;
+    const tx = setup.tx as never;
 
     await setup.useCase.execute({ refundId: 'refund_1', tx });
 

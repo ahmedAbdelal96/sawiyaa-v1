@@ -87,7 +87,7 @@ export class GeneralChatAvailabilityService {
         now,
       });
       return {
-        canRead: true,
+        canRead: sessionAvailability.canRead,
         canSend: sessionAvailability.canSend,
         readOnly: !sessionAvailability.canSend,
         reason: sessionAvailability.reason,

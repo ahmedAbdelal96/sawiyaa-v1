@@ -4,6 +4,7 @@ import {
   ArrowLeft,
   BadgeCheck,
   BriefcaseBusiness,
+  Calendar,
   Globe,
   MapPin,
   MessageSquare,
@@ -34,6 +35,7 @@ export default async function ProfileHeader({
   languageLabels,
   backHref = "/practitioners",
   showBackLink = true,
+  showBookingCta = false,
   messageHref = null,
 }: Props) {
   const [t, locale] = await Promise.all([
@@ -52,8 +54,6 @@ export default async function ProfileHeader({
 
   const displayReviewCount = typeof p.reviewCount === "number" ? p.reviewCount : 0;
   const hasRating = hasPublicPractitionerRating(p.rating, displayReviewCount);
-
-  const resolvedMessageHref = messageHref ?? `/patient/care-chat?practitionerSlug=${p.slug}`;
 
   return (
     <div className="space-y-3">
@@ -83,20 +83,30 @@ export default async function ProfileHeader({
                 className="h-full w-full rounded-full object-cover"
               />
               {p.isVerified ? (
-                <span className={`absolute bottom-0 inline-flex h-4 min-w-4 items-center justify-center rounded-full border border-white bg-primary px-0.5 text-white ${isAr ? "start-0" : "end-0"}`}>
-                  <BadgeCheck size={9} />
+                <span
+                  role="img"
+                  aria-label={t("header.verifiedExplanation")}
+                  title={`${t("header.verified")}: ${t("header.verifiedExplanation")}`}
+                  className={`absolute bottom-0 inline-flex h-4 min-w-4 items-center justify-center rounded-full border border-white bg-primary px-0.5 text-white ${isAr ? "start-0" : "end-0"}`}
+                >
+                  <BadgeCheck size={9} aria-hidden="true" />
                 </span>
               ) : null}
             </div>
 
             <div className="min-w-0 space-y-1">
               <div className="flex flex-wrap items-center gap-2">
-                <h1 className="text-lg sm:text-xl font-bold tracking-tight text-text-primary dark:text-white/95 truncate">
+                <h1 className="text-lg sm:text-xl font-bold tracking-tight text-text-primary dark:text-white/95 break-words">
                   {displayName}
                 </h1>
                 {p.isVerified ? (
-                  <span className="inline-flex items-center gap-1 rounded-full bg-primary-light px-2 py-0.5 text-[10px] font-semibold text-text-brand dark:bg-primary/15">
-                    <BadgeCheck size={11} className="text-primary" />
+                  <span
+                    role="img"
+                    aria-label={t("header.verifiedExplanation")}
+                    title={t("header.verifiedExplanation")}
+                    className="inline-flex items-center gap-1 rounded-full bg-primary-light px-2 py-0.5 text-[10px] font-semibold text-text-brand dark:bg-primary/15"
+                  >
+                    <BadgeCheck size={11} className="text-primary" aria-hidden="true" />
                     {t("header.verified")}
                   </span>
                 ) : null}
@@ -135,13 +145,25 @@ export default async function ProfileHeader({
 
           {/* Action CTAs & Quick Specialties */}
           <div className="flex flex-wrap items-center gap-2 sm:justify-end">
-            <Link
-              href={resolvedMessageHref as never}
-              className="sawiyaa-btn-press inline-flex items-center justify-center gap-1.5 rounded-xl border border-primary/20 bg-primary/10 px-3.5 py-2 text-xs font-bold text-primary transition hover:bg-primary hover:text-white shadow-xs cursor-pointer dark:bg-primary/20 dark:text-primary-light"
-            >
-              <MessageSquare size={14} />
-              <span>{t("cta.messagePractitioner")}</span>
-            </Link>
+            {messageHref ? (
+              <Link
+                href={messageHref as never}
+                className="sawiyaa-btn-press inline-flex items-center justify-center gap-1.5 rounded-xl border border-primary/20 bg-primary/10 px-3.5 py-2 text-xs font-bold text-primary transition hover:bg-primary hover:text-white shadow-xs cursor-pointer dark:bg-primary/20 dark:text-primary-light"
+              >
+                <MessageSquare size={14} />
+                <span>{t("cta.messagePractitioner")}</span>
+              </Link>
+            ) : null}
+
+            {showBookingCta ? (
+              <a
+                href="#weekly-availability"
+                className="sawiyaa-btn-press inline-flex items-center justify-center gap-1.5 rounded-xl bg-primary px-3.5 py-2 text-xs font-bold text-white shadow-xs transition hover:bg-primary/90"
+              >
+                <Calendar size={14} />
+                <span>{t("cta.bookSession")}</span>
+              </a>
+            ) : null}
 
             <div className="hidden sm:flex flex-wrap gap-1">
               {primarySpecialties.map((specialty) => (
@@ -179,12 +201,10 @@ export default async function ProfileHeader({
           </div>
 
           {sessionPrices.length > 0 ? (
-            sessionPrices.slice(0, 2).map((price, idx) => (
+            sessionPrices.slice(0, 2).map((price) => (
               <div
                 key={price.duration}
-                className={`flex items-center justify-between px-2 ${
-                  idx > 0 || true ? "border-s border-border-light/50 dark:border-white/10" : ""
-                }`}
+                className="flex items-center justify-between border-s border-border-light/50 px-2 dark:border-white/10"
               >
                 <div>
                   <p className="text-[10px] text-text-muted font-medium">

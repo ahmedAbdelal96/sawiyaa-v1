@@ -17,6 +17,7 @@ describe('AcceptInstantBookingRequestUseCase', () => {
   } as unknown as InstantBookingPractitionerRepository;
 
   const requestRepository = {
+    lockPractitionerAvailability: jest.fn(),
     markExpired: jest.fn(),
     findById: jest.fn(),
     claimPendingRequestForAcceptance: jest.fn(),
@@ -154,6 +155,7 @@ describe('AcceptInstantBookingRequestUseCase', () => {
         createdSessionId: acceptedRequest.linkedSessionId,
       },
     );
+    (requestRepository.lockPractitionerAvailability as jest.Mock).mockResolvedValue(1);
     expect(result.item).toBe(acceptedRequest);
   });
 
@@ -221,5 +223,25 @@ describe('AcceptInstantBookingRequestUseCase', () => {
     expect(JSON.stringify((error as ConflictException).getResponse())).not.toContain(
       'Session_patient_time_no_overlap_excl',
     );
+  });
+
+  it('does not create a session when the practitioner becomes busy before acceptance', async () => {
+    (eligibilityService.assertPractitionerCanReceiveInstantBooking as jest.Mock).mockRejectedValueOnce(
+      new ConflictException({
+        error: 'INSTANT_BOOKING_PRACTITIONER_BUSY',
+      }),
+    );
+
+    await expect(
+      useCase.execute({
+        userId: practitioner.userId,
+        locale: 'ar',
+        requestId: pendingRequest.id,
+      }),
+    ).rejects.toMatchObject({
+      response: { error: 'INSTANT_BOOKING_PRACTITIONER_BUSY' },
+    });
+    expect(createSessionService.createFromAcceptedRequest).not.toHaveBeenCalled();
+    expect(requestRepository.lockPractitionerAvailability).toHaveBeenCalled();
   });
 });

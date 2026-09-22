@@ -25,6 +25,7 @@ function resolveSessionChatReason(status: SessionStatus): GeneralChatAvailabilit
       return GENERAL_CHAT_AVAILABILITY_REASONS.allowed;
     case SessionStatus.COMPLETED:
     case SessionStatus.AWAITING_COMPLETION_CONFIRMATION:
+    case SessionStatus.AWAITING_ADMIN_RESOLUTION:
     case SessionStatus.PATIENT_NO_SHOW:
     case SessionStatus.PRACTITIONER_NO_SHOW:
     case SessionStatus.BOTH_NO_SHOW:

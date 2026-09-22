@@ -87,7 +87,7 @@ export class CreatePackagePurchaseUseCase {
     durationMinutes: 30 | 60;
     sessionMode: SessionMode;
     requestCountryIsoCode?: string | null;
-    selectedSessionSlots: Array<{
+    selectedSessionSlots?: Array<{
       scheduledStartAt: string;
     }>;
   }): Promise<PatientPackagePurchaseResultViewModel> {
@@ -175,6 +175,7 @@ export class CreatePackagePurchaseUseCase {
 
     try {
       const created = await this.prisma.$transaction(async (tx) => {
+        const selectedSessionSlots = input.selectedSessionSlots ?? [];
         const validatedSlots =
           await this.validatePackagePurchaseSlotsService.validate({
             practitionerId: practitioner.id,
@@ -183,7 +184,7 @@ export class CreatePackagePurchaseUseCase {
             durationMinutes: input.durationMinutes,
             sessionMode: input.sessionMode,
             expectedSlotCount: packagePlan.sessionCount,
-            selectedSessionSlots: input.selectedSessionSlots,
+            selectedSessionSlots,
             tx,
           });
 
@@ -227,7 +228,9 @@ export class CreatePackagePurchaseUseCase {
             sessionDurationMinutesSnapshot: input.durationMinutes,
             sessionModeSnapshot: input.sessionMode,
             schedulePolicySnapshot:
-              PackageSchedulePolicy.REQUIRE_ALL_SESSIONS_AT_PURCHASE,
+              validatedSlots.slots.length === packagePlan.sessionCount
+                ? PackageSchedulePolicy.REQUIRE_ALL_SESSIONS_AT_PURCHASE
+                : PackageSchedulePolicy.ALLOW_SCHEDULE_LATER,
             priceEgpSnapshot: quote.baseSessionPriceEgp ?? null,
             priceUsdSnapshot: quote.baseSessionPriceUsd ?? null,
             selectedCurrencyCode: quote.selectedCurrencyCode,

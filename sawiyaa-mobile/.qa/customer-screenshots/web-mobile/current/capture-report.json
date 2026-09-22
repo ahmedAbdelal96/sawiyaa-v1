@@ -1,0 +1,311 @@
+{
+  "mode": "Expo Web / 390x844 / Arabic RTL / fixture-based",
+  "results": [
+    {
+      "file": "01-home-ar.png",
+      "desc": "Customer Home",
+      "route": "/",
+      "assert": [
+        "patient-home-screen",
+        "أحمد"
+      ],
+      "result": "PASS",
+      "actualRoute": "/"
+    },
+    {
+      "file": "02-discovery-ar.png",
+      "desc": "Discovery Listing",
+      "route": "/discovery",
+      "assert": [
+        "اكتشف",
+        "عرض الملف والحجز"
+      ],
+      "result": "PASS",
+      "actualRoute": "/discovery"
+    },
+    {
+      "file": "03-discovery-filters-ar.png",
+      "desc": "Discovery Filters",
+      "route": "/discovery/filters",
+      "assert": [
+        "الفلاتر",
+        "التخصص"
+      ],
+      "result": "PASS",
+      "actualRoute": "/discovery/filters"
+    },
+    {
+      "file": "04-practitioner-profile-ar.png",
+      "desc": "Practitioner Profile",
+      "route": "/discovery/dr-ahmed-fayed",
+      "assert": [
+        "ملف المختص",
+        "رسوم الجلسات الفردية"
+      ],
+      "result": "PASS",
+      "actualRoute": "/discovery/dr-ahmed-fayed"
+    },
+    {
+      "file": "05-booking-select-time-ar.png",
+      "desc": "Booking Duration",
+      "route": "/sessions/duration?slug=dr-ahmed-fayed",
+      "assert": [
+        "patient-booking-duration-screen",
+        "اختر مدة الجلسة"
+      ],
+      "result": "PASS",
+      "actualRoute": "/sessions/duration?slug=dr-ahmed-fayed&practitionerName=%D8%AF.+%D8%A3%D8%AD%D9%85%D8%AF+%D9%81%D8%A7%D9%8A%D8%AF&practitionerTitle=%D8%A7%D8%B3%D8%AA%D8%B4%D8%A7%D8%B1%D9%8A+%D8%A7%D9%84%D8%B7%D8%A8+%D8%A7%D9%84%D9%86%D9%81%D8%B3%D9%8A+%D9%88%D8%B9%D9%84%D8%A7%D8%AC+%D8%A7%D9%84%D8%A5%D8%AF%D9%85%D8%A7%D9%86&practitionerAvatarUrl=https%3A%2F%2Fimages.unsplash.com%2Fphoto-1622253692010-333f2da6031d%3Fw%3D300"
+    },
+    {
+      "file": "06-booking-confirm-ar.png",
+      "desc": "Booking Time Selection",
+      "route": "/sessions/select-time?slug=dr-ahmed-fayed&durationMinutes=30",
+      "assert": [
+        "اختر موعد الجلسة",
+        "اختر التاريخ والوقت للجلسة"
+      ],
+      "result": "PASS",
+      "actualRoute": "/sessions/select-time?slug=dr-ahmed-fayed&durationMinutes=30&practitionerName=%D8%AF.+%D8%A3%D8%AD%D9%85%D8%AF+%D9%81%D8%A7%D9%8A%D8%AF&practitionerTitle=%D8%A7%D8%B3%D8%AA%D8%B4%D8%A7%D8%B1%D9%8A+%D8%A7%D9%84%D8%B7%D8%A8+%D8%A7%D9%84%D9%86%D9%81%D8%B3%D9%8A+%D9%88%D8%B9%D9%84%D8%A7%D8%AC+%D8%A7%D9%84%D8%A5%D8%AF%D9%85%D8%A7%D9%86&practitionerAvatarUrl=https%3A%2F%2Fimages.unsplash.com%2Fphoto-1622253692010-333f2da6031d%3Fw%3D300"
+    },
+    {
+      "file": "07-checkout-ar.png",
+      "desc": "Session Checkout",
+      "route": "/sessions/sess-pay-2/pay",
+      "assert": [
+        "مراجعة الدفع"
+      ],
+      "result": "PASS",
+      "actualRoute": "/sessions/sess-pay-2/pay"
+    },
+    {
+      "file": "08-checkout-wallet-ar.png",
+      "desc": "Checkout + Wallet",
+      "route": "/sessions/sess-pay-2/pay",
+      "assert": [
+        "مراجعة الدفع",
+        "المدفوع من المحفظة",
+        "المتبقي عبر بوابة الدفع",
+        "600 جنيه مصري"
+      ],
+      "result": "PASS",
+      "actualRoute": "/sessions/sess-pay-2/pay"
+    },
+    {
+      "file": "09-instant-booking-ar.png",
+      "desc": "Instant Booking",
+      "route": "/instant-booking",
+      "assert": [
+        "حجز فوري مع معالج متاح الآن",
+        "المعالجون المتاحون الآن"
+      ],
+      "result": "PASS",
+      "actualRoute": "/instant-booking"
+    },
+    {
+      "file": "10-sessions-ar.png",
+      "desc": "Customer Sessions List",
+      "route": "/sessions",
+      "assert": [
+        "الجلسات",
+        "تفاصيل الجلسة"
+      ],
+      "result": "PASS",
+      "actualRoute": "/sessions"
+    },
+    {
+      "file": "11-session-detail-ar.png",
+      "desc": "Session Detail",
+      "route": "/sessions/sess-hist-3",
+      "assert": [
+        "تفاصيل الجلسة",
+        "مكتملة"
+      ],
+      "result": "PASS",
+      "actualRoute": "/sessions/sess-hist-3"
+    },
+    {
+      "file": "12-messages-inbox-ar.png",
+      "desc": "Messages Inbox",
+      "route": "/messages",
+      "assert": [
+        "الرسائل",
+        "د. أحمد فايد"
+      ],
+      "result": "PASS",
+      "actualRoute": "/messages"
+    },
+    {
+      "file": "13-message-thread-ar.png",
+      "desc": "Message Thread",
+      "route": "/messages/conv-1",
+      "assert": [
+        "د. أحمد فايد",
+        "أهلاً"
+      ],
+      "result": "PASS",
+      "actualRoute": "/messages/conv-1"
+    },
+    {
+      "file": "14-payments-ar.png",
+      "desc": "Wallet Overview",
+      "route": "/payments",
+      "assert": [
+        "المحفظة",
+        "الرصيد المتاح"
+      ],
+      "result": "PASS",
+      "actualRoute": "/payments"
+    },
+    {
+      "file": "15-wallet-ar.png",
+      "desc": "Wallet Transactions",
+      "route": "/payments/transactions",
+      "assert": [
+        "المعاملات",
+        "الإيداعات"
+      ],
+      "result": "PASS",
+      "actualRoute": "/payments/transactions"
+    },
+    {
+      "file": "16-notifications-ar.png",
+      "desc": "Notifications",
+      "route": "/notifications",
+      "assert": [
+        "الإشعارات",
+        "إشعار"
+      ],
+      "result": "PASS",
+      "actualRoute": "/notifications"
+    },
+    {
+      "file": "17-support-ar.png",
+      "desc": "Support Request",
+      "route": "/support",
+      "assert": [
+        "راسل الدعم",
+        "إرسال الطلب"
+      ],
+      "result": "PASS",
+      "actualRoute": "/support/new?returnTo=%2F%28patient%29%2Fmessages%3Ftab%3Dsupport"
+    },
+    {
+      "file": "18-profile-ar.png",
+      "desc": "Patient Profile",
+      "route": "/profile",
+      "assert": [
+        "المعلومات الشخصية",
+        "أحمد"
+      ],
+      "result": "PASS",
+      "actualRoute": "/profile-details"
+    },
+    {
+      "file": "19-settings-ar.png",
+      "desc": "Settings & Preferences",
+      "route": "/profile-preferences",
+      "assert": [
+        "الإعدادات",
+        "اللغة"
+      ],
+      "result": "PASS",
+      "actualRoute": "/profile"
+    }
+  ],
+  "consoleWarnings": [
+    "\"shadow*\" style props are deprecated. Use \"boxShadow\".",
+    "Invalid style property of \"direction\". Did you mean \"writingDirection\"?",
+    "Invalid style property of \"direction\". Did you mean \"writingDirection\"?",
+    "props.pointerEvents is deprecated. Use style.pointerEvents",
+    "\"shadow*\" style props are deprecated. Use \"boxShadow\".",
+    "Invalid style property of \"direction\". Did you mean \"writingDirection\"?",
+    "Invalid style property of \"direction\". Did you mean \"writingDirection\"?",
+    "props.pointerEvents is deprecated. Use style.pointerEvents",
+    "\"shadow*\" style props are deprecated. Use \"boxShadow\".",
+    "Invalid style property of \"direction\". Did you mean \"writingDirection\"?",
+    "Invalid style property of \"direction\". Did you mean \"writingDirection\"?",
+    "props.pointerEvents is deprecated. Use style.pointerEvents",
+    "\"shadow*\" style props are deprecated. Use \"boxShadow\".",
+    "Invalid style property of \"direction\". Did you mean \"writingDirection\"?",
+    "Invalid style property of \"direction\". Did you mean \"writingDirection\"?",
+    "props.pointerEvents is deprecated. Use style.pointerEvents",
+    "\"shadow*\" style props are deprecated. Use \"boxShadow\".",
+    "Invalid style property of \"direction\". Did you mean \"writingDirection\"?",
+    "Invalid style property of \"direction\". Did you mean \"writingDirection\"?",
+    "props.pointerEvents is deprecated. Use style.pointerEvents",
+    "\"shadow*\" style props are deprecated. Use \"boxShadow\".",
+    "Invalid style property of \"direction\". Did you mean \"writingDirection\"?",
+    "Invalid style property of \"direction\". Did you mean \"writingDirection\"?",
+    "props.pointerEvents is deprecated. Use style.pointerEvents",
+    "WebSocket connection to 'ws://localhost:7000/socket.io/?EIO=4&transport=websocket' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED",
+    "\"shadow*\" style props are deprecated. Use \"boxShadow\".",
+    "Invalid style property of \"direction\". Did you mean \"writingDirection\"?",
+    "Invalid style property of \"direction\". Did you mean \"writingDirection\"?",
+    "props.pointerEvents is deprecated. Use style.pointerEvents",
+    "WebSocket connection to 'ws://localhost:7000/socket.io/?EIO=4&transport=websocket' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED",
+    "\"shadow*\" style props are deprecated. Use \"boxShadow\".",
+    "Invalid style property of \"direction\". Did you mean \"writingDirection\"?",
+    "Invalid style property of \"direction\". Did you mean \"writingDirection\"?",
+    "props.pointerEvents is deprecated. Use style.pointerEvents",
+    "WebSocket connection to 'ws://localhost:7000/socket.io/?EIO=4&transport=websocket' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED",
+    "\"shadow*\" style props are deprecated. Use \"boxShadow\".",
+    "Invalid style property of \"direction\". Did you mean \"writingDirection\"?",
+    "Invalid style property of \"direction\". Did you mean \"writingDirection\"?",
+    "props.pointerEvents is deprecated. Use style.pointerEvents",
+    "WebSocket connection to 'ws://localhost:7000/socket.io/?EIO=4&transport=websocket' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED",
+    "\"shadow*\" style props are deprecated. Use \"boxShadow\".",
+    "Invalid style property of \"direction\". Did you mean \"writingDirection\"?",
+    "Invalid style property of \"direction\". Did you mean \"writingDirection\"?",
+    "props.pointerEvents is deprecated. Use style.pointerEvents",
+    "WebSocket connection to 'ws://localhost:7000/socket.io/?EIO=4&transport=websocket' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED",
+    "\"shadow*\" style props are deprecated. Use \"boxShadow\".",
+    "Invalid style property of \"direction\". Did you mean \"writingDirection\"?",
+    "Invalid style property of \"direction\". Did you mean \"writingDirection\"?",
+    "props.pointerEvents is deprecated. Use style.pointerEvents",
+    "WebSocket connection to 'ws://localhost:7000/socket.io/?EIO=4&transport=websocket' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED",
+    "\"shadow*\" style props are deprecated. Use \"boxShadow\".",
+    "Invalid style property of \"direction\". Did you mean \"writingDirection\"?",
+    "Invalid style property of \"direction\". Did you mean \"writingDirection\"?",
+    "props.pointerEvents is deprecated. Use style.pointerEvents",
+    "\"shadow*\" style props are deprecated. Use \"boxShadow\".",
+    "Invalid style property of \"direction\". Did you mean \"writingDirection\"?",
+    "Invalid style property of \"direction\". Did you mean \"writingDirection\"?",
+    "props.pointerEvents is deprecated. Use style.pointerEvents",
+    "\"shadow*\" style props are deprecated. Use \"boxShadow\".",
+    "Invalid style property of \"direction\". Did you mean \"writingDirection\"?",
+    "Invalid style property of \"direction\". Did you mean \"writingDirection\"?",
+    "props.pointerEvents is deprecated. Use style.pointerEvents",
+    "Animated: `useNativeDriver` is not supported because the native animated module is missing. Falling back to JS-based animation. To resolve this, add `RCTAnimation` module to this app, or remove `useNativeDriver`. Make sure to run `bundle exec pod install` first. Read more about autolinking: https://github.com/react-native-community/cli/blob/master/docs/autolinking.md",
+    "\"shadow*\" style props are deprecated. Use \"boxShadow\".",
+    "Invalid style property of \"direction\". Did you mean \"writingDirection\"?",
+    "Invalid style property of \"direction\". Did you mean \"writingDirection\"?",
+    "props.pointerEvents is deprecated. Use style.pointerEvents",
+    "Animated: `useNativeDriver` is not supported because the native animated module is missing. Falling back to JS-based animation. To resolve this, add `RCTAnimation` module to this app, or remove `useNativeDriver`. Make sure to run `bundle exec pod install` first. Read more about autolinking: https://github.com/react-native-community/cli/blob/master/docs/autolinking.md",
+    "\"shadow*\" style props are deprecated. Use \"boxShadow\".",
+    "Invalid style property of \"direction\". Did you mean \"writingDirection\"?",
+    "Invalid style property of \"direction\". Did you mean \"writingDirection\"?",
+    "props.pointerEvents is deprecated. Use style.pointerEvents",
+    "\"shadow*\" style props are deprecated. Use \"boxShadow\".",
+    "Invalid style property of \"direction\". Did you mean \"writingDirection\"?",
+    "Invalid style property of \"direction\". Did you mean \"writingDirection\"?",
+    "props.pointerEvents is deprecated. Use style.pointerEvents",
+    "\"shadow*\" style props are deprecated. Use \"boxShadow\".",
+    "Invalid style property of \"direction\". Did you mean \"writingDirection\"?",
+    "Invalid style property of \"direction\". Did you mean \"writingDirection\"?",
+    "props.pointerEvents is deprecated. Use style.pointerEvents",
+    "Animated: `useNativeDriver` is not supported because the native animated module is missing. Falling back to JS-based animation. To resolve this, add `RCTAnimation` module to this app, or remove `useNativeDriver`. Make sure to run `bundle exec pod install` first. Read more about autolinking: https://github.com/react-native-community/cli/blob/master/docs/autolinking.md",
+    "\"shadow*\" style props are deprecated. Use \"boxShadow\".",
+    "Invalid style property of \"direction\". Did you mean \"writingDirection\"?",
+    "Invalid style property of \"direction\". Did you mean \"writingDirection\"?",
+    "props.pointerEvents is deprecated. Use style.pointerEvents",
+    "Animated: `useNativeDriver` is not supported because the native animated module is missing. Falling back to JS-based animation. To resolve this, add `RCTAnimation` module to this app, or remove `useNativeDriver`. Make sure to run `bundle exec pod install` first. Read more about autolinking: https://github.com/react-native-community/cli/blob/master/docs/autolinking.md",
+    "\"shadow*\" style props are deprecated. Use \"boxShadow\".",
+    "Invalid style property of \"direction\". Did you mean \"writingDirection\"?",
+    "Invalid style property of \"direction\". Did you mean \"writingDirection\"?",
+    "props.pointerEvents is deprecated. Use style.pointerEvents",
+    "\"shadow*\" style props are deprecated. Use \"boxShadow\".",
+    "Invalid style property of \"direction\". Did you mean \"writingDirection\"?",
+    "Invalid style property of \"direction\". Did you mean \"writingDirection\"?",
+    "props.pointerEvents is deprecated. Use style.pointerEvents"
+  ]
+}

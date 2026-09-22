@@ -56,6 +56,17 @@ export class ApplySessionCancellationFinancialEffectsService {
       };
     }
 
+    await input.tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${payment.id})::bigint)`;
+    const currentPayment = await input.tx.payment.findUniqueOrThrow({ where: { id: payment.id } });
+    Object.assign(payment, currentPayment);
+    if (input.refundCurrencyCodeOverride && input.refundCurrencyCodeOverride !== payment.currencyCode) {
+      throw new ConflictException({ error: 'SESSION_REFUND_CURRENCY_MISMATCH' });
+    }
+    const activeRefund = await input.tx.refund.findFirst({
+      where: { paymentId: payment.id, status: { in: [RefundStatus.REQUESTED, RefundStatus.PROCESSING] } }, select: { id: true },
+    });
+    if (activeRefund) throw new ConflictException({ error: 'PAYMENT_REFUND_ALREADY_IN_PROGRESS' });
+
     if (
       payment.status === PaymentStatus.CREATED ||
       payment.status === PaymentStatus.PENDING ||

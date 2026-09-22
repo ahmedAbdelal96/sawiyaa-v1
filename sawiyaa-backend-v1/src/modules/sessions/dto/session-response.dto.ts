@@ -135,8 +135,31 @@ export class SessionDetailsResponseDto extends SessionItemResponseDto {
   @ApiProperty({ nullable: true, type: Object })
   reviewDetails!: any;
 
-  @ApiProperty({ type: Array, example: [] })
-  timeline!: any[];
+  @ApiProperty({
+    type: Array,
+    example: [
+      {
+        eventType: 'RESCHEDULED',
+        occurredAt: '2026-09-10T17:00:00.000Z',
+        actorType: 'USER',
+        reason: null,
+        previousStartAt: '2026-09-10T16:00:00.000Z',
+        previousEndAt: '2026-09-10T16:30:00.000Z',
+        newStartAt: '2026-09-12T17:00:00.000Z',
+        newEndAt: '2026-09-12T17:30:00.000Z',
+      },
+    ],
+  })
+  timeline!: Array<{
+    eventType: string;
+    occurredAt: string;
+    actorType: string | null;
+    reason: string | null;
+    previousStartAt?: string | null;
+    previousEndAt?: string | null;
+    newStartAt?: string | null;
+    newEndAt?: string | null;
+  }>;
 }
 
 export class SessionsPaginationResponseDto {

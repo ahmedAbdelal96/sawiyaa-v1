@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, Optional } from '@nestjs/common';
 import { SessionStatus } from '@prisma/client';
 import { SupportedLocale } from '@common/i18n/types/locale.types';
 import { ListSessionsDto } from '../dto/list-sessions.dto';
@@ -6,6 +6,7 @@ import { SessionMapper } from '../mappers/session.mapper';
 import { SessionPractitionerRepository } from '../repositories/session-practitioner.repository';
 import { SessionRepository } from '../repositories/session.repository';
 import { SessionOperationalInterpreterService } from '../services/session-operational-interpreter.service';
+import { ResolvePractitionerSessionCommandActionsService } from '../services/resolve-practitioner-session-command-actions.service';
 
 /**
  * Practitioner session listing is read-only and operational.
@@ -18,6 +19,8 @@ export class GetMyPractitionerSessionsUseCase {
     private readonly sessionRepository: SessionRepository,
     private readonly sessionMapper: SessionMapper,
     private readonly operationalInterpreter: SessionOperationalInterpreterService,
+    @Optional()
+    private readonly practitionerCommandActions?: ResolvePractitionerSessionCommandActionsService,
   ) {}
 
   async execute(input: {
@@ -62,21 +65,26 @@ export class GetMyPractitionerSessionsUseCase {
     );
 
     return {
-      items: await Promise.all(sessions.map(async (session) =>
-        this.sessionMapper.toListItem(
+      items: await Promise.all(sessions.map(async (session) => {
+        const practitionerCommandActions = this.practitionerCommandActions
+          ? await this.practitionerCommandActions.resolve({ session, now })
+          : undefined;
+        const operational = await this.operationalInterpreter.interpret({
+          session,
+          actor: 'PRACTITIONER',
+          now,
+          finalManualDecision: decisionMap.get(session.id) ?? null,
+          practitionerCommandActions,
+        });
+        return this.sessionMapper.toListItem(
           session,
           now,
           unreadMap.get(session.id) ?? 0,
           decisionMap.get(session.id) ?? null,
           undefined,
-          await this.operationalInterpreter.interpret({
-            session,
-            actor: 'PRACTITIONER',
-            now,
-            finalManualDecision: decisionMap.get(session.id) ?? null,
-          }),
-        ),
-      )),
+          operational,
+        );
+      })),
       pagination: {
         page,
         limit,

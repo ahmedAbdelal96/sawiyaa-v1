@@ -131,6 +131,8 @@ export interface SessionListItem {
   sessionMode: SessionMode;
   practitioner: SessionPractitionerSummary;
   patient: SessionPatientSummary | null;
+  paymentCoverageType?: "DIRECT_PAYMENT" | "PACKAGE" | "CORPORATE_SPONSORSHIP";
+  packagePurchase?: { id: string; packagePlan: { title: string } } | null;
   actions: PatientSessionActions;
   chatAvailability: SessionChatAvailability;
   operational: SessionOperationalInterpretation;
@@ -144,6 +146,16 @@ export interface SessionDetails extends SessionListItem {
   completedAt: string | null;
   expiredAt: string | null;
   timezone: string | null;
+  timeline: Array<{
+    eventType: string;
+    occurredAt: string;
+    actorType: string | null;
+    reason: string | null;
+    previousStartAt?: string | null;
+    previousEndAt?: string | null;
+    newStartAt?: string | null;
+    newEndAt?: string | null;
+  }>;
 }
 
 export interface SessionsPagination {

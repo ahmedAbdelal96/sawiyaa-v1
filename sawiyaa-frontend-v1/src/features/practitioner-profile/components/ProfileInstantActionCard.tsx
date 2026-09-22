@@ -20,6 +20,7 @@ export function isProfileInstantBookingAvailable(
 
 export default function ProfileInstantActionCard({ profile, instantBookingAvailability }: Props) {
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isCheckingAvailability, setIsCheckingAvailability] = useState(false);
   const [currentAvailability, setCurrentAvailability] = useState(instantBookingAvailability);
   const locale = useLocale();
   const t = useTranslations("practitioner-profile");
@@ -35,6 +36,25 @@ export default function ProfileInstantActionCard({ profile, instantBookingAvaila
     const el = document.getElementById("weekly-availability");
     if (el) {
       el.scrollIntoView({ behavior: "smooth" });
+    }
+  };
+
+  const handleOpenModal = async () => {
+    setIsCheckingAvailability(true);
+    try {
+      const latestAvailability = await getPublicPractitionerInstantBookingAvailability(profile.slug);
+      setCurrentAvailability(latestAvailability);
+      if (latestAvailability.availableNow) {
+        setIsModalOpen(true);
+      }
+    } catch {
+      setCurrentAvailability({
+        availableNow: false,
+        durations: { 30: false, 60: false },
+        checkedAt: new Date().toISOString(),
+      });
+    } finally {
+      setIsCheckingAvailability(false);
     }
   };
 
@@ -89,8 +109,10 @@ export default function ProfileInstantActionCard({ profile, instantBookingAvaila
 
           <button
             type="button"
-            onClick={() => setIsModalOpen(true)}
-            className="sawiyaa-btn-press inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-xs font-bold text-white transition-all hover:bg-primary-hover shadow-sm hover:shadow cursor-pointer"
+            onClick={() => void handleOpenModal()}
+            disabled={isCheckingAvailability}
+            aria-busy={isCheckingAvailability}
+            className="sawiyaa-btn-press inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-xs font-bold text-white transition-all hover:bg-primary-hover shadow-sm hover:shadow cursor-pointer disabled:cursor-wait disabled:opacity-70"
           >
             <Clock size={14} />
             <span>{t("booking.instant.cta")}</span>

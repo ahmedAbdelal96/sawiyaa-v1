@@ -82,8 +82,13 @@ export function useCreatePatientInstantBookingRequest() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (input: CreatePatientInstantBookingRequestInput) =>
-      createPatientInstantBookingRequest(input),
+    mutationFn: ({
+      input,
+      idempotencyKey,
+    }: {
+      input: CreatePatientInstantBookingRequestInput;
+      idempotencyKey: string;
+    }) => createPatientInstantBookingRequest(input, idempotencyKey),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: instantBookingQueryKeys.patient() });
       queryClient.invalidateQueries({ queryKey: patientJourneyQueryKey });

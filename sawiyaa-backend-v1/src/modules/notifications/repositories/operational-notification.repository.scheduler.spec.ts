@@ -88,6 +88,7 @@ describe('OperationalNotificationRepository scheduler core', () => {
         id: true,
         userId: true,
         channel: true,
+        locale: true,
         status: true,
         titleSnapshot: true,
         subjectSnapshot: true,

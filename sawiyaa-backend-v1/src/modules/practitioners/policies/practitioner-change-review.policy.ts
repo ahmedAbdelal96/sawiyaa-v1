@@ -1,12 +1,9 @@
 import { Injectable } from '@nestjs/common';
 
 export type ReviewableProfileField =
+  | 'displayName'
   | 'professionalTitle'
   | 'bio'
-  | 'yearsOfExperience'
-  | 'practitionerType'
-  | 'practitionerGender'
-  | 'countryCode'
   | 'professionalContent'
   | 'primaryContentLocale';
 
@@ -14,12 +11,9 @@ export type ReviewableProfileField =
 @Injectable()
 export class PractitionerChangeReviewPolicy {
   readonly reviewableProfileFields: readonly ReviewableProfileField[] = [
+    'displayName',
     'professionalTitle',
     'bio',
-    'yearsOfExperience',
-    'practitionerType',
-    'practitionerGender',
-    'countryCode',
     'professionalContent',
     'primaryContentLocale',
   ];

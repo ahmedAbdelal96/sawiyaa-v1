@@ -9,5 +9,9 @@ describe("patient discovery vocabulary", () => {
     expect(en.discovery.list.header).toBe("Discover");
     expect(en.discovery.list.searchPlaceholder).toBe("Search specialists or specialties");
     expect(en.discovery.list.professionalFallback).toBe("Specialist");
+    expect(ar.discovery.profile.verifiedProfessional).toBe("معتمد على سويّة");
+    expect(en.discovery.profile.verifiedProfessional).toBe("Verified on Sawiyaa");
+    expect(ar.discovery.profile.verifiedExplanation).toContain("متطلبات المراجعة والنشر");
+    expect(en.discovery.profile.verifiedExplanation).toContain("approval and publication");
   });
 });

@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import AdminHelpScreen from "@/features/help/components/AdminHelpScreen";
+import AdminPermissionGate from "@/components/admin/AdminPermissionGate";
+import { PermissionKey } from "@/lib/auth/permissions";
 
 type Props = {
   params: Promise<{ locale: string }>;
@@ -20,5 +22,9 @@ export default async function AdminHelpPage({ params }: Props) {
   const { locale } = await params;
   setRequestLocale(locale);
 
-  return <AdminHelpScreen />;
+  return (
+    <AdminPermissionGate requiredPermissions={[PermissionKey.HELP_READ]}>
+      <AdminHelpScreen />
+    </AdminPermissionGate>
+  );
 }

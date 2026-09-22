@@ -3,13 +3,19 @@ import { render, screen } from "@testing-library/react";
 import React from "react";
 import PractitionerSessionDetailPanel from "./PractitionerSessionDetailPanel";
 import { formatMoney } from "@/lib/finance-format";
+import sessionMessages from "../../../../messages/ar/sessions.json";
 
 // Mock next-intl
 vi.mock("next-intl", () => ({
   useLocale: () => "ar",
-  useTranslations: () => (key: string) => {
+  useTranslations: (namespace?: string) => (key: string) => {
     if (key.includes("presentation")) return "جلسة جاهزة للانضمام";
-    return key;
+    const path = [namespace?.replace(/^sessions\.?/, ""), key].filter(Boolean).join(".");
+    const value = path.split(".").reduce<unknown>((node, part) =>
+      node && typeof node === "object" ? (node as Record<string, unknown>)[part] : undefined,
+      sessionMessages,
+    );
+    return typeof value === "string" ? value : key;
   },
 }));
 
@@ -146,7 +152,7 @@ describe("PractitionerSessionDetailPanel Web UI", () => {
     expect(screen.getByText("Internal session notes text")).toBeDefined();
 
     // Localized timeline displays correctly
-    expect(screen.getAllByText("تم إنشاء الجلسة").length).toBeGreaterThan(0);
+    expect(screen.getAllByText(sessionMessages.practitioner.detail.eventTypes.SESSION_CREATED).length).toBeGreaterThan(0);
   });
 
   it("hides Chat CTAs when the embedded Chat projection denies access", () => {

@@ -76,7 +76,14 @@ function createPreflightFixture() {
   const files = canonicalFiles(sourceRoot);
   fs.mkdirSync(path.join(root, 'deploy/scripts'), { recursive: true });
   fs.mkdirSync(path.join(root, 'deploy/config'), { recursive: true });
+  fs.mkdirSync(path.join(root, 'logs/backend'), { recursive: true });
   fs.copyFileSync(path.join(repoRoot, 'deploy/scripts/validate-production-preflight.sh'), path.join(root, 'deploy/scripts/validate-production-preflight.sh'));
+  // The detached-preflight fixture must not call the real Daily API. The
+  // validator itself is covered by validate-daily-webhook.test.js.
+  fs.writeFileSync(
+    path.join(root, 'deploy/scripts/validate-daily-webhook.js'),
+    "console.log('PASS DAILY_WEBHOOK_READY');\n",
+  );
   fs.copyFileSync(path.join(repoRoot, 'deploy/scripts/validate-environment-contract.js'), path.join(root, 'deploy/scripts/validate-environment-contract.js'));
   fs.copyFileSync(path.join(repoRoot, 'deploy/config/environment-contract.yaml'), path.join(root, 'deploy/config/environment-contract.yaml'));
   fs.copyFileSync(path.join(repoRoot, 'deploy/scripts/backup-db.sh'), path.join(root, 'deploy/scripts/backup-db.sh'));
@@ -215,7 +222,10 @@ echo 'unexpected docker readiness call' >&2; exit 99
     const run = runBash(
       path.join(root, 'deploy/scripts/validate-production-preflight.sh'),
       ['--project-dir', root, '--backend-env', files.backend, '--frontend-env', files.frontend, '--db-env', files.postgres, '--target-only', '--skip-lock', '--min-free-mb', '1'],
-      { PATH: `${bin}:${shellPath}` },
+      {
+        PATH: `${bin}:${shellPath}`,
+        SAWIYAA_DAILY_WEBHOOK_VALIDATOR_PATH: path.join(root, 'deploy/scripts/validate-daily-webhook.js').replaceAll('\\', '/'),
+      },
     );
     const output = `${run.stdout}\n${run.stderr}`;
     assert.notEqual(run.status, 0);
@@ -248,6 +258,7 @@ if [[ "\$1" == "compose" && "\$*" == *" config "* ]]; then exit 0; fi
 if [[ "\$1" == "compose" && "\$*" == *" ps --status running --services"* ]]; then echo postgres; exit 0; fi
 if [[ "\$1" == "compose" && "\$*" == *" exec -T postgres pg_isready"* ]]; then echo "sawiyaa-postgres-1" | tee -a "${calls.replaceAll('\\\\', '/')}"; exit 0; fi
 if [[ "\$1" == "run" ]]; then
+  if [[ "\$*" == *"validate-daily-webhook.js"* ]]; then echo "PASS DAILY_WEBHOOK_READY"; exit 0; fi
   workspace=""; backend_env=""; frontend_env=""; db_env=""
   while [[ \$# -gt 0 ]]; do
     if [[ "\$1" == "-v" ]]; then
@@ -273,7 +284,10 @@ echo 'unexpected docker call' >&2; exit 99
     const run = runBash(
       path.join(root, 'deploy/scripts/validate-production-preflight.sh'),
       ['--project-dir', root, '--backend-env', files.backend, '--frontend-env', files.frontend, '--db-env', files.postgres, '--target-only', '--skip-lock', '--min-free-mb', '1'],
-      { PATH: `${bin}:${shellPath}` },
+      {
+        PATH: `${bin}:${shellPath}`,
+        SAWIYAA_DAILY_WEBHOOK_VALIDATOR_PATH: path.join(root, 'deploy/scripts/validate-daily-webhook.js').replaceAll('\\', '/'),
+      },
     );
     const output = `${run.stdout}\n${run.stderr}`;
     assert.equal(run.status, 0, output);

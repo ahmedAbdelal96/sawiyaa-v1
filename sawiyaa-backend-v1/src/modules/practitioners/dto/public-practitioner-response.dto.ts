@@ -47,14 +47,6 @@ export class PublicPractitionerRatingSummaryResponseDto {
   totalReviews!: number;
 }
 
-export class PublicPractitionerCredentialsSummaryResponseDto {
-  @ApiProperty()
-  totalCredentials!: number;
-
-  @ApiProperty()
-  approvedCredentials!: number;
-}
-
 export class PublicPractitionerListItemResponseDto {
   @ApiProperty({
     description:
@@ -169,6 +161,12 @@ export class PublicPractitionerDetailsResponseDto {
   @ApiProperty({ nullable: true })
   fullBio!: string | null;
 
+  @ApiProperty({ nullable: true, description: 'Approved Arabic biography' })
+  bioAr!: string | null;
+
+  @ApiProperty({ nullable: true, description: 'Approved English biography' })
+  bioEn!: string | null;
+
   @ApiProperty({ type: PublicPractitionerSpecialtyResponseDto, isArray: true })
   specialties!: PublicPractitionerSpecialtyResponseDto[];
 
@@ -231,9 +229,6 @@ export class PublicPractitionerDetailsResponseDto {
 
   @ApiProperty({ type: PublicPractitionerRatingSummaryResponseDto })
   ratingSummary!: PublicPractitionerRatingSummaryResponseDto;
-
-  @ApiProperty({ type: PublicPractitionerCredentialsSummaryResponseDto })
-  credentialsSummary!: PublicPractitionerCredentialsSummaryResponseDto;
 
   @ApiProperty()
   isVerified!: boolean;

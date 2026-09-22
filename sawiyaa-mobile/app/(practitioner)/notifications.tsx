@@ -58,8 +58,12 @@ export default function PractitionerNotificationsScreen() {
   const { isRtl: isRTL, chevronForward } = useAppDirection();
   const [filter, setFilter] = React.useState<NotificationFilter>("all");
   const [page, setPage] = React.useState(1);
-  const [notifications, setNotifications] = React.useState<UserNotificationItem[]>([]);
-  const [pendingNotificationId, setPendingNotificationId] = React.useState<string | null>(null);
+  const [notifications, setNotifications] = React.useState<
+    UserNotificationItem[]
+  >([]);
+  const [pendingNotificationId, setPendingNotificationId] = React.useState<
+    string | null
+  >(null);
 
   const notificationsQuery = usePractitionerNotifications(
     { page, limit: 20 },
@@ -72,8 +76,8 @@ export default function PractitionerNotificationsScreen() {
   const markAllReadMutation = useMarkAllPractitionerNotificationsRead();
 
   React.useEffect(() => {
-    const nextItems = notificationsQuery.data?.items;
-    if (!nextItems) return;
+    const nextItems = (notificationsQuery.data?.items ??
+      []) as UserNotificationItem[];
 
     setNotifications((current) => {
       if (page === 1) return nextItems;
@@ -85,10 +89,14 @@ export default function PractitionerNotificationsScreen() {
   const unreadCount = unreadCountQuery.data?.item?.unreadCount ?? 0;
   const filteredNotifications = React.useMemo(() => {
     if (filter === "unread") {
-      return notifications.filter((notification) => notification.readAt === null);
+      return notifications.filter(
+        (notification) => notification.readAt === null,
+      );
     }
     if (filter === "read") {
-      return notifications.filter((notification) => notification.readAt !== null);
+      return notifications.filter(
+        (notification) => notification.readAt !== null,
+      );
     }
     return notifications;
   }, [filter, notifications]);
@@ -111,7 +119,10 @@ export default function PractitionerNotificationsScreen() {
     try {
       await markAllReadMutation.mutateAsync();
       setNotifications((current) =>
-        current.map((item) => ({ ...item, readAt: item.readAt ?? new Date().toISOString() })),
+        current.map((item) => ({
+          ...item,
+          readAt: item.readAt ?? new Date().toISOString(),
+        })),
       );
       setPage(1);
     } catch {
@@ -126,7 +137,12 @@ export default function PractitionerNotificationsScreen() {
     notification: UserNotificationItem,
     route: string | null,
   ) {
-    if (!route || pendingNotificationId || markReadMutation.isPending || markAllReadMutation.isPending) {
+    if (
+      !route ||
+      pendingNotificationId ||
+      markReadMutation.isPending ||
+      markAllReadMutation.isPending
+    ) {
       return;
     }
 
@@ -166,29 +182,54 @@ export default function PractitionerNotificationsScreen() {
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
         >
-          <View style={[styles.feedHeader, { borderBottomColor: theme.colors.borderLight }]}>
-            <View style={[styles.feedHeaderRow, isRTL ? styles.rowRtl : styles.rowLtr]}>
+          <View
+            style={[
+              styles.feedHeader,
+              { borderBottomColor: theme.colors.borderLight },
+            ]}
+          >
+            <View
+              style={[
+                styles.feedHeaderRow,
+                isRTL ? styles.rowRtl : styles.rowLtr,
+              ]}
+            >
               <View
                 style={[
                   styles.feedIcon,
                   {
-                    backgroundColor: unreadCount > 0
-                      ? theme.colors.primaryLight
-                      : theme.colors.surfaceSecondary,
+                    backgroundColor:
+                      unreadCount > 0
+                        ? theme.colors.primaryLight
+                        : theme.colors.surfaceSecondary,
                     borderColor: theme.colors.borderLight,
                   },
                 ]}
               >
-                <Ionicons name="notifications-outline" size={20} color={theme.colors.primary} />
+                <Ionicons
+                  name="notifications-outline"
+                  size={20}
+                  color={theme.colors.primary}
+                />
               </View>
-              <View style={[styles.feedHeaderCopy, { alignItems: isRTL ? "flex-end" : "flex-start" }]}>
+              <View
+                style={[
+                  styles.feedHeaderCopy,
+                  { alignItems: isRTL ? "flex-end" : "flex-start" },
+                ]}
+              >
                 <Text
                   color={theme.colors.textPrimary}
                   weight="700"
-                  style={[styles.feedSubtitle, { textAlign: isRTL ? "right" : "left" }]}
+                  style={[
+                    styles.feedSubtitle,
+                    { textAlign: isRTL ? "right" : "left" },
+                  ]}
                 >
                   {unreadCount > 0
-                    ? t("practitionerNotifications.summaryBody", { count: unreadCount })
+                    ? t("practitionerNotifications.summaryBody", {
+                        count: unreadCount,
+                      })
                     : t("practitionerNotifications.summaryEmptyBody")}
                 </Text>
               </View>
@@ -200,16 +241,21 @@ export default function PractitionerNotificationsScreen() {
                 style={[
                   styles.countPill,
                   {
-                    backgroundColor: unreadCount > 0
-                      ? theme.colors.primaryLight
-                      : theme.colors.surfaceSecondary,
+                    backgroundColor:
+                      unreadCount > 0
+                        ? theme.colors.primaryLight
+                        : theme.colors.surfaceSecondary,
                     borderColor: theme.colors.borderLight,
                   },
                 ]}
               >
                 <Text
                   weight="700"
-                  color={unreadCount > 0 ? theme.colors.primary : theme.colors.textSecondary}
+                  color={
+                    unreadCount > 0
+                      ? theme.colors.primary
+                      : theme.colors.textSecondary
+                  }
                   style={styles.countText}
                 >
                   {unreadCount}
@@ -231,9 +277,16 @@ export default function PractitionerNotificationsScreen() {
                 ]}
               >
                 {markAllReadMutation.isPending ? (
-                  <ActivityIndicator size="small" color={theme.colors.primary} />
+                  <ActivityIndicator
+                    size="small"
+                    color={theme.colors.primary}
+                  />
                 ) : null}
-                <Text color={theme.colors.primary} weight="600" style={styles.markAllText}>
+                <Text
+                  color={theme.colors.primary}
+                  weight="600"
+                  style={styles.markAllText}
+                >
                   {markAllReadMutation.isPending
                     ? t("practitionerNotifications.markAllLoading")
                     : t("practitionerNotifications.markAll")}
@@ -263,14 +316,22 @@ export default function PractitionerNotificationsScreen() {
                     style={[
                       styles.filterButton,
                       {
-                        backgroundColor: selected ? theme.colors.primary : "transparent",
-                        borderColor: selected ? theme.colors.primary : "transparent",
+                        backgroundColor: selected
+                          ? theme.colors.primary
+                          : "transparent",
+                        borderColor: selected
+                          ? theme.colors.primary
+                          : "transparent",
                       },
                     ]}
                   >
                     <Text
                       weight={selected ? "700" : "600"}
-                      color={selected ? theme.colors.onPrimary : theme.colors.textSecondary}
+                      color={
+                        selected
+                          ? theme.colors.onPrimary
+                          : theme.colors.textSecondary
+                      }
                       style={styles.filterText}
                     >
                       {t("practitionerNotifications.filters." + value)}
@@ -285,7 +346,13 @@ export default function PractitionerNotificationsScreen() {
             <EmptyState
               title={t("practitionerNotifications.emptyTitle")}
               description={t("practitionerNotifications.emptyBody")}
-              icon={<Ionicons name="notifications-outline" size={44} color={theme.colors.textMuted} />}
+              icon={
+                <Ionicons
+                  name="notifications-outline"
+                  size={44}
+                  color={theme.colors.textMuted}
+                />
+              }
             />
           ) : filteredNotifications.length === 0 ? (
             <EmptyState
@@ -299,17 +366,24 @@ export default function PractitionerNotificationsScreen() {
                   ? t("practitionerNotifications.emptyReadBody")
                   : t("practitionerNotifications.emptyUnreadBody")
               }
-              icon={<Ionicons name="checkmark-done-outline" size={44} color={theme.colors.textMuted} />}
+              icon={
+                <Ionicons
+                  name="checkmark-done-outline"
+                  size={44}
+                  color={theme.colors.textMuted}
+                />
+              }
             />
           ) : (
             <View style={styles.list}>
               {filteredNotifications.map((notification) => {
                 const isUnread = notification.readAt === null;
-                const presentation = resolvePractitionerNotificationPresentation(
-                  notification,
-                  i18n.language,
-                  t,
-                );
+                const presentation =
+                  resolvePractitionerNotificationPresentation(
+                    notification,
+                    i18n.language,
+                    t,
+                  );
                 const actionRoute = resolvePractitionerNotificationRoute(
                   notification.action?.href ?? "/",
                   notification.typeSlug,
@@ -338,7 +412,9 @@ export default function PractitionerNotificationsScreen() {
                     key={notification.id}
                     activeOpacity={actionRoute ? 0.78 : 1}
                     disabled={!actionRoute || isDisabled}
-                    onPress={() => void handleNotificationPress(notification, actionRoute)}
+                    onPress={() =>
+                      void handleNotificationPress(notification, actionRoute)
+                    }
                     accessibilityRole={actionRoute ? "button" : undefined}
                     accessibilityLabel={accessibilityLabel}
                   >
@@ -347,12 +423,19 @@ export default function PractitionerNotificationsScreen() {
                         styles.notificationRow,
                         {
                           borderBottomColor: theme.colors.borderLight,
-                          backgroundColor: isUnread ? theme.colors.primarySoft : "transparent",
+                          backgroundColor: isUnread
+                            ? theme.colors.primarySoft
+                            : "transparent",
                           opacity: isPending ? 0.68 : 1,
                         },
                       ]}
                     >
-                      <View style={[styles.rowContent, isRTL ? styles.rowRtl : styles.rowLtr]}>
+                      <View
+                        style={[
+                          styles.rowContent,
+                          isRTL ? styles.rowRtl : styles.rowLtr,
+                        ]}
+                      >
                         <View style={styles.iconColumn}>
                           <View
                             style={[
@@ -367,32 +450,55 @@ export default function PractitionerNotificationsScreen() {
                             <Ionicons
                               name={getNotificationIcon(notification.typeSlug)}
                               size={18}
-                              color={isUnread ? theme.colors.primary : theme.colors.textMuted}
+                              color={
+                                isUnread
+                                  ? theme.colors.primary
+                                  : theme.colors.textMuted
+                              }
                             />
                           </View>
                           {isUnread ? (
-                            <View style={[styles.unreadDot, { backgroundColor: theme.colors.primary }]} />
+                            <View
+                              style={[
+                                styles.unreadDot,
+                                { backgroundColor: theme.colors.primary },
+                              ]}
+                            />
                           ) : null}
                         </View>
                         <View style={styles.itemCopy}>
                           <Text
                             weight={isUnread ? "700" : "600"}
                             color={theme.colors.textPrimary}
-                            style={[styles.itemTitle, { textAlign: isRTL ? "right" : "left" }]}
+                            style={[
+                              styles.itemTitle,
+                              { textAlign: isRTL ? "right" : "left" },
+                            ]}
                           >
                             {presentation.title}
                           </Text>
                           <Text
                             color={theme.colors.textSecondary}
-                            style={[styles.itemBody, { textAlign: isRTL ? "right" : "left" }]}
+                            style={[
+                              styles.itemBody,
+                              { textAlign: isRTL ? "right" : "left" },
+                            ]}
                             numberOfLines={3}
                           >
                             {presentation.body}
                           </Text>
                         </View>
                       </View>
-                      <View style={[styles.itemFooter, isRTL ? styles.rowRtl : styles.rowLtr]}>
-                        <Text color={theme.colors.textMuted} style={styles.itemDate}>
+                      <View
+                        style={[
+                          styles.itemFooter,
+                          isRTL ? styles.rowRtl : styles.rowLtr,
+                        ]}
+                      >
+                        <Text
+                          color={theme.colors.textMuted}
+                          style={styles.itemDate}
+                        >
                           {formatPractitionerNotificationDateTime(
                             notification.createdAt,
                             i18n.language,
@@ -418,12 +524,19 @@ export default function PractitionerNotificationsScreen() {
               accessibilityRole="button"
               onPress={() => setPage((current) => current + 1)}
               disabled={notificationsQuery.isFetching}
-              style={[styles.loadMoreButton, { borderColor: theme.colors.borderStrong }]}
+              style={[
+                styles.loadMoreButton,
+                { borderColor: theme.colors.borderStrong },
+              ]}
             >
               {notificationsQuery.isFetching ? (
                 <ActivityIndicator size="small" color={theme.colors.primary} />
               ) : null}
-              <Text color={theme.colors.primary} weight="600" style={styles.loadMoreText}>
+              <Text
+                color={theme.colors.primary}
+                weight="600"
+                style={styles.loadMoreText}
+              >
                 {notificationsQuery.isFetching
                   ? t("practitionerNotifications.loadingMore")
                   : t("practitionerNotifications.loadMore")}

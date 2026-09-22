@@ -4,15 +4,21 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import {
-  AlertCircle,
+  Calendar,
   CalendarDays,
   CheckCircle2,
   ChevronLeft,
   ChevronRight,
-  HeartHandshake,
-  History,
+  Clock,
+  Filter,
+  Plus,
+  RotateCcw,
   Search,
   Sparkles,
+  Star,
+  User,
+  Video,
+  X,
 } from "lucide-react";
 import { DEFAULT_PAGE_LIMIT } from "@/constants/pagination";
 import { Modal, ModalBody } from "@/components/ui/modal";
@@ -26,32 +32,13 @@ import PatientSessionReviewCard from "./PatientSessionReviewCard";
 import SessionStatusBadge from "./SessionStatusBadge";
 import type {
   SessionListItem,
-  SessionStatus,
 } from "../types/sessions.types";
-import type { PatientReviewItem } from "@/features/reviews/types/reviews.types";
 import SessionCodeReference from "@/components/shared/SessionCodeReference";
 import { StateCard } from "@/components/shared/ContentStates";
-import {
-  SurfaceCard,
-  SurfaceToolbar,
-} from "@/components/shared/SurfaceShell";
 import { formatPatientDateTime } from "@/lib/time-formatting";
 import { usePatientProfile } from "@/features/patients/hooks/use-patients";
-import Avatar from "@/components/ui/avatar/Avatar";
+import PractitionerAvatar from "@/components/shared/PractitionerAvatar";
 import { Skeleton } from "@/components/shared/LoadingStates";
-import { DataTable, type ColumnDef } from "@/components/ui/data-table";
-
-type SessionReviewVisualState =
-  | {
-      kind: "rated";
-      review: PatientReviewItem;
-    }
-  | {
-      kind: "needs_rating";
-    }
-  | {
-      kind: "not_available";
-    };
 
 function sortSessions(items: SessionListItem[], sortOrder: "newest" | "oldest") {
   return [...items].sort((left, right) => {
@@ -66,65 +53,6 @@ function sortSessions(items: SessionListItem[], sortOrder: "newest" | "oldest") 
       ? right.sessionCode.localeCompare(left.sessionCode)
       : left.sessionCode.localeCompare(right.sessionCode);
   });
-}
-
-function getCopy(t: ReturnType<typeof useTranslations>) {
-  return {
-    eyebrow: t("list.eyebrow"),
-    title: t("list.title"),
-    note: t("list.note"),
-    paymentExpiredNote: t("list.paymentExpiredNote"),
-    summaryLabel: t("list.summaryLabel"),
-    sortLabel: t("list.sortLabel"),
-    sortNewest: t("list.sortNewest"),
-    sortOldest: t("list.sortOldest"),
-    pageLabel: (page: number, totalPages: number) => t("list.pageLabel", { page, totalPages }),
-    loading: t("list.loading"),
-    emptyTitle: t("list.emptyHeading"),
-    emptyNote: t("list.emptyNote"),
-    emptyAction: t("list.emptyAction"),
-    emptyTabTitle: t("list.emptyTabTitle"),
-    emptyTabNote: t("list.emptyTabNote"),
-    errorTitle: t("list.errorHeading"),
-    errorNote: t("list.errorNote"),
-    retry: t("list.retry"),
-    rowsPerPage: t("list.rowsPerPage"),
-    expiredPaymentBadge: t("list.expiredPaymentBadge"),
-    table: {
-      reference: t("list.table.reference"),
-      practitioner: t("list.table.practitioner"),
-      scheduledAt: t("list.table.scheduledAt"),
-      duration: t("list.table.duration"),
-      status: t("list.table.status"),
-      actions: t("list.table.actions"),
-      open: t("list.table.open"),
-      noSchedule: t("list.table.noSchedule"),
-    },
-    tabs: {
-      all: t("list.tabs.all"),
-      needsRating: t("list.tabs.needsRating"),
-      upcoming: t("list.tabs.upcoming"),
-      completed: t("list.tabs.completed"),
-      cancelled: t("list.tabs.cancelled"),
-    },
-    reviewStatus: {
-      label: t("list.reviewStatus.label"),
-      rated: t("list.reviewStatus.rated"),
-      needsRating: t("list.reviewStatus.needsRating"),
-      notAvailable: t("list.reviewStatus.notAvailable"),
-      rateSession: t("list.reviewStatus.rateSession"),
-      yourRating: (rating: string) => t("list.reviewStatus.yourRating", { rating }),
-    },
-    needsRatingEmptyHeading: t("list.needsRatingEmptyHeading"),
-    needsRatingEmptyNote: t("list.needsRatingEmptyNote"),
-    summary: {
-      total: { label: t("list.summaryCards.total.label"), hint: t("list.summaryCards.total.hint") },
-      action: { label: t("list.summaryCards.action.label"), hint: t("list.summaryCards.action.hint") },
-      active: { label: t("list.summaryCards.active.label"), hint: t("list.summaryCards.active.hint") },
-      expired: { label: t("list.summaryCards.expired.label"), hint: t("list.summaryCards.expired.hint") },
-      history: { label: t("list.summaryCards.history.label"), hint: t("list.summaryCards.history.hint") },
-    },
-  };
 }
 
 function TablePagination({
@@ -143,131 +71,70 @@ function TablePagination({
   const isRtl = locale.startsWith("ar");
 
   return (
-    <div className="flex flex-col gap-3 border-t border-border-light px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
-      <p className="text-sm text-text-secondary">{pageLabel(page, totalPages)}</p>
+    <div className="flex flex-col gap-3 border-t border-border-light/60 px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
+      <p className="text-xs font-medium text-text-secondary">{pageLabel(page, totalPages)}</p>
       <div className="flex items-center gap-2">
         <button
           type="button"
           onClick={() => onPageChange(page - 1)}
           disabled={page <= 1}
-          className="inline-flex h-10 items-center gap-2 rounded-2xl border border-border-light bg-white px-4 text-sm font-medium text-text-primary transition hover:border-primary/30 hover:text-primary disabled:cursor-not-allowed disabled:opacity-50 dark:bg-white/5"
+          className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-border-light bg-white px-3.5 text-xs font-semibold text-text-primary transition hover:border-primary/40 hover:text-primary disabled:cursor-not-allowed disabled:opacity-40 dark:bg-surface-secondary cursor-pointer"
         >
-          {isRtl ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
-          {isRtl ? "السابق" : "Previous"}
+          {isRtl ? <ChevronRight className="h-3.5 w-3.5" /> : <ChevronLeft className="h-3.5 w-3.5" />}
+          <span>{isRtl ? "السابق" : "Previous"}</span>
         </button>
         <button
           type="button"
           onClick={() => onPageChange(page + 1)}
           disabled={page >= totalPages}
-          className="inline-flex h-10 items-center gap-2 rounded-2xl border border-border-light bg-white px-4 text-sm font-medium text-text-primary transition hover:border-primary/30 hover:text-primary disabled:cursor-not-allowed disabled:opacity-50 dark:bg-white/5"
+          className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-border-light bg-white px-3.5 text-xs font-semibold text-text-primary transition hover:border-primary/40 hover:text-primary disabled:cursor-not-allowed disabled:opacity-40 dark:bg-surface-secondary cursor-pointer"
         >
-          {isRtl ? "التالي" : "Next"}
-          {isRtl ? <ChevronLeft className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+          <span>{isRtl ? "التالي" : "Next"}</span>
+          {isRtl ? <ChevronLeft className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
         </button>
       </div>
     </div>
   );
 }
 
-function SessionsTimelineSkeleton() {
+function SessionsLoadingState() {
   return (
-    <div className="space-y-4">
-      {Array.from({ length: 3 }).map((_, index) => (
-        <div
-          key={index}
-          className="rounded-[26px] border border-border-light bg-surface-secondary p-5 shadow-theme-xs space-y-4"
-        >
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex items-center gap-3">
-              <Skeleton variant="circular" className="h-10 w-10 shrink-0" />
-              <div className="space-y-2">
-                <Skeleton className="h-4 w-32" />
-                <Skeleton className="h-3 w-20" />
-              </div>
-            </div>
-            <Skeleton className="h-7 w-24 rounded-full" />
-          </div>
-          <div className="h-px bg-border-light/60" />
-          <div className="grid gap-3 sm:grid-cols-2">
-            <Skeleton className="h-4 w-40" />
-            <Skeleton className="h-4 w-28" />
-          </div>
-          <div className="h-px bg-border-light/60" />
-          <div className="flex items-center justify-between gap-4">
-            <Skeleton className="h-3 w-48" />
-            <Skeleton className="h-9 w-28 rounded-2xl" />
-          </div>
-        </div>
-      ))}
+    <div className="mx-auto max-w-5xl space-y-5 py-6">
+      <div className="flex flex-col gap-2 border-b border-border-light/60 pb-4">
+        <Skeleton className="h-6 w-36 rounded-md" />
+        <Skeleton className="h-4 w-64 rounded-md" />
+      </div>
+      <div className="flex gap-2">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <Skeleton key={i} className="h-8 w-20 rounded-full" />
+        ))}
+      </div>
+      <div className="space-y-3">
+        {Array.from({ length: 3 }).map((_, i) => (
+          <Skeleton key={i} className="h-36 rounded-2xl" />
+        ))}
+      </div>
     </div>
   );
 }
-
-function SessionsLoadingState({ locale }: { locale: string }) {
-  const t = useTranslations("sessions");
-  const isRtl = locale.startsWith("ar");
-  return (
-    <div className="space-y-5">
-      <SurfaceCard as="section" variant="page" className="overflow-hidden">
-        <div className="flex flex-col gap-5">
-          <div className="space-y-3">
-            <div className="h-3 w-28 rounded-full bg-surface-tertiary/80 dark:bg-white/10" />
-            <div className="h-8 w-40 rounded-full bg-surface-tertiary/80 dark:bg-white/10" />
-            <div className="h-4 w-full max-w-3xl rounded-full bg-surface-tertiary/80 dark:bg-white/10" />
-          </div>
-          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-            {Array.from({ length: 4 }).map((_, index) => (
-              <div
-                key={index}
-                className="rounded-[22px] border border-border-light bg-white p-4 dark:bg-white/5"
-              >
-                <div className="h-3 w-20 rounded-full bg-surface-tertiary/80 dark:bg-white/10" />
-                <div className="mt-3 h-8 w-16 rounded-full bg-surface-tertiary/80 dark:bg-white/10" />
-                <div className="mt-3 h-3 w-full rounded-full bg-surface-tertiary/80 dark:bg-white/10" />
-              </div>
-            ))}
-          </div>
-        </div>
-      </SurfaceCard>
-
-      <SurfaceToolbar className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-        <div className="space-y-2">
-          <div className="h-4 w-60 rounded-full bg-surface-tertiary/80 dark:bg-white/10" />
-          <div className="flex gap-2">
-            <div className="h-3 w-24 rounded-full bg-surface-tertiary/80 dark:bg-white/10" />
-            <div className="h-3 w-12 rounded-full bg-surface-tertiary/80 dark:bg-white/10" />
-            <div className="h-3 w-28 rounded-full bg-surface-tertiary/80 dark:bg-white/10" />
-          </div>
-        </div>
-        <div className="h-11 w-36 rounded-2xl bg-surface-tertiary/80 dark:bg-white/10" />
-      </SurfaceToolbar>
-
-      <SessionsTimelineSkeleton />
-
-      <p className={`text-sm text-text-secondary ${isRtl ? "text-right" : ""}`}>
-        {t("list.loading")}
-      </p>
-    </div>
-  );
-}
-
-
 
 export default function PatientSessionsPanel() {
   const t = useTranslations("sessions");
-  const reviewT = useTranslations("reviews");
   const locale = useLocale();
-  const copy = useMemo(() => getCopy(t), [t]);
+  const numLocale = locale === "ar" ? "ar-SA" : "en-US";
   const { user, isInitialized } = useAuthState();
   const reviewQueriesEnabled = isInitialized && Boolean(user);
 
   const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(DEFAULT_PAGE_LIMIT);
+  const [pageSize] = useState(DEFAULT_PAGE_LIMIT);
   const [sortOrder, setSortOrder] = useState<"newest" | "oldest">("newest");
   const [activeTab, setActiveTab] = useState<
     "all" | "needs-rating" | "upcoming" | "completed" | "cancelled"
   >("all");
-  const [ratingSessionId, setRatingSessionId] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState<string>("");
+  const [selectedPractitioner, setSelectedPractitioner] = useState<string>("ALL");
+  const [selectedPeriod, setSelectedPeriod] = useState<string>("ALL");
+  const [ratingSessionId, setRatingSessionId] = useState<string>(null!);
   const ratingCloseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const { data: summary } = usePatientSessionSummary();
@@ -279,8 +146,14 @@ export default function PatientSessionsPanel() {
   );
   const reviewsQuery = usePatientReviews({ page: 1, limit: 100 }, reviewQueriesEnabled);
 
-  const pendingReviews = pendingReviewsQuery.data?.items ?? [];
-  const reviewItems = reviewsQuery.data?.items ?? [];
+  const pendingReviews = useMemo(
+    () => pendingReviewsQuery.data?.items ?? [],
+    [pendingReviewsQuery.data?.items],
+  );
+  const reviewItems = useMemo(
+    () => reviewsQuery.data?.items ?? [],
+    [reviewsQuery.data?.items],
+  );
 
   const pendingReviewIds = useMemo(
     () => new Set(pendingReviews.map((item) => item.sessionId)),
@@ -293,14 +166,16 @@ export default function PatientSessionsPanel() {
   );
 
   const queryParams = useMemo(() => {
-    const params: any = {
+    const params: Record<string, unknown> = {
       page,
       limit: pageSize,
     };
 
     if (activeTab === "upcoming") {
       params.presentationFilter = "upcoming";
-    } else if (activeTab === "completed" || activeTab === "needs-rating") {
+    } else if (activeTab === "completed") {
+      params.status = "COMPLETED";
+    } else if (activeTab === "needs-rating") {
       params.presentationFilter = "finished";
     } else if (activeTab === "cancelled") {
       params.status = "CANCELLED";
@@ -311,15 +186,72 @@ export default function PatientSessionsPanel() {
 
   const { data, isLoading, isError, refetch } = usePatientSessions(queryParams);
 
-  const sessions = useMemo(() => sortSessions(data?.items ?? [], sortOrder), [data?.items, sortOrder]);
+  // Extract unique practitioners for filter dropdown
+  const uniquePractitioners = useMemo(() => {
+    const list = data?.items ?? [];
+    const map = new Map<string, string>();
+    list.forEach((s) => {
+      if (s.practitioner?.id) {
+        map.set(s.practitioner.id, s.practitioner.displayName ?? s.practitioner.slug);
+      }
+    });
+    return Array.from(map.entries()).map(([id, name]) => ({ id, name }));
+  }, [data?.items]);
 
+  const sortedSessions = useMemo(() => sortSessions(data?.items ?? [], sortOrder), [data?.items, sortOrder]);
+
+  // Client-side multi-filter: Search + Practitioner + Period + Tab
   const visibleSessions = useMemo(() => {
-    if (activeTab !== "needs-rating") {
-      return sessions;
+    let result = sortedSessions;
+
+    if (activeTab === "needs-rating") {
+      result = result.filter((session) => pendingReviewIds.has(session.id));
+    } else if (activeTab === "completed") {
+      result = result.filter((session) => session.operational?.state === "COMPLETED");
+    } else if (activeTab === "cancelled") {
+      result = result.filter((session) => session.operational?.state === "CANCELLED");
     }
 
-    return sessions.filter((session) => pendingReviewIds.has(session.id));
-  }, [activeTab, pendingReviewIds, sessions]);
+    // Search query filter
+    if (searchQuery.trim()) {
+      const q = searchQuery.trim().toLowerCase();
+      result = result.filter((session) => {
+        const practitionerName = (session.practitioner?.displayName ?? "").toLowerCase();
+        const sessionCode = (session.sessionCode ?? "").toLowerCase();
+        return practitionerName.includes(q) || sessionCode.includes(q);
+      });
+    }
+
+    // Practitioner filter
+    if (selectedPractitioner !== "ALL") {
+      result = result.filter((session) => session.practitioner?.id === selectedPractitioner);
+    }
+
+    // Period filter
+    if (selectedPeriod !== "ALL") {
+      const now = new Date().getTime();
+      result = result.filter((session) => {
+        const sessionTime = new Date(session.scheduledStartAt ?? session.createdAt).getTime();
+        if (selectedPeriod === "THIS_WEEK") {
+          const sevenDaysMs = 7 * 24 * 60 * 60 * 1000;
+          return Math.abs(now - sessionTime) <= sevenDaysMs;
+        }
+        if (selectedPeriod === "THIS_MONTH") {
+          const thirtyDaysMs = 30 * 24 * 60 * 60 * 1000;
+          return Math.abs(now - sessionTime) <= thirtyDaysMs;
+        }
+        if (selectedPeriod === "PAST") {
+          return sessionTime < now;
+        }
+        if (selectedPeriod === "FUTURE") {
+          return sessionTime >= now;
+        }
+        return true;
+      });
+    }
+
+    return result;
+  }, [sortedSessions, activeTab, pendingReviewIds, searchQuery, selectedPractitioner, selectedPeriod]);
 
   const pagination = data?.pagination;
 
@@ -328,30 +260,16 @@ export default function PatientSessionsPanel() {
   ) => {
     setActiveTab(tab);
     setPage(1);
-    setRatingSessionId(null);
+    setRatingSessionId(null!);
   };
 
-  const pageSummary = useMemo(() => {
-    const countState = (state: SessionStatus) =>
-      (data?.items ?? []).filter((item) => item.operational?.state === state).length;
-    const countBucket = (bucket: "PENDING" | "ACTIONABLE" | "COMPLETED" | "TERMINAL" | "OTHER") =>
-      (data?.items ?? []).filter((item) => item.operational?.timelineBucket === bucket).length;
+  const hasActiveFilters = searchQuery.trim() !== "" || selectedPractitioner !== "ALL" || selectedPeriod !== "ALL";
 
-    return {
-      pendingPayment: countState("PENDING_PAYMENT"),
-      pendingPractitionerResponse: countState("PENDING_PRACTITIONER_CONFIRMATION"),
-      readyToJoin: countState("READY_TO_JOIN"),
-      confirmed: countState("UPCOMING"),
-      upcoming: countBucket("ACTIONABLE"),
-      inProgress: countState("IN_PROGRESS"),
-      completed: countBucket("COMPLETED"),
-      cancelled: countState("CANCELLED"),
-      noShow: (data?.items ?? []).filter((item) => item.operational?.state === "PATIENT_NO_SHOW" || item.operational?.state === "PRACTITIONER_NO_SHOW" || item.operational?.state === "BOTH_NO_SHOW").length,
-      expired: countState("EXPIRED"),
-      refundPending: 0,
-      refunded: 0,
-    };
-  }, [data?.items]);
+  const clearAllFilters = () => {
+    setSearchQuery("");
+    setSelectedPractitioner("ALL");
+    setSelectedPeriod("ALL");
+  };
 
   useEffect(() => {
     return () => {
@@ -375,455 +293,436 @@ export default function PatientSessionsPanel() {
       clearTimeout(ratingCloseTimerRef.current);
       ratingCloseTimerRef.current = null;
     }
-    setRatingSessionId(null);
+    setRatingSessionId(null!);
   };
 
   const handleReviewSubmitted = () => {
     if (ratingCloseTimerRef.current) {
       clearTimeout(ratingCloseTimerRef.current);
     }
-
     ratingCloseTimerRef.current = setTimeout(() => {
       ratingCloseTimerRef.current = null;
-      setRatingSessionId(null);
+      setRatingSessionId(null!);
     }, 1400);
   };
 
-  const hasOverallSessions = (summary?.totalItems ?? 0) > 0;
   const totalPages = pagination?.totalPages ?? 1;
-  const totalItems = summary?.totalItems ?? pagination?.totalItems ?? sessions.length;
-  const totalAction =
-    summary?.actionRequired ??
-    pageSummary.pendingPayment + pageSummary.pendingPractitionerResponse + pageSummary.readyToJoin;
-  const totalActive =
-    summary?.active ??
-    pageSummary.confirmed + pageSummary.upcoming + pageSummary.readyToJoin + pageSummary.inProgress;
-  const totalExpired = summary?.paymentExpired ?? pageSummary.expired;
-  const totalArchive =
-    summary?.history ??
-    pageSummary.completed +
-      pageSummary.cancelled +
-      pageSummary.noShow +
-      pageSummary.expired +
-      pageSummary.refundPending +
-      pageSummary.refunded;
 
-  const TABS = [
-    { id: "all", label: copy.tabs.all },
-    { id: "needs-rating", label: copy.tabs.needsRating },
-    { id: "upcoming", label: copy.tabs.upcoming },
-    { id: "completed", label: copy.tabs.completed },
-    { id: "cancelled", label: copy.tabs.cancelled },
-  ] as const;
-
-  const numLocale = locale === "ar" ? "ar-SA" : "en-US";
-
-  const columns = useMemo<ColumnDef<SessionListItem>[]>(
-    () => [
-      {
-        id: "sessionCode",
-        align: "start",
-        header: copy.table.reference,
-        cell: (row) => (
-          <SessionCodeReference sessionId={row.id} sessionCode={row.sessionCode} href={`/patient/sessions/${row.id}`} copyable />
-        ),
-      },
-      {
-        id: "practitioner",
-        align: "start",
-        header: copy.table.practitioner,
-        cell: (row) => (
-          <div className="flex items-center gap-3 text-start">
-            <Avatar
-              src={null}
-              name={row.practitioner.displayName ?? row.practitioner.slug}
-              size="small"
-              className="shrink-0"
-            />
-            <span className="text-sm font-semibold text-text-primary dark:text-white/95">
-              {row.practitioner.displayName ?? row.practitioner.slug}
-            </span>
-          </div>
-        ),
-      },
-      {
-        id: "scheduledStartAt",
-        align: "start",
-        header: copy.table.scheduledAt,
-        cell: (row) => (
-          <span className="text-sm text-text-secondary">
-            {row.scheduledStartAt ? formatPatientDateTime(row.scheduledStartAt, patientTimezone, { locale: numLocale }) : copy.table.noSchedule}
-          </span>
-        ),
-      },
-      {
-        id: "durationMinutes",
-        align: "start",
-        header: copy.table.duration,
-        cell: (row) => (
-          <span className="text-sm text-text-secondary">{t("card.duration", { n: row.durationMinutes })}</span>
-        ),
-      },
-      {
-        id: "status",
-        align: "start",
-        header: copy.table.status,
-        cell: (row) => (
-          <SessionStatusBadge
-            status={row.status}
-            operational={row.operational}
-            labelOverride={row.status === "EXPIRED" ? copy.expiredPaymentBadge : undefined}
-          />
-        ),
-      },
-      {
-        id: "reviewStatus",
-        align: "start",
-        header: copy.reviewStatus.label,
-        cell: (row) => {
-          const canReview =
-            row.actions?.canReview === true && pendingReviewIds.has(row.id);
-          const reviewState: SessionReviewVisualState = reviewMap.has(row.id)
-            ? { kind: "rated", review: reviewMap.get(row.id)! }
-            : canReview
-              ? { kind: "needs_rating" }
-              : { kind: "not_available" };
-
-          if (reviewState.kind === "rated") {
-            return (
-              <div className="space-y-1">
-                <span className="inline-flex rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] font-semibold text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300">
-                  {copy.reviewStatus.rated}
-                </span>
-                <p className="text-xs text-text-secondary">
-                  {copy.reviewStatus.yourRating(String(reviewState.review.overallRating))}
-                </p>
-              </div>
-            );
-          }
-
-          if (reviewState.kind === "needs_rating") {
-            return (
-              <span className="inline-flex rounded-full bg-amber-50 px-2.5 py-1 text-[11px] font-semibold text-amber-700 dark:bg-amber-500/10 dark:text-amber-300">
-                {copy.reviewStatus.needsRating}
-              </span>
-            );
-          }
-
-          return (
-            <span className="inline-flex rounded-full bg-surface-tertiary px-2.5 py-1 text-[11px] font-semibold text-text-muted dark:bg-white/5 dark:text-white/60">
-              {copy.reviewStatus.notAvailable}
-            </span>
-          );
-        },
-      },
-      {
-        id: "actions",
-        align: "end",
-        header: "",
-        cell: (row) => {
-          const needsRating =
-            row.actions?.canReview === true &&
-            pendingReviewIds.has(row.id) &&
-            !reviewMap.has(row.id);
-
-          return (
-            <div className="flex items-center justify-end gap-2">
-              {needsRating ? (
-                <button
-                  type="button"
-                  onClick={() => openRatingModal(row.id)}
-                  className="sawiyaa-btn-press inline-flex items-center justify-center gap-1.5 rounded-xl border border-amber-300 bg-amber-50 px-3 py-1.5 text-xs font-semibold text-amber-800 transition hover:-translate-y-0.5 hover:border-amber-400 hover:bg-amber-100 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-200"
-                >
-                  {copy.reviewStatus.rateSession}
-                </button>
-              ) : null}
-
-              <Link
-                href={`/patient/sessions/${row.id}` as never}
-                className="sawiyaa-btn-press inline-flex items-center justify-center gap-1.5 rounded-xl border border-border-light bg-white px-3 py-1.5 text-xs font-semibold text-text-primary transition hover:-translate-y-0.5 hover:border-primary/30 hover:bg-surface-tertiary/20 hover:text-primary dark:bg-white/5 dark:text-white/90"
-              >
-                <span>{copy.table.open}</span>
-                {locale === "ar" ? <ChevronLeft className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
-              </Link>
-            </div>
-          );
-        },
-      },
-    ],
-    [copy, locale, numLocale, pendingReviewIds, reviewMap, t],
-  );
+  const TABS: Array<{
+    id: "all" | "needs-rating" | "upcoming" | "completed" | "cancelled";
+    label: string;
+    count?: number | null;
+  }> = [
+    { id: "all", label: t("list.tabs.all"), count: summary?.totalItems ?? null },
+    { id: "upcoming", label: t("list.tabs.upcoming"), count: summary?.upcoming ?? null },
+    { id: "needs-rating", label: t("list.tabs.needsRating"), count: pendingReviews.length > 0 ? pendingReviews.length : null },
+    { id: "completed", label: t("list.tabs.completed"), count: summary?.completed ?? null },
+    { id: "cancelled", label: t("list.tabs.cancelled"), count: summary?.cancelled ?? null },
+  ];
 
   if (isLoading) {
-    return <SessionsLoadingState locale={locale} />;
+    return <SessionsLoadingState />;
   }
 
   if (isError) {
     return (
-      <StateCard
-        title={copy.errorTitle}
-        note={copy.errorNote}
-        action={{ label: copy.retry, onClick: () => refetch() }}
-      />
+      <div className="mx-auto max-w-2xl py-12 px-4 text-center">
+        <StateCard
+          title={t("list.errorHeading")}
+          note={t("list.errorNote")}
+          action={{ label: t("list.retry"), onClick: () => refetch() }}
+        />
+      </div>
     );
   }
 
-  const paginationConfig = pagination
-    ? {
-        page: pagination.page,
-        limit: pagination.limit,
-        totalItems: pagination.totalItems,
-        totalPages: pagination.totalPages,
-        hasNextPage: pagination.page < pagination.totalPages,
-        hasPrevPage: pagination.page > 1,
-      }
-    : undefined;
-
-  const dataTableEmptyState =
-    activeTab === "needs-rating"
-      ? {
-          title: copy.needsRatingEmptyHeading,
-          description: copy.needsRatingEmptyNote,
-        }
-      : {
-          title: copy.emptyTabTitle,
-          description: copy.emptyTabNote,
-        };
-
   return (
-    <div className="space-y-6">
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-        <div className="flex items-start justify-between rounded-2xl border border-border-light bg-white p-4 text-start shadow-[0_8px_24px_rgba(36,86,79,0.04)] dark:bg-surface-secondary">
-          <div className="space-y-1">
-            <p className="text-xs font-semibold text-text-muted">{copy.summary.total.label}</p>
-            <p className="text-2xl font-bold text-text-primary dark:text-white">{totalItems}</p>
-          </div>
-          <span className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-primary-light text-primary dark:bg-primary/20 dark:text-primary-light">
-            <CalendarDays className="h-4 w-4" />
-          </span>
+    <div className="mx-auto max-w-5xl px-4 py-5 sm:py-7 space-y-5 text-start">
+      {/* Header & Quick Action */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-b border-border-light/60 pb-4">
+        <div>
+          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-text-primary dark:text-white">
+            {t("list.title")}
+          </h1>
+          <p className="text-xs text-text-secondary mt-0.5">
+            {locale === "ar"
+              ? "متابعة مواعيدك القادمة، الانضمام للجلسات المباشرة، وسجل استشاراتك السابقة."
+              : t("list.note")}
+          </p>
         </div>
 
-        <div className="flex items-start justify-between rounded-2xl border border-border-light bg-white p-4 text-start shadow-[0_8px_24px_rgba(36,86,79,0.04)] dark:bg-surface-secondary">
-          <div className="space-y-1">
-            <p className="text-xs font-semibold text-text-muted">{copy.summary.action.label}</p>
-            <p className="text-2xl font-bold text-warning">{totalAction}</p>
-          </div>
-          <span className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-warning-light text-warning dark:bg-warning/20 dark:text-warning-light">
-            <AlertCircle className="h-4 w-4" />
-          </span>
-        </div>
-
-        <div className="flex items-start justify-between rounded-2xl border border-border-light bg-white p-4 text-start shadow-[0_8px_24px_rgba(36,86,79,0.04)] dark:bg-surface-secondary">
-          <div className="space-y-1">
-            <p className="text-xs font-semibold text-text-muted">{copy.summary.active.label}</p>
-            <p className="text-2xl font-bold text-success">{totalActive}</p>
-          </div>
-          <span className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-success-light text-success dark:bg-success/20 dark:text-success-light">
-            <CheckCircle2 className="h-4 w-4" />
-          </span>
-        </div>
-
-        <div className="flex items-start justify-between rounded-2xl border border-border-light bg-white p-4 text-start shadow-[0_8px_24px_rgba(36,86,79,0.04)] dark:bg-surface-secondary">
-          <div className="space-y-1">
-            <p className="text-xs font-semibold text-text-muted">{copy.summary.history.label}</p>
-            <p className="text-2xl font-bold text-text-primary dark:text-white">{totalArchive}</p>
-          </div>
-          <span className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-surface-tertiary text-text-muted dark:bg-white/10 dark:text-white/40">
-            <History className="h-4 w-4" />
-          </span>
-        </div>
+        <Link
+          href="/patient/practitioners"
+          className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-primary px-4 py-2.5 text-xs font-bold text-white shadow-xs transition hover:bg-primary-hover active:scale-[0.98] self-start sm:self-auto cursor-pointer"
+        >
+          <Plus size={14} />
+          <span>{locale === "ar" ? "حجز جلسة جديدة" : "Book New Session"}</span>
+        </Link>
       </div>
 
-      <section className="rounded-[32px] border border-border-light bg-white p-5 shadow-[0_18px_38px_-30px_rgba(34,52,56,0.22)] dark:border-border-light dark:bg-surface-secondary sm:p-6">
-        {hasOverallSessions ? (
-          <>
-            <div className="flex flex-wrap items-center justify-between gap-4 border-b border-border-light/60 pb-4">
-              <div className="flex items-center gap-1 overflow-x-auto rounded-xl bg-surface-tertiary p-1 dark:bg-white/5">
-                {TABS.map((tab) => {
-                  const isActive = activeTab === tab.id;
-                  return (
-                    <button
-                      key={tab.id}
-                      type="button"
-                      onClick={() => handleTabChange(tab.id)}
-                      className={`sawiyaa-btn-press inline-flex shrink-0 items-center justify-center rounded-lg px-3.5 py-1.5 text-xs font-semibold transition-all duration-200 ${
-                        isActive
-                          ? "bg-white text-text-primary shadow-sm dark:bg-surface-secondary dark:text-white"
-                          : "text-text-secondary hover:bg-white/40 hover:text-text-primary dark:hover:bg-white/5"
-                      }`}
-                    >
-                      {tab.label}
-                    </button>
-                  );
-                })}
-              </div>
-
-              <div className="flex flex-wrap items-center gap-4">
-                <div className="flex items-center gap-1.5">
-                  <span className="text-xs font-medium text-text-secondary">
-                    {t("list.toolbar.sort")}
-                  </span>
-                  <select
-                    value={sortOrder}
-                    onChange={(event) => {
-                      setSortOrder(event.target.value as "newest" | "oldest");
-                      setPage(1);
-                    }}
-                    className="rounded-xl border border-border-light bg-surface-tertiary px-3 py-1.5 text-xs font-semibold text-text-primary focus:border-primary focus:ring-1 focus:ring-primary dark:bg-white/5 dark:text-white/90"
-                    aria-label={copy.sortLabel}
-                  >
-                    <option value="newest">{copy.sortNewest}</option>
-                    <option value="oldest">{copy.sortOldest}</option>
-                  </select>
-                </div>
-
-                <div className="flex items-center gap-1.5">
-                  <span className="text-xs font-medium text-text-secondary">
-                    {t("list.toolbar.rows")}
-                  </span>
-                  <select
-                    value={pageSize}
-                    onChange={(event) => {
-                      setPageSize(Number(event.target.value));
-                      setPage(1);
-                    }}
-                    className="rounded-xl border border-border-light bg-surface-tertiary px-3 py-1.5 text-xs font-semibold text-text-primary focus:border-primary focus:ring-1 focus:ring-primary dark:bg-white/5 dark:text-white/90"
-                    aria-label={copy.rowsPerPage}
-                  >
-                    {[10, 20, 50].map((option) => (
-                      <option key={option} value={option}>
-                        {option}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-            </div>
-
-            <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-xs text-text-secondary">
-              <p className="font-medium text-text-primary dark:text-white/90">
-                {copy.paymentExpiredNote} ( {copy.summary.expired.label}: {String(totalExpired)} )
-              </p>
-              {pagination?.totalPages && pagination.totalPages > 1 ? (
-                <span>{copy.pageLabel(page, pagination.totalPages)}</span>
+      {/* Primary Status Navigation Tabs */}
+      <div className="flex flex-wrap items-center gap-1.5">
+        {TABS.map((tab) => {
+          const isActive = activeTab === tab.id;
+          return (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => handleTabChange(tab.id)}
+              className={`inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-bold transition cursor-pointer ${
+                isActive
+                  ? "bg-primary text-white shadow-xs"
+                  : "bg-surface-tertiary text-text-secondary hover:bg-border-light hover:text-text-primary dark:bg-white/5"
+              }`}
+            >
+              <span>{tab.label}</span>
+              {tab.count !== null && tab.count !== undefined && tab.count > 0 ? (
+                <span
+                  className={`inline-flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[10px] font-bold font-mono ${
+                    isActive
+                      ? "bg-white text-primary"
+                      : tab.id === "needs-rating"
+                        ? "bg-amber-500 text-white"
+                        : "bg-primary/10 text-primary dark:bg-primary/20 dark:text-primary-light"
+                  }`}
+                >
+                  {tab.count}
+                </span>
               ) : null}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Advanced Filter & Search Bar */}
+      <div className="rounded-2xl border border-border-light/80 bg-white p-3 sm:p-4 shadow-2xs dark:bg-surface-secondary dark:border-border-dark space-y-3">
+        <div className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-4">
+          {/* Live Search */}
+          <div className="relative">
+            <Search className="absolute start-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-text-muted" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder={locale === "ar" ? "ابحث باسم المختص أو كود الجلسة..." : "Search by doctor or code..."}
+              className="w-full rounded-xl border border-border-light bg-surface-tertiary/40 py-2 ps-9 pe-8 text-xs text-text-primary placeholder:text-text-muted focus:border-primary focus:bg-white focus:outline-hidden dark:bg-surface-tertiary dark:border-border-dark"
+            />
+            {searchQuery && (
+              <button
+                type="button"
+                onClick={() => setSearchQuery("")}
+                className="absolute end-2.5 top-1/2 -translate-y-1/2 text-text-muted hover:text-text-primary"
+              >
+                <X size={13} />
+              </button>
+            )}
+          </div>
+
+          {/* Practitioner Filter */}
+          <div className="relative">
+            <User className="absolute start-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-text-muted pointer-events-none" />
+            <select
+              value={selectedPractitioner}
+              onChange={(e) => setSelectedPractitioner(e.target.value)}
+              className="w-full rounded-xl border border-border-light bg-surface-tertiary/40 py-2 ps-9 pe-3 text-xs font-semibold text-text-primary focus:border-primary focus:bg-white focus:outline-hidden dark:bg-surface-tertiary dark:border-border-dark cursor-pointer appearance-none"
+            >
+              <option value="ALL">{locale === "ar" ? "جميع المختصين" : "All Specialists"}</option>
+              {uniquePractitioners.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Time Range Filter */}
+          <div className="relative">
+            <Calendar className="absolute start-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-text-muted pointer-events-none" />
+            <select
+              value={selectedPeriod}
+              onChange={(e) => setSelectedPeriod(e.target.value)}
+              className="w-full rounded-xl border border-border-light bg-surface-tertiary/40 py-2 ps-9 pe-3 text-xs font-semibold text-text-primary focus:border-primary focus:bg-white focus:outline-hidden dark:bg-surface-tertiary dark:border-border-dark cursor-pointer appearance-none"
+            >
+              <option value="ALL">{locale === "ar" ? "جميع الفترات" : "All Time"}</option>
+              <option value="THIS_WEEK">{locale === "ar" ? "خلال هذا الأسبوع" : "This Week"}</option>
+              <option value="THIS_MONTH">{locale === "ar" ? "خلال هذا الشهر" : "This Month"}</option>
+              <option value="FUTURE">{locale === "ar" ? "المواعيد القادمة فقط" : "Future Only"}</option>
+              <option value="PAST">{locale === "ar" ? "الجلسات السابقة فقط" : "Past Only"}</option>
+            </select>
+          </div>
+
+          {/* Sort Order */}
+          <div className="relative">
+            <select
+              value={sortOrder}
+              onChange={(e) => setSortOrder(e.target.value as "newest" | "oldest")}
+              className="w-full rounded-xl border border-border-light bg-surface-tertiary/40 py-2 px-3 text-xs font-semibold text-text-primary focus:border-primary focus:bg-white focus:outline-hidden dark:bg-surface-tertiary dark:border-border-dark cursor-pointer"
+            >
+              <option value="newest">{t("list.sortNewest")}</option>
+              <option value="oldest">{t("list.sortOldest")}</option>
+            </select>
+          </div>
+        </div>
+
+        {/* Active Filter Chips & Reset Bar */}
+        {hasActiveFilters && (
+          <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-border-light/60 text-xs">
+            <div className="flex flex-wrap items-center gap-1.5">
+              <span className="text-text-muted text-[11px] font-semibold">
+                {locale === "ar" ? "الفلاتر النشطة:" : "Active Filters:"}
+              </span>
+              {searchQuery && (
+                <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2.5 py-0.5 text-[11px] font-bold text-primary">
+                  <span>بحث: {searchQuery}</span>
+                  <button type="button" onClick={() => setSearchQuery("")} className="hover:opacity-75">
+                    <X size={11} />
+                  </button>
+                </span>
+              )}
+              {selectedPractitioner !== "ALL" && (
+                <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2.5 py-0.5 text-[11px] font-bold text-primary">
+                  <span>المختص: {uniquePractitioners.find((p) => p.id === selectedPractitioner)?.name}</span>
+                  <button type="button" onClick={() => setSelectedPractitioner("ALL")} className="hover:opacity-75">
+                    <X size={11} />
+                  </button>
+                </span>
+              )}
+              {selectedPeriod !== "ALL" && (
+                <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2.5 py-0.5 text-[11px] font-bold text-primary">
+                  <span>الفترة المحددة</span>
+                  <button type="button" onClick={() => setSelectedPeriod("ALL")} className="hover:opacity-75">
+                    <X size={11} />
+                  </button>
+                </span>
+              )}
             </div>
 
-            <div className="mt-4">
-              <DataTable
-                data={visibleSessions}
-                columns={columns}
-                getRowId={(row) => row.id}
-                loading={isLoading}
-                pagination={paginationConfig}
-                onPageChange={(newPage) => setPage(newPage)}
-                emptyState={dataTableEmptyState}
-              />
-            </div>
-          </>
-        ) : (
-          <>
-            <div className="border-b border-border-light/60 py-6 text-center">
-              <HeartHandshake className="mx-auto mb-3 h-10 w-10 text-primary/80" />
-              <h3 className="text-lg font-bold text-text-primary dark:text-white/95">
-                {copy.emptyTitle}
-              </h3>
-              <p className="mx-auto mt-2 max-w-xl text-sm leading-6 text-text-secondary">
-                {copy.emptyNote}
-              </p>
-            </div>
-
-            <div className="mt-6 grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
-              <div className="rounded-[22px] border border-border-light bg-surface-tertiary/10 p-5 text-start dark:bg-white/5">
-                <div className="flex items-start gap-3">
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-primary-light text-text-brand">
-                    <Sparkles className="h-5 w-5" />
-                  </div>
-                  <div className="space-y-1">
-                    <p className="text-sm font-semibold text-text-primary dark:text-white/90">
-                      {t("list.emptyJourney.title")}
-                    </p>
-                    <p className="text-sm leading-6 text-text-secondary">
-                      {t("list.emptyJourney.note")}
-                    </p>
-                  </div>
-                </div>
-                <div className="mt-4 grid gap-3 sm:grid-cols-3">
-                  {(t.raw("list.emptyJourney.steps") as string[]).map((step, index) => (
-                    <div
-                      key={step}
-                      className="rounded-2xl border border-border-light bg-white px-4 py-3 text-sm font-medium text-text-primary dark:bg-gray-800/40"
-                    >
-                      <span className="mr-2 inline-flex h-6 w-6 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary">
-                        {index + 1}
-                      </span>
-                      {step}
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div className="flex flex-col justify-between gap-4 rounded-[22px] border border-border-light bg-primary-light/20 p-5 text-start dark:bg-primary/10">
-                <div className="space-y-2">
-                  <p className="text-sm font-semibold text-text-primary dark:text-white/90">
-                    {t("list.emptyJourney.startTitle")}
-                  </p>
-                  <p className="text-sm leading-6 text-text-secondary">
-                    {t("list.emptyJourney.startNote")}
-                  </p>
-                </div>
-                <div className="flex flex-wrap gap-2 pt-2">
-                  <Link
-                    href="/patient/matching"
-                    className="sawiyaa-btn-press inline-flex items-center justify-center gap-2 rounded-2xl bg-primary px-5 py-3 text-sm font-semibold text-white shadow-[0_14px_28px_-18px_rgba(68,161,148,0.4)] transition hover:-translate-y-0.5 hover:bg-primary-hover"
-                  >
-                    <Sparkles size={16} />
-                    {t("list.emptyJourney.startBooking")}
-                  </Link>
-                  <Link
-                    href="/patient/sessions"
-                    className="sawiyaa-btn-press inline-flex items-center justify-center gap-2 rounded-2xl border border-border-light bg-white px-5 py-3 text-sm font-semibold text-text-primary transition hover:-translate-y-0.5 hover:border-primary/30 hover:text-primary dark:bg-white/5"
-                  >
-                    <Search size={16} />
-                    {t("list.emptyJourney.explore")}
-                  </Link>
-                </div>
-              </div>
-            </div>
-          </>
+            <button
+              type="button"
+              onClick={clearAllFilters}
+              className="inline-flex items-center gap-1 text-[11px] font-bold text-rose-600 hover:underline cursor-pointer"
+            >
+              <RotateCcw size={11} />
+              <span>{locale === "ar" ? "إعادة ضبط الفلاتر" : "Reset Filters"}</span>
+            </button>
+          </div>
         )}
-      </section>
+      </div>
 
-      <Modal
-        isOpen={Boolean(selectedPendingReview)}
-        onClose={closeRatingModal}
-        size="md"
-        ariaLabel={reviewT("patient.ratingModal.title")}
-      >
-        <ModalBody className="p-6 sm:p-7">
-          {selectedPendingReview ? (
-            <div className="space-y-5">
-              <div className="space-y-2 text-center">
-                <h3 className="text-lg font-bold text-text-primary dark:text-white/95">
-                  {reviewT("patient.ratingModal.title")}
-                </h3>
-                <p className="text-sm leading-6 text-[#6B7280] dark:text-gray-300">
-                  {reviewT("patient.ratingModal.subtitle")}
-                </p>
-              </div>
+      {/* Sessions Cards List */}
+      {visibleSessions.length > 0 ? (
+        <div className="space-y-3">
+          {visibleSessions.map((session) => {
+            const isJoinable =
+              session.actions?.canJoin === true ||
+              session.operational?.state === "READY_TO_JOIN";
+            const isPayable =
+              session.actions?.canPay === true ||
+              session.operational?.state === "PENDING_PAYMENT";
+            const needsRating =
+              session.actions?.canReview === true &&
+              pendingReviewIds.has(session.id) &&
+              !reviewMap.has(session.id);
+            const userReview = reviewMap.get(session.id);
 
-              <PatientSessionReviewCard
-                sessionId={selectedPendingReview.sessionId}
-                practitionerName={selectedPendingReview.practitioner.displayName}
-                completedAt={selectedPendingReview.completedAt}
-                hideHeader={true}
-                onSubmitted={handleReviewSubmitted}
-                onCancel={closeRatingModal}
-              />
-            </div>
+            return (
+              <article
+                key={session.id}
+                className={`group relative rounded-2xl border p-4 sm:p-5 transition-all duration-200 shadow-2xs hover:shadow-xs ${
+                  isJoinable
+                    ? "border-emerald-400 bg-emerald-50/40 ring-2 ring-emerald-500/20 dark:bg-emerald-950/20 dark:border-emerald-700"
+                    : isPayable
+                      ? "border-amber-300 bg-amber-50/30 dark:bg-amber-950/20 dark:border-amber-700"
+                      : "border-border-light/80 bg-white hover:border-primary/30 dark:bg-surface-secondary dark:border-border-dark"
+                }`}
+              >
+                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                  {/* Left Column: Doctor Profile & Schedule Info */}
+                  <div className="flex items-start gap-3.5 min-w-0">
+                    <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-2xl border border-primary/20 bg-surface-secondary shadow-2xs dark:bg-white/5">
+                      <PractitionerAvatar
+                        src={null}
+                        alt={session.practitioner.displayName ?? session.practitioner.slug}
+                        initials={session.practitioner.displayName?.slice(0, 2) ?? "DR"}
+                        className="h-full w-full object-cover"
+                      />
+                    </div>
+
+                    <div className="space-y-1.5 min-w-0">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <h3 dir="auto" className="text-sm sm:text-base font-bold text-text-primary dark:text-white truncate">
+                          {session.practitioner.displayName ?? session.practitioner.slug}
+                        </h3>
+                        <SessionCodeReference
+                          sessionId={session.id}
+                          sessionCode={session.sessionCode}
+                          href={`/patient/sessions/${session.id}`}
+                          copyable
+                        />
+                      </div>
+
+                      {/* Detailed Meta Tags */}
+                      <div className="flex flex-wrap items-center gap-2 text-xs text-text-secondary">
+                        <span className="inline-flex items-center gap-1 rounded-md bg-surface-tertiary/60 px-2 py-0.5 font-semibold text-text-primary dark:bg-white/5 dark:text-white/90">
+                          <CalendarDays size={12} className="text-primary shrink-0" />
+                          <span>
+                            {session.scheduledStartAt
+                              ? formatPatientDateTime(session.scheduledStartAt, patientTimezone, {
+                                  locale: numLocale,
+                                  dateStyle: "medium",
+                                  timeStyle: "short",
+                                })
+                              : t("list.table.noSchedule")}
+                          </span>
+                        </span>
+
+                        <span className="inline-flex items-center gap-1 rounded-md bg-surface-tertiary/60 px-2 py-0.5 text-text-muted dark:bg-white/5">
+                          <Clock size={11} className="text-primary shrink-0" />
+                          <span>{t("card.duration", { n: session.durationMinutes })}</span>
+                        </span>
+
+                        <span className="inline-flex items-center gap-1 rounded-md bg-surface-tertiary/60 px-2 py-0.5 text-text-muted dark:bg-white/5">
+                          <Video size={11} className="text-primary shrink-0" />
+                          <span>{locale === "ar" ? "فيديو مباشر" : "Live Video"}</span>
+                        </span>
+                      </div>
+
+                      {/* Rating / Review note if submitted */}
+                      {userReview ? (
+                        <div className="flex items-center gap-1 text-[11px] font-bold text-emerald-700 dark:text-emerald-400 pt-0.5">
+                          <Star size={11} className="fill-amber-400 text-amber-400" />
+                          <span>
+                            {t("list.reviewStatus.yourRating", { rating: String(userReview.overallRating) })}
+                          </span>
+                        </div>
+                      ) : null}
+                    </div>
+                  </div>
+
+                  {/* Right Column: Status Badge & CTAs */}
+                  <div className="flex flex-wrap items-center justify-between md:justify-end gap-2.5 pt-2 md:pt-0 border-t md:border-t-0 border-border-light/40">
+                    <SessionStatusBadge
+                      status={session.status}
+                      operational={session.operational}
+                    />
+
+                    <div className="flex items-center gap-2">
+                      {isJoinable ? (
+                        <Link
+                          href={`/patient/sessions/${session.id}` as any}
+                          className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-emerald-600 px-4 py-2 text-xs font-bold text-white shadow-xs transition hover:bg-emerald-700 active:scale-[0.98] animate-pulse"
+                        >
+                          <Video size={13} />
+                          <span>{locale === "ar" ? "ادخل الجلسة الآن" : "Join Now"}</span>
+                        </Link>
+                      ) : isPayable ? (
+                        <Link
+                          href={`/patient/sessions/${session.id}/pay` as any}
+                          className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-xs font-bold text-white shadow-xs transition hover:bg-primary-hover active:scale-[0.98]"
+                        >
+                          <span>{locale === "ar" ? "إتمام الدفع" : "Complete Payment"}</span>
+                        </Link>
+                      ) : needsRating ? (
+                        <button
+                          type="button"
+                          onClick={() => openRatingModal(session.id)}
+                          className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-amber-300 bg-amber-50 px-3.5 py-2 text-xs font-bold text-amber-900 transition hover:bg-amber-100 dark:bg-amber-950/40 dark:border-amber-700 dark:text-amber-200 cursor-pointer"
+                        >
+                          <Star size={12} className="fill-amber-400 text-amber-400" />
+                          <span>{t("list.reviewStatus.rateSession")}</span>
+                        </button>
+                      ) : null}
+
+                      <Link
+                        href={`/patient/sessions/${session.id}` as any}
+                        className="inline-flex items-center justify-center gap-1 rounded-xl border border-border-light bg-[#FCFAF6] px-3.5 py-2 text-xs font-bold text-text-secondary hover:border-primary/40 hover:bg-white hover:text-text-primary transition dark:bg-white/5 dark:border-white/10"
+                      >
+                        <span>{t("list.table.open")}</span>
+                        {locale === "ar" ? <ChevronLeft size={13} /> : <ChevronRight size={13} />}
+                      </Link>
+                    </div>
+                  </div>
+                </div>
+              </article>
+            );
+          })}
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <TablePagination
+              page={page}
+              totalPages={totalPages}
+              onPageChange={(nextPage) => setPage(nextPage)}
+              pageLabel={(p, total) => t("list.pageLabel", { page: p, totalPages: total })}
+              locale={locale}
+            />
+          )}
+        </div>
+      ) : (
+        /* Empty State */
+        <div className="rounded-3xl border border-border-light/80 bg-white p-8 text-center shadow-xs dark:bg-surface-secondary dark:border-white/10 max-w-lg mx-auto space-y-4">
+          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-primary-light text-primary dark:bg-primary/20">
+            <CalendarDays size={22} />
+          </div>
+          <div className="space-y-1">
+            <h3 className="text-base font-bold text-text-primary dark:text-white">
+              {hasActiveFilters
+                ? (locale === "ar" ? "لا توجد جلسات مطابقة للفلاتر المحددة" : "No sessions match the selected filters")
+                : activeTab === "needs-rating"
+                  ? t("list.needsRatingEmptyHeading")
+                  : activeTab === "upcoming"
+                    ? t("list.emptyHeading")
+                    : t("list.emptyTabTitle")}
+            </h3>
+            <p className="text-xs text-text-secondary leading-relaxed">
+              {hasActiveFilters
+                ? (locale === "ar" ? "جرب تغيير مصطلح البحث أو مسح الفلاتر لعرض كافة الجلسات." : "Try clearing or changing your search criteria.")
+                : activeTab === "needs-rating"
+                  ? t("list.needsRatingEmptyNote")
+                  : activeTab === "upcoming"
+                    ? t("list.emptyNote")
+                    : t("list.emptyTabNote")}
+            </p>
+          </div>
+
+          {hasActiveFilters ? (
+            <button
+              type="button"
+              onClick={clearAllFilters}
+              className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-border-light bg-white px-4 py-2 text-xs font-bold text-text-primary hover:border-primary transition dark:bg-surface-secondary cursor-pointer"
+            >
+              <RotateCcw size={12} />
+              <span>{locale === "ar" ? "مسح الفلاتر المحددة" : "Clear Filters"}</span>
+            </button>
+          ) : activeTab === "upcoming" || activeTab === "all" ? (
+            <Link
+              href="/patient/practitioners"
+              className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-primary px-5 py-2.5 text-xs font-bold text-white shadow-xs transition hover:bg-primary-hover active:scale-[0.98]"
+            >
+              <span>{locale === "ar" ? "تصفح المختصين وحجز موعد" : "Browse Specialists"}</span>
+            </Link>
           ) : null}
-        </ModalBody>
-      </Modal>
+        </div>
+      )}
+
+      {/* Rating / Review Modal */}
+      {selectedPendingReview ? (
+        <Modal
+          isOpen={Boolean(ratingSessionId)}
+          onClose={closeRatingModal}
+          size="md"
+        >
+          <ModalBody className="p-0">
+            <PatientSessionReviewCard
+              sessionId={selectedPendingReview.sessionId}
+              completedAt={selectedPendingReview.completedAt}
+              practitionerName={selectedPendingReview.practitioner?.displayName}
+              onSubmitted={handleReviewSubmitted}
+              onCancel={closeRatingModal}
+            />
+          </ModalBody>
+        </Modal>
+      ) : null}
     </div>
   );
 }

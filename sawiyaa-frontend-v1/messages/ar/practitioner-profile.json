@@ -7,7 +7,8 @@
     "backHome": "العودة إلى الرئيسية"
   },
   "header": {
-    "verified": "موثّق",
+    "verified": "معتمد على سويّة",
+    "verifiedExplanation": "اجتاز هذا المختص متطلبات المراجعة والنشر على سويّة.",
     "summary": "راجع خبرة المختص وتخصصاته وتوفّره قبل الحجز.",
     "location": "الموقع",
     "specialtyFocus": "محور التخصص"
@@ -39,7 +40,8 @@
   "cta": {
     "sessionDuration": "جلسات لمدة 50 دقيقة",
     "sessionOnline": "جلسة عبر الإنترنت",
-    "messagePractitioner": "رسائل المختص"
+    "messagePractitioner": "رسائل المختص",
+    "bookSession": "احجز جلسة"
   },
   "badges": {
     "verified": "موثّق من سويّة",
@@ -82,7 +84,7 @@
   "booking": {
     "panelTitle": "احجز جلسة",
     "panelSubtitle": "اختر الوقت المناسب لك ثم تابع عندما تكون مستعدًا.",
-    "slotHint": "سجّل الدخول كحساب مريض للحجز.",
+    "slotHint": "سجّل الدخول لحجز موعدك.",
     "backToSlots": "العودة إلى الأوقات",
     "selectedSlot": "الموعد المختار",
     "selectDuration": "مدة الجلسة",
@@ -93,40 +95,50 @@
     "sessionFees": "رسوم الجلسة",
     "selectedPrice": "السعر المختار: {price}",
     "selectedPriceLabel": "السعر المختار",
-    "signInNote": "سجّل الدخول إلى حسابك كمريض لحجز هذا الموعد.",
+    "signInNote": "سجّل الدخول إلى حسابك لحجز هذا الموعد بكل سهولة.",
     "signInToCta": "سجّل الدخول للحجز",
-    "nonPatientNote": "الحجز متاح لحسابات المرضى فقط.",
-    "confirming": "جارٍ الحجز...",
-    "confirmCta": "تأكيد الحجز",
+    "nonPatientNote": "الحجز متاح للمستخدمين الأفراد المسجلين.",
+    "confirming": "جارٍ تجهيز الحجز...",
+    "confirmCta": "تأكيد ومتابعة للدفع",
     "createError": "حدث خطأ ما. يرجى المحاولة مرة أخرى.",
     "createErrorConflict": "هذا الموعد لم يعد متاحًا. من فضلك اختر موعدًا آخر متاحًا.",
     "successHeading": "تم إرسال طلب الجلسة",
     "successStatus": "الحالة: بانتظار الدفع",
-    "successNote": "تم حجز جلستك لمدة 15 دقيقة. أكمل الدفع من صفحة الجلسات لتأكيد الحجز.",
+    "successNote": "تم حجز جلستك مؤقتًا. أكمل الدفع لتأكيد الحجز فورًا.",
     "payNow": "إتمام الدفع",
-    "viewSessions": "الانتقال إلى جلساتي",
+    "viewSessions": "الانتقال إلى جلساتك",
     "bookAnother": "حجز موعد آخر",
     "jumpToAvailability": "عرض الأوقات المتاحة",
     "instant": {
       "availableNow": "متاح الآن لجلسة فورية",
-      "note": "ابدأ جلسة فيديو خلال دقائق بعد موافقة المختص.",
+      "note": "ابدأ جلسة فيديو مباشرة في غضون دقائق بعد تأكيد الطلب.",
       "cta": "طلب جلسة فورية",
       "unavailable": "الحجز الفوري غير متاح حاليًا",
       "unavailableNote": "يمكنك اختيار موعد مناسب من جدول الجلسات المتاحة."
     }
   },
   "packages": {
-    "eyebrow": "الباقات",
-    "title": "باقات الجلسات",
-    "subtitle": "اختر باقة لعرض السعر الكامل والتوفير وقيمة كل جلسة باستخدام عناصر الحجز نفسها التي تستخدمها عادة.",
-    "selected": "المختارة",
+    "eyebrow": "باقات توفيرية",
+    "title": "باقات الجلسات العلاجية",
+    "subtitle": "اختر باقة توفيرية تناسب خطتك العلاجية واستفد من خصم مباشر على إجمالي الجلسات.",
+    "selected": "المدة",
     "availablePlans": "الباقات المتاحة",
     "retry": "أعد المحاولة",
     "refreshQuote": "تحديث التسعير",
     "signInToContinue": "سجّل الدخول للمتابعة",
-    "startPurchase": "ابدأ الشراء",
-    "viewPurchases": "عرض مشترياتي من الباقات",
+    "startPurchase": "اختيار الباقة والمتابعة",
+    "viewPurchases": "استعراض باقاتي المشتراة",
     "empty": "الباقات غير متاحة لهذا المختص حاليًا.",
+    "popularBadge": "الأعلى توفيراً",
+    "videoSessionsBadge": "جلسات فيديو مباشرة",
+    "perSession": "للجلسة",
+    "insteadOf": "بدلاً من",
+    "packageTotal": "إجمالي الباقة",
+    "features": {
+      "video": "جلسات مرئية فردية مشفرة بالكامل ({duration})",
+      "schedule": "جدولة مرنة حسب جدول المواعيد المتاح",
+      "flexible": "إمكانية اختيار المواعيد الآن أو لاحقاً"
+    },
     "controls": {
       "duration": "المدة",
       "currency": "العملة",
@@ -140,11 +152,15 @@
       "USD": "دولار"
     },
     "plan": {
+      "badge": "باقة جلسات",
+      "titleTemplate": "باقة {count} جلسات",
+      "descriptionTemplate": "{count} جلسات استشارية مرئية ({duration}) بخصم {discount}",
       "sessionCount": "الجلسات",
       "session": "جلسة",
       "sessions": "جلسات",
       "single": "باقة",
       "multiple": "باقات",
+      "saveLabel": "وفّر",
       "save": "وفّر {amount}"
     },
     "quote": {
@@ -184,6 +200,7 @@
       "chosenSlots": "المواعيد المختارة",
       "slotProgress": "تم اختيار {selected} من أصل {total} جلسات",
       "noSlotsSelected": "حدد المواعيد التي ترغب في إضافتها إلى هذه الباقة.",
+      "optionalInitialSlot": "اختياري: اختر موعد الجلسة الأولى الآن، أو اشترِ الباقة وحدد المواعيد لاحقًا.",
       "selected": "محدد",
       "continueToTimes": "اختيار المواعيد",
       "reviewButton": "مراجعة الباقة",

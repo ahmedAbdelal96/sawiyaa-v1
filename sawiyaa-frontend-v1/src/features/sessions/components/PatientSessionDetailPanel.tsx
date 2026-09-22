@@ -232,6 +232,35 @@ type Props = {
   sessionId: string;
 };
 
+const PATIENT_EVENT_TYPES = new Set([
+  "SESSION_CREATED",
+  "RESCHEDULED",
+  "PAYMENT_PENDING",
+  "PAYMENT_CONFIRMED",
+  "PRACTITIONER_ACCEPTED",
+  "PRACTITIONER_REJECTED",
+  "SESSION_CONFIRMED",
+  "SESSION_READY_TO_JOIN",
+  "PATIENT_JOINED",
+  "PRACTITIONER_JOINED",
+  "SESSION_STARTED",
+  "SESSION_AWAITING_COMPLETION_CONFIRMATION",
+  "SESSION_COMPLETED",
+  "CANCELLED_BY_PATIENT",
+  "CANCELLED_BY_PRACTITIONER",
+  "EXPIRED_UNPAID",
+  "NO_SHOW_PATIENT",
+  "NO_SHOW_PRACTITIONER",
+  "PROVIDER_ROOM_CREATED",
+  "PROVIDER_ROOM_ENDED",
+]);
+
+function formatPatientEventType(eventType: string, t: any) {
+  return PATIENT_EVENT_TYPES.has(eventType)
+    ? t(`detail.eventTypes.${eventType}`)
+    : t("detail.eventTypes.UNKNOWN");
+}
+
 export default function PatientSessionDetailPanel({ sessionId }: Props) {
   const t = useTranslations("sessions");
   const tPayments = useTranslations("payments");
@@ -246,7 +275,7 @@ export default function PatientSessionDetailPanel({ sessionId }: Props) {
   const patientTimezone = patientProfileQuery.data?.profile.timezone;
 
   useEffect(() => {
-    if (!session || session.status !== "PENDING_PAYMENT") {
+    if (!session || session.operational?.state !== "PENDING_PAYMENT") {
       return;
     }
     const deadline = session.expiresAt;
@@ -583,6 +612,57 @@ export default function PatientSessionDetailPanel({ sessionId }: Props) {
               </p>
             </div>
           </div>
+        </PatientSectionCard>
+
+        <PatientSectionCard className="border-border-soft bg-white p-5 shadow-[0_8px_24px_rgba(36,86,79,0.08)] dark:bg-surface-secondary">
+          <h3 className="text-base font-bold text-text-primary dark:text-white/95">
+            {t("detail.ui.timeline")}
+          </h3>
+          {session.timeline.length > 0 ? (
+            <div className="relative mt-5 space-y-5 border-s border-border-light ps-5 rtl:border-s-0 rtl:border-e rtl:pe-5 rtl:ps-0 dark:border-white/10">
+              {session.timeline.map((event, index) => {
+                const isRescheduled = event.eventType === "RESCHEDULED";
+                return (
+                  <div key={`${event.occurredAt}-${index}`} className="relative">
+                    <span className="absolute -start-[26px] top-1.5 h-3.5 w-3.5 rounded-full border-2 border-primary bg-white rtl:-end-[26px] rtl:start-auto dark:bg-surface-secondary" />
+                    <p className="text-xs font-medium text-text-muted">
+                      {formatPatientDateTime(event.occurredAt, patientTimezone, { locale: numLocale })}
+                    </p>
+                    <p className="mt-1 text-sm font-semibold text-text-primary dark:text-white/90">
+                      {formatPatientEventType(event.eventType, t)}
+                    </p>
+                    {isRescheduled && (event.previousStartAt || event.newStartAt) ? (
+                      <div className="mt-2 grid gap-2 sm:grid-cols-2">
+                        <div className="rounded-xl border border-border-light bg-surface-tertiary px-3 py-2 dark:border-white/10 dark:bg-white/5">
+                          <p className="text-[11px] text-text-muted">{t("detail.ui.previousAppointment")}</p>
+                          <p className="mt-1 text-xs font-semibold text-text-primary dark:text-white/90">
+                            {event.previousStartAt
+                              ? formatPatientDateTime(event.previousStartAt, patientTimezone, { locale: numLocale })
+                              : "—"}
+                          </p>
+                        </div>
+                        <div className="rounded-xl border border-border-light bg-surface-tertiary px-3 py-2 dark:border-white/10">
+                          <p className="text-[11px] text-text-muted">{t("detail.ui.newAppointment")}</p>
+                          <p className="mt-1 text-xs font-semibold text-text-primary dark:text-white/90">
+                            {event.newStartAt
+                              ? formatPatientDateTime(event.newStartAt, patientTimezone, { locale: numLocale })
+                              : "—"}
+                          </p>
+                        </div>
+                      </div>
+                    ) : null}
+                    {event.reason ? (
+                      <p className="mt-2 inline-block rounded-lg bg-surface-tertiary px-2 py-1 text-xs text-text-secondary dark:bg-white/5">
+                        {t("detail.ui.reason")} {event.reason}
+                      </p>
+                    ) : null}
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <p className="mt-2 text-sm text-text-secondary">{t("detail.ui.timelineEmpty")}</p>
+          )}
         </PatientSectionCard>
 
         {/* Combined Session Action Operations Card */}

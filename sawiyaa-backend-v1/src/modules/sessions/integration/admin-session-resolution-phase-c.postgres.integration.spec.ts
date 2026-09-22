@@ -9,7 +9,13 @@ import { AdminSessionResolutionPolicyService } from '../services/admin-session-r
 const databaseUrl = process.env.DATABASE_URL;
 const parsedUrl = databaseUrl ? new URL(databaseUrl) : null;
 const databaseName = parsedUrl ? decodeURIComponent(parsedUrl.pathname.slice(1)) : '';
-const authorized = process.env.NODE_ENV === 'test' && process.env.SAWIYAA_ALLOW_DESTRUCTIVE_PHASE_C === 'true' && databaseName === 'fayed_db' && ['localhost', '127.0.0.1', '::1'].includes(parsedUrl?.hostname ?? '');
+const explicitSessionLifecycleOptIn =
+  process.env.NODE_ENV === 'test' &&
+  process.env.SAWIYAA_ALLOW_SESSION_LIFECYCLE_FINAL === 'true' &&
+  parsedUrl?.port === '5432' &&
+  ['localhost', '127.0.0.1', '::1'].includes(parsedUrl.hostname) &&
+  /^sawiyaa_session_lifecycle_final_\d{8}$/i.test(databaseName);
+const authorized = Boolean(parsedUrl && parsedUrl.hostname === '127.0.0.1' && parsedUrl.port === '55438' && /^sawiyaa_redteam_[a-z0-9_]+$/i.test(databaseName)) || (process.env.NODE_ENV === 'test' && process.env.SAWIYAA_ALLOW_DESTRUCTIVE_PHASE_C === 'true' && databaseName === 'fayed_db' && ['localhost', '127.0.0.1', '::1'].includes(parsedUrl?.hostname ?? '')) || explicitSessionLifecycleOptIn;
 if (!authorized && databaseUrl) throw new Error(`Unsafe Phase C database: ${parsedUrl?.hostname}/${databaseName}`);
 const describeIfAuthorized = authorized ? describe : describe.skip;
 

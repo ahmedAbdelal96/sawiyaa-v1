@@ -6,16 +6,26 @@ import { usePathname, useRouter } from "@/i18n/navigation";
 import { useSearchParams } from "next/navigation";
 import { Archive, FileText, Globe, Pencil, Plus, Send } from "lucide-react";
 import { DataTable } from "@/components/ui/data-table";
-import AdminOperationalListShell, { AdminSummaryCard } from "@/components/shared/admin/AdminOperationalListShell";
+import AdminOperationalListShell, {
+  AdminSummaryCard,
+} from "@/components/shared/admin/AdminOperationalListShell";
 import ActionIconButton from "@/components/ui/action-icon-button/ActionIconButton";
 import Button from "@/components/ui/button/Button";
 import FilterClearButton from "@/components/ui/filters/FilterClearButton";
 import InputField from "@/components/form/input/InputField";
 import Select from "@/components/form/Select";
 import type { ColumnDef, SortConfig } from "@/components/ui/data-table";
-import { buildUpdatedSearchParams, parseEnumParam, parsePositiveIntParam, parseTextParam } from "@/components/ui/data-table";
+import {
+  buildUpdatedSearchParams,
+  parseEnumParam,
+  parsePositiveIntParam,
+  parseTextParam,
+} from "@/components/ui/data-table";
 import { DestructiveConfirmModal } from "@/components/ui/modal";
-import { DEFAULT_PAGE_LIMIT, DEFAULT_PAGE_SIZE_OPTIONS } from "@/constants/pagination";
+import {
+  DEFAULT_PAGE_LIMIT,
+  DEFAULT_PAGE_SIZE_OPTIONS,
+} from "@/constants/pagination";
 import {
   useAdminArticles,
   useCreateAdminArticle,
@@ -23,9 +33,15 @@ import {
   usePublishAdminArticle,
   useUpdateAdminArticle,
 } from "../hooks/use-admin-articles";
-import type { AdminArticleItem, AdminArticleListParams, ArticleStatus } from "../types/admin-articles.types";
+import type {
+  AdminArticleItem,
+  AdminArticleListParams,
+  ArticleStatus,
+} from "../types/admin-articles.types";
 import { getAdminArticleErrorKey } from "../lib/admin-articles-errors";
 import AdminArticleFormModal from "./AdminArticleFormModal";
+import { useCurrentUserPermissions } from "@/features/users/hooks/use-users";
+import { PermissionKey } from "@/lib/auth/permissions";
 
 const STATUS_FILTERS: Array<ArticleStatus | "ALL"> = [
   "ALL",
@@ -42,25 +58,38 @@ const STATUS_FILTERS: Array<ArticleStatus | "ALL"> = [
 const STATUS_STYLES: Record<ArticleStatus, string> = {
   DRAFT: "border border-border-light bg-surface-tertiary text-text-secondary",
   SUBMITTED: "border border-primary/20 bg-primary-light text-text-brand",
-  IN_REVIEW: "border border-status-warning-border bg-status-warning-soft text-status-warning",
-  CHANGES_REQUESTED: "border border-status-warning-border bg-status-warning-soft text-status-warning",
-  APPROVED: "border border-status-success-border bg-status-success-soft text-status-success",
-  REJECTED: "border border-status-danger-border bg-status-danger-soft text-status-danger",
+  IN_REVIEW:
+    "border border-status-warning-border bg-status-warning-soft text-status-warning",
+  CHANGES_REQUESTED:
+    "border border-status-warning-border bg-status-warning-soft text-status-warning",
+  APPROVED:
+    "border border-status-success-border bg-status-success-soft text-status-success",
+  REJECTED:
+    "border border-status-danger-border bg-status-danger-soft text-status-danger",
   PUBLISHED: "border border-primary/20 bg-primary-light text-text-brand",
   ARCHIVED: "border border-border-light bg-surface-tertiary text-text-muted",
 };
 
 const PAGE_SIZE_OPTIONS = DEFAULT_PAGE_SIZE_OPTIONS;
-const SORTABLE_COLUMNS = ["title", "status", "updatedAt", "publishedAt", "locale"] as const;
+const SORTABLE_COLUMNS = [
+  "title",
+  "status",
+  "updatedAt",
+  "publishedAt",
+  "locale",
+] as const;
 type SortableArticlesColumn = (typeof SORTABLE_COLUMNS)[number];
 
 function formatDate(value: string | null, locale: string) {
   if (!value) return "-";
-  return new Date(value).toLocaleDateString(locale === "ar" ? "ar-SA" : "en-US", {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-  });
+  return new Date(value).toLocaleDateString(
+    locale === "ar" ? "ar-SA" : "en-US",
+    {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    },
+  );
 }
 
 function formatId(value: string) {
@@ -82,10 +111,14 @@ export default function AdminArticlesListScreen() {
   );
   const searchQuery = parseTextParam(searchParams.get("q"), { maxLength: 120 });
   const page = parsePositiveIntParam(searchParams.get("page"), 1, { min: 1 });
-  const limit = parsePositiveIntParam(searchParams.get("limit"), DEFAULT_PAGE_LIMIT, {
-    min: 1,
-    max: 50,
-  });
+  const limit = parsePositiveIntParam(
+    searchParams.get("limit"),
+    DEFAULT_PAGE_LIMIT,
+    {
+      min: 1,
+      max: 50,
+    },
+  );
   const sortColumn = parseEnumParam<SortableArticlesColumn>(
     searchParams.get("sortBy"),
     SORTABLE_COLUMNS,
@@ -96,23 +129,34 @@ export default function AdminArticlesListScreen() {
     ["asc", "desc"],
     "desc",
   );
-  const sortConfig: SortConfig = { column: sortColumn, direction: sortDirection };
-  const hasActiveFilters = statusFilter !== "ALL" || Boolean(searchQuery.trim());
+  const sortConfig: SortConfig = {
+    column: sortColumn,
+    direction: sortDirection,
+  };
+  const hasActiveFilters =
+    statusFilter !== "ALL" || Boolean(searchQuery.trim());
 
   const [actionFeedback, setActionFeedback] = useState<{
     tone: "success" | "error";
     message: string;
   } | null>(null);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
-  const [editingArticle, setEditingArticle] = useState<AdminArticleItem | null>(null);
+  const [editingArticle, setEditingArticle] = useState<AdminArticleItem | null>(
+    null,
+  );
   const [pendingArchiveArticle, setPendingArchiveArticle] = useState<{
     id: string;
     title: string;
     slug: string;
   } | null>(null);
 
-  const updateListQuery = (updates: Record<string, string | number | null | undefined>) => {
-    const next = buildUpdatedSearchParams(new URLSearchParams(searchParams.toString()), updates);
+  const updateListQuery = (
+    updates: Record<string, string | number | null | undefined>,
+  ) => {
+    const next = buildUpdatedSearchParams(
+      new URLSearchParams(searchParams.toString()),
+      updates,
+    );
     const query = next.toString();
     router.push(query ? `${pathname}?${query}` : pathname, { scroll: false });
   };
@@ -134,14 +178,24 @@ export default function AdminArticlesListScreen() {
   const createMutation = useCreateAdminArticle();
   const updateMutation = useUpdateAdminArticle();
   const data = listQuery.data;
+  const { data: permissionData } = useCurrentUserPermissions(true);
+  const canManage =
+    permissionData?.permissions?.includes(PermissionKey.ARTICLES_MANAGE) ??
+    false;
 
   const handlePublish = async (articleId: string) => {
     setActionFeedback(null);
     try {
       await publishMutation.mutateAsync({ articleId, locale: params.locale });
-      setActionFeedback({ tone: "success", message: t("actions.publishSuccess") });
+      setActionFeedback({
+        tone: "success",
+        message: t("actions.publishSuccess"),
+      });
     } catch (error) {
-      setActionFeedback({ tone: "error", message: t(getAdminArticleErrorKey(error)) });
+      setActionFeedback({
+        tone: "error",
+        message: t(getAdminArticleErrorKey(error)),
+      });
     }
   };
 
@@ -149,27 +203,43 @@ export default function AdminArticlesListScreen() {
     setActionFeedback(null);
     try {
       await archiveMutation.mutateAsync({ articleId, locale: params.locale });
-      setActionFeedback({ tone: "success", message: t("actions.archiveSuccess") });
+      setActionFeedback({
+        tone: "success",
+        message: t("actions.archiveSuccess"),
+      });
       return true;
     } catch (error) {
-      setActionFeedback({ tone: "error", message: t(getAdminArticleErrorKey(error)) });
+      setActionFeedback({
+        tone: "error",
+        message: t(getAdminArticleErrorKey(error)),
+      });
       return false;
     }
   };
 
-  const handleCreate = async (payload: Parameters<typeof createMutation.mutateAsync>[0]) => {
+  const handleCreate = async (
+    payload: Parameters<typeof createMutation.mutateAsync>[0],
+  ) => {
     setActionFeedback(null);
     try {
       await createMutation.mutateAsync(payload);
-      setActionFeedback({ tone: "success", message: t("actions.createSuccess") });
+      setActionFeedback({
+        tone: "success",
+        message: t("actions.createSuccess"),
+      });
       setIsCreateOpen(false);
     } catch (error) {
-      setActionFeedback({ tone: "error", message: t(getAdminArticleErrorKey(error)) });
+      setActionFeedback({
+        tone: "error",
+        message: t(getAdminArticleErrorKey(error)),
+      });
       throw error;
     }
   };
 
-  const handleUpdate = async (payload: Parameters<typeof createMutation.mutateAsync>[0]) => {
+  const handleUpdate = async (
+    payload: Parameters<typeof createMutation.mutateAsync>[0],
+  ) => {
     if (!editingArticle) return;
 
     setActionFeedback(null);
@@ -178,81 +248,106 @@ export default function AdminArticlesListScreen() {
         articleId: editingArticle.id,
         payload,
       });
-      setActionFeedback({ tone: "success", message: t("actions.updateSuccess") });
+      setActionFeedback({
+        tone: "success",
+        message: t("actions.updateSuccess"),
+      });
       setEditingArticle(null);
     } catch (error) {
-      setActionFeedback({ tone: "error", message: t(getAdminArticleErrorKey(error)) });
+      setActionFeedback({
+        tone: "error",
+        message: t(getAdminArticleErrorKey(error)),
+      });
       throw error;
     }
   };
 
-  const columns = useMemo<ColumnDef<AdminArticleItem>[]>(() => [
-    {
-      id: "title",
-      header: "Article",
-      accessor: (row) => row.title,
-      sortable: true,
-      cell: (row) => (
-        <div className="min-w-0">
-          <p className="truncate text-sm font-semibold text-text-primary">{row.title}</p>
-          <p className="mt-1 text-xs text-text-muted">{t("list.slug")}: {row.slug}</p>
-          {row.excerpt ? <p className="mt-2 line-clamp-2 text-xs text-text-secondary">{row.excerpt}</p> : null}
-        </div>
-      ),
-    },
-    {
-      id: "status",
-      header: "Status",
-      accessor: (row) => row.status,
-      sortable: true,
-      cell: (row) => (
-        <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${STATUS_STYLES[row.status]}`}>
-          {t(`statuses.${row.status}` as Parameters<typeof t>[0])}
-        </span>
-      ),
-    },
-    {
-      id: "locale",
-      header: "Locale",
-      accessor: (row) => row.locale.toUpperCase(),
-      sortable: true,
-      align: "center",
-      cell: (row) => (
-        <span className="inline-flex items-center rounded-full border border-border-light px-2.5 py-1 text-xs font-medium text-text-secondary">
-          {row.locale.toUpperCase()}
-        </span>
-      ),
-    },
-    {
-      id: "category",
-      header: "Category",
-      accessor: (row) => row.category?.title ?? "-",
-      hideOnMobile: true,
-    },
-    {
-      id: "updatedAt",
-      header: "Updated",
-      accessor: (row) => (row.updatedAt ? new Date(row.updatedAt).getTime() : null),
-      sortable: true,
-      hideOnMobile: true,
-      cell: (row) => formatDate(row.updatedAt, locale),
-    },
-    {
-      id: "publishedAt",
-      header: "Published",
-      accessor: (row) => (row.publishedAt ? new Date(row.publishedAt).getTime() : null),
-      sortable: true,
-      hideOnMobile: true,
-      cell: (row) => formatDate(row.publishedAt, locale),
-    },
-    {
-      id: "author",
-      header: "Author",
-      accessor: (row) => row.authorUserId,
-      cell: (row) => <span className="font-mono text-xs text-text-secondary">{formatId(row.authorUserId)}</span>,
-      hideOnMobile: true,
-    },
-  ], [locale, t]);
+  const columns = useMemo<ColumnDef<AdminArticleItem>[]>(
+    () => [
+      {
+        id: "title",
+        header: "Article",
+        accessor: (row) => row.title,
+        sortable: true,
+        cell: (row) => (
+          <div className="min-w-0">
+            <p className="text-text-primary truncate text-sm font-semibold">
+              {row.title}
+            </p>
+            <p className="text-text-muted mt-1 text-xs">
+              {t("list.slug")}: {row.slug}
+            </p>
+            {row.excerpt ? (
+              <p className="text-text-secondary mt-2 line-clamp-2 text-xs">
+                {row.excerpt}
+              </p>
+            ) : null}
+          </div>
+        ),
+      },
+      {
+        id: "status",
+        header: "Status",
+        accessor: (row) => row.status,
+        sortable: true,
+        cell: (row) => (
+          <span
+            className={`rounded-full px-2.5 py-1 text-xs font-semibold ${STATUS_STYLES[row.status]}`}
+          >
+            {t(`statuses.${row.status}` as Parameters<typeof t>[0])}
+          </span>
+        ),
+      },
+      {
+        id: "locale",
+        header: "Locale",
+        accessor: (row) => row.locale.toUpperCase(),
+        sortable: true,
+        align: "center",
+        cell: (row) => (
+          <span className="border-border-light text-text-secondary inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-medium">
+            {row.locale.toUpperCase()}
+          </span>
+        ),
+      },
+      {
+        id: "category",
+        header: "Category",
+        accessor: (row) => row.category?.title ?? "-",
+        hideOnMobile: true,
+      },
+      {
+        id: "updatedAt",
+        header: "Updated",
+        accessor: (row) =>
+          row.updatedAt ? new Date(row.updatedAt).getTime() : null,
+        sortable: true,
+        hideOnMobile: true,
+        cell: (row) => formatDate(row.updatedAt, locale),
+      },
+      {
+        id: "publishedAt",
+        header: "Published",
+        accessor: (row) =>
+          row.publishedAt ? new Date(row.publishedAt).getTime() : null,
+        sortable: true,
+        hideOnMobile: true,
+        cell: (row) => formatDate(row.publishedAt, locale),
+      },
+      {
+        id: "author",
+        header: "Author",
+        accessor: (row) => row.authorUserId,
+        cell: (row) => (
+          <span className="text-text-secondary font-mono text-xs">
+            {formatId(row.authorUserId)}
+          </span>
+        ),
+        hideOnMobile: true,
+      },
+    ],
+    [locale, t],
+  );
 
   const statusFilterOptions = useMemo(
     () => [
@@ -271,22 +366,32 @@ export default function AdminArticlesListScreen() {
       title={t("list.title")}
       description={t("list.note")}
       actions={
-        <Button size="sm" onClick={() => setIsCreateOpen(true)} startIcon={<Plus className="h-4 w-4" />}>
-          {t("actions.create")}
-        </Button>
+        canManage ? (
+          <Button
+            size="sm"
+            onClick={() => setIsCreateOpen(true)}
+            startIcon={<Plus className="h-4 w-4" />}
+          >
+            {t("actions.create")}
+          </Button>
+        ) : null
       }
       summaryCards={
         <AdminSummaryCard
           metricKey="articles.total"
           label={t("list.title")}
-          value={typeof data?.pagination.totalItems === "number" ? data.pagination.totalItems : "..."}
+          value={
+            typeof data?.pagination.totalItems === "number"
+              ? data.pagination.totalItems
+              : "..."
+          }
           tone="primary"
         />
       }
       filters={
         <div className="grid gap-3 lg:grid-cols-3">
           <label className="block">
-            <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-text-secondary">
+            <span className="text-text-secondary mb-2 block text-xs font-semibold tracking-[0.18em] uppercase">
               {t("filters.allStatuses")}
             </span>
             <Select
@@ -303,7 +408,7 @@ export default function AdminArticlesListScreen() {
           </label>
 
           <label className="block lg:col-span-2">
-            <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-text-secondary">
+            <span className="text-text-secondary mb-2 block text-xs font-semibold tracking-[0.18em] uppercase">
               {t("filters.search")}
             </span>
             <InputField
@@ -318,13 +423,13 @@ export default function AdminArticlesListScreen() {
             />
           </label>
 
-          <div className="rounded-2xl border border-border-light bg-surface-secondary px-4 py-3 text-xs text-text-muted lg:col-span-3">
+          <div className="border-border-light bg-surface-secondary text-text-muted rounded-2xl border px-4 py-3 text-xs lg:col-span-3">
             <span className="flex items-center gap-2">
               <Globe className="h-4 w-4" />
               {t("filters.locale", { locale: locale === "ar" ? "AR" : "EN" })}
             </span>
           </div>
-          <div className="lg:col-span-3 flex justify-end">
+          <div className="flex justify-end lg:col-span-3">
             <FilterClearButton
               disabled={!hasActiveFilters}
               onClick={() =>
@@ -340,7 +445,9 @@ export default function AdminArticlesListScreen() {
       }
     >
       {actionFeedback ? (
-        <p className={`text-xs font-medium ${actionFeedback.tone === "success" ? "text-status-success" : "text-status-danger"}`}>
+        <p
+          className={`text-xs font-medium ${actionFeedback.tone === "success" ? "text-status-success" : "text-status-danger"}`}
+        >
           {actionFeedback.message}
         </p>
       ) : null}
@@ -360,7 +467,7 @@ export default function AdminArticlesListScreen() {
           },
         }}
         emptyState={{
-          icon: <FileText className="h-5 w-5 text-primary" />,
+          icon: <FileText className="text-primary h-5 w-5" />,
           title: t("states.empty.heading"),
           description: t("states.empty.note"),
         }}
@@ -373,35 +480,50 @@ export default function AdminArticlesListScreen() {
         }
         rowActions={(row) => {
           const canPublish = row.status === "DRAFT";
-          const canArchive = row.status === "DRAFT" || row.status === "PUBLISHED";
+          const canArchive =
+            row.status === "DRAFT" || row.status === "PUBLISHED";
           return (
             <div className="flex items-center gap-1.5">
-              <ActionIconButton
-                intent="edit"
-                label={t("actions.edit")}
-                icon={<Pencil className="h-4 w-4" />}
-                onClick={() => setEditingArticle(row)}
-              />
-              <ActionIconButton
-                intent="publish"
-                label={publishMutation.isPending ? t("actions.publishing") : t("actions.publish")}
-                icon={<Send className="h-4 w-4" />}
-                disabled={!canPublish || publishMutation.isPending}
-                onClick={() => handlePublish(row.id)}
-              />
-              <ActionIconButton
-                intent="archive"
-                label={archiveMutation.isPending ? t("actions.archiving") : t("actions.archive")}
-                icon={<Archive className="h-4 w-4" />}
-                disabled={!canArchive || archiveMutation.isPending}
-                onClick={() =>
-                  setPendingArchiveArticle({
-                    id: row.id,
-                    title: row.title,
-                    slug: row.slug,
-                  })
-                }
-              />
+              {canManage ? (
+                <ActionIconButton
+                  intent="edit"
+                  label={t("actions.edit")}
+                  icon={<Pencil className="h-4 w-4" />}
+                  onClick={() => setEditingArticle(row)}
+                />
+              ) : null}
+              {canManage ? (
+                <ActionIconButton
+                  intent="publish"
+                  label={
+                    publishMutation.isPending
+                      ? t("actions.publishing")
+                      : t("actions.publish")
+                  }
+                  icon={<Send className="h-4 w-4" />}
+                  disabled={!canPublish || publishMutation.isPending}
+                  onClick={() => handlePublish(row.id)}
+                />
+              ) : null}
+              {canManage ? (
+                <ActionIconButton
+                  intent="archive"
+                  label={
+                    archiveMutation.isPending
+                      ? t("actions.archiving")
+                      : t("actions.archive")
+                  }
+                  icon={<Archive className="h-4 w-4" />}
+                  disabled={!canArchive || archiveMutation.isPending}
+                  onClick={() =>
+                    setPendingArchiveArticle({
+                      id: row.id,
+                      title: row.title,
+                      slug: row.slug,
+                    })
+                  }
+                />
+              ) : null}
             </div>
           );
         }}
@@ -418,7 +540,9 @@ export default function AdminArticlesListScreen() {
             : undefined
         }
         onPageChange={(nextPage) => updateListQuery({ page: nextPage })}
-        onPageSizeChange={(nextLimit) => updateListQuery({ limit: nextLimit, page: 1 })}
+        onPageSizeChange={(nextLimit) =>
+          updateListQuery({ limit: nextLimit, page: 1 })
+        }
         pageSizeOptions={PAGE_SIZE_OPTIONS}
         ariaLabel={t("list.title")}
         caption={t("list.title")}
@@ -429,7 +553,11 @@ export default function AdminArticlesListScreen() {
         onClose={() => setPendingArchiveArticle(null)}
         title={t("actions.archiveConfirm.title")}
         description={t("actions.archiveConfirm.description")}
-        confirmLabel={archiveMutation.isPending ? t("actions.archiving") : t("actions.archive")}
+        confirmLabel={
+          archiveMutation.isPending
+            ? t("actions.archiving")
+            : t("actions.archive")
+        }
         cancelLabel={t("actions.archiveConfirm.cancel")}
         onConfirm={async () => {
           if (!pendingArchiveArticle) return;
@@ -441,9 +569,11 @@ export default function AdminArticlesListScreen() {
         loading={archiveMutation.isPending}
       >
         {pendingArchiveArticle ? (
-          <div className="rounded-2xl border border-status-warning-border bg-status-warning-soft px-4 py-4 text-sm text-status-warning">
+          <div className="border-status-warning-border bg-status-warning-soft text-status-warning rounded-2xl border px-4 py-4 text-sm">
             <p className="font-medium">{pendingArchiveArticle.title}</p>
-            <p className="mt-1 text-xs opacity-80">{pendingArchiveArticle.slug}</p>
+            <p className="mt-1 text-xs opacity-80">
+              {pendingArchiveArticle.slug}
+            </p>
           </div>
         ) : null}
       </DestructiveConfirmModal>

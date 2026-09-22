@@ -62,6 +62,7 @@ import { UpdateSessionCancellationPolicyUseCase } from '../use-cases/update-sess
 import { AdminSessionResolutionService } from '../services/admin-session-resolution.service';
 import { ExecuteAdminSessionResolutionDto } from '../dto/admin-session-resolution.dto';
 import { AdminSessionResolutionPolicyService } from '../services/admin-session-resolution-policy.service';
+import { GetAdminSessionSupportSummaryUseCase } from '../use-cases/get-admin-session-support-summary.use-case';
 
 @ApiTags('Sessions')
 @ApiBearerAuth()
@@ -88,7 +89,15 @@ export class AdminSessionsOperationsController {
     private readonly listAdminSessionManualDecisionsUseCase: ListAdminSessionManualDecisionsUseCase,
     private readonly adminSessionResolutionService: AdminSessionResolutionService,
     private readonly adminSessionResolutionPolicyService: AdminSessionResolutionPolicyService,
+    private readonly getAdminSessionSupportSummaryUseCase: GetAdminSessionSupportSummaryUseCase,
   ) {}
+
+  @Get(':id/support-summary')
+  @Permissions(PermissionKey.SESSIONS_READ_SUPPORT_SUMMARY)
+  @ApiOperation({ summary: 'Get a support-safe session summary' })
+  getSupportSummary(@Param('id') sessionId: string) {
+    return this.getAdminSessionSupportSummaryUseCase.execute(sessionId);
+  }
 
   @Get('resolution-cases')
   @Permissions(PermissionKey.SESSIONS_READ_ADMIN)

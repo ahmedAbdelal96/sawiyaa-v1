@@ -10,6 +10,7 @@ import {
 } from "../../../src/features/practitioner/availability/hooks";
 import {
   formatScheduleTimeZoneLabel,
+  canEditScheduleWeek,
   getDefaultScheduleDay,
   getSelectedWeekSlots,
   getTodayDateInTimeZone,
@@ -86,9 +87,7 @@ export default function PractitionerScheduleScreen() {
       new Date(`${selectedWeek.weekStartDate}T00:00:00Z`),
     )
     : null;
-  const canEditSelectedWeek = selectedWeek
-    ? selectedWeek.weekId ? selectedWeek.canEdit : selectedWeek.canCreate
-    : false;
+  const canEditSelectedWeek = selectedWeek ? canEditScheduleWeek(selectedWeek) : false;
 
   const statusLabel = (status: ScheduleSlotStatus) => {
     switch (status) {

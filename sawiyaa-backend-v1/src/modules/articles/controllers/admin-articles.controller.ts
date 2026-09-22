@@ -27,6 +27,9 @@ import { AccountStateRequirement } from '@common/enums/account-state-requirement
 import { AppRole } from '@common/enums/app-role.enum';
 import { JwtAccessAuthGuard } from '@common/guards/authentication/jwt-access-auth.guard';
 import { RolesGuard } from '@common/guards/authorization/roles.guard';
+import { PermissionsGuard } from '@common/guards/authorization/permissions.guard';
+import { Permissions } from '@common/decorators/permissions.decorator';
+import { PermissionKey } from '@common/enums/permission-key.enum';
 import { AuthenticatedUser } from '@common/interfaces/authenticated-user.interface';
 import { AdminArticleLocaleQueryDto } from '../dto/admin-article-locale-query.dto';
 import { CreateArticleDto } from '../dto/create-article.dto';
@@ -46,9 +49,9 @@ import { ArticleCoverStorageService } from '../services/article-cover-storage.se
 
 @ApiTags('Articles')
 @ApiBearerAuth()
-@UseGuards(JwtAccessAuthGuard, RolesGuard)
+@UseGuards(JwtAccessAuthGuard, RolesGuard, PermissionsGuard)
 @RequireAccountStates(AccountStateRequirement.ACTIVE_ACCOUNT)
-@Roles(AppRole.ADMIN, AppRole.SUPER_ADMIN)
+@Roles(AppRole.ADMIN, AppRole.SUPER_ADMIN, AppRole.CONTENT_REVIEWER)
 @Controller('admin/articles')
 export class AdminArticlesController {
   constructor(
@@ -62,6 +65,7 @@ export class AdminArticlesController {
   ) {}
 
   @Post('cover-upload')
+  @Permissions(PermissionKey.ARTICLES_MANAGE)
   @UseInterceptors(
     FileInterceptor('file', { limits: { fileSize: 10 * 1024 * 1024 } }),
   )
@@ -97,6 +101,7 @@ export class AdminArticlesController {
   }
 
   @Post()
+  @Permissions(PermissionKey.ARTICLES_MANAGE)
   @ApiOperation({ summary: 'Create article draft (admin only)' })
   @ApiBody({ type: CreateArticleDto })
   @ApiResponse({ status: 201, type: AdminArticleItemSuccessResponseDto })
@@ -113,6 +118,7 @@ export class AdminArticlesController {
   }
 
   @Get()
+  @Permissions(PermissionKey.ARTICLES_READ)
   @ApiOperation({ summary: 'List articles for admin management' })
   @ApiResponse({ status: 200, type: AdminArticleListSuccessResponseDto })
   list(@Query() query: ListAdminArticlesDto) {
@@ -122,6 +128,7 @@ export class AdminArticlesController {
   }
 
   @Get(':id')
+  @Permissions(PermissionKey.ARTICLES_READ)
   @ApiOperation({ summary: 'Get article details for admin' })
   @ApiResponse({ status: 200, type: AdminArticleItemSuccessResponseDto })
   getById(
@@ -137,6 +144,7 @@ export class AdminArticlesController {
   }
 
   @Patch(':id')
+  @Permissions(PermissionKey.ARTICLES_MANAGE)
   @ApiOperation({ summary: 'Update article draft/published content' })
   @ApiBody({ type: UpdateArticleDto })
   @ApiResponse({ status: 200, type: AdminArticleItemSuccessResponseDto })
@@ -150,6 +158,7 @@ export class AdminArticlesController {
   }
 
   @Patch(':id/publish')
+  @Permissions(PermissionKey.ARTICLES_MANAGE)
   @ApiOperation({ summary: 'Publish article (admin only)' })
   @ApiResponse({ status: 200, type: AdminArticleItemSuccessResponseDto })
   publish(
@@ -165,6 +174,7 @@ export class AdminArticlesController {
   }
 
   @Patch(':id/archive')
+  @Permissions(PermissionKey.ARTICLES_MANAGE)
   @ApiOperation({ summary: 'Archive article (admin only)' })
   @ApiResponse({ status: 200, type: AdminArticleItemSuccessResponseDto })
   archive(

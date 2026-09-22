@@ -26,7 +26,7 @@ import {
   usePatientSession,
   useResolvePatientSessionJoinContract,
 } from "../../../src/features/patient/sessions/hooks";
-import type { SessionStatus } from "../../../src/features/patient/sessions/types";
+import type { SessionDetails, SessionStatus } from "../../../src/features/patient/sessions/types";
 import {
   formatLocalizedDateTime,
   formatLocalizedDate,
@@ -210,6 +210,7 @@ export default function SessionDetailScreen() {
 
   const rowDirection = isRtl ? "row-reverse" : "row";
   const alignSelfStart = isRtl ? "flex-end" : "flex-start";
+  const textAlign = isRtl ? "right" : "left";
   const practitionerName =
     session.practitioner.displayName ??
     t("patientSessionsFlow.common.practitionerFallback");
@@ -276,6 +277,24 @@ export default function SessionDetailScreen() {
               })}
             </Text>
           </View>
+
+          {session.paymentCoverageType === "PACKAGE" ? (
+            <View
+              style={[
+                styles.packageCoverageNotice,
+                {
+                  backgroundColor: theme.colors.primaryLight,
+                  borderColor: theme.colors.borderLight,
+                  flexDirection: rowDirection,
+                },
+              ]}
+            >
+              <Ionicons name="layers-outline" size={16} color={theme.colors.primary} />
+              <Text color={theme.colors.primary} style={[styles.packageCoverageText, { textAlign }]}>
+                {t("patientSessionsFlow.detail.packageCovered")}
+              </Text>
+            </View>
+          ) : null}
         </Card>
 
         <Card variant="flat" padding="md" style={styles.sectionCard}>
@@ -485,6 +504,66 @@ export default function SessionDetailScreen() {
           ) : null}
         </Card>
 
+        <Card variant="flat" padding="md" style={styles.sectionCard} testID="patient-session-timeline">
+          <View style={[styles.sectionHeader, directionRowStyle(direction)]}>
+            <Text weight="600" style={styles.sectionTitle}>
+              {t("patientSessionsFlow.detail.timelineTitle")}
+            </Text>
+          </View>
+          {session.timeline?.length ? (
+            <View style={styles.timelineList}>
+              {session.timeline.map((event: SessionDetails["timeline"][number], index: number) => {
+                const isRescheduled = event.eventType === "RESCHEDULED";
+                return (
+                  <View key={`${event.occurredAt}-${index}`} style={styles.timelineItem}>
+                    <View style={styles.timelineRail}>
+                      <View style={[styles.timelineDot, { backgroundColor: theme.colors.primary }]} />
+                      {index < session.timeline.length - 1 ? <View style={[styles.timelineLine, { backgroundColor: theme.colors.border }]} /> : null}
+                    </View>
+                    <View style={styles.timelineCopy}>
+                      <Text color={theme.colors.textMuted} style={styles.timelineDate}>
+                        {formatLocalizedDateTime(event.occurredAt, locale)}
+                      </Text>
+                      <Text weight="700" style={[styles.timelineTitle, { textAlign }]}>
+                        {formatPatientEventType(t, event.eventType)}
+                      </Text>
+                      {isRescheduled && (event.previousStartAt || event.newStartAt) ? (
+                        <View style={styles.timelineChangeGrid}>
+                          <View style={[styles.timelineChange, { borderColor: theme.colors.border }]}>
+                            <Text color={theme.colors.textMuted} style={styles.timelineChangeLabel}>
+                              {t("patientSessionsFlow.detail.timelinePrevious")}
+                            </Text>
+                            <Text weight="600" style={[styles.timelineChangeValue, { textAlign }]}>
+                              {event.previousStartAt ? formatLocalizedDateTime(event.previousStartAt, locale) : t("patientSessionsFlow.common.notAvailable")}
+                            </Text>
+                          </View>
+                          <View style={[styles.timelineChange, { borderColor: theme.colors.border }]}>
+                            <Text color={theme.colors.textMuted} style={styles.timelineChangeLabel}>
+                              {t("patientSessionsFlow.detail.timelineNew")}
+                            </Text>
+                            <Text weight="600" style={[styles.timelineChangeValue, { textAlign }]}>
+                              {event.newStartAt ? formatLocalizedDateTime(event.newStartAt, locale) : t("patientSessionsFlow.common.notAvailable")}
+                            </Text>
+                          </View>
+                        </View>
+                      ) : null}
+                      {event.reason ? (
+                        <Text color={theme.colors.textSecondary} style={[styles.timelineReason, { textAlign }]}>
+                          {event.reason}
+                        </Text>
+                      ) : null}
+                    </View>
+                  </View>
+                );
+              })}
+            </View>
+          ) : (
+            <Text color={theme.colors.textSecondary} style={styles.timelineEmpty}>
+              {t("patientSessionsFlow.detail.timelineEmpty")}
+            </Text>
+          )}
+        </Card>
+
         {joinError ? (
           <Card variant="flat" padding="sm">
             <Text color="#ba1a1a">{joinError}</Text>
@@ -493,6 +572,23 @@ export default function SessionDetailScreen() {
       </ScrollView>
     </Screen>
   );
+}
+
+function formatPatientEventType(
+  t: ReturnType<typeof useTranslation>["t"],
+  eventType: string,
+) {
+  const known = new Set([
+    "SESSION_CREATED", "RESCHEDULED", "PAYMENT_PENDING", "PAYMENT_CONFIRMED",
+    "PRACTITIONER_ACCEPTED", "PRACTITIONER_REJECTED", "SESSION_CONFIRMED",
+    "SESSION_READY_TO_JOIN", "PATIENT_JOINED", "PRACTITIONER_JOINED",
+    "SESSION_STARTED", "SESSION_AWAITING_COMPLETION_CONFIRMATION", "SESSION_COMPLETED",
+    "CANCELLED_BY_PATIENT", "CANCELLED_BY_PRACTITIONER", "EXPIRED_UNPAID",
+    "NO_SHOW_PATIENT", "NO_SHOW_PRACTITIONER", "PROVIDER_ROOM_CREATED", "PROVIDER_ROOM_ENDED",
+  ]);
+  return known.has(eventType)
+    ? t(`patientSessionsFlow.detail.eventTypes.${eventType}` as const)
+    : t("patientSessionsFlow.detail.eventTypes.UNKNOWN");
 }
 
 function formatPresentationStatusLabel(
@@ -893,6 +989,20 @@ const styles = StyleSheet.create({
   summaryStack: {
     gap: 4,
   },
+  packageCoverageNotice: {
+    alignItems: "center",
+    gap: 8,
+    borderWidth: 1,
+    borderRadius: 12,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    marginTop: 10,
+  },
+  packageCoverageText: {
+    flex: 1,
+    fontSize: 12.5,
+    lineHeight: 18,
+  },
   codeText: {
     marginTop: 2,
     fontSize: 12,
@@ -923,6 +1033,72 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 15,
     lineHeight: 20,
+  },
+  timelineList: {
+    gap: 16,
+  },
+  timelineItem: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 10,
+  },
+  timelineRail: {
+    width: 14,
+    alignItems: "center",
+    alignSelf: "stretch",
+  },
+  timelineDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    marginTop: 4,
+  },
+  timelineLine: {
+    width: 2,
+    flex: 1,
+    marginTop: 4,
+  },
+  timelineCopy: {
+    flex: 1,
+    gap: 3,
+  },
+  timelineDate: {
+    fontSize: 11.5,
+    lineHeight: 16,
+  },
+  timelineTitle: {
+    fontSize: 14,
+    lineHeight: 19,
+  },
+  timelineChangeGrid: {
+    flexDirection: "row",
+    gap: 8,
+    marginTop: 6,
+  },
+  timelineChange: {
+    flex: 1,
+    borderWidth: 1,
+    borderRadius: 10,
+    paddingHorizontal: 8,
+    paddingVertical: 7,
+    gap: 2,
+  },
+  timelineChangeLabel: {
+    fontSize: 10.5,
+    lineHeight: 14,
+  },
+  timelineChangeValue: {
+    fontSize: 11.5,
+    lineHeight: 16,
+  },
+  timelineReason: {
+    fontSize: 12,
+    lineHeight: 17,
+    marginTop: 4,
+  },
+  timelineEmpty: {
+    fontSize: 13,
+    lineHeight: 19,
   },
   sectionBody: {
     fontSize: 13.5,

@@ -11,6 +11,7 @@ import { SessionReviewRatingAggregationService } from '@modules/reviews/services
 import { PublicPractitionerVisibilityPolicy } from '@modules/practitioners/policies/public-practitioner-visibility.policy';
 import { SessionRepository } from '@modules/sessions/repositories/session.repository';
 import { InstantBookingPractitionerRepository } from '../repositories/instant-booking-practitioner.repository';
+import { InstantBookingRequestRepository } from '../repositories/instant-booking-request.repository';
 import {
   InstantBookingEligiblePractitionerPricingViewModel,
   InstantBookingEligiblePractitionerViewModel,
@@ -49,6 +50,7 @@ export class ListPatientInstantBookingPractitionersUseCase {
     private readonly publicPractitionerVisibilityPolicy: PublicPractitionerVisibilityPolicy,
     private readonly sessionReviewRatingAggregationService: SessionReviewRatingAggregationService,
     private readonly professionalContentResolver: PractitionerProfessionalContentResolver,
+    private readonly instantBookingRequestRepository: InstantBookingRequestRepository,
     @Optional() private readonly patientProfileRepository?: PatientProfileRepository,
   ) {}
 
@@ -65,7 +67,8 @@ export class ListPatientInstantBookingPractitionersUseCase {
       ? await this.patientProfileRepository.findByUserId(input.currentUserId)
       : null;
     const regionalResolution = resolvePaymentRegionalResolution({
-      requestCountryIsoCode: input.guestCountryIsoCode ?? null,
+      requestCountryIsoCode:
+        input.guestCountryIsoCode ?? patientProfile?.country?.isoCode ?? null,
     });
     const resolvedCurrency = regionalResolution.currencyCode as CurrencyCode;
     const now = new Date();
@@ -183,6 +186,14 @@ export class ListPatientInstantBookingPractitionersUseCase {
     }
 
     if (!isPresenceEffectivelyOnline(presence, input.now)) {
+      return null;
+    }
+
+    const activeHold =
+      await this.instantBookingRequestRepository.findActivePendingRequestForPractitioner(
+        { practitionerId: input.row.id, now: input.now },
+      );
+    if (activeHold) {
       return null;
     }
 

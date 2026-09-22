@@ -4,7 +4,8 @@ import { ExpirePaymentUseCase } from './expire-payment.use-case';
 describe('ExpirePaymentUseCase', () => {
   function buildUseCase(input?: { paymentPurpose?: PaymentPurpose }) {
     const prisma = {
-      $transaction: jest.fn().mockImplementation(async (fn) => fn({})),
+      $transaction: jest.fn().mockImplementation(async (fn) => fn(prisma)),
+      $executeRaw: jest.fn().mockResolvedValue(1),
     };
     const paymentRepository = {
       findById: jest.fn().mockResolvedValue({

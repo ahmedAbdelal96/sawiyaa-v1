@@ -85,6 +85,7 @@ import { RescheduleSessionService } from './services/reschedule-session.service'
 import { ParticipantSessionOutcomeBoundaryService } from './services/participant-session-outcome-boundary.service';
 import { SessionOperationalInterpreterService } from './services/session-operational-interpreter.service';
 import { ResolvePractitionerSessionCommandActionsService } from './services/resolve-practitioner-session-command-actions.service';
+import { GetAdminSessionSupportSummaryUseCase } from './use-cases/get-admin-session-support-summary.use-case';
 
 /**
  * Sessions Module is the operational source of truth for scheduled consultations.
@@ -151,6 +152,7 @@ import { ResolvePractitionerSessionCommandActionsService } from './services/reso
     GetMyPractitionerSessionsUseCase,
     GetMyPractitionerSessionSummaryUseCase,
     GetAdminSessionsUseCase,
+    GetAdminSessionSupportSummaryUseCase,
     GetAdminSessionAttendanceUseCase,
     GetSessionDetailsUseCase,
     PreviewSessionCancellationUseCase,
@@ -189,6 +191,10 @@ import { ResolvePractitionerSessionCommandActionsService } from './services/reso
   ],
   exports: [
     SessionRepository,
+    // Package booking reuses the canonical session projection. Export the
+    // mapper alongside the repository so package orchestration can resolve the
+    // same production mapper through the SessionsModule boundary.
+    SessionMapper,
     ValidateSessionDurationService,
     ValidateSessionBookingRequestService,
     ValidateSessionScheduleCompatibilityService,

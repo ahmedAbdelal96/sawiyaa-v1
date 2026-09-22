@@ -34,6 +34,19 @@ export class ExtractPaymentLedgerBreakdownService {
     );
 
     if (practitionerShareAmount && platformCommissionAmount) {
+      const practitioner = new Prisma.Decimal(practitionerShareAmount);
+      const platform = new Prisma.Decimal(platformCommissionAmount);
+      if (
+        !practitioner.isFinite() ||
+        !platform.isFinite() ||
+        practitioner.lt(0) ||
+        platform.lt(0) ||
+        !practitioner.add(platform).eq(payment.amountTotal)
+      ) {
+        throw new BadRequestException({
+          error: 'FINANCIAL_OPERATIONS_PAYMENT_SNAPSHOTS_INCOMPLETE',
+        });
+      }
       return {
         practitionerShareAmount,
         platformCommissionAmount,

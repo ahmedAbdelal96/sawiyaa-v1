@@ -27,97 +27,112 @@ export default function PractitionerMoreScreen() {
   const { isRtl, chevronForward } = useAppDirection();
 
   const sections = useMemo(
-    () =>
-      [
-        {
-          key: "workEarnings",
-          title: t("practitioner.more.sections.workEarnings"),
-          rows: [
-            {
-              key: "finance",
-              title: t("practitioner.more.rows.finance.title"),
-              subtitle: t("practitioner.more.rows.finance.subtitle"),
-              icon: "wallet-outline" as const,
-              iconBg: "#DCFCE7",
-              iconColor: "#16A34A",
-              onPress: () => router.push("/(practitioner)/finance"),
+    () => [
+      {
+        key: "workEarnings",
+        title: t("practitioner.more.sections.workEarnings"),
+        rows: [
+          {
+            key: "finance",
+            title: t("practitioner.more.rows.finance.title"),
+            subtitle: t("practitioner.more.rows.finance.subtitle"),
+            icon: "wallet-outline" as const,
+            iconBg: "#DCFCE7",
+            iconColor: "#16A34A",
+            onPress: (): void => {
+              router.push("/(practitioner)/finance");
             },
-            {
-              key: "instantBookingPricing",
-              title: t("practitioner.more.rows.instantBookingPricing.title"),
-              subtitle: t("practitioner.more.rows.instantBookingPricing.subtitle"),
-              icon: "flash-outline" as const,
-              iconBg: "#FEF3C7",
-              iconColor: "#D97706",
-              onPress: () => router.push("/(mobile-tools)/instant-booking-pricing"),
+          },
+          {
+            key: "instantBookingPricing",
+            title: t("practitioner.more.rows.instantBookingPricing.title"),
+            subtitle: t(
+              "practitioner.more.rows.instantBookingPricing.subtitle",
+            ),
+            icon: "flash-outline" as const,
+            iconBg: "#FEF3C7",
+            iconColor: "#D97706",
+            onPress: (): void => {
+              router.push("/(mobile-tools)/instant-booking-pricing");
             },
-            {
-              key: "promoCodes",
-              title: t("practitioner.more.rows.promoCodes.title"),
-              subtitle: t("practitioner.more.rows.promoCodes.subtitle"),
-              icon: "pricetag-outline" as const,
-              iconBg: "#F3E8FF",
-              iconColor: "#9333EA",
-              onPress: () => router.push("/(practitioner)/promo-codes"),
+          },
+          {
+            key: "promoCodes",
+            title: t("practitioner.more.rows.promoCodes.title"),
+            subtitle: t("practitioner.more.rows.promoCodes.subtitle"),
+            icon: "pricetag-outline" as const,
+            iconBg: "#F3E8FF",
+            iconColor: "#9333EA",
+            onPress: (): void => {
+              router.push("/(practitioner)/promo-codes");
             },
-          ],
-        },
-        {
-          key: "account",
-          title: t("practitioner.more.sections.account"),
-          rows: [
-            {
-              key: "account",
-              title: t("practitioner.more.rows.account.title"),
-              subtitle: t("practitioner.more.rows.account.subtitle"),
-              icon: "person-outline" as const,
-              iconBg: theme.colors.primaryLight,
-              iconColor: theme.colors.primary,
-              onPress: () => router.push("/(practitioner)/account"),
+          },
+        ],
+      },
+      {
+        key: "account",
+        title: t("practitioner.more.sections.account"),
+        rows: [
+          {
+            key: "account",
+            title: t("practitioner.more.rows.account.title"),
+            subtitle: t("practitioner.more.rows.account.subtitle"),
+            icon: "person-outline" as const,
+            iconBg: theme.colors.primaryLight,
+            iconColor: theme.colors.primary,
+            onPress: (): void => {
+              router.push("/(practitioner)/account");
             },
-            {
-              key: "settings",
-              title: t("settings.title"),
-              subtitle: t("settings.subtitle"),
-              icon: "settings-outline" as const,
-              iconBg: "#F1F5F9",
-              iconColor: "#475569",
-              onPress: () => router.push("/(settings)"),
+          },
+          {
+            key: "settings",
+            title: t("settings.title"),
+            subtitle: t("settings.subtitle"),
+            icon: "settings-outline" as const,
+            iconBg: "#F1F5F9",
+            iconColor: "#475569",
+            onPress: (): void => {
+              router.push("/(settings)");
             },
-          ],
-        },
-        {
-          key: "help",
-          title: t("practitioner.more.sections.help"),
-          rows: [
-            {
-              key: "support",
-              title: t("practitioner.more.rows.support.title"),
-              subtitle: t("practitioner.more.rows.support.subtitle"),
-              icon: "headset-outline" as const,
-              iconBg: "#E0F2FE",
-              iconColor: "#0284C7",
-              onPress: () => router.push("/(practitioner)/messages?tab=support"),
+          },
+        ],
+      },
+      {
+        key: "help",
+        title: t("practitioner.more.sections.help"),
+        rows: [
+          {
+            key: "support",
+            title: t("practitioner.more.rows.support.title"),
+            subtitle: t("practitioner.more.rows.support.subtitle"),
+            icon: "headset-outline" as const,
+            iconBg: "#E0F2FE",
+            iconColor: "#0284C7",
+            onPress: (): void => {
+              router.push("/(practitioner)/messages?tab=support");
             },
-          ],
-        },
-        {
-          key: "accountAction",
-          title: t("practitioner.more.sections.accountAction"),
-          rows: [
-            {
-              key: "logout",
-              title: t("practitioner.more.rows.logout.title"),
-              subtitle: t("practitioner.more.rows.logout.subtitle"),
-              icon: "log-out-outline" as const,
-              iconBg: "#FFE4E6",
-              iconColor: "#E11D48",
-              isDanger: true,
-              onPress: () => void signOut(),
+          },
+        ],
+      },
+      {
+        key: "accountAction",
+        title: t("practitioner.more.sections.accountAction"),
+        rows: [
+          {
+            key: "logout",
+            title: t("practitioner.more.rows.logout.title"),
+            subtitle: t("practitioner.more.rows.logout.subtitle"),
+            icon: "log-out-outline" as const,
+            iconBg: "#FFE4E6",
+            iconColor: "#E11D48",
+            isDanger: true,
+            onPress: (): void => {
+              void signOut();
             },
-          ],
-        },
-      ],
+          },
+        ],
+      },
+    ],
     [router, signOut, t, theme.colors.primary, theme.colors.primaryLight],
   );
 
@@ -125,7 +140,10 @@ export default function PractitionerMoreScreen() {
     <Screen bg="background">
       <Header title={t("practitioner.more.title")} />
 
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+      >
         {sections.map((section) => {
           return (
             <View key={section.key} style={styles.section}>
@@ -133,7 +151,10 @@ export default function PractitionerMoreScreen() {
                 weight="700"
                 style={[
                   styles.sectionHeaderTitle,
-                  { textAlign: isRtl ? "right" : "left", color: theme.colors.textSecondary },
+                  {
+                    textAlign: isRtl ? "right" : "left",
+                    color: theme.colors.textSecondary,
+                  },
                 ]}
               >
                 {section.title}

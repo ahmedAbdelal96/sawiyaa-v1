@@ -5,8 +5,10 @@ import {
   Param,
   Post,
   Query,
+  Req,
   UseGuards,
 } from '@nestjs/common';
+import { Request } from 'express';
 import {
   ApiBadRequestResponse,
   ApiBearerAuth,
@@ -51,6 +53,7 @@ import { GetMyPatientSessionsUseCase } from '../use-cases/get-my-patient-session
 import { GetMyPatientSessionSummaryUseCase } from '../use-cases/get-my-patient-session-summary.use-case';
 import { GetSessionDetailsUseCase } from '../use-cases/get-session-details.use-case';
 import { PreviewSessionCancellationUseCase } from '../use-cases/preview-session-cancellation.use-case';
+import { resolveCountryFromRequest } from '@modules/auth/utils/request-country-context.util';
 
 /**
  * Patient sessions controller owns only the authenticated patient's scheduled consultation flows.
@@ -101,6 +104,7 @@ export class PatientSessionsController {
     @CurrentUser() currentUser: AuthenticatedUser,
     @CurrentLocale() locale: SupportedLocale,
     @Body() body: CreateScheduledSessionDto,
+    @Req() request: Request,
   ) {
     return this.createScheduledSessionUseCase.execute({
       userId: currentUser.id,
@@ -109,6 +113,7 @@ export class PatientSessionsController {
       scheduledStartAt: body.scheduledStartAt,
       durationMinutes: body.durationMinutes,
       sessionMode: body.sessionMode,
+      requestCountryIsoCode: resolveCountryFromRequest(request).countryCode,
     });
   }
 

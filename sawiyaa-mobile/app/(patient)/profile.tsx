@@ -157,7 +157,6 @@ export default function PatientProfileScreen() {
           <MoreRow title={t("profileScreen.hub.rows.support.title")} subtitle={t("profileScreen.hub.rows.support.subtitle")} iconName="help-buoy-outline" iconBgColor={theme.colors.mintAccent} iconColor={theme.colors.primary} onPress={() => router.push("/(patient)/messages?tab=support" as any)} showDivider={false} />
         </Card>
 
-        <SectionHeader title={t("profileScreen.moreSections.account")} subtitle={t("profileScreen.moreSections.accountLogoutSubtitle")} style={{ flexDirection: isArabic ? "row-reverse" : "row" }} />
         <TouchableOpacity accessibilityRole="button" accessibilityLabel={t("profileScreen.logout")} activeOpacity={0.7} onPress={signOut} style={[styles.logoutButton, { flexDirection: rowDirection }]}>
           <Ionicons name="log-out-outline" size={20} color="#ef4444" style={styles.logoutIcon} />
           <Text weight="700" color="#ef4444" style={styles.logoutText}>{t("profileScreen.logout")}</Text>

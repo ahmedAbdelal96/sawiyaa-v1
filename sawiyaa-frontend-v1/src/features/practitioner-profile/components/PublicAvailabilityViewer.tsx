@@ -1,9 +1,9 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useState, useSyncExternalStore } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { ArrowLeft, ChevronLeft, ChevronRight, Clock, CalendarDays, CheckCircle2 } from "lucide-react";
-import { Link } from "@/i18n/navigation";
+import { Link, useRouter } from "@/i18n/navigation";
 import { MoneyText } from "@/components/money/MoneyText";
 import { mapPractitionerDurationMoney } from "@/features/practitioners-discovery/lib/practitioner-price";
 import { formatViewerDate, formatViewerDateTime, formatViewerTime } from "@/lib/time-formatting";
@@ -15,14 +15,15 @@ import { useAuthState } from "@/stores";
 import type { PublicAvailabilityWindow } from "../types/public-availability.types";
 import type { SessionItem } from "@/features/sessions/types/sessions.types";
 import { cn } from "@/lib/utils";
+import {
+  projectAvailabilityWindow,
+  type ProjectedAvailabilitySlot,
+} from "../lib/public-availability-slot-projection";
+import { buildPractitionerBookingAuthReturnPath } from "../lib/booking-auth-return";
 
 const VISIBLE_DATE_COLUMNS = 7;
 
-type SelectableSlot = {
-  startsAt: string;
-  windowEndsAt: string;
-  maxDuration: 30 | 60;
-};
+type SelectableSlot = ProjectedAvailabilitySlot;
 
 type DayGroup = {
   sortKey: string;
@@ -48,8 +49,6 @@ type Props = {
   displaySessionPrice30: number | null;
   displaySessionPrice60: number | null;
 };
-
-const MIN_BOOKING_LEAD_MS = 60 * 1000;
 
 function toDayKey(date: Date): string {
   return [
@@ -100,30 +99,10 @@ function formatFullDatetime(isoString: string | null, numLocale: string): string
   return formatViewerDateTime(isoString, { locale: numLocale });
 }
 
-function buildSlotsFromWindow(window: PublicAvailabilityWindow): SelectableSlot[] {
-  const slots: SelectableSlot[] = [];
-  const startTime = new Date(window.startsAt).getTime();
-  const endTime = new Date(window.endsAt).getTime();
-  const halfHourMs = 30 * 60 * 1000;
-  const hourMs = 60 * 60 * 1000;
-  const earliestAllowedStart = Date.now() + MIN_BOOKING_LEAD_MS;
-
-  for (let current = startTime; current + halfHourMs <= endTime; current += halfHourMs) {
-    if (current <= earliestAllowedStart) continue;
-    const remaining = endTime - current;
-    slots.push({
-      startsAt: new Date(current).toISOString(),
-      windowEndsAt: window.endsAt,
-      maxDuration: remaining >= hourMs ? 60 : 30,
-    });
-  }
-  return slots;
-}
-
 function groupByLocalDay(windows: PublicAvailabilityWindow[], numLocale: string): DayGroup[] {
   const map = new Map<string, { sortKey: string; dayLabel: string; dayName: string; dayNumber: string; slots: Map<string, SelectableSlot> }>();
   for (const window of windows) {
-    const slots = buildSlotsFromWindow(window);
+    const slots = projectAvailabilityWindow(window);
     for (const slot of slots) {
       const d = new Date(slot.startsAt);
       const sortKey = toDayKey(d);
@@ -181,18 +160,20 @@ export default function PublicAvailabilityViewer({
   const selectedPriceLabel = tBook("selectedPriceLabel");
   const browseNextDatesLabel = tAvail("browseNextWeek");
 
+  const router = useRouter();
   const { user, isLoading: isAuthLoading } = useAuthState();
   const isPatient = user?.role === "PATIENT";
   const isAuthenticated = Boolean(user);
 
   const [dateWindowOffsetDays, setDateWindowOffsetDays] = useState(0);
-  const [isMounted, setIsMounted] = useState(false);
   const [selectedDayKey, setSelectedDayKey] = useState<string | null>(null);
   const [durationFilter, setDurationFilter] = useState<30 | 60>(30);
 
-  useEffect(() => {
-    setIsMounted(true);
-  }, []);
+  const isMounted = useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false,
+  );
 
   const { from, to, fromDate } = useMemo(
     () => getDateWindowBounds(dateWindowOffsetDays),
@@ -211,11 +192,10 @@ export default function PublicAvailabilityViewer({
       const d = new Date(fromDate);
       d.setDate(fromDate.getDate() + i);
       const key = toDayKey(d);
-      const grouped = dayMap.get(key);
       const header = formatDayHeader(d.toISOString(), numLocale);
-      const allSlots = grouped?.slots ?? [];
+      const group = dayMap.get(key);
+      const allSlots = group ? Array.from(group.slots.values()) : [];
       const filteredSlots = allSlots.filter((slot) => slot.maxDuration >= durationFilter);
-
       columns.push({
         sortKey: key,
         dayLabelShort: header.short,
@@ -227,29 +207,23 @@ export default function PublicAvailabilityViewer({
     return columns;
   }, [fromDate, dayMap, numLocale, durationFilter]);
 
-  // Auto-select first available day or fallback to today/first day
-  useEffect(() => {
-    if (dateColumns.length === 0) return;
-
-    // If current selected day is not in visible range, or is null, pick first day with slots
-    const isCurrentInView = dateColumns.some((c) => c.sortKey === selectedDayKey);
-    if (!isCurrentInView || !selectedDayKey) {
-      const firstWithSlots = dateColumns.find((c) => c.slots.length > 0);
-      setSelectedDayKey(firstWithSlots ? firstWithSlots.sortKey : dateColumns[0].sortKey);
+  // Active selected day (derived safely without effects)
+  const activeSelectedDayKey = useMemo(() => {
+    if (selectedDayKey && dateColumns.some((c) => c.sortKey === selectedDayKey)) {
+      return selectedDayKey;
     }
+    const firstWithSlots = dateColumns.find((c) => c.slots.length > 0);
+    return firstWithSlots ? firstWithSlots.sortKey : dateColumns[0]?.sortKey ?? null;
   }, [dateColumns, selectedDayKey]);
 
-  // Active selected day
   const selectedDay = useMemo(() => {
-    return dateColumns.find((c) => c.sortKey === selectedDayKey) ?? dateColumns[0];
-  }, [dateColumns, selectedDayKey]);
+    return dateColumns.find((c) => c.sortKey === activeSelectedDayKey) ?? dateColumns[0];
+  }, [dateColumns, activeSelectedDayKey]);
 
   // Find first available day across current week if selected day is empty
   const firstAvailableDayInWeek = useMemo(() => {
     return dateColumns.find((c) => c.slots.length > 0);
   }, [dateColumns]);
-
-  const allWeekEmpty = dateColumns.every((c) => c.slots.length === 0);
 
   // Booking Flow State
   const [phase, setPhase] = useState<Phase>("browse");
@@ -260,6 +234,7 @@ export default function PublicAvailabilityViewer({
   const createSession = useCreateScheduledSession();
 
   const selectedDurationPrice = duration === 30 ? displaySessionPrice30 : displaySessionPrice60;
+  const authReturnPath = buildPractitionerBookingAuthReturnPath(slug, duration);
 
   const handleSlotSelect = useCallback(
     (slot: SelectableSlot) => {
@@ -292,15 +267,20 @@ export default function PublicAvailabilityViewer({
         onSuccess: (response) => {
           setCreatedSession(response.item);
           void refetch();
-          setPhase("success");
+          router.push(`/patient/sessions/${response.item.id}/pay`);
         },
         onError: (err) => {
           const appErr = toAppError(err);
           setBookingError(appErr.statusCode === 409 ? tBook("createErrorConflict") : tBook("createError"));
+          if (appErr.statusCode === 409) {
+            // A slot can become occupied while this view is open. Refresh the
+            // authoritative windows immediately so the next choice is current.
+            void refetch();
+          }
         },
       },
     );
-  }, [selectedSlot, isPatient, slug, duration, createSession, tBook, refetch]);
+  }, [selectedSlot, isPatient, slug, duration, createSession, tBook, refetch, router]);
 
   const handleBookAnother = useCallback(() => {
     void refetch();
@@ -402,7 +382,7 @@ export default function PublicAvailabilityViewer({
           <div className="space-y-2 pt-2">
             <p className="text-xs text-text-muted">{tBook("signInNote")}</p>
             <Link
-              href="/signin/patient"
+              href={`/signin/patient?callbackUrl=${encodeURIComponent(authReturnPath)}`}
               className="flex w-full items-center justify-center rounded-xl bg-primary px-4 py-3 text-sm font-bold text-white hover:bg-primary/90"
             >
               {tBook("signInToCta")}

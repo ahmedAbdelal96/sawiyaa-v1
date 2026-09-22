@@ -827,9 +827,20 @@ export class AccountingReconciliationOperationsService {
   private async findRefundTargets(
     input: AccountingReconciliationRunRequest,
   ): Promise<EntityListItem[]> {
+    const dateWindow = this.buildDateWindow(input);
     const where: Prisma.RefundWhereInput = {
-      status: RefundStatus.SUCCEEDED,
-      processedAt: this.buildDateWindow(input),
+      status: {
+        in: [
+          RefundStatus.REQUESTED,
+          RefundStatus.PROCESSING,
+          RefundStatus.SUCCEEDED,
+        ],
+      },
+      OR: [
+        { processedAt: dateWindow },
+        { requestedAt: dateWindow },
+        { updatedAt: dateWindow },
+      ],
       currencyCode: this.normalizeCurrency(input.currencyCode) ?? undefined,
       payment: {
         practitionerId: input.practitionerId ?? undefined,

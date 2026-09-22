@@ -23,6 +23,7 @@ export function useAdminSessions(
     queryFn: () => listAdminSessions(params),
     enabled: isAdminRole(role) && (options?.enabled ?? true),
     staleTime: 30_000,
+    refetchOnWindowFocus: true,
     gcTime: 10 * 60_000,
   });
 }
@@ -34,6 +35,7 @@ export function useAdminSessionCancellationPolicies(options?: { enabled?: boolea
     queryFn: listAdminSessionCancellationPolicies,
     enabled: isAdminRole(role) && (options?.enabled ?? true),
     staleTime: 30_000,
+    refetchOnWindowFocus: true,
     gcTime: 10 * 60_000,
   });
 }

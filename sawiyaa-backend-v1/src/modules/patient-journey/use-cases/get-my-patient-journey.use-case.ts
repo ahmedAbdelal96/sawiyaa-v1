@@ -110,6 +110,7 @@ export class GetMyPatientJourneyUseCase {
 
     const nextSteps = this.buildPatientJourneyNextStepsService.build({
       hasPendingPayment: normalizedSignalContext.payments.hasPendingPayment,
+      pendingPayment,
       hasUpcomingSession: normalizedSignalContext.sessions.hasUpcomingSession,
       upcomingSessionStatus:
         normalizedSignalContext.sessions.upcomingStatus ??

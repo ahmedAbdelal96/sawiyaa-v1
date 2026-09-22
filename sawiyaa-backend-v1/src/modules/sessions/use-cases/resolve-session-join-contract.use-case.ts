@@ -272,8 +272,9 @@ export class ResolveSessionJoinContractUseCase {
     const promotableToReadyStatuses: SessionStatus[] = [SessionStatus.UPCOMING];
     if (promotableToReadyStatuses.includes(effectiveSession.status)) {
       await this.prisma.$transaction(async (tx) => {
-        await this.sessionLifecycleService.transition({
-          session: effectiveSession,
+        await this.sessionLifecycleService.transitionIfCurrentStatus({
+          sessionId: effectiveSession.id,
+          expectedStatuses: promotableToReadyStatuses,
           to: SessionStatus.READY_TO_JOIN,
           actorUserId: input.userId,
           tx,

@@ -5,6 +5,8 @@ import {
   getSelectedWeekSlots,
   getScheduleSlotStatus,
   getWeekDays,
+  canEditScheduleWeek,
+  isScheduleSlotStartInPast,
   summarizeScheduleSlots,
 } from "../../src/features/practitioner/availability/schedule-view-model";
 import type { AvailabilityWeekSlot } from "../../src/features/practitioner/availability/types";
@@ -70,5 +72,19 @@ describe("practitioner schedule day view", () => {
   it("keeps the main Schedule timezone label human and offset-free", () => {
     expect(formatScheduleTimeZoneLabel("Asia/Riyadh", "ar", new Date("2026-08-15T00:00:00Z"))).toBe("الرياض");
     expect(formatScheduleTimeZoneLabel("Asia/Riyadh", "en", new Date("2026-08-15T00:00:00Z"))).toBe("Riyadh");
+  });
+
+  it("keeps a published week editable when all existing slots are protected", () => {
+    expect(canEditScheduleWeek({ status: "PUBLISHED", canCreate: false })).toBe(true);
+    expect(canEditScheduleWeek({ status: "ARCHIVED", canCreate: false })).toBe(false);
+    expect(canEditScheduleWeek({ status: "ARCHIVED", canCreate: true })).toBe(false);
+    expect(canEditScheduleWeek({ status: "NOT_SET", canCreate: true })).toBe(true);
+  });
+
+  it("blocks newly added published slots at or before the current local minute", () => {
+    const now = new Date("2026-08-11T10:30:00Z");
+    expect(isScheduleSlotStartInPast("2026-08-09", "UTC", 2, 630, now)).toBe(true);
+    expect(isScheduleSlotStartInPast("2026-08-09", "UTC", 2, 660, now)).toBe(false);
+    expect(isScheduleSlotStartInPast("2026-08-09", "UTC", 3, 0, now)).toBe(false);
   });
 });

@@ -75,7 +75,12 @@ export class ListPublicPackagePlansUseCase {
     const patientProfile = input.currentUserId
       ? await this.patientProfileRepository.findByUserId(input.currentUserId)
       : null;
-    const plans = await this.packagePlanRepository.listActive();
+    // Keep the public contract defensive even when a custom repository/test
+    // implementation returns a stale row: only active, non-archived plans are
+    // ever eligible for a purchase CTA.
+    const plans = (await this.packagePlanRepository.listActive()).filter(
+      (plan) => plan.isActive && !plan.archivedAt,
+    );
     const durationMinutes = input.durationMinutes ?? 60;
     const sessionMode = input.sessionMode ?? SessionMode.VIDEO;
 

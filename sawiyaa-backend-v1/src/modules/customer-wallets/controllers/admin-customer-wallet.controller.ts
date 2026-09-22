@@ -13,6 +13,9 @@ import { Roles } from '@common/decorators/roles.decorator';
 import { AppRole } from '@common/enums/app-role.enum';
 import { JwtAccessAuthGuard } from '@common/guards/authentication/jwt-access-auth.guard';
 import { RolesGuard } from '@common/guards/authorization/roles.guard';
+import { PermissionsGuard } from '@common/guards/authorization/permissions.guard';
+import { Permissions } from '@common/decorators/permissions.decorator';
+import { PermissionKey } from '@common/enums/permission-key.enum';
 import { AuthenticatedUser } from '@common/interfaces/authenticated-user.interface';
 import {
   CustomerWalletEntriesSuccessResponseDto,
@@ -24,8 +27,9 @@ import { ListCustomerWalletEntriesUseCase } from '../use-cases/list-customer-wal
 
 @ApiTags('Admin - Customer Wallet')
 @ApiBearerAuth()
-@UseGuards(JwtAccessAuthGuard, RolesGuard)
+@UseGuards(JwtAccessAuthGuard, RolesGuard, PermissionsGuard)
 @Roles(AppRole.ADMIN, AppRole.SUPER_ADMIN, AppRole.FINANCE_STAFF)
+@Permissions(PermissionKey.CUSTOMER_WALLETS_READ)
 @Controller('admin/patients/:patientId/wallet')
 export class AdminCustomerWalletController {
   constructor(

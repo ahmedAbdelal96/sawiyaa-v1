@@ -138,7 +138,7 @@ export class GetSessionDetailsUseCase {
       item: {
         ...details,
         sessionChat: this.resolveSessionChatAvailability.resolve({
-          status: session.status,
+          status: operational.state,
           sessionMode: session.sessionMode,
           scheduledStartAt: session.scheduledStartAt,
           scheduledEndAt: session.scheduledEndAt,

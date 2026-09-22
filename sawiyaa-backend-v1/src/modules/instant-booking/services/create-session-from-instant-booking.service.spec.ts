@@ -37,6 +37,9 @@ describe('CreateSessionFromInstantBookingService', () => {
         practitionerId: 'practitioner-1',
         preferredMode: SessionMode.VIDEO,
         requestedDurationMinutes: 30,
+        metadataJson: {
+          selectedMoney: { amount: '520.00', currencyCode: 'EGP' },
+        },
       } as unknown as InstantBookingRequest,
       actorUserId: 'practitioner-user-1',
       startsAtUtc: new Date('2026-08-10T07:00:00.000Z'),
@@ -50,6 +53,7 @@ describe('CreateSessionFromInstantBookingService', () => {
         flowType: SessionFlowType.INSTANT,
         status: SessionStatus.PENDING_PAYMENT,
         timezoneSnapshot: 'Africa/Cairo',
+        pricingCurrencyCode: 'EGP',
       }),
     );
     expect(sessionInput.requestedStartAt).toBeInstanceOf(Date);

@@ -47,6 +47,7 @@ interface Props {
   locale: string;
   onOpenFullChat?: () => void;
   onNewSupportClick?: () => void;
+  focusComposer?: boolean;
   isVisible?: boolean;
 }
 
@@ -56,6 +57,7 @@ export default function UnifiedConversationThread({
   locale,
   onOpenFullChat,
   onNewSupportClick,
+  focusComposer = false,
   isVisible = true,
 }: Props) {
   const { user: authUser } = useAuthState();
@@ -84,6 +86,7 @@ export default function UnifiedConversationThread({
   const [isUploading, setIsUploading] = useState(false);
   const [isEmojiOpen, setIsEmojiOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const messageInputRef = useRef<HTMLTextAreaElement | null>(null);
   const [typingActive, setTypingActive] = useState(false);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -128,6 +131,12 @@ export default function UnifiedConversationThread({
       endRef.current.scrollIntoView({ block: "end", behavior: "smooth" });
     }
   }, [messages.length]);
+
+  useEffect(() => {
+    if (focusComposer && conversation?.canSend && conversationId) {
+      messageInputRef.current?.focus();
+    }
+  }, [conversation?.canSend, conversationId, focusComposer]);
 
   // Mark conversation as read when messages load or active message changes
   useEffect(() => {
@@ -655,6 +664,7 @@ export default function UnifiedConversationThread({
               ) : null}
             </div>
             <textarea
+              ref={messageInputRef}
               value={message}
               onChange={handleInputChange}
               onKeyDown={handleKeyDown}

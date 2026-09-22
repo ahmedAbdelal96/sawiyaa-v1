@@ -87,6 +87,9 @@ export class OperationalNotificationService {
     paymentId: string;
     amount: string;
     currencyCode: string;
+    routePath?: string | null;
+    financialEventType?: string;
+    context?: string | null;
   }): Promise<void> {
     await this.notifyPatientBySlug({
       patientProfileId: input.patientProfileId,
@@ -100,6 +103,16 @@ export class OperationalNotificationService {
       relatedEntityType: 'PAYMENT',
       relatedEntityId: input.paymentId,
       category: NotificationCategory.PAYMENT,
+      idempotencyKey: `payments.payment-succeeded:${input.paymentId}`,
+      payload: {
+        amount: input.amount,
+        currencyCode: input.currencyCode,
+        ...(input.financialEventType
+          ? { financialEventType: input.financialEventType }
+          : {}),
+        ...(input.context ? { context: input.context } : {}),
+      },
+      routePath: input.routePath,
     });
   }
 
@@ -136,6 +149,10 @@ export class OperationalNotificationService {
       relatedEntityType: 'REFUND',
       relatedEntityId: input.refundId,
       category: NotificationCategory.PAYMENT,
+      payload: {
+        amount: input.amount,
+        currencyCode: input.currencyCode,
+      },
     });
   }
 
@@ -144,9 +161,13 @@ export class OperationalNotificationService {
     refundId: string;
     amount: string;
     currencyCode: string;
+    routePath?: string | null;
+    financialEventType?: string;
+    context?: string | null;
   }): Promise<void> {
-    await this.notifyPatientBySlug({
-      patientProfileId: input.patientProfileId,
+    const recipient = await this.resolvePatientRecipient(input.patientProfileId);
+    await this.sendBySlug({
+      recipient,
       slug: 'payments.refund-succeeded',
       titleKey: 'payments.notifications.refundSucceededTitle',
       bodyKey: 'payments.notifications.refundSucceededBody',
@@ -157,6 +178,18 @@ export class OperationalNotificationService {
       relatedEntityType: 'REFUND',
       relatedEntityId: input.refundId,
       category: NotificationCategory.PAYMENT,
+      idempotencyKey: `payments.refund-succeeded:${input.refundId}`,
+      payload: {
+        amount: input.amount,
+        currencyCode: input.currencyCode,
+        financialEventType: input.financialEventType ?? 'REFUND_COMPLETED',
+        ...(input.context ? { context: input.context } : {}),
+      },
+      routePath:
+        input.routePath ??
+        (recipient
+          ? `/${recipient.locale}/patient/wallet`
+          : null),
     });
   }
 
@@ -387,6 +420,133 @@ export class OperationalNotificationService {
         ...(input.createdSessionId
           ? { createdSessionId: input.createdSessionId }
           : {}),
+      },
+    });
+  }
+
+  async notifyPackagePurchaseSucceeded(input: {
+    patientProfileId: string;
+    packagePurchaseId: string;
+    amount: string;
+    currencyCode: string;
+    packageName?: string | null;
+  }): Promise<void> {
+    const recipient = await this.resolvePatientRecipient(input.patientProfileId);
+    await this.sendBySlug({
+      recipient,
+      slug: 'payments.package-purchase-succeeded',
+      titleKey: 'payments.notifications.packagePurchaseSucceededTitle',
+      bodyKey: 'payments.notifications.packagePurchaseSucceededBody',
+      params: { amount: input.amount, currencyCode: input.currencyCode },
+      relatedEntityType: 'PACKAGE_PURCHASE',
+      relatedEntityId: input.packagePurchaseId,
+      category: NotificationCategory.PAYMENT,
+      routePath: recipient
+        ? `/${recipient.locale}/patient/package-purchases/${encodeURIComponent(input.packagePurchaseId)}`
+        : null,
+      idempotencyKey: recipient
+        ? `payments.package-purchase-succeeded:${input.packagePurchaseId}:${recipient.userId}`
+        : null,
+      payload: {
+        amount: input.amount,
+        currencyCode: input.currencyCode,
+        packagePurchaseId: input.packagePurchaseId,
+        packageName: input.packageName ?? null,
+        financialEventType: 'PACKAGE_PURCHASE',
+      },
+    });
+  }
+
+  async notifyAcademyPaymentSucceeded(input: {
+    patientProfileId: string;
+    enrollmentId: string;
+    amount: string;
+    currencyCode: string;
+    trainingName?: string | null;
+  }): Promise<void> {
+    const recipient = await this.resolvePatientRecipient(input.patientProfileId);
+    await this.sendBySlug({
+      recipient,
+      slug: 'payments.academy-payment-succeeded',
+      titleKey: 'payments.notifications.academyPaymentSucceededTitle',
+      bodyKey: 'payments.notifications.academyPaymentSucceededBody',
+      params: { amount: input.amount, currencyCode: input.currencyCode },
+      relatedEntityType: 'ACADEMY_ENROLLMENT',
+      relatedEntityId: input.enrollmentId,
+      category: NotificationCategory.PAYMENT,
+      routePath: recipient
+        ? `/${recipient.locale}/patient/academy/program-enrollments/${encodeURIComponent(input.enrollmentId)}`
+        : null,
+      idempotencyKey: recipient
+        ? `payments.academy-payment-succeeded:${input.enrollmentId}:${recipient.userId}`
+        : null,
+      payload: {
+        amount: input.amount,
+        currencyCode: input.currencyCode,
+        enrollmentId: input.enrollmentId,
+        trainingName: input.trainingName ?? null,
+        financialEventType: 'ACADEMY_PAYMENT',
+      },
+    });
+  }
+
+  async notifyPractitionerEarningCredited(input: {
+    practitionerProfileId: string;
+    reviewId: string;
+    sessionId: string;
+    amount: string;
+    currencyCode: string;
+  }): Promise<void> {
+    const recipient = await this.resolvePractitionerRecipient(input.practitionerProfileId);
+    await this.sendBySlug({
+      recipient,
+      slug: 'financial.practitioner-earning-credited',
+      titleKey: 'financialOperations.notifications.earningCreditedTitle',
+      bodyKey: 'financialOperations.notifications.earningCreditedBody',
+      params: { amount: input.amount, currencyCode: input.currencyCode },
+      relatedEntityType: 'SESSION_EARNING_REVIEW',
+      relatedEntityId: input.reviewId,
+      category: NotificationCategory.PAYMENT,
+      routePath: recipient ? `/${recipient.locale}/practitioner/wallet` : null,
+      idempotencyKey: recipient
+        ? `financial.practitioner-earning-credited:${input.reviewId}:${recipient.userId}`
+        : null,
+      targetRole: 'PRACTITIONER',
+      payload: {
+        amount: input.amount,
+        currencyCode: input.currencyCode,
+        sessionId: input.sessionId,
+        financialEventType: 'PRACTITIONER_EARNING_CREDITED',
+      },
+    });
+  }
+
+  async notifyPractitionerPayoutCompleted(input: {
+    practitionerProfileId: string;
+    payoutId: string;
+    amount: string;
+    currencyCode: string;
+  }): Promise<void> {
+    const recipient = await this.resolvePractitionerRecipient(input.practitionerProfileId);
+    await this.sendBySlug({
+      recipient,
+      slug: 'financial.practitioner-payout-completed',
+      titleKey: 'financialOperations.notifications.payoutCompletedTitle',
+      bodyKey: 'financialOperations.notifications.payoutCompletedBody',
+      params: { amount: input.amount, currencyCode: input.currencyCode },
+      relatedEntityType: 'SETTLEMENT_PAYOUT',
+      relatedEntityId: input.payoutId,
+      category: NotificationCategory.PAYMENT,
+      routePath: recipient ? `/${recipient.locale}/practitioner/settlements` : null,
+      idempotencyKey: recipient
+        ? `financial.practitioner-payout-completed:${input.payoutId}:${recipient.userId}`
+        : null,
+      targetRole: 'PRACTITIONER',
+      payload: {
+        amount: input.amount,
+        currencyCode: input.currencyCode,
+        payoutId: input.payoutId,
+        financialEventType: 'PRACTITIONER_PAYOUT_COMPLETED',
       },
     });
   }
@@ -1077,6 +1237,7 @@ export class OperationalNotificationService {
     category: NotificationCategory;
     routePath?: string | null;
     idempotencyKey?: string | null;
+    payload?: Record<string, unknown> | null;
   }): Promise<void> {
     const recipient = await this.resolvePatientRecipient(
       input.patientProfileId,
@@ -1092,6 +1253,7 @@ export class OperationalNotificationService {
       category: input.category,
       routePath: input.routePath ?? null,
       idempotencyKey: input.idempotencyKey ?? null,
+      payload: input.payload ?? null,
     });
   }
 

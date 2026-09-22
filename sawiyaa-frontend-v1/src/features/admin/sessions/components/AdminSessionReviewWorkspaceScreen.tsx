@@ -538,7 +538,10 @@ export default function AdminSessionReviewWorkspaceScreen({ sessionId }: Props) 
                 copyable
               />
               {queueItem?.status ? (
-                <SessionStatusBadge status={queueItem.status} />
+                <SessionStatusBadge
+                  status={queueItem.status}
+                  operational={queueItem.operational}
+                />
               ) : (
                 <AdminStatusBadge tone="primary">
                   {isAr ? "قيد المراجعة" : "Under Review"}
@@ -604,7 +607,13 @@ export default function AdminSessionReviewWorkspaceScreen({ sessionId }: Props) 
           {runtimeItem?.payment && !isPackageSession && !isReplacementSession ? <div><p className="text-[10px] font-semibold uppercase tracking-wider text-text-muted">{isAr ? "المدفوع فعلياً" : "Paid"}</p><p className="font-bold text-text-brand">{runtimeItem.payment.amount} {runtimeItem.payment.currency}</p></div> : null}
           {isPackageSession && runtimeItem?.packagePurchase ? <div><p className="text-[10px] font-semibold uppercase tracking-wider text-text-muted">{isAr ? "الباقة / القيمة المخصصة" : "Package / allocation"}</p><p className="font-bold text-text-brand">{runtimeItem.packagePurchase.packagePlan.title} · {runtimeItem.packagePurchase.patientPayableTotalSnapshot ?? "-"} {runtimeItem.packagePurchase.selectedCurrencyCode ?? ""}</p></div> : null}
           {isReplacementSession ? <div><p className="text-[10px] font-semibold uppercase tracking-wider text-text-muted">{isAr ? "الجلسة الأصلية" : "Original session"}</p><p className="font-bold text-text-brand">{contextOriginalSessionId ?? "-"}</p></div> : null}
-          <div><p className="text-[10px] font-semibold uppercase tracking-wider text-text-muted">{isAr ? "الحالة" : "State"}</p><p className="font-semibold text-text-secondary">{queueItem?.status ?? runtimeItem?.status ?? "-"}</p></div>
+          <div>
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-text-muted">{isAr ? "الحالة" : "State"}</p>
+            <SessionStatusBadge
+              status={queueItem?.status ?? runtimeItem?.status}
+              operational={queueItem?.operational}
+            />
+          </div>
         </div>
       </section>
 

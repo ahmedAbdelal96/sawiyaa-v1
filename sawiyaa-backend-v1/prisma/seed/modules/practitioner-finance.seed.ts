@@ -290,7 +290,9 @@ export const practitionerFinanceSeedModule: SeedModule = {
     ];
 
     const activeCouponKey = 'active';
-    const activeCouponId = uuid(`practitioner-finance-coupon-${activeCouponKey}`);
+    const activeCouponId = uuid(
+      `practitioner-finance-coupon-${activeCouponKey}`,
+    );
     const expiredCouponId = uuid('practitioner-finance-coupon-expired');
     const disabledCouponId = uuid('practitioner-finance-coupon-disabled');
 
@@ -564,12 +566,7 @@ export const practitionerFinanceSeedModule: SeedModule = {
         );
 
         const settlementRecord = await tx.practitionerSettlement.upsert({
-          where: {
-            batchId_practitionerId: {
-              batchId,
-              practitionerId,
-            },
-          },
+          where: { id: settlementId },
           create: {
             id: settlementId,
             batchId,
@@ -580,6 +577,11 @@ export const practitionerFinanceSeedModule: SeedModule = {
             amountNet: money(settlement.amountNet),
             amountPaidTotal: money(settlement.amountPaidTotal),
             currencyCode,
+            originalAmount: money(settlement.amountNet),
+            originalCurrencyCode: currencyCode,
+            walletCurrencyCode: currencyCode,
+            convertedAmount: money(settlement.amountNet),
+            finalWalletCredit: money(settlement.amountNet),
             payoutMethodSnapshot:
               settlement.payoutMethodSnapshot ?? Prisma.JsonNull,
             externalPayoutRef: settlement.externalPayoutRef,
@@ -595,6 +597,11 @@ export const practitionerFinanceSeedModule: SeedModule = {
             amountNet: money(settlement.amountNet),
             amountPaidTotal: money(settlement.amountPaidTotal),
             currencyCode,
+            originalAmount: money(settlement.amountNet),
+            originalCurrencyCode: currencyCode,
+            walletCurrencyCode: currencyCode,
+            convertedAmount: money(settlement.amountNet),
+            finalWalletCredit: money(settlement.amountNet),
             payoutMethodSnapshot:
               settlement.payoutMethodSnapshot ?? Prisma.JsonNull,
             externalPayoutRef: settlement.externalPayoutRef,
@@ -668,7 +675,9 @@ export const practitionerFinanceSeedModule: SeedModule = {
         const sessionId = uuid(`practitioner-finance-session-${plan.key}`);
         const paymentId = uuid(`practitioner-finance-payment-${plan.key}`);
         const sessionStartAt = daysAgo(plan.daysAgo);
-        const sessionEndAt = new Date(sessionStartAt.getTime() + 60 * 60 * 1000);
+        const sessionEndAt = new Date(
+          sessionStartAt.getTime() + 60 * 60 * 1000,
+        );
         const paymentDate = daysAgo(plan.daysAgo);
         const activeCoupon = couponIdByKey.get(activeCouponKey)!;
         const couponSnapshot =
@@ -808,7 +817,9 @@ export const practitionerFinanceSeedModule: SeedModule = {
         });
 
         for (const ledgerEntry of plan.ledgerEntries) {
-          const ledgerId = uuid(`practitioner-finance-ledger-${ledgerEntry.key}`);
+          const ledgerId = uuid(
+            `practitioner-finance-ledger-${ledgerEntry.key}`,
+          );
           const paymentRefId = paymentId;
           const settlementId = ledgerEntry.settlementKey
             ? (settlementIdByKey.get(ledgerEntry.settlementKey) ?? null)
@@ -853,7 +864,9 @@ export const practitionerFinanceSeedModule: SeedModule = {
         }
 
         if (plan.key === 'available') {
-          const redemptionId = uuid('practitioner-finance-coupon-redemption-active');
+          const redemptionId = uuid(
+            'practitioner-finance-coupon-redemption-active',
+          );
           await tx.couponRedemption.upsert({
             where: { id: redemptionId },
             create: {
@@ -887,7 +900,7 @@ export const practitionerFinanceSeedModule: SeedModule = {
         }
       }
 
-    const paidSettlement = settlementIdByKey.get('previous-paid');
+      const paidSettlement = settlementIdByKey.get('previous-paid');
       const paidBatchId = batchIdByKey.get('previous');
       if (!paidSettlement || !paidBatchId) {
         throw new Error(

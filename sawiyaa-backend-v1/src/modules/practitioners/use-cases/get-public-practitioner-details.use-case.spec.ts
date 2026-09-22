@@ -10,7 +10,6 @@ import { PractitionerProfessionalContentResolver } from '../services/practitione
 describe('GetPublicPractitionerDetailsUseCase', () => {
   const publicReadRepository = {
     findByPublicSlug: jest.fn(),
-    countApprovedCredentials: jest.fn(),
   } as unknown as PublicPractitionerReadRepository;
   const pricingContextService = {
     resolve: jest.fn(),
@@ -81,9 +80,6 @@ describe('GetPublicPractitionerDetailsUseCase', () => {
       acceptsPackages: true,
     });
     (
-      publicReadRepository.countApprovedCredentials as jest.Mock
-    ).mockResolvedValue(1);
-    (
       sessionReviewRatingAggregationService.aggregateByPractitionerId as jest.Mock
     ).mockResolvedValue({
       averageRating: 4.5,
@@ -126,6 +122,8 @@ describe('GetPublicPractitionerDetailsUseCase', () => {
     });
     expect(result.item.professionalTitle).toBe('Clinical Psychologist');
     expect(result.item.fullBio).toBe('English bio');
+    expect(result.item.bioAr).toBe('نبذة عربية');
+    expect(result.item.bioEn).toBe('English bio');
   });
 
   it('uses shared pricing context so guest Egypt traffic can resolve EGP when request country is provided', async () => {
@@ -168,7 +166,6 @@ describe('GetPublicPractitionerDetailsUseCase', () => {
       yearsOfExperience: 7,
       acceptsPackages: true,
     });
-    (publicReadRepository.countApprovedCredentials as jest.Mock).mockResolvedValue(1);
     (sessionReviewRatingAggregationService.aggregateByPractitionerId as jest.Mock).mockResolvedValue({
       averageRating: 4.5,
       ratingsCount: 8,

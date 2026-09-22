@@ -75,6 +75,22 @@ export class PatientPackagePurchaseResponseDto {
   @ApiProperty()
   patientPayableTotal!: string;
 
+  @ApiProperty({
+    description:
+      'Authoritative package progress. A reserved session is already linked to an appointment or awaiting an outcome.',
+  })
+  progress!: {
+    totalSessions: number;
+    consumedSessions: number;
+    completedSessions: number;
+    reservedSessions: number;
+    availableSessions: number;
+    remainingSessions: number;
+    scheduledSessions: number;
+    progressPercent: number;
+    nextSessionStartAt: string | null;
+  };
+
   @ApiProperty({ nullable: true })
   paymentExpiresAt!: string | null;
 
@@ -89,6 +105,12 @@ export class PatientPackagePurchaseResponseDto {
 
   @ApiProperty()
   updatedAt!: string;
+
+  @ApiProperty({ nullable: true, description: 'Patient-safe payment lifecycle and refund history.' })
+  payment!: Record<string, unknown> | null;
+
+  @ApiProperty({ type: [Object], description: 'Patient-safe package entitlement decisions.' })
+  entitlementHistory!: Record<string, unknown>[];
 }
 
 export class PatientPackagePurchasesPaginationResponseDto {

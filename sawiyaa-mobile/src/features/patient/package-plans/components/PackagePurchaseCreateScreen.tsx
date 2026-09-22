@@ -17,10 +17,16 @@ import {
 import { useTheme } from "../../../../providers/ThemeProvider";
 import { useAuth } from "../../../../providers/AuthProvider";
 import { resolveMediaUrl } from "../../../../lib/resolve-media-url";
-import { extractApiErrorMessage } from "../../../../lib/api";
-import { useCreatePackagePurchase, usePublicPractitionerPackagePlans } from "../hooks";
+import { getBookingErrorMessage } from "../../../../lib/booking-error-messages";
+import {
+  useCreatePackagePurchase,
+  usePublicPractitionerPackagePlans,
+} from "../hooks";
 import { usePublicAvailabilityWindows } from "../../sessions/hooks";
-import { formatMoney as formatCentralMoney, parseMoney } from "../../../../lib/money";
+import {
+  formatMoney as formatCentralMoney,
+  parseMoney,
+} from "../../../../lib/money";
 import { usePatientProfile } from "../../profile/hooks";
 import { useGetPublicPractitionerDetails } from "../../discovery/api";
 import { useAppDirection } from "../../../../i18n/direction";
@@ -36,7 +42,11 @@ import {
 } from "../../sessions/slot-utils";
 import type { PackagePlanQuotedItem } from "../types";
 
-function formatMoney(amount: string | null | undefined, currencyCode: string | null | undefined, locale: string) {
+function formatMoney(
+  amount: string | null | undefined,
+  currencyCode: string | null | undefined,
+  locale: string,
+) {
   const money = parseMoney(amount, currencyCode);
   return money ? formatCentralMoney(money, locale) : "-";
 }
@@ -64,7 +74,8 @@ export default function PackagePurchaseCreateScreen() {
   const { theme } = useTheme();
   const { t, i18n } = useTranslation();
   const { user, role, isLoading: isAuthLoading } = useAuth();
-  const { rowDirection, textAlign, chevronBack, chevronForward } = useAppDirection();
+  const { rowDirection, textAlign, chevronBack, chevronForward } =
+    useAppDirection();
   const locale = i18n.language?.startsWith("ar") ? "ar-SA" : "en-US";
   const params = useLocalSearchParams<{
     practitionerSlug: string;
@@ -78,7 +89,8 @@ export default function PackagePurchaseCreateScreen() {
   }>();
 
   const durationMinutes = Number(params.durationMinutes) >= 60 ? 60 : 30;
-  const sessionMode = (params.sessionMode === "AUDIO" ? "AUDIO" : "VIDEO") as "VIDEO" | "AUDIO";
+  const sessionMode = (params.sessionMode === "AUDIO" ? "AUDIO" : "VIDEO") as
+    "VIDEO" | "AUDIO";
   const authScopeKey = useMemo(() => {
     if (isAuthLoading) {
       return "bootstrapping";
@@ -109,9 +121,9 @@ export default function PackagePurchaseCreateScreen() {
       cacheScopeKey: authScopeKey,
     },
   );
-  const plan = packagePlansQuery.data?.items.find(
-    (item) => item.item.code === params.packagePlanCode,
-  );
+  const plan = (
+    (packagePlansQuery.data?.items ?? []) as PackagePlanQuotedItem[]
+  ).find((item) => item.item.code === params.packagePlanCode);
   const quoteCurrency = plan?.quote.selectedCurrencyCode ?? null;
   const sessionCount = plan?.quote.sessionCount ?? plan?.item.sessionCount ?? 0;
   const localizedPlanLabel = plan
@@ -120,7 +132,12 @@ export default function PackagePurchaseCreateScreen() {
         defaultValue: plan.item.title,
       })
     : null;
-  const selectedQuoteLabel = resolveQuoteLabel(plan, locale, quoteCurrency, localizedPlanLabel);
+  const selectedQuoteLabel = resolveQuoteLabel(
+    plan,
+    locale,
+    quoteCurrency,
+    localizedPlanLabel,
+  );
   const currentWeek = getWeekRange(weekOffset);
   const availabilityQuery = usePublicAvailabilityWindows(
     params.practitionerSlug ?? null,
@@ -130,7 +147,9 @@ export default function PackagePurchaseCreateScreen() {
   const availableSlots = useMemo(() => {
     const slots = buildSlotsFromWindows(availabilityQuery.data?.windows ?? []);
     return slots.filter(
-      (slot) => slot.durationMinutes === null || slot.durationMinutes === durationMinutes,
+      (slot) =>
+        slot.durationMinutes === null ||
+        slot.durationMinutes === durationMinutes,
     );
   }, [availabilityQuery.data?.windows, durationMinutes]);
   const groupedSlots = useMemo(
@@ -140,7 +159,9 @@ export default function PackagePurchaseCreateScreen() {
   const selectedSlots = useMemo(
     () =>
       selectedStartsAt
-        .map((startsAt) => availableSlots.find((slot) => slot.startsAt === startsAt))
+        .map((startsAt) =>
+          availableSlots.find((slot) => slot.startsAt === startsAt),
+        )
         .filter((slot): slot is NonNullable<typeof slot> => Boolean(slot)),
     [availableSlots, selectedStartsAt],
   );
@@ -158,7 +179,9 @@ export default function PackagePurchaseCreateScreen() {
       }
       return parsed
         .map((item) =>
-          typeof item?.scheduledStartAt === "string" ? item.scheduledStartAt : null,
+          typeof item?.scheduledStartAt === "string"
+            ? item.scheduledStartAt
+            : null,
         )
         .filter((value): value is string => Boolean(value));
     } catch {
@@ -184,7 +207,7 @@ export default function PackagePurchaseCreateScreen() {
       .filter((startsAt) =>
         availableSlots.some((slot) => slot.startsAt === startsAt),
       )
-      .slice(0, sessionCount);
+      .slice(0, 1);
 
     setSelectedStartsAt([...validStarts].sort());
 
@@ -214,7 +237,7 @@ export default function PackagePurchaseCreateScreen() {
         return current.filter((value) => value !== startsAt);
       }
 
-      if (current.length >= sessionCount) {
+      if (current.length >= 1) {
         return current;
       }
 
@@ -222,15 +245,16 @@ export default function PackagePurchaseCreateScreen() {
     });
   };
 
-  const canContinue = selectedStartsAt.length === sessionCount && sessionCount > 0;
+  const canContinue = selectedStartsAt.length <= 1 && sessionCount > 0;
 
   if (!params.practitionerSlug || !params.packagePlanCode) {
     return (
-      <DetailPageScaffold
-        showBack
-      >
+      <DetailPageScaffold showBack>
         <EmptyState
-          title={t("packagePurchases.create.notFoundTitle", "Package not available")}
+          title={t(
+            "packagePurchases.create.notFoundTitle",
+            "Package not available",
+          )}
           description={t(
             "packagePurchases.create.notFoundDescription",
             "The package link is missing important details.",
@@ -247,7 +271,10 @@ export default function PackagePurchaseCreateScreen() {
       <DetailPageScaffold
         showBack
         error={packagePlansQuery.isError}
-        errorTitle={t("packagePurchases.create.errorTitle", "We could not load the package")}
+        errorTitle={t(
+          "packagePurchases.create.errorTitle",
+          "We could not load the package",
+        )}
         errorMessage={t(
           "packagePurchases.create.errorMessage",
           "Please try again in a moment.",
@@ -263,10 +290,7 @@ export default function PackagePurchaseCreateScreen() {
   const coverUri = resolveMediaUrl(params.practitionerAvatarUrl);
 
   return (
-    <DetailPageScaffold
-      showBack
-      contentContainerStyle={styles.scaffold}
-    >
+    <DetailPageScaffold showBack contentContainerStyle={styles.scaffold}>
       <View style={styles.stack}>
         <ScreenHeading
           title={t("packagePurchases.create.headingTitle")}
@@ -289,7 +313,10 @@ export default function PackagePurchaseCreateScreen() {
                   defaultValue: plan.item.title,
                 })}
               </Text>
-              <Text color={theme.colors.textSecondary} style={[styles.subtitle, { textAlign }]}>
+              <Text
+                color={theme.colors.textSecondary}
+                style={[styles.subtitle, { textAlign }]}
+              >
                 {params.practitionerName || params.practitionerSlug}
               </Text>
               <View style={styles.heroMeta}>
@@ -303,63 +330,103 @@ export default function PackagePurchaseCreateScreen() {
                 />
                 <SummaryRow
                   label={t("packagePurchases.create.total", "Total")}
-                  value={formatMoney(plan.quote.patientPayableTotal, quoteCurrency, locale)}
+                  value={formatMoney(
+                    plan.quote.patientPayableTotal,
+                    quoteCurrency,
+                    locale,
+                  )}
                 />
               </View>
             </View>
             {coverUri ? (
               <Image source={{ uri: coverUri }} style={styles.avatar} />
             ) : (
-              <View style={[styles.avatar, { backgroundColor: theme.colors.primaryLight }]} />
+              <View
+                style={[
+                  styles.avatar,
+                  { backgroundColor: theme.colors.primaryLight },
+                ]}
+              />
             )}
           </View>
         </Card>
 
         <Card variant="elevated" padding="lg" style={styles.sectionCard}>
           <SectionHeader
-            title={t("packagePurchases.create.selectionTitle", "Choose session times")}
+            title={t(
+              "packagePurchases.create.selectionTitle",
+              "Choose session times",
+            )}
             subtitle={t(
               "packagePurchases.create.selectionSubtitle",
-              "Pick one visible time for each package session.",
+              "Optionally pick one first appointment now; the remaining sessions can be scheduled later.",
             )}
           />
           <View style={styles.selectionNote}>
-            <Text color={theme.colors.textSecondary} style={[styles.noteText, { textAlign }]}>
+            <Text
+              color={theme.colors.textSecondary}
+              style={[styles.noteText, { textAlign }]}
+            >
               {t("packagePurchases.create.weekNote", {
-                defaultValue: `Use the next weeks to select all ${sessionCount || 0} sessions.`,
+                defaultValue:
+                  "Choose one first appointment now, or continue without scheduling.",
               })}
             </Text>
           </View>
 
           <View style={[styles.weekRow, { flexDirection: rowDirection }]}>
             <Text weight="600" style={[styles.weekLabel, { textAlign }]}>
-              {formatLocalizedDateRange(currentWeek.fromIso, currentWeek.toIso, locale)}
+              {formatLocalizedDateRange(
+                currentWeek.fromIso,
+                currentWeek.toIso,
+                locale,
+              )}
             </Text>
             <View style={[styles.weekButtons, { flexDirection: rowDirection }]}>
               <TouchableOpacity
                 disabled={weekOffset === 0}
                 onPress={() => setWeekOffset((value) => Math.max(0, value - 1))}
-                style={[styles.weekButton, { opacity: weekOffset === 0 ? 0.35 : 1 }]}
+                style={[
+                  styles.weekButton,
+                  { opacity: weekOffset === 0 ? 0.35 : 1 },
+                ]}
               >
-                <Ionicons name={chevronBack} size={20} color={theme.colors.textSecondary} />
+                <Ionicons
+                  name={chevronBack}
+                  size={20}
+                  color={theme.colors.textSecondary}
+                />
               </TouchableOpacity>
               <TouchableOpacity
                 onPress={() => setWeekOffset((value) => value + 1)}
                 style={styles.weekButton}
               >
-                <Ionicons name={chevronForward} size={20} color={theme.colors.textSecondary} />
+                <Ionicons
+                  name={chevronForward}
+                  size={20}
+                  color={theme.colors.textSecondary}
+                />
               </TouchableOpacity>
             </View>
           </View>
 
           {availabilityQuery.isLoading ? (
-            <Text color={theme.colors.textSecondary} style={[styles.helperText, { textAlign }]}>
-              {t("packagePurchases.create.loadingSlots", "Loading availability...")}
+            <Text
+              color={theme.colors.textSecondary}
+              style={[styles.helperText, { textAlign }]}
+            >
+              {t(
+                "packagePurchases.create.loadingSlots",
+                "Loading availability...",
+              )}
             </Text>
           ) : availabilityQuery.isError ? (
             <Card variant="flat" padding="md" style={styles.noticeCard}>
               <Text color="#ba1a1a" style={{ textAlign }}>
-                {t("packagePurchases.create.loadError", "Could not load available times right now.")}
+                {t(
+                  "packagePurchases.create.loadError",
+                  "Could not load available times right now.",
+                )}
               </Text>
               <Button
                 title={t("packagePurchases.create.retry", "Try again")}
@@ -368,21 +435,41 @@ export default function PackagePurchaseCreateScreen() {
                 style={styles.retryButton}
               />
             </Card>
-          ) : availabilityQuery.data?.reasonCode === "NORMAL_BOOKINGS_PAUSED" ? (
+          ) : availabilityQuery.data?.reasonCode ===
+            "NORMAL_BOOKINGS_PAUSED" ? (
             <Card variant="flat" padding="md" style={styles.noticeCard}>
-              <Text color={theme.colors.textPrimary} style={{ textAlign }} weight="700">
-                {t("packagePurchases.create.normalBookingsPaused", "Normal bookings are paused")}
+              <Text
+                color={theme.colors.textPrimary}
+                style={{ textAlign }}
+                weight="700"
+              >
+                {t(
+                  "packagePurchases.create.normalBookingsPaused",
+                  "Normal bookings are paused",
+                )}
               </Text>
-              <Text color={theme.colors.textSecondary} style={[styles.helperText, { textAlign }]}>
-                {t("packagePurchases.create.normalBookingsPausedBody", "This practitioner is not accepting new normal booking requests right now. Please check again later.")}
+              <Text
+                color={theme.colors.textSecondary}
+                style={[styles.helperText, { textAlign }]}
+              >
+                {t(
+                  "packagePurchases.create.normalBookingsPausedBody",
+                  "This practitioner is not accepting new normal booking requests right now. Please check again later.",
+                )}
               </Text>
             </Card>
           ) : groupedSlots.length === 0 ? (
             <Card variant="flat" padding="md" style={styles.noticeCard}>
               <Text color={theme.colors.textSecondary} style={{ textAlign }}>
-                {t("packagePurchases.create.noSlots", "No available times right now.")}
+                {t(
+                  "packagePurchases.create.noSlots",
+                  "No available times right now.",
+                )}
               </Text>
-              <Text color={theme.colors.textMuted} style={[styles.helperText, { textAlign }]}>
+              <Text
+                color={theme.colors.textMuted}
+                style={[styles.helperText, { textAlign }]}
+              >
                 {t(
                   "packagePurchases.create.noSlotsHint",
                   "This practitioner has not published available times for the current or next week yet. Please check again later or choose another practitioner.",
@@ -397,9 +484,22 @@ export default function PackagePurchaseCreateScreen() {
                   selectedStartsAt.includes(slot.startsAt),
                 ).length;
                 return (
-                  <Card key={group.dayKey} variant="outlined" padding="md" style={styles.dayCard}>
-                    <View style={[styles.dayHeader, { flexDirection: rowDirection }]}>
-                      <Text weight="600" style={[styles.dayLabel, { textAlign }]}>
+                  <Card
+                    key={group.dayKey}
+                    variant="outlined"
+                    padding="md"
+                    style={styles.dayCard}
+                  >
+                    <View
+                      style={[
+                        styles.dayHeader,
+                        { flexDirection: rowDirection },
+                      ]}
+                    >
+                      <Text
+                        weight="600"
+                        style={[styles.dayLabel, { textAlign }]}
+                      >
                         {group.dayLabel}
                       </Text>
                       <StatusChip
@@ -412,54 +512,71 @@ export default function PackagePurchaseCreateScreen() {
                       />
                     </View>
 
-                    {([["morning", parts.morning], ["afternoon", parts.afternoon], ["evening", parts.evening]] as const).map(
-                      ([label, slots]) => {
-                        if (slots.length === 0) return null;
+                    {(
+                      [
+                        ["morning", parts.morning],
+                        ["afternoon", parts.afternoon],
+                        ["evening", parts.evening],
+                      ] as const
+                    ).map(([label, slots]) => {
+                      if (slots.length === 0) return null;
 
-                        return (
-                          <View key={label} style={styles.partBlock}>
-                            <Text color={theme.colors.textMuted} style={[styles.partLabel, { textAlign }]}>
-                              {t(`packagePurchases.create.parts.${label}`, label)}
-                            </Text>
-                            <View style={[styles.slotGrid, { flexDirection: rowDirection }]}>
-                              {slots.map((slot) => {
-                                const selected = selectedStartsAt.includes(slot.startsAt);
-                                const disabled = !selected && selectedStartsAt.length >= sessionCount;
-                                return (
-                                  <TouchableOpacity
-                                    key={slot.startsAt}
-                                    onPress={() => toggleSlot(slot.startsAt)}
-                                    disabled={disabled}
-                                    style={[
-                                      styles.slotButton,
-                                      {
-                                        backgroundColor: selected
-                                          ? theme.colors.primaryLight
-                                          : theme.colors.surface,
-                                        borderColor: selected
-                                          ? theme.colors.primary
-                                          : theme.colors.borderLight,
-                                        opacity: disabled ? 0.45 : 1,
-                                      },
-                                    ]}
+                      return (
+                        <View key={label} style={styles.partBlock}>
+                          <Text
+                            color={theme.colors.textMuted}
+                            style={[styles.partLabel, { textAlign }]}
+                          >
+                            {t(`packagePurchases.create.parts.${label}`, label)}
+                          </Text>
+                          <View
+                            style={[
+                              styles.slotGrid,
+                              { flexDirection: rowDirection },
+                            ]}
+                          >
+                            {slots.map((slot) => {
+                              const selected = selectedStartsAt.includes(
+                                slot.startsAt,
+                              );
+                              const disabled =
+                                !selected && selectedStartsAt.length >= 1;
+                              return (
+                                <TouchableOpacity
+                                  key={slot.startsAt}
+                                  onPress={() => toggleSlot(slot.startsAt)}
+                                  disabled={disabled}
+                                  style={[
+                                    styles.slotButton,
+                                    {
+                                      backgroundColor: selected
+                                        ? theme.colors.primaryLight
+                                        : theme.colors.surface,
+                                      borderColor: selected
+                                        ? theme.colors.primary
+                                        : theme.colors.borderLight,
+                                      opacity: disabled ? 0.45 : 1,
+                                    },
+                                  ]}
+                                >
+                                  <Text
+                                    weight={selected ? "600" : "normal"}
+                                    color={
+                                      selected
+                                        ? theme.colors.primary
+                                        : theme.colors.textPrimary
+                                    }
+                                    style={styles.slotText}
                                   >
-                                    <Text
-                                      weight={selected ? "600" : "normal"}
-                                      color={
-                                        selected ? theme.colors.primary : theme.colors.textPrimary
-                                      }
-                                      style={styles.slotText}
-                                    >
-                                      {formatLocalizedTime(slot.startsAt, locale)}
-                                    </Text>
-                                  </TouchableOpacity>
-                                );
-                              })}
-                            </View>
+                                    {formatLocalizedTime(slot.startsAt, locale)}
+                                  </Text>
+                                </TouchableOpacity>
+                              );
+                            })}
                           </View>
-                        );
-                      },
-                    )}
+                        </View>
+                      );
+                    })}
                   </Card>
                 );
               })}
@@ -472,7 +589,7 @@ export default function PackagePurchaseCreateScreen() {
             title={t("packagePurchases.create.reviewTitle", "Review")}
             subtitle={t(
               "packagePurchases.create.reviewSubtitle",
-              "Confirm the selected sessions before creating the purchase.",
+              "Confirm the package purchase; scheduling one first appointment is optional.",
             )}
           />
           <View style={styles.reviewStack}>
@@ -506,9 +623,22 @@ export default function PackagePurchaseCreateScreen() {
               </Text>
               <View style={styles.selectedList}>
                 {selectedSlots.map((slot) => (
-                  <View key={slot!.startsAt} style={[styles.selectedItem, { flexDirection: rowDirection }]}>
-                    <Ionicons name="time-outline" size={14} color={theme.colors.primary} />
-                    <Text color={theme.colors.textSecondary} style={[styles.selectedText, { textAlign }]}>
+                  <View
+                    key={slot!.startsAt}
+                    style={[
+                      styles.selectedItem,
+                      { flexDirection: rowDirection },
+                    ]}
+                  >
+                    <Ionicons
+                      name="time-outline"
+                      size={14}
+                      color={theme.colors.primary}
+                    />
+                    <Text
+                      color={theme.colors.textSecondary}
+                      style={[styles.selectedText, { textAlign }]}
+                    >
                       {formatLocalizedDateTime(slot!.startsAt, locale)}
                     </Text>
                   </View>
@@ -519,24 +649,32 @@ export default function PackagePurchaseCreateScreen() {
 
           {submitError ? (
             <Card variant="flat" padding="sm" style={styles.noticeCard}>
-              <Text color="#ba1a1a" style={{ textAlign }}>{submitError}</Text>
+              <Text color="#ba1a1a" style={{ textAlign }}>
+                {submitError}
+              </Text>
             </Card>
           ) : null}
           {prefillNotice ? (
             <Card variant="flat" padding="sm" style={styles.noticeCard}>
-              <Text color={theme.colors.textSecondary} style={{ textAlign }}>{prefillNotice}</Text>
+              <Text color={theme.colors.textSecondary} style={{ textAlign }}>
+                {prefillNotice}
+              </Text>
             </Card>
           ) : null}
 
           <Button
-            title={createMutation.isPending ? t("packagePurchases.create.creating", "Creating...") : t("packagePurchases.create.continue", "Continue to payment")}
+            title={
+              createMutation.isPending
+                ? t("packagePurchases.create.creating", "Creating...")
+                : t("packagePurchases.create.continue", "Continue to payment")
+            }
             onPress={async () => {
               setSubmitError(null);
               if (!canContinue) {
                 setSubmitError(
                   t(
                     "packagePurchases.create.validation",
-                    "Please select all required session times first.",
+                    "Choose at most one first appointment, or continue without scheduling.",
                   ),
                 );
                 return;
@@ -548,7 +686,9 @@ export default function PackagePurchaseCreateScreen() {
                   practitionerSlug: params.practitionerSlug,
                   durationMinutes,
                   sessionMode,
-                  selectedSessionSlots: selectedStartsAt.map((startsAt) => ({ scheduledStartAt: startsAt })),
+                  selectedSessionSlots: selectedStartsAt.map((startsAt) => ({
+                    scheduledStartAt: startsAt,
+                  })),
                 });
 
                 router.push({
@@ -556,12 +696,12 @@ export default function PackagePurchaseCreateScreen() {
                   params: { id: created.item.id },
                 } as never);
               } catch (error) {
-                setSubmitError(extractApiErrorMessage(error));
+                setSubmitError(getBookingErrorMessage(error, t, "package"));
               }
             }}
             disabled={
               createMutation.isPending ||
-              selectedStartsAt.length !== sessionCount ||
+              selectedStartsAt.length > 1 ||
               sessionCount === 0
             }
           />

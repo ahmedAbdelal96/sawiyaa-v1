@@ -27,10 +27,13 @@ import type { PaymentStatus } from "../types/payments.types";
 import { formatMoney as formatFinanceMoney } from "@/lib/finance-format";
 import { reconcileSessionPaymentReturn } from "../api/payments-return.api";
 import PatientMoneyClarityPanel from "./PatientMoneyClarityPanel";
+import { isAuthoritativePaymentCaptured } from "../lib/payment-state-semantics";
+import {
+  PAYMENT_RETURN_MAX_POLL_DURATION_MS,
+  PAYMENT_RETURN_POLL_INTERVAL_MS,
+} from "../lib/payment-return-polling";
 
 /** Poll interval and max duration while waiting for webhook confirmation. */
-const POLL_INTERVAL_MS = 3_000;
-const MAX_POLL_DURATION_MS = 15_000;
 
 function formatDatetime(isoString: string | null, numLocale: string): string {
   return formatViewerDateTime(isoString, { locale: numLocale });
@@ -66,7 +69,7 @@ export default function PaymentReturnPanel({
     if (!isPotentiallySucceeded) return;
     pollingTimerRef.current = setTimeout(
       () => setPollingActive(false),
-      MAX_POLL_DURATION_MS,
+      PAYMENT_RETURN_MAX_POLL_DURATION_MS,
     );
     return () => {
       if (pollingTimerRef.current) clearTimeout(pollingTimerRef.current);
@@ -81,7 +84,7 @@ export default function PaymentReturnPanel({
       if (!data) return false;
       if (data.operational?.timelineBucket !== "PENDING") return false;
       if (data.operational?.actions.canPay !== true) return false;
-      return POLL_INTERVAL_MS;
+      return PAYMENT_RETURN_POLL_INTERVAL_MS;
     },
     refetchIntervalInBackground: false,
   });
@@ -117,11 +120,12 @@ export default function PaymentReturnPanel({
 
   const operationalState = session?.operational?.state ?? null;
   const isPaymentConfirmed =
-    reconciledPaymentStatus === "CAPTURED" ||
-    reconciledPaymentStatus === "AUTHORIZED" ||
-    (isPotentiallySucceeded && session?.operational?.timelineBucket !== "PENDING");
-  const isSessionActivated = session?.operational?.timelineBucket !== "PENDING";
-  const isSessionConfirmed = isPaymentConfirmed || isSessionActivated;
+    isAuthoritativePaymentCaptured(reconciledPaymentStatus) ||
+    isAuthoritativePaymentCaptured(session?.paymentDetails?.status);
+  // A non-pending operational bucket is not settlement proof: terminal and
+  // practitioner-review states must retain their own UX until payment status
+  // is authoritative. Browser redirect flags remain advisory only.
+  const isSessionConfirmed = isPaymentConfirmed;
   const isSessionExpired = operationalState === "EXPIRED";
   const isSessionCancelled = operationalState === "CANCELLED";
   const isSessionPending = session?.operational?.actions.canPay === true;
@@ -252,7 +256,7 @@ export default function PaymentReturnPanel({
                 </h2>
               </div>
               <span className="text-[11px] font-semibold text-text-muted">
-                {financialBreakdown?.currency ?? "EGP"}
+                {financialBreakdown?.currency ?? "—"}
               </span>
             </div>
 

@@ -1,0 +1,49 @@
+
+> sawiyaa-mobile@1.0.0 validate:i18n
+> node scripts/validate-mobile-i18n.mjs
+
+Mobile i18n validation failed with 44 issue(s):
+- AR missing used translation key: academyMobile.myTrainings
+- AR missing used translation key: articlesMobile.articleNotFound
+- AR missing used translation key: articlesMobile.articleNotFoundDesc
+- AR missing used translation key: articlesMobile.backToArticles
+- AR missing used translation key: auth.fields.searchDialCode
+- AR missing used translation key: auth.fields.selectDialCode
+- AR missing used translation key: common.confirm
+- AR missing used translation key: common.discard
+- AR missing used translation key: common.error
+- AR missing used translation key: common.errorTitle
+- AR missing used translation key: common.ok
+- AR missing used translation key: common.remove
+- AR missing used translation key: error_title
+- AR missing used translation key: firstLaunchOnboarding.accessibility.pagination
+- AR missing used translation key: home.nextSession.details
+- AR missing used translation key: home.nextSession.join
+- AR missing used translation key: home.nextSession.startsIn
+- AR missing used translation key: home.topRated.reviewsCount
+- AR missing used translation key: packagePurchases.create.daySelected
+- AR missing used translation key: packagePurchases.create.minutes
+- AR missing used translation key: packagePurchases.create.normalBookingsPaused
+- AR missing used translation key: packagePurchases.create.normalBookingsPausedBody
+- AR missing used translation key: packagePurchases.pay.policyClauses
+- AR missing used translation key: packagePurchases.presentationStatuses.AWAITING_COMPLETION_CONFIRMATION
+- AR missing used translation key: packagePurchases.presentationStatuses.BOTH_NO_SHOW
+- AR missing used translation key: packagePurchases.presentationStatuses.EXPIRED
+- AR missing used translation key: packagePurchases.presentationStatuses.PATIENT_NO_SHOW
+- AR missing used translation key: packagePurchases.presentationStatuses.PRACTITIONER_NO_SHOW
+- AR missing used translation key: packagePurchases.presentationStatuses.READY_TO_JOIN
+- AR missing used translation key: patientPaymentsFlow.return.checkAgain
+- AR missing used translation key: patientPaymentsFlow.return.pendingStill.heading
+- AR missing used translation key: patientPaymentsFlow.return.pendingStill.note
+- AR missing used translation key: patientPaymentsFlow.transactions.errorNote
+- AR missing used translation key: patientSessionsFlow.detail.modeValue.UNKNOWN
+- AR missing used translation key: patientSessionsFlow.detail.noMessages
+- AR missing used translation key: practitioner.availability.repeatPreviewExceptions
+- AR missing used translation key: practitioner.availability.weeks.alert.lockedTitle
+- AR missing used translation key: practitioner.detail.endedWarningNote
+- AR missing used translation key: practitioner.presentationStatus.BOTH_NO_SHOW
+- AR missing used translation key: practitioner.presentationStatus.EXPIRED
+- AR missing used translation key: practitioner.presentationStatus.PATIENT_NO_SHOW
+- AR missing used translation key: practitioner.presentationStatus.PRACTITIONER_NO_SHOW
+- AR missing used translation key: practitioner.schedule.periodMeta
+- AR missing used translation key: settings.language.restartNotice

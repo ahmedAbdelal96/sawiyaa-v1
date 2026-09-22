@@ -15,6 +15,21 @@ const DEFAULT_AVATAR = require("../../../../../assets/user.avif");
 
 const STAR_GOLD = "#EAB308";
 
+const LANGUAGE_LABELS: Record<string, { ar: string; en: string }> = {
+  ar: { ar: "العربية", en: "Arabic" },
+  en: { ar: "الإنجليزية", en: "English" },
+  fr: { ar: "الفرنسية", en: "French" },
+  de: { ar: "الألمانية", en: "German" },
+  es: { ar: "الإسبانية", en: "Spanish" },
+  tr: { ar: "التركية", en: "Turkish" },
+  ru: { ar: "الروسية", en: "Russian" },
+};
+
+function resolveLanguageLabel(code: string, isArabicUi: boolean) {
+  const normalized = code.trim().toLowerCase();
+  return LANGUAGE_LABELS[normalized]?.[isArabicUi ? "ar" : "en"] ?? code;
+}
+
 export interface PractitionerCompactCardProps {
   practitioner: PublicPractitionerListItem;
   onPress?: () => void;
@@ -65,6 +80,11 @@ export const PractitionerCompactCard = ({
   const totalReviews = practitioner.ratingSummary?.totalReviews;
 
   const hasRating = hasPublicPractitionerRating(averageRating, totalReviews);
+  const languageSummary = practitioner.languages
+    .slice(0, 2)
+    .map((code) => resolveLanguageLabel(code, isArabic))
+    .join(isArabic ? "، " : ", ");
+  const additionalLanguageCount = Math.max(practitioner.languages.length - 2, 0);
 
   const handlePress = () => {
     if (onPress) {
@@ -122,7 +142,14 @@ export const PractitionerCompactCard = ({
                 {practitioner.displayName || practitioner.slug}
               </Text>
               {practitioner.isVerified ? (
-                <Ionicons name="checkmark-circle" size={14} color={theme.colors.primary} />
+                <Ionicons
+                  name="checkmark-circle"
+                  size={14}
+                  color={theme.colors.primary}
+                  accessibilityRole="image"
+                  accessibilityLabel={t("discovery.profile.verifiedProfessional")}
+                  accessibilityHint={t("discovery.profile.verifiedExplanation")}
+                />
               ) : null}
             </View>
 
@@ -167,6 +194,15 @@ export const PractitionerCompactCard = ({
                     </Text>
                   </View>
                 ))}
+              </View>
+            ) : null}
+
+            {languageSummary ? (
+              <View style={[styles.languagesRow, { flexDirection: rowDirection }]}>
+                <Ionicons name="language-outline" size={12} color={theme.colors.primary} accessibilityElementsHidden />
+                <Text color={theme.colors.textSecondary} style={styles.languagesText} numberOfLines={1}>
+                  {languageSummary}{additionalLanguageCount > 0 ? ` +${additionalLanguageCount}` : ""}
+                </Text>
               </View>
             ) : null}
           </View>
@@ -233,7 +269,7 @@ export const PractitionerCompactCard = ({
           ]}
         >
           <Text weight="bold" style={styles.ctaButtonText}>
-            {isArabic ? "عرض الملف" : "View Profile"}
+            {isArabic ? "عرض الملف والحجز" : "View Profile & Book"}
           </Text>
           <Ionicons name={arrowBack} size={13} color="#FFFFFF" />
         </TouchableOpacity>
@@ -329,6 +365,15 @@ const styles = StyleSheet.create({
   },
   specialtyChipText: {
     fontSize: 10,
+  },
+  languagesRow: {
+    alignItems: "center",
+    gap: 4,
+    marginTop: 2,
+  },
+  languagesText: {
+    fontSize: 10,
+    flexShrink: 1,
   },
 
   // Pricing Strip

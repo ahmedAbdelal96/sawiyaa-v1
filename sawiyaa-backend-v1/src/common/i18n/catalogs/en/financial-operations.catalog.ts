@@ -1,4 +1,10 @@
 export const enFinancialOperationsCatalog = {
+  notifications: {
+    earningCreditedTitle: 'Earning credited',
+    earningCreditedBody: '{{amount}} {{currencyCode}} was credited from your session earnings.',
+    payoutCompletedTitle: 'Payout completed',
+    payoutCompletedBody: '{{amount}} {{currencyCode}} was transferred from your payable balance.',
+  },
   errors: {
     paymentNotFound: 'Payment was not found.',
     paymentNotCaptured: 'Only captured payments can be posted to ledger.',

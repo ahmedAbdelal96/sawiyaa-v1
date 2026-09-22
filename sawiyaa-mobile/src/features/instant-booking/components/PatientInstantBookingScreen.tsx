@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   FlatList,
   Image,
@@ -8,6 +8,7 @@ import {
   View,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import * as Crypto from "expo-crypto";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 import {
@@ -48,6 +49,14 @@ import {
 } from "../lib/instant-booking-errors";
 
 const DEFAULT_VISIBLE_RESULTS = 30;
+
+function createInstantBookingIdempotencyKey(): string {
+  try {
+    return Crypto.randomUUID();
+  } catch {
+    return `ib-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  }
+}
 
 function getPractitionerInitials(displayName: string | null | undefined) {
   const clean = displayName?.trim() ?? "";
@@ -444,7 +453,7 @@ export default function PatientInstantBookingScreen() {
   const latestActiveRequest = useMemo(() => {
     const requests = requestsQuery.data?.items ?? [];
     return (
-      requests.find((request) => request.status === "PENDING" || request.status === "ACCEPTED") ??
+      requests.find((request: InstantBookingRequest) => request.status === "PENDING" || request.status === "ACCEPTED") ??
       null
     );
   }, [requestsQuery.data?.items]);
@@ -459,6 +468,7 @@ export default function PatientInstantBookingScreen() {
 
   const createMutation = useCreatePatientInstantBookingRequest();
   const cancelMutation = useCancelPatientInstantBookingRequest();
+  const idempotencyKeyRef = useRef(createInstantBookingIdempotencyKey());
   const [pageError, setPageError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -486,8 +496,8 @@ export default function PatientInstantBookingScreen() {
 
     try {
       const request = await createMutation.mutateAsync({
-        practitionerSlug,
-        durationMinutes,
+        input: { practitionerSlug, durationMinutes },
+        idempotencyKey: idempotencyKeyRef.current,
       });
       navigateWithRequestId(request.item.id);
     } catch (error) {
@@ -509,6 +519,7 @@ export default function PatientInstantBookingScreen() {
     setPageError(null);
     try {
       await cancelMutation.mutateAsync({ requestId: activeRequest.id });
+      idempotencyKeyRef.current = createInstantBookingIdempotencyKey();
       navigateWithRequestId(null);
     } catch (error) {
       setPageError(t("instantBooking.patient.errors.cancelFailed"));
@@ -686,11 +697,11 @@ export default function PatientInstantBookingScreen() {
               locale={locale}
               numLocale={numLocale(locale)}
               onBook={handleBook}
-              pendingSelectionKey={
-                createMutation.isPending && createMutation.variables
-                  ? `${createMutation.variables.practitionerSlug}:${createMutation.variables.durationMinutes}`
+                pendingSelectionKey={
+                  createMutation.isPending && createMutation.variables
+                  ? `${createMutation.variables.input.practitionerSlug}:${createMutation.variables.input.durationMinutes}`
                   : null
-              }
+                }
               createPending={createMutation.isPending}
               compact={isCompact}
             />

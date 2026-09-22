@@ -39,7 +39,7 @@ export class ManageAdminAcademyProgramEnrollmentsUseCase {
 
     return {
       items: items.map((item) =>
-        this.academyProgramEnrollmentPresenter.presentEnrollmentItem(item, input.locale),
+        this.academyProgramEnrollmentPresenter.presentAdminEnrollmentListItem(item, input.locale),
       ),
     };
   }

@@ -13,6 +13,7 @@ import { InstantBookingPractitionerRepository } from '../repositories/instant-bo
 import { InstantBookingRequestRepository } from '../repositories/instant-booking-request.repository';
 import { ValidateInstantBookingEligibilityService } from '../services/validate-instant-booking-eligibility.service';
 import { OperationalNotificationService } from '@modules/notifications/services/operational-notification.service';
+import { PrismaService } from '@common/prisma/prisma.service';
 
 type InstantBookingPricingSnapshot = {
   EGP?: {
@@ -32,6 +33,7 @@ type InstantBookingPricingSnapshot = {
 @Injectable()
 export class CreateInstantBookingRequestUseCase {
   constructor(
+    private readonly prisma: PrismaService,
     private readonly instantBookingPatientRepository: InstantBookingPatientRepository,
     private readonly instantBookingPractitionerRepository: InstantBookingPractitionerRepository,
     private readonly instantBookingRequestRepository: InstantBookingRequestRepository,
@@ -80,71 +82,83 @@ export class CreateInstantBookingRequestUseCase {
 
     const nowUtc = new Date();
 
-    await this.instantBookingRequestRepository.markExpired(nowUtc, {
-      patientId: patient.id,
-      practitionerId: practitioner.id,
-    });
+    const request = await this.prisma.$transaction(async (tx) => {
+      await this.instantBookingRequestRepository.lockPractitionerAvailability(
+        practitioner.id,
+        tx,
+      );
 
-    const duplicatePending =
-      await this.instantBookingRequestRepository.findConflictingPendingRequests(
+      await this.instantBookingRequestRepository.markExpired(
+        nowUtc,
+        { patientId: patient.id, practitionerId: practitioner.id },
+        tx,
+      );
+
+      const activeHold =
+        await this.instantBookingRequestRepository.findActivePendingRequestForPractitioner(
+          { practitionerId: practitioner.id, now: nowUtc },
+          tx,
+        );
+
+      if (activeHold) {
+        throw new ConflictException({
+          messageKey: 'instantBooking.errors.practitionerBusy',
+          error: 'INSTANT_BOOKING_PRACTITIONER_BUSY',
+        });
+      }
+
+      const currencyCode = resolvePaymentRegionalResolution({
+        requestCountryIsoCode:
+          input.countryIsoCode ?? patient.country?.isoCode ?? null,
+      }).currencyCode;
+
+      await this.validateInstantBookingEligibilityService.assertPractitionerCanReceiveInstantBooking(
         {
-          patientId: patient.id,
-          practitionerId: practitioner.id,
-          now: nowUtc,
+          practitioner,
+          durationMinutes: input.durationMinutes,
+          sessionMode: SessionMode.VIDEO,
+          nowUtc,
+          currencyCode,
+          tx,
         },
       );
 
-    if (duplicatePending.length > 0) {
-      throw new ConflictException({
-        messageKey: 'instantBooking.errors.pendingRequestAlreadyExists',
-        error: 'INSTANT_BOOKING_PENDING_REQUEST_ALREADY_EXISTS',
-      });
-    }
+      const selectedAmount = currencyCode === 'EGP'
+        ? (input.durationMinutes === 30 ? practitioner.instantBookingPrice30Egp : practitioner.instantBookingPrice60Egp)
+        : (input.durationMinutes === 30 ? practitioner.instantBookingPrice30Usd : practitioner.instantBookingPrice60Usd);
+      const requestTtlMinutes = await this.instantBookingPolicyService.requestTtlMinutes();
+      const pricingSnapshot: InstantBookingPricingSnapshot = {
+        EGP: {
+          30: this.toNullableString(practitioner.instantBookingPrice30Egp),
+          60: this.toNullableString(practitioner.instantBookingPrice60Egp),
+        },
+        USD: {
+          30: this.toNullableString(practitioner.instantBookingPrice30Usd),
+          60: this.toNullableString(practitioner.instantBookingPrice60Usd),
+        },
+      };
 
-    const currencyCode = resolvePaymentRegionalResolution({ requestCountryIsoCode: input.countryIsoCode ?? null }).currencyCode;
-
-    await this.validateInstantBookingEligibilityService.assertPractitionerCanReceiveInstantBooking(
-      {
-        practitioner,
-        durationMinutes: input.durationMinutes,
-        sessionMode: SessionMode.VIDEO,
-        nowUtc,
-        currencyCode,
-      },
-    );
-
-    const selectedAmount = currencyCode === 'EGP'
-      ? (input.durationMinutes === 30 ? practitioner.instantBookingPrice30Egp : practitioner.instantBookingPrice60Egp)
-      : (input.durationMinutes === 30 ? practitioner.instantBookingPrice30Usd : practitioner.instantBookingPrice60Usd);
-    const requestTtlMinutes = await this.instantBookingPolicyService.requestTtlMinutes();
-    const pricingSnapshot: InstantBookingPricingSnapshot = {
-      EGP: {
-        30: this.toNullableString(practitioner.instantBookingPrice30Egp),
-        60: this.toNullableString(practitioner.instantBookingPrice60Egp),
-      },
-      USD: {
-        30: this.toNullableString(practitioner.instantBookingPrice30Usd),
-        60: this.toNullableString(practitioner.instantBookingPrice60Usd),
-      },
-    };
-
-    const request = await this.instantBookingRequestRepository.createRequest({
-      patientId: patient.id,
-      practitionerId: practitioner.id,
-      requestedDurationMinutes: input.durationMinutes,
-      preferredMode: SessionMode.VIDEO,
-      expiresAt: new Date(
-        nowUtc.getTime() + requestTtlMinutes * 60 * 1000,
-      ),
-      metadataJson: {
-        source: 'instant-booking-request',
-        capturedAt: nowUtc.toISOString(),
-        requestedDurationMinutes: input.durationMinutes,
-        pricingSnapshot,
-        selectedMoney: { amount: this.toNullableString(selectedAmount), currencyCode },
-        requestTtlMinutes,
-      },
-      idempotencyKey,
+      return this.instantBookingRequestRepository.createRequest(
+        {
+          patientId: patient.id,
+          practitionerId: practitioner.id,
+          requestedDurationMinutes: input.durationMinutes,
+          preferredMode: SessionMode.VIDEO,
+          expiresAt: new Date(
+            nowUtc.getTime() + requestTtlMinutes * 60 * 1000,
+          ),
+          metadataJson: {
+            source: 'instant-booking-request',
+            capturedAt: nowUtc.toISOString(),
+            requestedDurationMinutes: input.durationMinutes,
+            pricingSnapshot,
+            selectedMoney: { amount: this.toNullableString(selectedAmount), currencyCode },
+            requestTtlMinutes,
+          },
+          idempotencyKey,
+        },
+        tx,
+      );
     });
 
     await this.operationalNotificationService.notifyInstantBookingCreated({

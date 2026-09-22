@@ -60,6 +60,44 @@ describe('ValidatePackagePurchaseSlotsService', () => {
     ).toHaveBeenCalledTimes(2);
   });
 
+  it('accepts an empty selection for buy-now/book-later packages', async () => {
+    const result = await service.validate({
+      practitionerId: 'practitioner-1',
+      practitionerTimezone: 'Africa/Cairo',
+      patientId: 'patient-1',
+      durationMinutes: 60,
+      sessionMode: SessionMode.VIDEO,
+      expectedSlotCount: 4,
+      selectedSessionSlots: [],
+    });
+
+    expect(result).toEqual({ timezone: 'Africa/Cairo', slots: [] });
+    expect(
+      validateSessionScheduleCompatibilityService.assertFitsPractitionerAvailability,
+    ).not.toHaveBeenCalled();
+  });
+
+  it('accepts one optional first appointment for a multi-session package', async () => {
+    (
+      validateSessionScheduleCompatibilityService.assertFitsPractitionerAvailability as jest.Mock
+    ).mockResolvedValue({ timezone: 'Africa/Cairo' });
+
+    const result = await service.validate({
+      practitionerId: 'practitioner-1',
+      practitionerTimezone: 'Africa/Cairo',
+      patientId: 'patient-1',
+      durationMinutes: 60,
+      sessionMode: SessionMode.VIDEO,
+      expectedSlotCount: 4,
+      selectedSessionSlots: [{ scheduledStartAt: '2999-01-01T10:00:00.000Z' }],
+    });
+
+    expect(result.slots).toHaveLength(1);
+    expect(
+      validateSessionScheduleCompatibilityService.assertFitsPractitionerAvailability,
+    ).toHaveBeenCalledTimes(1);
+  });
+
   it('rejects duplicate selected slots', async () => {
     await expect(
       service.validate({

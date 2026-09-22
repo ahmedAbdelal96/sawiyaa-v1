@@ -177,11 +177,35 @@ export class PatientPackagePurchaseRepository {
         failedAt: true,
         expiredAt: true,
         metadataJson: true,
+        refunds: {
+          orderBy: [{ requestedAt: 'desc' as const }, { createdAt: 'desc' as const }],
+          select: {
+            id: true,
+            paymentId: true,
+            sessionId: true,
+            refundType: true,
+            destination: true,
+            status: true,
+            amount: true,
+            currencyCode: true,
+            refundReason: true,
+            requestedAt: true,
+            processedAt: true,
+            failedAt: true,
+            customerWalletCreditedAt: true,
+            createdAt: true,
+          },
+        },
       },
     },
     patient: {
       select: {
         id: true,
+        user: {
+          select: {
+            displayName: true,
+          },
+        },
         countryId: true,
         country: {
           select: {
@@ -251,6 +275,18 @@ export class PatientPackagePurchaseRepository {
         packageEntitlementDecision: {
           select: { decisionType: true },
         },
+      },
+    },
+    packageEntitlementDecisions: {
+      orderBy: [{ decidedAt: 'desc' as const }],
+      select: {
+        id: true,
+        sessionId: true,
+        decisionType: true,
+        reasonCode: true,
+        sessionStatusSnapshot: true,
+        decidedAt: true,
+        session: { select: { sessionCode: true, scheduledStartAt: true } },
       },
     },
   } satisfies Prisma.PatientPackagePurchaseInclude;

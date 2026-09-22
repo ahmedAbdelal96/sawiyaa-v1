@@ -32,7 +32,7 @@ describe('GetMyNextSessionUseCase', () => {
     expect(prisma.session.findFirst).toHaveBeenCalledWith(expect.objectContaining({
       where: expect.objectContaining({ videoRoomClosedAt: null, cancelledAt: null }),
     }));
-    expect(result).toMatchObject({ sessionId: 'session_1', operational });
+    expect(result).toMatchObject({ sessionId: 'session_1', status: SessionStatus.READY_TO_JOIN, operational });
     jest.useRealTimers();
   });
 });

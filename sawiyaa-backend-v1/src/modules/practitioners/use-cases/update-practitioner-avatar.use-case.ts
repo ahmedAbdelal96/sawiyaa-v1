@@ -1,9 +1,10 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException, Optional } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { I18nService } from '@common/i18n/services/i18n.service';
 import { SupportedLocale } from '@common/i18n/types/locale.types';
 import { PractitionerProfileRepository } from '../repositories/practitioner-profile.repository';
 import { PractitionerAvatarStorageService } from '../services/practitioner-avatar-storage.service';
+import { PractitionerChangeReviewService } from '../services/practitioner-change-review.service';
 
 type UploadedAvatarFile = {
   buffer: Buffer;
@@ -19,6 +20,7 @@ export class UpdatePractitionerAvatarUseCase {
     private readonly i18nService: I18nService,
     private readonly practitionerProfileRepository: PractitionerProfileRepository,
     private readonly practitionerAvatarStorageService: PractitionerAvatarStorageService,
+    @Optional() private readonly changeReviewService?: PractitionerChangeReviewService,
   ) {}
 
   async execute(input: {
@@ -72,15 +74,31 @@ export class UpdatePractitionerAvatarUseCase {
           fileBuffer: input.file.buffer,
           mimeType: input.file.mimetype,
         });
-        updated = await this.practitionerProfileRepository.updateAvatarByUserId(
-          input.userId,
-          stored.avatarUrl,
-        );
+        if (profile.status === 'APPROVED' && this.changeReviewService) {
+          await this.changeReviewService.upsert({
+            practitionerId: profile.id,
+            profile: { avatarUrl: stored.avatarUrl },
+          });
+          updated = { id: profile.id, avatarUrl: profile.avatarUrl };
+        } else {
+          updated = await this.practitionerProfileRepository.updateAvatarByUserId(
+            input.userId,
+            stored.avatarUrl,
+          );
+        }
       } else {
-        updated = await this.practitionerProfileRepository.updateAvatarByUserId(
-          input.userId,
-          input.avatarUrl ?? null,
-        );
+        if (profile.status === 'APPROVED' && this.changeReviewService) {
+          await this.changeReviewService.upsert({
+            practitionerId: profile.id,
+            profile: { avatarUrl: input.avatarUrl ?? null },
+          });
+          updated = { id: profile.id, avatarUrl: profile.avatarUrl };
+        } else {
+          updated = await this.practitionerProfileRepository.updateAvatarByUserId(
+            input.userId,
+            input.avatarUrl ?? null,
+          );
+        }
       }
     } catch (error) {
       if (

@@ -12,6 +12,15 @@ export default defineConfig({
   },
   test: {
     environment: "jsdom",
+    // The shared jsdom suite is memory-heavy on this Windows runner. Keeping
+    // it in one worker prevents unrelated suites from starving interaction
+    // tests and timing out under parallel load.
+    pool: "forks",
+    poolOptions: {
+      forks: {
+        singleFork: true,
+      },
+    },
     setupFiles: ["./tests/component/setup.ts"],
     include: ["tests/component/**/*.test.tsx", "src/**/*.test.tsx"],
     css: false,

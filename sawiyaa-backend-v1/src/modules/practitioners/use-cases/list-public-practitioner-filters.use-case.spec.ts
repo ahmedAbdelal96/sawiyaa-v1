@@ -149,8 +149,8 @@ describe('ListPublicPractitionerFiltersUseCase', () => {
     });
     expect(result.availability).toEqual({
       onlineNowSupported: true,
-      availableTodaySupported: false,
-      availableThisWeekSupported: false,
+      availableTodaySupported: true,
+      availableThisWeekSupported: true,
     });
     expect(
       publicReadRepository.listPublicFilterMetadataSource,

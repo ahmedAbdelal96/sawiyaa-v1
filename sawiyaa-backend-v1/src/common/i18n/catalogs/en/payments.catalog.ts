@@ -15,6 +15,12 @@ export const enPaymentsCatalog = {
     refundFailedTitle: 'Refund failed',
     refundFailedBody:
       'Your refund request could not be processed right now. Support can help if needed.',
+    packagePurchaseSucceededTitle: 'Package payment completed',
+    packagePurchaseSucceededBody:
+      'Your payment of {{amount}} {{currencyCode}} for the package was completed successfully.',
+    academyPaymentSucceededTitle: 'Training payment completed',
+    academyPaymentSucceededBody:
+      'Your payment of {{amount}} {{currencyCode}} for training registration was completed successfully.',
   },
   errors: {
     patientNotFound: 'Patient profile was not found',

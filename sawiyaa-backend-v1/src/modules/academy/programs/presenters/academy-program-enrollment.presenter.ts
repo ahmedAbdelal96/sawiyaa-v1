@@ -12,6 +12,7 @@ export class AcademyProgramEnrollmentPresenter {
     const item = this.presentEnrollmentItem(input, locale);
     return {
       id: item.id,
+      userId: item.userId,
       status: item.status,
       paymentStatus: item.paymentStatus,
       registeredAt: item.registeredAt,
@@ -24,6 +25,7 @@ export class AcademyProgramEnrollmentPresenter {
       program: item.program,
       learner: {
         id: item.learner.id,
+        userId: item.learner.userId,
         fullName: item.learner.fullName,
         phoneNumber: item.learner.phoneNumber,
         whatsappNumber: item.learner.whatsappNumber,
@@ -37,7 +39,13 @@ export class AcademyProgramEnrollmentPresenter {
         education: null,
         notes: null,
       },
-      payment: item.payment ? { status: item.payment.status } : null,
+      payment: item.payment
+        ? {
+            status: item.payment.status,
+            amountTotal: item.payment.amountTotal.toString(),
+            currencyCode: item.payment.currencyCode,
+          }
+        : null,
       participant: {
         name: item.learner.fullName,
         email: item.learner.email ?? item.contactEmail,
@@ -87,7 +95,7 @@ export class AcademyProgramEnrollmentPresenter {
         education: null,
         notes: null,
       },
-      payment: item.payment ? { status: item.payment.status } : null,
+      payment: item.payment ? { id: item.payment.id, status: item.payment.status } : null,
       program: item.program,
       attendanceSummary: item.attendanceSummary,
       certificate: {

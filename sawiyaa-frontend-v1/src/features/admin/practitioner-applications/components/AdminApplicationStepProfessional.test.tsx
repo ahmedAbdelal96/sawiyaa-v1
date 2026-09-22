@@ -2,6 +2,7 @@ import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import AdminApplicationStepProfessional from "./AdminApplicationStepProfessional";
 import type { AdminProfessionalContentReview } from "../types/practitioner-applications.types";
+import { NextIntlClientProvider } from "next-intl";
 
 const review: AdminProfessionalContentReview = {
   currentApproved: {
@@ -96,6 +97,7 @@ const labels = {
 describe("AdminApplicationStepProfessional professional content review", () => {
   it("renders current/proposed locale content and directional locale containers", () => {
     const { container } = render(
+      <NextIntlClientProvider locale="en" messages={{}}>
       <AdminApplicationStepProfessional
         profileRows={[]}
         bio="English bio"
@@ -108,7 +110,8 @@ describe("AdminApplicationStepProfessional professional content review", () => {
         differencesLabel="Important differences"
         professionalContentReview={review}
         professionalContentLabels={labels}
-      />,
+      />
+      </NextIntlClientProvider>,
     );
 
     expect(screen.getByText("Professional content")).toBeTruthy();

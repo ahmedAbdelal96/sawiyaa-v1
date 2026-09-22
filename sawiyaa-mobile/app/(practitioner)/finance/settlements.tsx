@@ -21,6 +21,7 @@ import {
 } from "../../../src/features/practitioner/finance/utils";
 import type {
   PractitionerSettlementItem,
+  PractitionerSettlementListResponse,
   PractitionerSettlementStatus,
 } from "../../../src/features/practitioner/finance/types";
 import { useTheme } from "../../../src/providers/ThemeProvider";
@@ -29,7 +30,13 @@ const PAGE_SIZE = 20;
 type TransferFilter = "ALL" | PractitionerSettlementStatus;
 type TranslateFn = ReturnType<typeof useTranslation>["t"];
 
-const STATUS_FILTERS: TransferFilter[] = ["ALL", "READY", "PROCESSING", "PAID", "FAILED"];
+const STATUS_FILTERS: TransferFilter[] = [
+  "ALL",
+  "READY",
+  "PROCESSING",
+  "PAID",
+  "FAILED",
+];
 
 export default function PractitionerTransfersScreen() {
   const { t, i18n } = useTranslation();
@@ -48,9 +55,13 @@ export default function PractitionerTransfersScreen() {
   useEffect(() => {
     if (!query.data) return;
     setItems((current) => {
-      if (page === 1) return query.data.items;
+      const response = query.data as PractitionerSettlementListResponse;
+      if (page === 1) return response.items;
       const seen = new Set(current.map((item) => item.id));
-      return [...current, ...query.data.items.filter((item) => !seen.has(item.id))];
+      return [
+        ...current,
+        ...response.items.filter((item) => !seen.has(item.id)),
+      ];
     });
   }, [page, query.data]);
 
@@ -71,7 +82,10 @@ export default function PractitionerTransfersScreen() {
     return (
       <Screen bg="background">
         <Header title={t("practitioner.finance.product.transfers")} showBack />
-        <LoadingState fullScreen message={t("practitioner.finance.common.loading")} />
+        <LoadingState
+          fullScreen
+          message={t("practitioner.finance.common.loading")}
+        />
       </Screen>
     );
   }
@@ -101,7 +115,11 @@ export default function PractitionerTransfersScreen() {
             onPress={refresh}
             style={styles.headerAction}
           >
-            <Ionicons name="refresh-outline" size={22} color={theme.colors.textPrimary} />
+            <Ionicons
+              name="refresh-outline"
+              size={22}
+              color={theme.colors.textPrimary}
+            />
           </TouchableOpacity>
         }
       />
@@ -123,7 +141,9 @@ export default function PractitionerTransfersScreen() {
         </View>
 
         {items.length ? (
-          <View style={[styles.list, { borderTopColor: theme.colors.borderLight }]}>
+          <View
+            style={[styles.list, { borderTopColor: theme.colors.borderLight }]}
+          >
             {items.map((item) => (
               <TransferRow
                 key={item.id}
@@ -132,7 +152,9 @@ export default function PractitionerTransfersScreen() {
                 t={t}
                 expanded={expandedId === item.id}
                 onToggle={() =>
-                  setExpandedId((current) => (current === item.id ? null : item.id))
+                  setExpandedId((current) =>
+                    current === item.id ? null : item.id,
+                  )
                 }
               />
             ))}
@@ -145,7 +167,11 @@ export default function PractitionerTransfersScreen() {
 
         {query.data && page < query.data.pagination.totalPages ? (
           <Button
-            title={query.isFetching ? t("practitioner.finance.common.loadingMore") : t("practitioner.finance.common.loadMore")}
+            title={
+              query.isFetching
+                ? t("practitioner.finance.common.loadingMore")
+                : t("practitioner.finance.common.loadMore")
+            }
             onPress={() => setPage((current) => current + 1)}
             variant="secondary"
             disabled={query.isFetching}
@@ -199,7 +225,10 @@ function TransferRow({
           <Text weight="600" style={styles.rowAmount} numberOfLines={1}>
             {amount}
           </Text>
-          <StatusBadge label={status} status={settlementStatusTone(item.status)} />
+          <StatusBadge
+            label={status}
+            status={settlementStatusTone(item.status)}
+          />
         </View>
       </TouchableOpacity>
 
@@ -207,17 +236,30 @@ function TransferRow({
         <View style={styles.details}>
           <DetailRow
             label={t("practitioner.finance.settlements.labels.grossAmount")}
-            value={formatMoney(item.amountGross, item.currency, locale, t("practitioner.finance.common.currencyUnavailable"))}
+            value={formatMoney(
+              item.amountGross,
+              item.currency,
+              locale,
+              t("practitioner.finance.common.currencyUnavailable"),
+            )}
           />
           <DetailRow
             label={t("practitioner.finance.settlements.labels.adjustments")}
-            value={formatMoney(item.amountAdjustments, item.currency, locale, t("practitioner.finance.common.currencyUnavailable"))}
+            value={formatMoney(
+              item.amountAdjustments,
+              item.currency,
+              locale,
+              t("practitioner.finance.common.currencyUnavailable"),
+            )}
           />
           <DetailRow
             label={t("practitioner.finance.settlements.labels.netAmount")}
             value={amount}
           />
-          <DetailRow label={t("practitioner.finance.settlements.labels.batchStatus")} value={status} />
+          <DetailRow
+            label={t("practitioner.finance.settlements.labels.batchStatus")}
+            value={status}
+          />
         </View>
       ) : null}
     </View>
@@ -227,7 +269,9 @@ function TransferRow({
 function DetailRow({ label, value }: { label: string; value: string }) {
   const { theme } = useTheme();
   return (
-    <View style={[styles.detailRow, { borderTopColor: theme.colors.borderLight }]}>
+    <View
+      style={[styles.detailRow, { borderTopColor: theme.colors.borderLight }]}
+    >
       <Text color={theme.colors.textMuted} style={styles.detailLabel}>
         {label}
       </Text>

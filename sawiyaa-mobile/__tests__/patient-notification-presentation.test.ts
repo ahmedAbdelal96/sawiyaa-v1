@@ -82,6 +82,21 @@ describe("Patient notification presentation", () => {
     });
   });
 
+  it("renders the live backend payment slug with authoritative amount and currency", () => {
+    const payment = resolvePatientNotificationPresentation(
+      notification("payments.payment-succeeded", {
+        payload: { amount: "600.00", currencyCode: "EGP" },
+      }),
+      "ar",
+      translator("ar"),
+    );
+
+    expect(payment).toEqual({
+      title: "تم تأكيد الدفع",
+      body: "تم تأكيد دفع مبلغ 600.00 EGP.",
+    });
+  });
+
   it("never falls back to raw unknown type, title, or body", () => {
     const presentation = resolvePatientNotificationPresentation(
       notification("unknown.backend-event"),

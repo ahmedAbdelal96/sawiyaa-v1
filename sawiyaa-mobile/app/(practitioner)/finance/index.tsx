@@ -24,7 +24,11 @@ import {
   ledgerEntryTypeLabel,
   safeFinanceText,
 } from "../../../src/features/practitioner/finance/utils";
-import type { PractitionerLedgerEntry } from "../../../src/features/practitioner/finance/types";
+import type {
+  PractitionerLedgerEntry,
+  PractitionerLedgerListResponse,
+  PractitionerWalletSummary,
+} from "../../../src/features/practitioner/finance/types";
 import { resolvePractitionerTone } from "../../../src/features/practitioner/ui/compact";
 import { useTheme } from "../../../src/providers/ThemeProvider";
 import { useAppDirection } from "../../../src/i18n/direction";
@@ -39,10 +43,19 @@ export default function PractitionerFinanceOverviewScreen() {
   const locale = i18n.language?.startsWith("ar") ? "ar-SA" : "en-US";
 
   const walletQuery = usePractitionerWalletSummary();
-  const ledgerQuery = usePractitionerLedgerEntries({ page: 1, limit: PREVIEW_LIMIT });
-  const settlementsQuery = usePractitionerSettlementItems({ page: 1, limit: 1 });
-  const wallet = walletQuery.data?.item ?? null;
-  const recentLedgerItems = ledgerQuery.data?.items.slice(0, PREVIEW_LIMIT) ?? [];
+  const ledgerQuery = usePractitionerLedgerEntries({
+    page: 1,
+    limit: PREVIEW_LIMIT,
+  });
+  const settlementsQuery = usePractitionerSettlementItems({
+    page: 1,
+    limit: 1,
+  });
+  const wallet = (walletQuery.data?.item ??
+    null) as PractitionerWalletSummary | null;
+  const recentLedgerItems = ((
+    ledgerQuery.data as PractitionerLedgerListResponse | undefined
+  )?.items.slice(0, PREVIEW_LIMIT) ?? []) as PractitionerLedgerEntry[];
   const financeTone = resolvePractitionerTone(theme, "finance");
 
   const refetchAll = () => {
@@ -52,13 +65,18 @@ export default function PractitionerFinanceOverviewScreen() {
   };
 
   const isInitialLoading =
-    walletQuery.isLoading && ledgerQuery.isLoading && settlementsQuery.isLoading;
+    walletQuery.isLoading &&
+    ledgerQuery.isLoading &&
+    settlementsQuery.isLoading;
 
   if (isInitialLoading) {
     return (
       <Screen bg="background">
         <Header title={t("practitioner.finance.product.title")} />
-        <LoadingState fullScreen message={t("practitioner.finance.common.loading")} />
+        <LoadingState
+          fullScreen
+          message={t("practitioner.finance.common.loading")}
+        />
       </Screen>
     );
   }
@@ -87,7 +105,11 @@ export default function PractitionerFinanceOverviewScreen() {
             onPress={refetchAll}
             style={styles.headerAction}
           >
-            <Ionicons name="refresh-outline" size={22} color={theme.colors.textPrimary} />
+            <Ionicons
+              name="refresh-outline"
+              size={22}
+              color={theme.colors.textPrimary}
+            />
           </TouchableOpacity>
         }
       />
@@ -97,7 +119,10 @@ export default function PractitionerFinanceOverviewScreen() {
           <Text color={theme.colors.textMuted} style={styles.eyebrow}>
             {t("practitioner.finance.product.available")}
           </Text>
-          <Text weight="700" style={[styles.balanceValue, { color: financeTone.accent }]}>
+          <Text
+            weight="700"
+            style={[styles.balanceValue, { color: financeTone.accent }]}
+          >
             {formatMoneyOrUnavailable(
               wallet?.availableBalance,
               wallet?.currency,
@@ -109,18 +134,34 @@ export default function PractitionerFinanceOverviewScreen() {
             {t("practitioner.finance.product.availableHint")}
           </Text>
 
-          <View style={[styles.summaryList, { borderColor: theme.colors.borderLight }]}>
+          <View
+            style={[
+              styles.summaryList,
+              { borderColor: theme.colors.borderLight },
+            ]}
+          >
             {[
-              [t("practitioner.finance.product.underReview"), wallet?.pendingBalance],
+              [
+                t("practitioner.finance.product.underReview"),
+                wallet?.pendingBalance,
+              ],
               [t("practitioner.finance.product.earnings"), wallet?.totalEarned],
-              [t("practitioner.finance.product.transferred"), wallet?.lifetimePaidOut],
+              [
+                t("practitioner.finance.product.transferred"),
+                wallet?.lifetimePaidOut,
+              ],
             ]
               .filter(([, amount]) => hasMeaningfulAmount(amount))
               .map(([label, amount]) => (
                 <SummaryLine
                   key={label}
-                  label={label}
-                  value={formatMoneyOrUnavailable(amount, wallet?.currency, locale, t)}
+                  label={label ?? ""}
+                  value={formatMoneyOrUnavailable(
+                    amount,
+                    wallet?.currency,
+                    locale,
+                    t,
+                  )}
                 />
               ))}
           </View>
@@ -154,10 +195,15 @@ export default function PractitionerFinanceOverviewScreen() {
             </Text>
             <TouchableOpacity
               accessibilityRole="button"
-              accessibilityLabel={t("practitioner.finance.product.viewAllTransactions")}
+              accessibilityLabel={t(
+                "practitioner.finance.product.viewAllTransactions",
+              )}
               onPress={() => router.push("/(practitioner)/finance/ledger")}
             >
-              <Text weight="600" style={[styles.actionLink, { color: theme.colors.primary }]}>
+              <Text
+                weight="600"
+                style={[styles.actionLink, { color: theme.colors.primary }]}
+              >
                 {t("practitioner.finance.common.viewAll")}
               </Text>
             </TouchableOpacity>
@@ -172,14 +218,21 @@ export default function PractitionerFinanceOverviewScreen() {
               onRetry={ledgerQuery.refetch}
             />
           ) : recentLedgerItems.length ? (
-            <View style={[styles.activityList, { borderTopColor: theme.colors.borderLight }]}>
+            <View
+              style={[
+                styles.activityList,
+                { borderTopColor: theme.colors.borderLight },
+              ]}
+            >
               {recentLedgerItems.map((item) => (
                 <ActivityRow
                   key={item.id}
                   item={item}
                   locale={locale}
                   t={t}
-                  currencyFallback={t("practitioner.finance.common.currencyUnavailable")}
+                  currencyFallback={t(
+                    "practitioner.finance.common.currencyUnavailable",
+                  )}
                   onPress={() => router.push("/(practitioner)/finance/ledger")}
                 />
               ))}
@@ -226,7 +279,12 @@ function hasMeaningfulAmount(amount: string | null | undefined) {
 function SummaryLine({ label, value }: { label: string; value: string }) {
   const { theme } = useTheme();
   return (
-    <View style={[styles.summaryLine, { borderBottomColor: theme.colors.borderLight }]}>
+    <View
+      style={[
+        styles.summaryLine,
+        { borderBottomColor: theme.colors.borderLight },
+      ]}
+    >
       <Text color={theme.colors.textSecondary} style={styles.summaryLabel}>
         {label}
       </Text>
@@ -255,9 +313,17 @@ function FinanceDestination({
       accessibilityRole="button"
       accessibilityLabel={`${label}. ${hint}`}
       onPress={onPress}
-      style={[styles.destinationRow, { borderBottomColor: theme.colors.borderLight }]}
+      style={[
+        styles.destinationRow,
+        { borderBottomColor: theme.colors.borderLight },
+      ]}
     >
-      <View style={[styles.destinationIcon, { backgroundColor: theme.colors.primaryLight }]}>
+      <View
+        style={[
+          styles.destinationIcon,
+          { backgroundColor: theme.colors.primaryLight },
+        ]}
+      >
         <Ionicons name={icon} size={18} color={theme.colors.primary} />
       </View>
       <View style={styles.destinationCopy}>
@@ -268,7 +334,11 @@ function FinanceDestination({
           {hint}
         </Text>
       </View>
-      <Ionicons name={chevronForward} size={18} color={theme.colors.textMuted} />
+      <Ionicons
+        name={chevronForward}
+        size={18}
+        color={theme.colors.textMuted}
+      />
     </TouchableOpacity>
   );
 }
@@ -287,21 +357,37 @@ function ActivityRow({
   onPress: () => void;
 }) {
   const { theme } = useTheme();
-  const title = safeFinanceText(item.description, ledgerEntryTypeLabel(item.entryType, t));
-  const amount = formatSignedMoney(item.amount, item.currency, locale, currencyFallback);
+  const title = safeFinanceText(
+    item.description,
+    ledgerEntryTypeLabel(item.entryType, t),
+  );
+  const amount = formatSignedMoney(
+    item.amount,
+    item.currency,
+    locale,
+    currencyFallback,
+  );
   return (
     <TouchableOpacity
       accessibilityRole="button"
       accessibilityLabel={`${title}. ${amount}. ${formatDateShort(item.effectiveAt, locale)}. ${ledgerBucketLabel(item.balanceBucket, t)}`}
       onPress={onPress}
-      style={[styles.activityRow, { borderBottomColor: theme.colors.borderLight }]}
+      style={[
+        styles.activityRow,
+        { borderBottomColor: theme.colors.borderLight },
+      ]}
     >
       <View style={styles.activityCopy}>
         <Text weight="600" style={styles.activityTitle} numberOfLines={1}>
           {title}
         </Text>
-        <Text color={theme.colors.textMuted} style={styles.activityMeta} numberOfLines={1}>
-          {formatDateShort(item.effectiveAt, locale)} · {ledgerBucketLabel(item.balanceBucket, t)}
+        <Text
+          color={theme.colors.textMuted}
+          style={styles.activityMeta}
+          numberOfLines={1}
+        >
+          {formatDateShort(item.effectiveAt, locale)} ·{" "}
+          {ledgerBucketLabel(item.balanceBucket, t)}
         </Text>
       </View>
       <Text weight="600" style={styles.activityAmount} numberOfLines={1}>

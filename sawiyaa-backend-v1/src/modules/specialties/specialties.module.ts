@@ -1,7 +1,9 @@
 import { Module } from '@nestjs/common';
 import { ActiveAccountGuard } from '@common/guards/account-state/active-account.guard';
 import { JwtAccessAuthGuard } from '@common/guards/authentication/jwt-access-auth.guard';
-import { AdminGuard } from '@common/guards/authorization/admin.guard';
+import { RolesGuard } from '@common/guards/authorization/roles.guard';
+import { PermissionResolverService } from '@common/guards/authorization/permission-resolver.service';
+import { PermissionsGuard } from '@common/guards/authorization/permissions.guard';
 import { SpecialtyMapper } from './mappers/specialty.mapper';
 import { SpecialtyCategoryRepository } from './repositories/specialty-category.repository';
 import { SpecialtyRepository } from './repositories/specialty.repository';
@@ -26,7 +28,9 @@ import { SpecialtiesPublicController } from './controllers/specialties-public.co
   controllers: [SpecialtiesPublicController, SpecialtiesAdminController],
   providers: [
     JwtAccessAuthGuard,
-    AdminGuard,
+    RolesGuard,
+    PermissionsGuard,
+    PermissionResolverService,
     ActiveAccountGuard,
     SpecialtyMapper,
     SpecialtyRepository,

@@ -174,6 +174,10 @@ export default function UserNotificationDropdown({
                    viewerTimeZone,
                  );
                  const toneClass = TONE_CLASSES[visual.tone] || TONE_CLASSES.system;
+                 const notificationBody =
+                   visual.tone === "payment" && visual.contextLine
+                     ? `${visual.contextLine} · ${item.body}`
+                     : visual.contextLine || item.body;
 
                  const content = (
                    <div className="flex items-start gap-3 w-full py-3 px-2 transition hover:bg-surface-tertiary/60 dark:hover:bg-white/5">
@@ -198,7 +202,7 @@ export default function UserNotificationDropdown({
                          </p>
                        )}
                        <p className="text-xs leading-relaxed text-text-secondary line-clamp-2">
-                         {visual.contextLine || item.body}
+                         {notificationBody}
                        </p>
                        <div className="flex items-center justify-between gap-3 pt-1">
                          <span className="text-[10px] font-semibold text-text-muted uppercase tracking-wider">

@@ -141,7 +141,9 @@ export default function PractitionerHomeScreen() {
     ? `${walletSummary.availableBalance.toFixed(0)} ${walletSummary.currency === "USD" ? "$" : "ج.م"}`
     : `0 ${isArabic ? "ج.م" : "EGP"}`;
 
-  const currentWeek = availabilityQuery.data?.weeks?.find((w) => w.isCurrentWeek);
+  const currentWeek = availabilityQuery.data?.weeks?.find(
+    (w: { isCurrentWeek: boolean }) => w.isCurrentWeek,
+  );
   const totalSlotsThisWeek =
     (currentWeek?.slotCount30Minutes ?? 0) + (currentWeek?.slotCount60Minutes ?? 0);
 
@@ -642,7 +644,7 @@ function EmptyScheduleHeroCard({
           onPress={onManageSchedule}
           variant="primary"
           style={styles.heroButton}
-          icon={<Ionicons name="add-circle-outline" size={17} color="#FFFFFF" />}
+          leftIcon={<Ionicons name="add-circle-outline" size={17} color="#FFFFFF" />}
         />
       </View>
     </View>

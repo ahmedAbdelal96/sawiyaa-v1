@@ -42,13 +42,11 @@ const styles = StyleSheet.create({
     marginHorizontal: 0,
   },
   time: {
-    direction: "ltr",
     writingDirection: "ltr",
     textAlign: "center",
     flexShrink: 1,
   } as TextStyle,
   separator: {
-    direction: "ltr",
     writingDirection: "ltr",
     textAlign: "center",
     marginHorizontal: 4,

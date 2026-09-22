@@ -6,8 +6,11 @@ import type {
   AdminRefundItemResponseData,
   AdminRefundListResponseData,
   RequestAdminRefundInput,
+  ManualFinalizeAdminRefundInput,
   AdminIncomingPaymentsResponseData,
   AdminIncomingPaymentsQuery,
+  AdminPaymentException,
+  CreateAdminPaymentExceptionInput,
 } from "../types/admin-payments.types";
 
 export async function listAdminIncomingPayments(params: AdminIncomingPaymentsQuery) {
@@ -48,4 +51,26 @@ export async function retryAdminPaymentRefund(paymentId: string, refundId: strin
     `/admin/payments/${paymentId}/refunds/${refundId}/retry`,
   );
   return extractData(response.data);
+}
+
+export async function manuallyFinalizeAdminPaymentRefund(
+  paymentId: string,
+  refundId: string,
+  data: ManualFinalizeAdminRefundInput,
+) {
+  const response = await httpClient.post<ApiPayload<AdminRefundItemResponseData>>(
+    `/admin/payments/${paymentId}/refunds/${refundId}/manual-finalization`,
+    data,
+  );
+  return extractData(response.data);
+}
+
+export async function listAdminPaymentExceptions(params?: Record<string, string>) {
+  const response = await httpClient.get<AdminPaymentException[]>("/admin/payment-exceptions", { params });
+  return response.data;
+}
+
+export async function createAdminPaymentException(input: CreateAdminPaymentExceptionInput) {
+  const response = await httpClient.post<AdminPaymentException>("/admin/payment-exceptions", input);
+  return response.data;
 }

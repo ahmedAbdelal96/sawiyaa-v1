@@ -271,8 +271,10 @@ export class UpdatePractitionerProfileUseCase {
           for (const field of this.changeReviewPolicy?.getChangedProfileFields(
             normalizedInput as unknown as Record<string, unknown>,
           ) ?? []) {
-            if (field === 'countryCode') {
-              delete profileUpdate.countryId;
+            if (field === 'displayName') {
+              // displayName belongs to User and is staged in the existing
+              // practitioner change application snapshot below.
+              continue;
             } else {
               delete profileUpdate[field];
             }
@@ -339,19 +341,30 @@ export class UpdatePractitionerProfileUseCase {
               ['primaryContentLocale', normalizedInput.primaryContentLocale],
               ['yearsOfExperience', normalizedInput.yearsOfExperience],
               ['countryCode', normalizedInput.countryCode],
+              ['displayName', normalizedInput.displayName],
             ].filter(([, value]) => value !== undefined),
           ) as Record<string, unknown>,
           tx,
         });
       }
 
+      const userPreferencesUpdate: {
+        displayName?: string;
+        defaultLocale?: string;
+        timezone?: string | null;
+      } = {
+        defaultLocale: normalizedInput.locale,
+        timezone: normalizedInput.timezone,
+      };
+      const displayNameIsPending =
+        profile.status === PractitionerStatus.APPROVED &&
+        changedReviewFields.includes('displayName');
+      if (!displayNameIsPending && normalizedInput.displayName !== undefined) {
+        userPreferencesUpdate.displayName = normalizedInput.displayName;
+      }
       await this.practitionerUserRepository.updateProfilePreferences(
         input.userId,
-        {
-          displayName: normalizedInput.displayName,
-          defaultLocale: normalizedInput.locale,
-          timezone: normalizedInput.timezone,
-        },
+        userPreferencesUpdate,
         tx,
       );
 

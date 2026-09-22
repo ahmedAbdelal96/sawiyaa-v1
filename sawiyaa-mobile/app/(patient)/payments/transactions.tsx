@@ -15,7 +15,8 @@ import { useTheme } from "../../../src/providers/ThemeProvider";
 import { useAppDirection } from "../../../src/i18n/direction";
 import {
   usePatientPayments,
-  usePatientWalletEntries,
+  useInfinitePatientPayments,
+  useInfinitePatientWalletEntries,
   usePatientWalletSummary,
 } from "../../../src/features/patient/payments/hooks";
 import { formatMoney, parseMoney } from "../../../src/lib/money";
@@ -26,6 +27,7 @@ import {
   buildFinancialActivity,
 } from "../../../src/features/patient/payments/wallet-view-model";
 import type { WalletActivityItem } from "../../../src/features/patient/payments/wallet-view-model";
+import type { PaymentsListData, WalletEntriesData } from "../../../src/features/patient/payments/types";
 
 type FilterTab = "all" | "payments" | "credits" | "refunds";
 
@@ -38,14 +40,17 @@ export default function TransactionHistoryScreen() {
   const [activeFilter, setActiveFilter] = useState<FilterTab>("all");
 
   const walletQuery = usePatientWalletSummary();
-  const entriesQuery = usePatientWalletEntries({ limit: 50 });
-  const paymentsQuery = usePatientPayments({ limit: 50 });
+  const entriesQuery = useInfinitePatientWalletEntries({ limit: 50 });
+  const paymentsQuery = useInfinitePatientPayments({ limit: 50 });
   const wallet = walletQuery.data?.item ?? null;
 
   const allActivity = useMemo(
     () =>
-      buildFinancialActivity(entriesQuery.data?.items ?? [], paymentsQuery.data?.items ?? []),
-    [entriesQuery.data?.items, paymentsQuery.data?.items],
+      buildFinancialActivity(
+        entriesQuery.data?.pages.flatMap((page: WalletEntriesData) => page.items) ?? [],
+        paymentsQuery.data?.pages.flatMap((page: PaymentsListData) => page.items) ?? [],
+      ),
+    [entriesQuery.data?.pages, paymentsQuery.data?.pages],
   );
 
   const filteredActivity = useMemo(
@@ -174,6 +179,24 @@ export default function TransactionHistoryScreen() {
             ))}
           </View>
         )}
+        {entriesQuery.hasNextPage || paymentsQuery.hasNextPage ? (
+          <TouchableOpacity
+            onPress={() => {
+              if (entriesQuery.hasNextPage) void entriesQuery.fetchNextPage();
+              if (paymentsQuery.hasNextPage) void paymentsQuery.fetchNextPage();
+            }}
+            disabled={entriesQuery.isFetchingNextPage || paymentsQuery.isFetchingNextPage}
+            style={[styles.loadMore, { borderColor: theme.colors.border }]}
+          >
+            <Text color={theme.colors.primary} weight="700">
+              {entriesQuery.isFetchingNextPage || paymentsQuery.isFetchingNextPage
+                ? t("patientPaymentsFlow.transactions.loading")
+                : isRtl
+                  ? "تحميل عمليات أقدم"
+                  : "Load older transactions"}
+            </Text>
+          </TouchableOpacity>
+        ) : null}
       </ScrollView>
     </Screen>
   );
@@ -279,5 +302,6 @@ const styles = StyleSheet.create({
   transactionCopy: { flex: 1, gap: 3 },
   amount: { maxWidth: 130 },
   emptyState: { alignItems: "center", gap: 8, paddingVertical: 48 },
+  loadMore: { alignItems: "center", borderRadius: 14, borderWidth: 1, padding: 13 },
   centerText: { textAlign: "center" },
 });

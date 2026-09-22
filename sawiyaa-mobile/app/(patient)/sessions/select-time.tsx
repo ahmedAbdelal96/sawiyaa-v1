@@ -54,7 +54,10 @@ import { getTimeZoneDisplayLabel } from "../../../src/features/timezone/timezone
 import { getProfessionalTitleLabel } from "../../../src/features/practitioner/reference-data";
 import { usePatientProfile } from "../../../src/features/patient/profile/hooks";
 import { resolvePatientDisplayTimeZone } from "../../../src/lib/time-formatting";
-import { findNearestAvailableDayKey, normalizeBookingDuration } from "../../../src/features/patient/booking/view-model";
+import {
+  findNearestAvailableDayKey,
+  normalizeBookingDuration,
+} from "../../../src/features/patient/booking/view-model";
 
 const VISIBLE_DATE_COLUMNS = 5;
 type ScheduleSlot = {
@@ -192,13 +195,17 @@ export default function SelectSessionTimeScreen() {
     practitionerAvatarUrl?: string;
   }>();
 
-  const hasExplicitDuration = params.durationMinutes === "30" || params.durationMinutes === "60";
+  const hasExplicitDuration =
+    params.durationMinutes === "30" || params.durationMinutes === "60";
   const [bookingType, setBookingType] = useState<BookingTypeValue>(
     params.bookingType === "package" ? "package" : "appointment",
   );
-  const [appointmentDuration, setAppointmentDuration] =
-    useState<DurationValue>(() => normalizeBookingDuration(params.durationMinutes));
-  const [packageDuration, setPackageDuration] = useState<DurationValue>(() => normalizeBookingDuration(params.durationMinutes));
+  const [appointmentDuration, setAppointmentDuration] = useState<DurationValue>(
+    () => normalizeBookingDuration(params.durationMinutes),
+  );
+  const [packageDuration, setPackageDuration] = useState<DurationValue>(() =>
+    normalizeBookingDuration(params.durationMinutes),
+  );
   const [dateWindowOffsetDays, setDateWindowOffsetDays] = useState(0);
   const [avatarFailed, setAvatarFailed] = useState(false);
   const [footerHeight, setFooterHeight] = useState(96);
@@ -298,8 +305,7 @@ export default function SelectSessionTimeScreen() {
     [windowsQuery.data?.windows],
   );
   const durationSlots = useMemo(
-    () =>
-      buildSlotsFromDurationWindows(windows, [], effectiveDuration),
+    () => buildSlotsFromDurationWindows(windows, [], effectiveDuration),
     [effectiveDuration, windows],
   );
   const dateColumns = useMemo(
@@ -333,7 +339,7 @@ export default function SelectSessionTimeScreen() {
     { enabled: bookingType === "package" && supportsPackages },
   );
   const packagePlans = useMemo(
-    () => packagePlansQuery.data?.items ?? [],
+    () => (packagePlansQuery.data?.items ?? []) as PackagePlanQuotedItem[],
     [packagePlansQuery.data?.items],
   );
 
@@ -413,16 +419,13 @@ export default function SelectSessionTimeScreen() {
       })
     : t("patientSessionsFlow.selectTime.noSelectedSlot");
 
-  const packageSelectedSummary =
-    selectedPackageSlots.length === 0
-      ? t("patientSessionsFlow.selectTime.packageProgress", {
-          selected: 0,
-          total: requiredPackageSlots || 0,
-        })
-      : t("patientSessionsFlow.selectTime.packageProgress", {
-          selected: selectedPackageSlots.length,
-          total: requiredPackageSlots || 0,
-        });
+  const packageSelectedSummary = t(
+    "patientSessionsFlow.selectTime.packageProgress",
+    {
+      selected: selectedPackageSlots.length,
+      total: requiredPackageSlots || 0,
+    },
+  );
 
   const canContinueAppointment = Boolean(
     selectedAppointmentSlot && params.slug,
@@ -432,7 +435,7 @@ export default function SelectSessionTimeScreen() {
     Boolean(selectedPackagePlanCode) &&
     Boolean(packageQuote) &&
     requiredPackageSlots > 0 &&
-    selectedPackageSlots.length === requiredPackageSlots &&
+    selectedPackageSlots.length <= 1 &&
     !packageQuoteQuery.isLoading &&
     !packageQuoteQuery.isError;
 
@@ -452,7 +455,7 @@ export default function SelectSessionTimeScreen() {
     setSelectedPackageSlots((current) => {
       if (current.includes(slot))
         return current.filter((value) => value !== slot);
-      if (current.length >= requiredPackageSlots) return current;
+      if (current.length >= 1) return current;
       return [...current, slot].sort();
     });
     trackAnalyticsEvent("slot_selected", {
@@ -707,7 +710,7 @@ export default function SelectSessionTimeScreen() {
               selectedDayKey={selectedDayKey}
               onSelectDay={setSelectedDayKey}
               onToggleSlot={onTogglePackageSlot}
-              maxSelectedCount={requiredPackageSlots || 0}
+              maxSelectedCount={1}
               isLoading={windowsQuery.isLoading}
               isError={windowsQuery.isError}
               onRetry={() => windowsQuery.refetch()}

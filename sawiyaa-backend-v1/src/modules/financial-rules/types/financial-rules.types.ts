@@ -21,6 +21,7 @@ export type SessionFinancialContext = {
   flowType: SessionFlowType;
   sessionMode: SessionMode;
   durationMinutes: number;
+  pricingPolicySnapshotJson?: unknown;
   practitioner: {
     id: string;
     publicSlug: string;
@@ -57,9 +58,19 @@ export type SessionFinancialContext = {
     amountTotal: { toString(): string } | string;
     currencyCode: string;
     provider: PaymentProvider;
+    paymentPurpose?: PaymentPurpose;
+    commissionRuleId?: string | null;
+    commissionPlatformRatePercent?: { toString(): string } | string | null;
+    commissionPractitionerRatePercent?: { toString(): string } | string | null;
+    couponId?: string | null;
+    couponCodeSnapshot?: string | null;
+    couponDiscountSnapshot?: { toString(): string } | string | null;
+    couponPlatformShareSnapshot?: { toString(): string } | string | null;
+    couponPractitionerShareSnapshot?: { toString(): string } | string | null;
+    metadataJson?: unknown;
   }>;
   instantBookingRequest?: {
-    metadataJson?: unknown | null;
+    metadataJson?: unknown;
   } | null;
 };
 

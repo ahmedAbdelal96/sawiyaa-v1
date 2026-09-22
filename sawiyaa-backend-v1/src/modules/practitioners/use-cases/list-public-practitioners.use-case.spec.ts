@@ -98,6 +98,7 @@ describe('ListPublicPractitionersUseCase', () => {
         ],
       ]),
     );
+    (publicReadRepository.listPublic as jest.Mock).mockResolvedValue([baseRow]);
   });
 
   it('returns USD selected amounts that match the selected currency, not legacy prices', async () => {
@@ -207,6 +208,26 @@ describe('ListPublicPractitionersUseCase', () => {
     );
   });
 
+  it('keeps the documented recommended comparator stable', async () => {
+    const rows = [
+      { ...baseRow, id: 'a', publicSlug: 'a', createdAt: new Date('2026-01-01'), yearsOfExperience: 10 },
+      { ...baseRow, id: 'b', publicSlug: 'b', createdAt: new Date('2026-02-01'), yearsOfExperience: 5 },
+      { ...baseRow, id: 'c', publicSlug: 'c', createdAt: new Date('2026-03-01'), yearsOfExperience: 5 },
+    ];
+    (publicReadRepository.listPublic as jest.Mock).mockResolvedValue(rows);
+    (sessionReviewRatingAggregationService.aggregateByPractitionerIds as jest.Mock).mockResolvedValue(
+      new Map([
+        ['a', { averageRating: 4.5, ratingsCount: 1, publishedRatingsCount: 1, writtenReviewsCount: 1 }],
+        ['b', { averageRating: 4.5, ratingsCount: 1, publishedRatingsCount: 1, writtenReviewsCount: 1 }],
+        ['c', { averageRating: 4.5, ratingsCount: 1, publishedRatingsCount: 1, writtenReviewsCount: 1 }],
+      ]),
+    );
+
+    const result = await useCase.execute({ locale: 'en', sort: 'recommended' as any });
+
+    expect(result.items.map((item) => item.slug)).toEqual(['a', 'c', 'b']);
+  });
+
   it('uses shared pricing context so Egypt-authenticated users see EGP display prices', async () => {
     (publicReadRepository.listPublic as jest.Mock).mockResolvedValue([baseRow]);
     (pricingContextService.resolve as jest.Mock).mockResolvedValue({
@@ -232,7 +253,7 @@ describe('ListPublicPractitionersUseCase', () => {
     expect(result.items[0].sessionPrice60).toBe(450);
   });
 
-  it('does not borrow an EGP value when the selected USD value is missing', async () => {
+  it('does not expose a practitioner when a required public currency is missing', async () => {
     (publicReadRepository.listPublic as jest.Mock).mockResolvedValue([
       {
         ...baseRow,
@@ -243,10 +264,6 @@ describe('ListPublicPractitionersUseCase', () => {
 
     const result = await useCase.execute({ locale: 'en' });
 
-    expect(result.items[0].currencyCode).toBe('USD');
-    expect(result.items[0].sessionPrice30).toBeNull();
-    expect(result.items[0].sessionPrice60).toBeNull();
-    expect(result.items[0].displaySessionPrice30).toBeNull();
-    expect(result.items[0].displaySessionPrice60).toBeNull();
+    expect(result.items).toHaveLength(0);
   });
 });

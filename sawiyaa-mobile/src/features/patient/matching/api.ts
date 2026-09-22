@@ -7,7 +7,11 @@ import { matchingSessionQueryKey } from "./query-keys";
 export { matchingSessionQueryKey } from "./query-keys";
 
 export const useCreateMatchingSession = () => {
-  return useMutation({
+  return useMutation<
+    MatchingSessionEnvelope,
+    Error,
+    CreateMatchingSessionRequest
+  >({
     mutationFn: async (data: CreateMatchingSessionRequest) => {
       const response = await apiClient.post<MatchingSessionEnvelope>(
         "/matching/sessions",
@@ -22,7 +26,7 @@ export const useGetMatchingSession = (sessionId: string | null) => {
   const { i18n } = useTranslation();
   const locale = i18n.language?.startsWith("ar") ? "ar" : "en";
 
-  return useQuery({
+  return useQuery<MatchingSessionEnvelope, Error>({
     queryKey: matchingSessionQueryKey(sessionId, locale),
     queryFn: async () => {
       const response = await apiClient.get<MatchingSessionEnvelope>(

@@ -3,6 +3,9 @@ export function formatPercent(value: string) {
   return Number.isFinite(amount) ? `${amount}%` : value;
 }
 
-export function formatDurationLabel(durationMinutes: number) {
+export function formatDurationLabel(durationMinutes: number, locale?: string) {
+  if (locale === "ar") {
+    return `${durationMinutes} دقيقة`;
+  }
   return `${durationMinutes} min`;
 }

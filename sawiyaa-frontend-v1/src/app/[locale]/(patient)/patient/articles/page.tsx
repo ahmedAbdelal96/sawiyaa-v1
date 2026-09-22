@@ -90,11 +90,7 @@ export default async function PatientArticlesPage({ params, searchParams }: Prop
   }
 
   return (
-    <PatientSectionFrame
-      eyebrow={tList("eyebrow")}
-      title={tList("title")}
-      description={tList("description")}
-    >
+    <div className="app-max-content mx-auto px-4 py-4 sm:py-6">
       <PatientArticlesIndexScreen
         data={data}
         locale={locale}
@@ -106,6 +102,6 @@ export default async function PatientArticlesPage({ params, searchParams }: Prop
           categorySlug: categorySlug.trim(),
         }}
       />
-    </PatientSectionFrame>
+    </div>
   );
 }

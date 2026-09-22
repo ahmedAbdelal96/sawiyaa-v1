@@ -82,11 +82,11 @@ export class PublicPractitionerAvailabilitySupportDto {
   @ApiProperty({ example: true })
   onlineNowSupported!: true;
 
-  @ApiProperty({ example: false })
-  availableTodaySupported!: false;
+  @ApiProperty({ example: true })
+  availableTodaySupported!: true;
 
-  @ApiProperty({ example: false })
-  availableThisWeekSupported!: false;
+  @ApiProperty({ example: true })
+  availableThisWeekSupported!: true;
 }
 
 export class PublicPractitionerFiltersResponseDto {

@@ -140,9 +140,12 @@
     "urgencyRequired": "Choose your urgency preference."
   },
   "result": {
-    "eyebrow": "Your result",
-    "title": "These specialists are closest to your current needs",
-    "note": "Results are based on your answers. Review each profile before booking.",
+    "eyebrow": "Personalized Matches",
+    "title": "Specialists closest to your current needs",
+    "note": "Based on your answers, we ranked the specialists best suited to your care preferences.",
+    "matchesCount": "{count} matching specialists",
+    "topScoreBadge": "Top match {score}%",
+    "retake": "Refine preferences",
     "stats": {
       "matchesLabel": "Matches",
       "matchesHint": "Specialists ranked for this session",
@@ -159,7 +162,7 @@
     "sessionId": "Matching session: {id}",
     "sessionSaved": "You can revisit this result later.",
     "nextHeading": "Choose your next step",
-    "nextNote": "You can run matching again, open support, or browse directly.",
+    "nextNote": "You can retake matching, explore assessments, or browse directly.",
     "summary": {
       "concern": "Need: {value}",
       "specialty": "Specialty: {value}",
@@ -171,13 +174,15 @@
       "scoreLabel": "Match score",
       "languagesLabel": "Languages",
       "priceLabel": "Session price",
+      "sessionFrom": "Session from",
       "price30": "30 min: {value}",
       "price60": "60 min: {value}",
       "rankLabel": "Rank",
-      "viewProfile": "Open profile",
+      "rankBadge": "Match #{rank}",
+      "viewProfile": "View Profile & Book",
       "notAvailable": "Not available",
       "none": "Not specified",
-      "whyHeading": "Why this may fit you"
+      "whyHeading": "Why we recommend this specialist"
     },
     "reasons": {
       "specialty": "Aligned with your selected specialty",

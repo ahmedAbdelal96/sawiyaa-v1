@@ -51,6 +51,22 @@ export enum PermissionKey {
   PRACTITIONER_PUBLICATION_READ = 'practitionerPublication.read',
   PRACTITIONER_PUBLICATION_WRITE = 'practitionerPublication.write',
 
+  // Legacy Admin domain capabilities
+  ARTICLES_READ = 'articles.read',
+  ARTICLES_MANAGE = 'articles.manage',
+  HELP_READ = 'help.read',
+  HELP_MANAGE = 'help.manage',
+  REVIEWS_READ = 'reviews.read',
+  REVIEWS_MODERATE = 'reviews.moderate',
+  SPECIALTIES_READ = 'specialties.read',
+  SPECIALTIES_MANAGE = 'specialties.manage',
+  PACKAGE_PLANS_READ = 'package-plans.read',
+  PACKAGE_PLANS_MANAGE = 'package-plans.manage',
+  ASSESSMENTS_AUTHORING_READ = 'assessments.authoring.read',
+  ASSESSMENTS_AUTHORING_MANAGE = 'assessments.authoring.manage',
+  CUSTOMER_WALLETS_READ = 'customer-wallets.read',
+  COUPONS_MANAGE = 'coupons.manage',
+
   ADMIN_USERS_READ = 'admin-users.read',
   ADMIN_USERS_CREATE = 'admin-users.create',
   ADMIN_USERS_UPDATE = 'admin-users.update',

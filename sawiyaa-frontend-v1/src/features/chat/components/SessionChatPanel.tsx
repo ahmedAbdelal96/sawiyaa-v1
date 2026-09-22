@@ -240,6 +240,9 @@ export default function SessionChatPanel({
     scope === "patient"
       ? (session?.practitioner.displayName ?? null)
       : (session?.patient?.displayName ?? null);
+  const sessionStatusLabel = session?.operational?.state
+    ? t(`status.${session.operational.state}` as Parameters<typeof t>[0])
+    : null;
 
   const backHref =
     scope === "patient" ? "/patient/sessions" : "/practitioner/sessions";
@@ -439,7 +442,7 @@ export default function SessionChatPanel({
                   targetId={conversationId}
                 />
                 <span className="rounded-full border border-teal-100/30 bg-teal-50/70 px-2.5 py-0.5 text-[10px] font-bold text-teal-700 dark:bg-teal-950/40 dark:text-teal-400">
-                  {session?.operational?.state?.replaceAll("_", " ") ?? ""}
+                  {sessionStatusLabel ?? ""}
                 </span>
               </div>
             }

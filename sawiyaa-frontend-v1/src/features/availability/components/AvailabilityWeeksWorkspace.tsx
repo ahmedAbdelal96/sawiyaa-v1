@@ -34,6 +34,7 @@ import type {
   AvailabilityWorkspaceData,
 } from "../types/availability.types";
 import { AVAILABILITY_WEEK_MAX_SLOTS, canFitAvailabilityDuration } from "../utils/availability-time-grid";
+import { canEditAvailabilitySlot, canEditAvailabilityWeek, isAvailabilityStartInPast } from "../utils/availability-week-editability";
 import AvailabilityTimeGrid from "./AvailabilityTimeGrid";
 
 type DialogState =
@@ -158,7 +159,7 @@ export function ScheduleEditorModal({
   const [starts, setStarts] = useState<SelectedTimes>(emptySelectedTimes);
   const [invalidLegacy60Starts, setInvalidLegacy60Starts] = useState<number[]>([]);
   const isCreate = !week.weekId;
-  const canEditExisting = isCreate || Boolean(details && details.isEditable && week.canEdit);
+  const canEditExisting = isCreate || Boolean(details && details.isEditable && canEditAvailabilityWeek(week));
   const pending = createWeek.isPending || updateWeek.isPending;
   const slots = useMemo(
     () =>
@@ -194,7 +195,13 @@ export function ScheduleEditorModal({
     const existingSlot = details?.slots.find(
       (slot) => slot.dayOfWeek === day && slot.durationMinutes === duration && slot.startMinuteOfDay === minute
     );
-    if (existingSlot && (existingSlot.canEdit === false || existingSlot.canRemove === false)) return;
+    if (existingSlot && !canEditAvailabilitySlot(existingSlot)) return;
+    const alreadySelected = starts[day][duration].includes(minute);
+    if (
+      week.status === "PUBLISHED" &&
+      !alreadySelected &&
+      isAvailabilityStartInPast(week.weekStartDate, timezone, day, minute)
+    ) return;
     setStarts((current) => ({
       ...current,
       [day]: {
@@ -601,7 +608,7 @@ function WeekRow({
         <ActionButton
           icon={<Pencil className="h-3.5 w-3.5" />}
           label={t("actions.edit")}
-          disabled={!week.canCreate && !week.canEdit}
+          disabled={!canEditAvailabilityWeek(week)}
           onClick={() => onOpen({ type: "editor", week })}
         />
 
@@ -798,7 +805,7 @@ export default function AvailabilityWeeksWorkspace({ data }: { data: Availabilit
               <ActionButton
                 icon={<Pencil className="h-3.5 w-3.5" />}
                 label={week.status === "NOT_SET" ? t("actions.setup") : t("actions.edit")}
-                disabled={!week.canCreate && !week.canEdit}
+                disabled={!canEditAvailabilityWeek(week)}
                 onClick={() => setDialog({ type: "editor", week })}
               />
               {week.canPublish ? (

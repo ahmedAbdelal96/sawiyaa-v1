@@ -36,10 +36,16 @@ export interface PatientPackagePurchaseViewModel {
   };
   progress: {
     totalSessions: number;
+    consumedSessions: number;
     completedSessions: number;
+    /** Sessions already attached to an appointment or awaiting an outcome. */
+    reservedSessions: number;
+    /** Entitlements that are not consumed and not currently reserved. */
+    availableSessions: number;
     remainingSessions: number;
     scheduledSessions: number;
     progressPercent: number;
+    nextSessionStartAt: string | null;
   };
   durationMinutes: number;
   sessionMode: SessionMode;
@@ -58,6 +64,42 @@ export interface PatientPackagePurchaseViewModel {
     totalItems: number;
     items: PackagePurchaseSessionSummaryViewModel[];
   };
+  payment: {
+    id: string;
+    status: string;
+    amountTotal: string;
+    amountFromWallet: string;
+    amountFromGateway: string;
+    currency: string;
+    initiatedAt: string;
+    capturedAt: string | null;
+    failedAt: string | null;
+    expiredAt: string | null;
+    refundedAt: string | null;
+    refunds: Array<{
+      id: string;
+      status: string;
+      destination: string;
+      amount: string;
+      currency: string;
+      reason: string | null;
+      requestedAt: string;
+      processedAt: string | null;
+      failedAt: string | null;
+      customerWalletCreditedAt: string | null;
+      sessionId: string | null;
+    }>;
+  } | null;
+  entitlementHistory: Array<{
+    id: string;
+    sessionId: string;
+    sessionCode: string | null;
+    decisionType: string;
+    reasonCode: string;
+    sessionStatus: string;
+    decidedAt: string;
+    scheduledStartAt: string | null;
+  }>;
 }
 
 export interface PatientPackagePurchasesPaginationViewModel {

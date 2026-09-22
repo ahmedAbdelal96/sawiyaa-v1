@@ -21,6 +21,14 @@ export type FinancialBreakdownCommission = {
 };
 
 export type FinancialBreakdown = {
+  /** Authoritative funding quote; existing collection intents remain fixed. */
+  fundingPreview?: {
+    walletUsed: string;
+    gatewayAmount: string;
+    gatewayAmountWithoutWallet: string;
+    walletAvailable: string;
+    locked: boolean;
+  };
   sessionId: string;
   paymentPurpose: string;
   currency: string;

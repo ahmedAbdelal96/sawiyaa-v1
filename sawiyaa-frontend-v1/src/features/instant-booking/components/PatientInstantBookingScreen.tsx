@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { usePathname, useRouter } from "@/i18n/navigation";
 import { useSearchParams } from "next/navigation";
@@ -45,6 +45,12 @@ import type {
 } from "../types/instant-booking.types";
 import { mapInstantBookingDiscoveryMoney } from "../lib/instant-booking-money";
 import { formatPatientDateTime, formatViewerTime } from "@/lib/time-formatting";
+
+function createInstantBookingIdempotencyKey(): string {
+  return typeof crypto !== "undefined" && crypto.randomUUID
+    ? crypto.randomUUID()
+    : `ib-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+}
 
 function formatTime(isoString: string | null, numLocale: string): string {
   return formatViewerTime(isoString, { locale: numLocale, fallbackText: "" });
@@ -417,6 +423,7 @@ export default function PatientInstantBookingScreen() {
 
   const createMutation = useCreatePatientInstantBookingRequest();
   const cancelMutation = useCancelPatientInstantBookingRequest();
+  const idempotencyKeyRef = useRef(createInstantBookingIdempotencyKey());
   const [pageError, setPageError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -444,8 +451,8 @@ export default function PatientInstantBookingScreen() {
 
     try {
       const request = await createMutation.mutateAsync({
-        practitionerSlug,
-        durationMinutes,
+        input: { practitionerSlug, durationMinutes },
+        idempotencyKey: idempotencyKeyRef.current,
       });
       navigateWithRequestId(request.id);
     } catch (error) {
@@ -469,6 +476,7 @@ export default function PatientInstantBookingScreen() {
     setPageError(null);
     try {
       await cancelMutation.mutateAsync({ requestId: activeRequest.id });
+      idempotencyKeyRef.current = createInstantBookingIdempotencyKey();
       navigateWithRequestId(null);
     } catch (error) {
       toAppError(error);
@@ -636,7 +644,7 @@ export default function PatientInstantBookingScreen() {
                   onBook={handleBook}
                   pendingBookKey={
                     createMutation.isPending && createMutation.variables
-                      ? `${createMutation.variables.practitionerSlug}:${createMutation.variables.durationMinutes}`
+                      ? `${createMutation.variables.input.practitionerSlug}:${createMutation.variables.input.durationMinutes}`
                       : null
                   }
                   createPending={createMutation.isPending}

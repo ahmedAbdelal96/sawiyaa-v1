@@ -55,6 +55,21 @@ describe('session-chat-policy util', () => {
     });
   });
 
+  it('keeps admin-resolution sessions readable but read-only', () => {
+    const result = resolveSessionChatAvailability({
+      ...baseInput,
+      status: SessionStatus.AWAITING_ADMIN_RESOLUTION,
+      now: new Date('2026-08-02T12:30:01.000Z'),
+    });
+
+    expect(result).toEqual({
+      canRead: true,
+      canSend: false,
+      readOnly: true,
+      reason: 'SESSION_ENDED',
+    });
+  });
+
   it('keeps cancelled sessions readable but read-only', () => {
     const result = resolveSessionChatAvailability({
       ...baseInput,

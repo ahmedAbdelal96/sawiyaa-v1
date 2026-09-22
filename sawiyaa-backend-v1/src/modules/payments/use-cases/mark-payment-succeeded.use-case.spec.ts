@@ -30,7 +30,8 @@ describe('MarkPaymentSucceededUseCase', () => {
         : {},
     };
     const prisma = {
-      $transaction: jest.fn().mockImplementation(async (fn) => fn({})),
+      $transaction: jest.fn().mockImplementation(async (fn) => fn(prisma)),
+      $executeRaw: jest.fn().mockResolvedValue(1),
       session: {
         findUnique: jest
           .fn()
@@ -45,6 +46,7 @@ describe('MarkPaymentSucceededUseCase', () => {
       findById: jest.fn().mockResolvedValue(basePayment),
       createEvent: jest.fn().mockResolvedValue({}),
       createWebhookReceipt: jest.fn().mockResolvedValue({}),
+      findWebhookReceipt: jest.fn().mockResolvedValue(null),
       updateStatus: jest.fn().mockResolvedValue({
         ...basePayment,
         status: PaymentStatus.CAPTURED,
@@ -55,6 +57,7 @@ describe('MarkPaymentSucceededUseCase', () => {
       assertCanTransition: jest.fn(),
     };
     const orchestrateSessionPaymentStatusService = {
+      notifySessionConfirmedAfterCommit: jest.fn().mockResolvedValue(undefined),
       markSessionConfirmedFromPayment: jest.fn().mockResolvedValue({}),
     };
     const orchestrateAcademyProgramEnrollmentPaymentStatusService = {
@@ -110,6 +113,7 @@ describe('MarkPaymentSucceededUseCase', () => {
       reconcilePackagePurchasePaymentUseCase as never,
       corporateSponsorshipConsumeService as never,
       logger as never,
+      { postPaymentCaptured: jest.fn().mockResolvedValue({}) } as never,
     );
 
     return {
@@ -187,7 +191,7 @@ describe('MarkPaymentSucceededUseCase', () => {
       setup.orchestrateSessionPaymentStatusService
         .markSessionConfirmedFromPayment,
     ).not.toHaveBeenCalled();
-    expect(setup.paymentRepository.findById).toHaveBeenCalledTimes(1);
+    expect(setup.paymentRepository.findById).toHaveBeenCalledTimes(2);
     expect(setup.paymentRepository.updateStatus).toHaveBeenCalledTimes(1);
   });
 

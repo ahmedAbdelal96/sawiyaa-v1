@@ -89,7 +89,7 @@ function formatPercent(value: number | null | undefined) {
   return `${Math.max(0, Math.min(100, Math.round(value)))}%`;
 }
 
-function normalizeAttendanceStatus(status: AcademyProgramAttendanceStatus | null | undefined): SaveAdminAcademyProgramAttendanceStatus {
+export function normalizeAttendanceStatus(status: AcademyProgramAttendanceStatus | null | undefined): SaveAdminAcademyProgramAttendanceStatus {
   if (status === "PRESENT" || status === "ABSENT") {
     return status;
   }

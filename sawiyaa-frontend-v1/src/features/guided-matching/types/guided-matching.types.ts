@@ -54,6 +54,14 @@ export interface MatchingPractitionerCard {
   sessionPrice30: string | null;
   sessionPrice60: string | null;
   specialties: string[];
+  avatarUrl?: string | null;
+  initials?: string | null;
+  isVerified?: boolean | null;
+  isOnlineNow?: boolean | null;
+  rating?: number | null;
+  reviewCount?: number | null;
+  nameAr?: string | null;
+  nameEn?: string | null;
 }
 
 export interface MatchingRationale {

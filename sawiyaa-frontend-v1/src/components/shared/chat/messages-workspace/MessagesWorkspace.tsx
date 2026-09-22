@@ -51,6 +51,8 @@ export default function MessagesWorkspace({ role }: Props) {
   // Session deep links deliberately use their own identity because a Session ID
   // is not a conversation ID and must be resolved by the Chat-domain command.
   const activeLane = searchParams.get("lane");
+  const shouldStartSupport = searchParams.get("new") === "true";
+  const shouldFocusComposer = searchParams.get("focusComposer") === "true";
   const selectedSessionId =
     activeLane === "session"
       ? searchParams.get("sessionId") || searchParams.get("id") || null
@@ -274,6 +276,15 @@ export default function MessagesWorkspace({ role }: Props) {
     }
     router.replace(`${pathname}?${params.toString()}`);
   }, [searchParams, pathname, router]);
+
+  useEffect(() => {
+    if (role === "admin" || !shouldStartSupport) return;
+
+    setIsSupportModalOpen(true);
+    const params = new URLSearchParams(searchParams.toString());
+    params.delete("new");
+    router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+  }, [pathname, role, router, searchParams, shouldStartSupport]);
 
   // Restore last selected conversation ID on initial mount if not already present in searchParams
   useEffect(() => {
@@ -599,6 +610,7 @@ export default function MessagesWorkspace({ role }: Props) {
                       conversation={activeConversation}
                       role={role}
                       locale={locale}
+                      focusComposer={shouldFocusComposer}
                       onNewSupportClick={role !== "admin" ? () => setIsSupportModalOpen(true) : undefined}
                     />
                   ) : (

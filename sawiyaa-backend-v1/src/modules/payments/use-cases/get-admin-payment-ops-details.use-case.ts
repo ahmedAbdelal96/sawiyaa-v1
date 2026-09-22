@@ -23,7 +23,8 @@ export class GetAdminPaymentOpsDetailsUseCase {
       });
     }
 
-    const review = await this.prisma.sessionEarningReview.findFirst({
+    const [review, journalEntries] = await Promise.all([
+      this.prisma.sessionEarningReview.findFirst({
       where: {
         OR: [
           { paymentId: payment.id },
@@ -41,7 +42,16 @@ export class GetAdminPaymentOpsDetailsUseCase {
         practitionerId: true,
         settlementId: true,
       },
-    });
+      }),
+      this.prisma.journalEntry.findMany({
+        where: {
+          sourceType: 'PAYMENT_CAPTURED',
+          sourceId: payment.id,
+        },
+        orderBy: [{ occurredAt: 'asc' }],
+        select: { id: true, sourceType: true, occurredAt: true },
+      }),
+    ]);
 
     const [settlement, practitioner] = review
       ? await Promise.all([
@@ -77,7 +87,8 @@ export class GetAdminPaymentOpsDetailsUseCase {
         }
       : null;
 
-    const viewModel = this.paymentMapper.toAdminOpsViewModel(payment as never);
+    const paymentForMapper = Object.assign({}, payment, { journalEntries });
+    const viewModel = this.paymentMapper.toAdminOpsViewModel(paymentForMapper as never);
     viewModel.relatedSettlement = relatedSettlement;
 
     return {

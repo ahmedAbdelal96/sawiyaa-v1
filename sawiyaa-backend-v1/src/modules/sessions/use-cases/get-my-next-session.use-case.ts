@@ -96,7 +96,10 @@ export class GetMyNextSessionUseCase {
       scheduledEndAt: session.scheduledEndAt.toISOString(),
       durationMinutes: session.durationMinutes,
       displayTimezone: session.timezoneSnapshot ?? 'UTC',
-      status: session.status,
+      // Keep the dashboard card consistent with list/detail projections. The
+      // interpreter may converge stale raw lifecycle data to a read-only
+      // operational state (for example an elapsed join window).
+      status: operational.state,
       operational,
       countdownReferenceTime: now.toISOString(),
       detailsRoute: `/${input.locale}/${rolePath}/sessions/${session.id}`,

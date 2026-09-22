@@ -3,12 +3,10 @@ import {
   CouponStatus,
   PresenceStatus,
   PractitionerGender,
-  CredentialReviewStatus,
   Prisma,
   PractitionerType,
   PractitionerStatus,
   UserStatus,
-  AvailabilityWeekStatus,
 } from '@prisma/client';
 import { SupportedLocale } from '@common/i18n/types/locale.types';
 import { PrismaService } from '@common/prisma/prisma.service';
@@ -159,6 +157,7 @@ export class PublicPractitionerReadRepository {
     gender?: PublicPractitionerGender;
     duration?: PublicPractitionerSessionDuration;
     onlineNow?: boolean;
+    instantBookingEnabled?: boolean;
     availableToday?: boolean;
     availableThisWeek?: boolean;
     acceptsCoupon?: boolean;
@@ -191,19 +190,6 @@ export class PublicPractitionerReadRepository {
     const countryCode = input.country?.trim().toUpperCase();
     const minSessionFee = input.minSessionFee;
     const maxSessionFee = input.maxSessionFee;
-    const nextWeekday = (() => {
-      const utcDay = now.getUTCDay();
-      const map = [
-        'SUNDAY',
-        'MONDAY',
-        'TUESDAY',
-        'WEDNESDAY',
-        'THURSDAY',
-        'FRIDAY',
-        'SATURDAY',
-      ] as const;
-      return map[utcDay];
-    })();
     const hasFeeRange =
       minSessionFee !== undefined || maxSessionFee !== undefined;
     const sessionFeeCondition = () => ({
@@ -353,44 +339,27 @@ export class PublicPractitionerReadRepository {
           }
         : undefined,
       presence:
-        input.onlineNow === true
+        input.onlineNow === true || input.instantBookingEnabled === true
           ? {
               is: {
-                status: PresenceStatus.ONLINE,
-                lastSeenAtUtc: {
-                  gte: onlineFreshnessCutoff,
-                },
+                ...(input.onlineNow === true
+                  ? {
+                      status: PresenceStatus.ONLINE,
+                      lastSeenAtUtc: {
+                        gte: onlineFreshnessCutoff,
+                      },
+                    }
+                  : {}),
+                ...(input.instantBookingEnabled === true
+                  ? { isInstantBookingEnabled: true }
+                  : {}),
               },
             }
           : undefined,
-      availabilityWeeks:
-        input.availableToday === true
-          ? {
-              some: {
-                status: AvailabilityWeekStatus.PUBLISHED,
-                weekStartDate: {
-                  lte: now,
-                },
-                weekEndDate: {
-                  gte: now,
-                },
-                slots: {
-                  some: {
-                    weekday: nextWeekday,
-                  },
-                },
-              },
-            }
-          : input.availableThisWeek === true
-            ? {
-                some: {
-                  status: AvailabilityWeekStatus.PUBLISHED,
-                  slots: {
-                    some: {},
-                  },
-                },
-              }
-            : undefined,
+      // Availability predicates are evaluated against concrete public windows
+      // in the listing use case. Keeping this relation out of the coarse SQL
+      // candidate query avoids treating a recurring slot as bookable when it is
+      // already elapsed, blocked by an exception, or occupied by a session.
       coupons:
         input.acceptsCoupon === true
           ? {
@@ -499,6 +468,7 @@ export class PublicPractitionerReadRepository {
     gender?: PublicPractitionerGender;
     duration?: PublicPractitionerSessionDuration;
     onlineNow?: boolean;
+    instantBookingEnabled?: boolean;
     availableToday?: boolean;
     availableThisWeek?: boolean;
     acceptsCoupon?: boolean;
@@ -617,12 +587,4 @@ export class PublicPractitionerReadRepository {
     });
   }
 
-  countApprovedCredentials(practitionerId: string) {
-    return this.prisma.practitionerCredential.count({
-      where: {
-        practitionerId,
-        reviewStatus: CredentialReviewStatus.APPROVED,
-      },
-    });
-  }
 }

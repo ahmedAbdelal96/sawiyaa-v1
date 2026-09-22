@@ -6,7 +6,7 @@ import { DropdownItem } from "../ui/dropdown/DropdownItem";
 import { useAuthActions, useAuthState } from "@/stores/auth-store";
 import { useLocale, useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
-import { LogOut, User, Package, ShoppingBag } from "lucide-react";
+import { LogOut, User, Package, Sparkles } from "lucide-react";
 import { usePatientProfile } from "@/features/patients/hooks/use-patients";
 import { usePractitionerProfile } from "@/features/practitioners/hooks/use-practitioners";
 import type { ReactNode } from "react";
@@ -162,7 +162,7 @@ export default function UserDropdown({ compact = false, quickLinks = [] }: UserD
               className="flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium text-text-primary hover:bg-primary-light dark:text-text-primary dark:hover:bg-surface-tertiary"
             >
               <Package className="h-4 w-4 text-primary" />
-              {locale === "ar" ? "الباقات" : "Packages"}
+              {locale === "ar" ? "باقات الجلسات" : "Packages"}
             </DropdownItem>
           </li>
           {user?.role === "PATIENT" && (
@@ -173,8 +173,8 @@ export default function UserDropdown({ compact = false, quickLinks = [] }: UserD
                 onItemClick={() => setIsOpen(false)}
                 className="flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium text-text-primary hover:bg-primary-light dark:text-text-primary dark:hover:bg-surface-tertiary"
               >
-                <ShoppingBag className="h-4 w-4 text-primary" />
-                {locale === "ar" ? "مشترياتي من الباقات" : "My package purchases"}
+                <Sparkles className="h-4 w-4 text-primary" />
+                {locale === "ar" ? "باقاتي العلاجية" : "My packages"}
               </DropdownItem>
             </li>
           )}

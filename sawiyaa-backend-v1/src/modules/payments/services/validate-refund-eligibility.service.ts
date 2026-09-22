@@ -57,7 +57,7 @@ export class ValidateRefundEligibilityService {
       ? new Prisma.Decimal(input.requestedAmount)
       : remaining;
 
-    if (amount.lte(0)) {
+    if (!amount.isFinite() || amount.lte(0) || !amount.eq(amount.toDecimalPlaces(2))) {
       throw new BadRequestException({
         messageKey: 'payments.errors.invalidRefundAmount',
         error: 'PAYMENT_INVALID_REFUND_AMOUNT',

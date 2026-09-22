@@ -1212,6 +1212,23 @@ export class AccountingReconciliationDiagnosticsService {
     );
 
     const issues: ReconciliationIssue[] = [];
+    if (
+      refund.status === RefundStatus.REQUESTED ||
+      refund.status === RefundStatus.PROCESSING
+    ) {
+      issues.push(
+        this.issue(
+          ACCOUNTING_RECONCILIATION_ISSUE_CODES.REFUND_PROVIDER_OUTCOME_UNCERTAIN,
+          'CRITICAL',
+          'Refund provider outcome is unresolved and requires provider-side reconciliation before any retry.',
+          'Refund',
+          refund.id,
+          RefundStatus.SUCCEEDED,
+          refund.status,
+          refund.currencyCode,
+        ),
+      );
+    }
     if (refund.status === RefundStatus.SUCCEEDED) {
       const baseEvaluation =
         this.accountingReconciliationService.evaluateRefund({

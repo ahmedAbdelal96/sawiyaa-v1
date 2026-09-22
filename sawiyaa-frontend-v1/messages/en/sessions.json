@@ -637,6 +637,9 @@
       "expectedEnd": "Scheduled end",
       "internalNotes": "Internal notes",
       "timeline": "Event timeline and history",
+      "timelineEmpty": "No session events have been recorded yet.",
+      "previousAppointment": "Previous appointment",
+      "newAppointment": "New appointment",
       "reason": "Reason:",
       "patientProfile": "Patient profile",
       "gender": "Gender",
@@ -678,7 +681,9 @@
       "NO_SHOW_PATIENT": "Patient no-show",
       "NO_SHOW_PRACTITIONER": "Specialist no-show",
       "PROVIDER_ROOM_CREATED": "Live room created",
-      "PROVIDER_ROOM_ENDED": "Live room closed"
+      "PROVIDER_ROOM_ENDED": "Live room closed",
+      "RESCHEDULED": "Appointment time changed",
+      "UNKNOWN": "Session update"
     },
     "paymentStatuses": {
       "CREATED": "Payment created",

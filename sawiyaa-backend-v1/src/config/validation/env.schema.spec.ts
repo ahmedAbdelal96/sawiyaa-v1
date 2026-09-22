@@ -250,6 +250,32 @@ describe('env.schema payment validation', () => {
     ).toThrow(/DAILY_WEBHOOK_SECRET/);
   });
 
+  it('requires reconciliation alerts when automatic reconciliation is enabled in production', () => {
+    expect(() =>
+      validate(
+        buildValidEnv({
+          APP_ENV: 'production',
+          NODE_ENV: 'production',
+          APP_URL: 'https://api.example.com',
+          APP_BASE_URL: 'https://www.example.com',
+          PAYMENT_SUCCESS_URL: 'https://www.example.com/payment/success',
+          PAYMENT_FAILED_URL: 'https://www.example.com/payment/failed',
+          PAYMENT_PENDING_URL: 'https://www.example.com/payment/pending',
+          MAIL_PROVIDER: 'brevo',
+          MAIL_FROM: 'noreply@example.com',
+          BREVO_API_KEY: 'brevo-key',
+          BREVO_API_URL: 'https://api.brevo.com',
+          DAILY_API_KEY: 'daily-key',
+          DAILY_API_BASE_URL: 'https://api.daily.co/v1',
+          DAILY_WEBHOOK_SECRET: 'daily-webhook-secret',
+          CORPORATE_CODE_PEPPER: 'x'.repeat(32),
+          ACCOUNTING_RECONCILIATION_ENABLED: 'true',
+          ACCOUNTING_RECONCILIATION_ALERTS_ENABLED: 'false',
+        }),
+      ),
+    ).toThrow(/ACCOUNTING_RECONCILIATION_ALERTS_ENABLED/);
+  });
+
   it('rejects unsafe production OTP controls and development URLs', () => {
     expect(() =>
       validate(

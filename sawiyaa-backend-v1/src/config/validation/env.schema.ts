@@ -62,7 +62,7 @@ const baseEnvSchema = z.object({
     .regex(LOG_MAX_FILE_SIZE_PATTERN)
     .default(DEFAULT_LOG_MAX_FILE_SIZE),
 
-  SESSION_COMPLETION_CONFIRMATION_SWEEPER_ENABLED: z
+  SESSION_ATTENDANCE_RECONCILIATION_SWEEPER_ENABLED: z
     .enum(['true', 'false'])
     .default('true'),
 
@@ -357,6 +357,18 @@ export const envSchema = baseEnvSchema.superRefine((env, ctx) => {
   }
 
   if (isProduction) {
+    if (
+      env.ACCOUNTING_RECONCILIATION_ENABLED === 'true' &&
+      env.ACCOUNTING_RECONCILIATION_ALERTS_ENABLED !== 'true'
+    ) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['ACCOUNTING_RECONCILIATION_ALERTS_ENABLED'],
+        message:
+          'ACCOUNTING_RECONCILIATION_ALERTS_ENABLED must be true when automatic reconciliation is enabled in production',
+      });
+    }
+
     if (!env.DAILY_WEBHOOK_SECRET?.trim()) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,

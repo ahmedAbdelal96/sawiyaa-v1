@@ -1,10 +1,5 @@
 import type { PublicPractitioner } from "@/features/practitioners-discovery/types/practitioner";
 
-export type CredentialSummary = {
-  totalCredentials: number;
-  approvedCredentials: number;
-};
-
 export type PublicPractitionerPresence = {
   status: "OFFLINE" | "ONLINE" | "AWAY" | "BUSY";
   isInstantBookingEnabled: boolean;
@@ -20,9 +15,8 @@ export type PublicPractitionerInstantBookingAvailability = {
 export type PractitionerProfile = PublicPractitioner & {
   /** Backend-resolved full professional bio for the request locale. */
   bio?: string | null;
-  bioAr: string;
-  bioEn: string;
+  bioAr: string | null;
+  bioEn: string | null;
   approachAr: string;
   approachEn: string;
-  credentialsSummary: CredentialSummary;
 };

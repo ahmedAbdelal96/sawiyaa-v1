@@ -13,6 +13,9 @@ import { AccountStateRequirement } from '@common/enums/account-state-requirement
 import { AppRole } from '@common/enums/app-role.enum';
 import { JwtAccessAuthGuard } from '@common/guards/authentication/jwt-access-auth.guard';
 import { RolesGuard } from '@common/guards/authorization/roles.guard';
+import { PermissionsGuard } from '@common/guards/authorization/permissions.guard';
+import { Permissions } from '@common/decorators/permissions.decorator';
+import { PermissionKey } from '@common/enums/permission-key.enum';
 import {
   GetAdminPaymentsRevenueReportOverviewDto,
   ListAdminPaymentsRevenueReportRowsDto,
@@ -22,8 +25,9 @@ import { ListAdminPaymentsRevenueReportRowsUseCase } from '../use-cases/list-adm
 
 @ApiTags('Admin - Reports')
 @ApiBearerAuth()
-@UseGuards(JwtAccessAuthGuard, RolesGuard)
-@Roles(AppRole.ADMIN, AppRole.SUPER_ADMIN, AppRole.SUPPORT_AGENT)
+@UseGuards(JwtAccessAuthGuard, RolesGuard, PermissionsGuard)
+@Roles(AppRole.ADMIN, AppRole.SUPER_ADMIN, AppRole.FINANCE_STAFF)
+@Permissions(PermissionKey.ACCOUNTING_READ)
 @RequireAccountStates(AccountStateRequirement.ACTIVE_ACCOUNT)
 @Controller('admin/reports/payments-revenue')
 export class AdminPaymentsRevenueReportController {
@@ -44,7 +48,8 @@ export class AdminPaymentsRevenueReportController {
   })
   @ApiUnauthorizedResponse({ description: 'Access token is required' })
   @ApiForbiddenResponse({
-    description: 'Admin or support active account is required',
+    description:
+      'Admin or finance staff account with accounting read access is required',
   })
   async overview(@Query() query: GetAdminPaymentsRevenueReportOverviewDto) {
     const data = await this.getOverviewUseCase.execute(query);
@@ -59,7 +64,8 @@ export class AdminPaymentsRevenueReportController {
   @ApiResponse({ status: 200, description: 'Payments & revenue report rows' })
   @ApiUnauthorizedResponse({ description: 'Access token is required' })
   @ApiForbiddenResponse({
-    description: 'Admin or support active account is required',
+    description:
+      'Admin or finance staff account with accounting read access is required',
   })
   async rows(@Query() query: ListAdminPaymentsRevenueReportRowsDto) {
     const data = await this.listRowsUseCase.execute(query);

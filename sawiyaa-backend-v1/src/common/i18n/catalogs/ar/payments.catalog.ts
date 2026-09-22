@@ -10,6 +10,12 @@ export const arPaymentsCatalog = {
     refundSucceededBody: 'تم استرداد مبلغ {{amount}} {{currencyCode}} بنجاح.',
     refundFailedTitle: 'فشل الاسترداد',
     refundFailedBody: 'تعذر تنفيذ الاسترداد الآن. يمكنك التواصل مع الدعم عند الحاجة.',
+    packagePurchaseSucceededTitle: 'اكتمل دفع الباقة',
+    packagePurchaseSucceededBody:
+      'تم دفع مبلغ {{amount}} {{currencyCode}} لشراء الباقة بنجاح.',
+    academyPaymentSucceededTitle: 'اكتمل دفع التدريب',
+    academyPaymentSucceededBody:
+      'تم دفع مبلغ {{amount}} {{currencyCode}} للتسجيل في التدريب بنجاح.',
   },
   errors: {
     patientNotFound: 'لم يتم العثور على ملف المريض.',

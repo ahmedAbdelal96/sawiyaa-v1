@@ -156,7 +156,9 @@ export class SessionRepository {
   }
 
   async createSession(
-    data: Omit<Prisma.SessionUncheckedCreateInput, 'sessionCode'>,
+    data: Omit<Prisma.SessionUncheckedCreateInput, 'sessionCode'> & {
+      pricingCurrencyCode?: 'EGP' | 'USD' | null;
+    },
     tx?: Prisma.TransactionClient,
     creationFlow = 'unknown',
   ): Promise<
@@ -170,12 +172,68 @@ export class SessionRepository {
       );
     }
 
+    const pricingCurrencyCode = data.pricingCurrencyCode ?? null;
+    const { pricingCurrencyCode: _pricingCurrencyCode, ...persistedData } = data;
+    data = persistedData;
+
     const createdAt =
       data.createdAt instanceof Date
         ? data.createdAt
         : data.createdAt
           ? new Date(data.createdAt)
           : new Date();
+    // Freeze prices at booking; never use current profile prices to backfill history.
+    if (!data.packagePurchaseId && !data.pricingPolicySnapshotJson) {
+      const practitioner = await tx.practitionerProfile.findUniqueOrThrow({
+        where: { id: data.practitionerId },
+        select: {
+          sessionPrice30Egp: true,
+          sessionPrice30Usd: true,
+          sessionPrice60Egp: true,
+          sessionPrice60Usd: true,
+          instantBookingPrice30Egp: true,
+          instantBookingPrice30Usd: true,
+          instantBookingPrice60Egp: true,
+          instantBookingPrice60Usd: true,
+        },
+      });
+      const instant = data.flowType === 'INSTANT';
+      data = {
+        ...data,
+        pricingPolicySnapshotJson: {
+          source: 'booking-price-snapshot',
+          version: 1,
+          durationMinutes: data.durationMinutes,
+          selectedCurrencyCode: pricingCurrencyCode,
+          pricingSnapshot: {
+            EGP: {
+              '30':
+                (instant
+                  ? practitioner.instantBookingPrice30Egp
+                  : practitioner.sessionPrice30Egp
+                )?.toFixed(2) ?? null,
+              '60':
+                (instant
+                  ? practitioner.instantBookingPrice60Egp
+                  : practitioner.sessionPrice60Egp
+                )?.toFixed(2) ?? null,
+            },
+            USD: {
+              '30':
+                (instant
+                  ? practitioner.instantBookingPrice30Usd
+                  : practitioner.sessionPrice30Usd
+                )?.toFixed(2) ?? null,
+              '60':
+                (instant
+                  ? practitioner.instantBookingPrice60Usd
+                  : practitioner.sessionPrice60Usd
+                )?.toFixed(2) ?? null,
+            },
+          },
+        },
+      };
+    }
     const savepoint = 'session_code_generation_retry';
 
     for (let attempt = 1; attempt <= 3; attempt += 1) {
@@ -803,12 +861,15 @@ export class SessionRepository {
       by: ['relatedSessionId'],
       where: {
         relatedSessionId: { in: sessionIds },
-        status: { in: ['OPEN', 'IN_PROGRESS', 'WAITING_FOR_USER', 'ESCALATED'] },
+        status: {
+          in: ['OPEN', 'IN_PROGRESS', 'WAITING_FOR_USER', 'ESCALATED'],
+        },
       },
       _count: { _all: true },
     });
     for (const row of rows) {
-      if (row.relatedSessionId) counts.set(row.relatedSessionId, row._count._all);
+      if (row.relatedSessionId)
+        counts.set(row.relatedSessionId, row._count._all);
     }
     return counts;
   }
@@ -1607,7 +1668,10 @@ export class SessionRepository {
       select: { occurredAt: true },
     },
     attendanceReconciliations: {
-      orderBy: [{ reconciledAt: 'desc' as const }, { createdAt: 'desc' as const }],
+      orderBy: [
+        { reconciledAt: 'desc' as const },
+        { createdAt: 'desc' as const },
+      ],
       take: 1,
       select: {
         status: true,
@@ -1724,6 +1788,8 @@ export class SessionRepository {
         eventType: true,
         actorType: true,
         reason: true,
+        occurredAt: true,
+        metadataJson: true,
         createdAt: true,
       },
       orderBy: {

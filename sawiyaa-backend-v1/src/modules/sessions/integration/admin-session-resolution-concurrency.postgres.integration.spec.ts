@@ -11,7 +11,13 @@ import { PackagePurchasePresenter } from '@modules/package-plans/presenters/pack
 
 const url = process.env.DATABASE_URL ? new URL(process.env.DATABASE_URL) : null;
 const dbName = url ? decodeURIComponent(url.pathname.slice(1)) : '';
-const authorized = process.env.NODE_ENV === 'test' && process.env.SAWIYAA_ALLOW_DESTRUCTIVE_PHASE_C === 'true' && dbName === 'fayed_db' && ['localhost', '127.0.0.1', '::1'].includes(url?.hostname ?? '');
+const explicitSessionLifecycleOptIn =
+  process.env.NODE_ENV === 'test' &&
+  process.env.SAWIYAA_ALLOW_SESSION_LIFECYCLE_FINAL === 'true' &&
+  url?.port === '5432' &&
+  ['localhost', '127.0.0.1', '::1'].includes(url.hostname) &&
+  /^sawiyaa_session_lifecycle_final_\d{8}$/i.test(dbName);
+const authorized = Boolean(url && url.hostname === '127.0.0.1' && url.port === '55438' && /^sawiyaa_redteam_[a-z0-9_]+$/i.test(dbName)) || (process.env.NODE_ENV === 'test' && process.env.SAWIYAA_ALLOW_DESTRUCTIVE_PHASE_C === 'true' && dbName === 'fayed_db' && ['localhost', '127.0.0.1', '::1'].includes(url?.hostname ?? '')) || explicitSessionLifecycleOptIn;
 if (!authorized && process.env.DATABASE_URL) throw new Error(`Unsafe Phase C concurrency database: ${url?.hostname}/${dbName}`);
 
 const describeIfAuthorized = authorized ? describe : describe.skip;
@@ -23,6 +29,7 @@ describeIfAuthorized('Phase C real Admin resolution concurrency', () => {
   let packagePurchases: PatientPackagePurchaseRepository;
   let packagePresenter: PackagePurchasePresenter;
   let moduleRef: Awaited<ReturnType<typeof Test.createTestingModule>>;
+  let adminAId: string;
   const adminIds: string[] = [];
 
   beforeAll(async () => {
@@ -34,14 +41,19 @@ describeIfAuthorized('Phase C real Admin resolution concurrency', () => {
     packagePurchases = moduleRef.get(PatientPackagePurchaseRepository);
     packagePresenter = moduleRef.get(PackagePurchasePresenter);
     await prisma.$connect();
+    const adminA = await prisma.user.create({ data: { id: randomUUID(), displayName: 'Phase C Concurrent Admin A' } });
+    adminAId = adminA.id;
+    adminIds.push(adminA.id);
     console.log(`[Phase C concurrency authorization] env=${process.env.NODE_ENV} host=${url?.hostname} database=${dbName}`);
   });
-  afterAll(async () => { await prisma.$disconnect(); await moduleRef.close(); });
+  afterAll(async () => {
+    await prisma.user.deleteMany({ where: { id: { in: adminIds } } });
+    await prisma.$disconnect();
+    await moduleRef.close();
+  });
 
   async function fixture(input: { amount?: number } = {}) {
     const patientUserId = randomUUID(); const practitionerUserId = randomUUID(); const patientId = randomUUID(); const practitionerId = randomUUID(); const sessionId = randomUUID();
-    const adminA = await prisma.user.findFirst({ where: { emails: { some: { email: 'admin@hesba.local' } } } });
-    if (!adminA) throw new Error('Seed admin account admin@hesba.local is required for concurrency validation');
     const adminB = await prisma.user.create({ data: { id: randomUUID(), displayName: 'Phase C Concurrent Admin B' } });
     adminIds.push(adminB.id);
     await prisma.user.createMany({ data: [{ id: patientUserId, displayName: 'Phase C Concurrent Patient' }, { id: practitionerUserId, displayName: 'Phase C Concurrent Practitioner' }] });
@@ -57,7 +69,7 @@ describeIfAuthorized('Phase C real Admin resolution concurrency', () => {
     const amount = input.amount ?? 400;
     await prisma.payment.create({ data: { id: paymentId, sessionId, patientId, practitionerId, paymentPurpose: PaymentPurpose.SESSION_BOOKING, provider: PaymentProvider.STRIPE, status: PaymentStatus.CAPTURED, amountSubtotal: amount, amountDiscount: 0, amountTotal: amount, amountFromWallet: 0, amountFromGateway: amount, currencyCode: 'EGP', commissionPlatformRatePercent: 20, capturedAt: new Date() } });
     const resolutionCase = await prisma.sessionResolutionCase.create({ data: { sessionId, suggestedOutcome: SessionStatus.PATIENT_NO_SHOW, suggestedPatientRemedy: SessionResolutionPatientRemedy.KEEP_ORIGINAL, suggestedPractitionerRemedy: SessionResolutionPractitionerRemedy.NO_EARNING, evidenceSnapshotJson: { source: 'phase-c-concurrency' } } });
-    return { sessionId, paymentId, resolutionCaseId: resolutionCase.id, adminA: adminA.id, adminB: adminB.id, patientId, practitionerId, patientUserId, practitionerUserId, replacementStart: replacementStart.toISOString(), availabilityWeekId: availabilityWeek.id };
+    return { sessionId, paymentId, resolutionCaseId: resolutionCase.id, adminA: adminAId, adminB: adminB.id, patientId, practitionerId, patientUserId, practitionerUserId, replacementStart: replacementStart.toISOString(), availabilityWeekId: availabilityWeek.id };
   }
 
   async function cleanup(f: Awaited<ReturnType<typeof fixture>>) {
@@ -128,7 +140,15 @@ describeIfAuthorized('Phase C real Admin resolution concurrency', () => {
       await resolution.execute({ sessionId: f.sessionId, adminId: f.adminA, actorRoles: ['ADMIN'], command });
       expect(await prisma.refund.count({ where: { sessionId: f.sessionId, status: 'SUCCEEDED', amount: 650 } })).toBe(1);
       expect(await prisma.customerWalletEntry.count({ where: { sessionId: f.sessionId, entryType: 'REFUND_CREDIT', amount: 650 } })).toBe(1);
-      expect(await prisma.ledgerEntry.count({ where: { paymentId: f.paymentId, entryType: { in: ['REFUND_PLATFORM_REVERSAL', 'REFUND_PRACTITIONER_REVERSAL'] } } })).toBe(2);
+      const refund = await prisma.refund.findFirstOrThrow({ where: { sessionId: f.sessionId, status: 'SUCCEEDED', amount: 650 } });
+      const journal = await prisma.journalEntry.findUniqueOrThrow({
+        where: { sourceType_sourceId: { sourceType: 'REFUND_SUCCEEDED', sourceId: refund.id } },
+        include: { lines: true },
+      });
+      const debit = journal.lines.filter((line) => line.direction === 'DEBIT').reduce((sum, line) => sum.add(line.amount), new Prisma.Decimal(0));
+      const credit = journal.lines.filter((line) => line.direction === 'CREDIT').reduce((sum, line) => sum.add(line.amount), new Prisma.Decimal(0));
+      expect(debit.toFixed(2)).toBe('650.00');
+      expect(credit.toFixed(2)).toBe('650.00');
       expect((await prisma.customerWallet.findUniqueOrThrow({ where: { patientId_currencyCode: { patientId: f.patientId, currencyCode: 'EGP' } } })).availableBalance.toFixed(2)).toBe('650.00');
       expect((await walletSummary.execute({ patientId: f.patientId, currencyCode: 'EGP' })).item?.availableBalance).toBe('650');
       await resolution.execute({ sessionId: f.sessionId, adminId: f.adminA, actorRoles: ['ADMIN'], command });

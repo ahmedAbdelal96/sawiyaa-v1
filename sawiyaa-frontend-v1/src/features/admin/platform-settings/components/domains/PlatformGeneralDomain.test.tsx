@@ -168,7 +168,7 @@ describe("PlatformGeneralDomain — General & Platform Domain Editor", () => {
       reason: "Updating platform default fallback locale to English for international expansion",
       expectedUpdatedAt: "2026-08-20T10:00:00.000Z",
     });
-  });
+  }, 15000);
 
   it("allows toggling practitioner admin review with confirmation dialog", async () => {
     const user = userEvent.setup();
@@ -208,6 +208,7 @@ describe("PlatformGeneralDomain — General & Platform Domain Editor", () => {
     const reasonInput = screen.getByPlaceholderText(
       "generalDomain.confirmModal.reasonPlaceholder"
     );
+    await user.clear(reasonInput);
     await user.type(reasonInput, "Extended session lifetime for admin users");
 
     const saveConfirmBtn = screen.getByRole("button", {

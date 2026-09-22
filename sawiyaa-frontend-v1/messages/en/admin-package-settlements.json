@@ -54,7 +54,30 @@
   "actions": {
     "viewDetails": "View details",
     "release": "Release payout",
-    "review": "Review"
+    "review": "Review",
+    "refund": "Refund package"
+  },
+  "refund": {
+    "eyebrow": "Package refund",
+    "title": "Refund and close package",
+    "description": "Refund the approved amount to the customer's wallet and close future package bookings.",
+    "calculation": "The suggestion uses the immutable standalone price captured at purchase.",
+    "manualReview": "Historical price data is missing or mismatched. Enter the final wallet amount and keep the reason as evidence.",
+    "confirm": "Finalize wallet refund",
+    "cancel": "Cancel",
+    "success": "Package closed and wallet refund finalized.",
+    "manualAmount": "Manual amount required",
+    "fields": {
+      "packagePaid": "Package net paid",
+      "used": "Used sessions",
+      "usedValue": "Used standalone value",
+      "suggested": "Suggested refund",
+      "maximum": "Maximum refundable",
+      "future": "Future sessions canceled",
+      "finalAmount": "Final wallet amount",
+      "reason": "Review reason",
+      "evidence": "Evidence reference"
+    }
   },
   "states": {
     "listError": "Could not load package settlements.",
@@ -108,6 +131,9 @@
     "sections": {
       "overview": "Overview",
       "overviewNote": "Basic package and participant information.",
+      "sessions": "Linked sessions",
+      "sessionsNote": "Canonical Session rows reserved by this package and their entitlement decisions.",
+      "noSessions": "No sessions are linked to this purchase yet.",
       "amounts": "Amounts",
       "amountsNote": "Hold, release, and usage amounts in the package settlement.",
       "review": "Review",
@@ -123,6 +149,17 @@
       "currency": "Currency",
       "sessions": "Sessions",
       "sessionsValue": "{completed} / {total}",
+      "availableSessions": "Available to book",
+      "reservedSessions": "Reserved",
+      "consumedSessions": "Consumed",
+      "nextSession": "Next session",
+      "noNextSession": "No session scheduled",
+      "paymentStatus": "Payment status",
+      "paymentReference": "Payment reference",
+      "paymentAmount": "Captured payment amount",
+      "sessionIndex": "Session {current} / {total}",
+      "notScheduled": "Not scheduled yet",
+      "noEntitlementDecision": "No entitlement decision",
       "updatedAt": "Updated"
     },
     "totals": {
@@ -130,7 +167,12 @@
       "releasablePractitioner": "Ready to release",
       "releasedPractitioner": "Released",
       "sessions": "Sessions",
-      "sessionsValue": "{completed} / {total}"
+      "sessionsValue": "{completed} / {total}",
+      "availableSessions": "Available to book",
+      "reservedSessions": "Reserved",
+      "consumedSessions": "Consumed",
+      "nextSession": "Next session",
+      "noNextSession": "No session scheduled"
     },
     "amounts": {
       "heldPractitioner": "Held for practitioner",

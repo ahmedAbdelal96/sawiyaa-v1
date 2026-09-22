@@ -2,12 +2,16 @@
 
 import { useMemo, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
-import { useRouter } from "@/i18n/navigation";
+import { Link, useRouter } from "@/i18n/navigation";
+import { useSearchParams } from "next/navigation";
 import { SurfaceCard } from "@/components/shared/SurfaceShell";
 import Button from "@/components/ui/button/Button";
 import { DataTable } from "@/components/ui/data-table";
 import type { ColumnDef } from "@/components/ui/data-table";
-import { DEFAULT_PAGE_LIMIT, DEFAULT_PAGE_SIZE_OPTIONS } from "@/constants/pagination";
+import {
+  DEFAULT_PAGE_LIMIT,
+  DEFAULT_PAGE_SIZE_OPTIONS,
+} from "@/constants/pagination";
 import { cn } from "@/lib/utils";
 import DirectionalArrowIcon from "@/components/ui/navigation/DirectionalArrowIcon";
 import {
@@ -29,16 +33,24 @@ import {
   Calendar,
   KeyRound,
   Sparkles,
+  Package,
+  GraduationCap,
 } from "lucide-react";
 import AvatarText from "@/components/ui/avatar/AvatarText";
-import { useAdminPatientDetails, useAdminCountries } from "../hooks/use-admin-patients";
+import {
+  useAdminPatientDetails,
+  useAdminCountries,
+} from "../hooks/use-admin-patients";
 import {
   useAdminPatientWalletEntries,
   useAdminPatientWalletSummary,
 } from "../hooks/use-admin-patient-wallet";
 import { useAdminSessions } from "@/features/admin/sessions/hooks/use-admin-sessions";
 import type { AdminSessionListItem } from "@/features/admin/sessions/types/admin-sessions.types";
-import type { PaymentItem, CustomerWalletEntryItem } from "@/features/payments/types/payments.types";
+import type {
+  PaymentItem,
+  CustomerWalletEntryItem,
+} from "@/features/payments/types/payments.types";
 import type { PatientAssessmentHistoryItem } from "@/features/assessments/types/assessments.types";
 import {
   useAdminPatientAssessments,
@@ -50,8 +62,17 @@ import {
   formatEffectiveViewerDateTime,
 } from "@/lib/time-formatting";
 import { AdminPatientCountryChangeModal } from "./AdminPatientCountryChangeModal";
+import { useCurrentUserPermissions } from "@/features/users/hooks/use-users";
+import { PermissionKey } from "@/lib/auth/permissions";
 
-type PatientTabKey = "profile" | "wallet" | "sessions" | "payments" | "assessments";
+type PatientTabKey =
+  | "profile"
+  | "wallet"
+  | "sessions"
+  | "payments"
+  | "assessments"
+  | "packages"
+  | "academy";
 
 const PAGE_SIZE_OPTIONS = DEFAULT_PAGE_SIZE_OPTIONS;
 
@@ -92,15 +113,41 @@ function calculateAge(dobString?: string | null): number | null {
   return age > 0 ? age : null;
 }
 
-export default function AdminPatient360Screen({ patientId }: { patientId: string }) {
+export default function AdminPatient360Screen({
+  patientId,
+}: {
+  patientId: string;
+}) {
   const t = useTranslations("admin-patients");
   const locale = useLocale();
   const settingsQuery = useMySettings();
   const viewerTimeZone = settingsQuery.data?.item.preferences.timezone;
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const { data: permissionData } = useCurrentUserPermissions(true);
+  const canReadWallet =
+    permissionData?.permissions?.includes(
+      PermissionKey.CUSTOMER_WALLETS_READ,
+    ) ?? false;
 
   // Default to "profile" (البيانات الأساسية)
-  const [tab, setTab] = useState<PatientTabKey>("profile");
+  const requestedTab = searchParams.get("tab") as PatientTabKey | null;
+  const [tab, setTab] = useState<PatientTabKey>(
+    requestedTab &&
+      [
+        "profile",
+        "wallet",
+        "sessions",
+        "payments",
+        "assessments",
+        "packages",
+        "academy",
+      ].includes(requestedTab)
+      ? requestedTab
+      : "profile",
+  );
+  const effectiveTab: PatientTabKey =
+    tab === "wallet" && !canReadWallet ? "profile" : tab;
   const [copiedId, setCopiedId] = useState(false);
   const [isCountryModalOpen, setIsCountryModalOpen] = useState(false);
 
@@ -114,10 +161,10 @@ export default function AdminPatient360Screen({ patientId }: { patientId: string
   } = useAdminPatientDetails(patientId, true);
 
   // Lazy Fetching: Query is ONLY enabled when the respective tab is open
-  const walletEnabled = tab === "wallet";
-  const sessionsEnabled = tab === "sessions";
-  const paymentsEnabled = tab === "payments";
-  const assessmentsEnabled = tab === "assessments";
+  const walletEnabled = effectiveTab === "wallet";
+  const sessionsEnabled = effectiveTab === "sessions";
+  const paymentsEnabled = effectiveTab === "payments";
+  const assessmentsEnabled = effectiveTab === "assessments";
 
   // Wallet queries
   const [walletEntriesPage, setWalletEntriesPage] = useState(1);
@@ -205,14 +252,14 @@ export default function AdminPatient360Screen({ patientId }: { patientId: string
 
   const handleRefreshActiveTab = () => {
     void refetch();
-    if (tab === "wallet") {
+    if (effectiveTab === "wallet") {
       void refetchWalletSummary();
       void refetchWalletEntries();
-    } else if (tab === "sessions") {
+    } else if (effectiveTab === "sessions") {
       void refetchSessions();
-    } else if (tab === "payments") {
+    } else if (effectiveTab === "payments") {
       void refetchPayments();
-    } else if (tab === "assessments") {
+    } else if (effectiveTab === "assessments") {
       void refetchAssessments();
     }
   };
@@ -221,20 +268,34 @@ export default function AdminPatient360Screen({ patientId }: { patientId: string
   const getSessionStatusBadge = (status: string) => {
     const normalized = (status || "").toUpperCase();
     let tone = "bg-surface-secondary text-text-secondary border-border-light";
-    let label = t(`patient360.sessionStatus.${normalized}` as any, { defaultValue: status });
+    let label = t(`patient360.sessionStatus.${normalized}` as any, {
+      defaultValue: status,
+    });
 
     if (normalized === "COMPLETED") {
-      tone = "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800/60";
+      tone =
+        "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800/60";
     } else if (normalized === "CONFIRMED" || normalized === "SCHEDULED") {
-      tone = "bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-800/60";
-    } else if (normalized === "IN_PROGRESS" || normalized === "AWAITING_COMPLETION_CONFIRMATION") {
-      tone = "bg-amber-50 text-amber-800 border-amber-200 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800/60";
+      tone =
+        "bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-800/60";
+    } else if (
+      normalized === "IN_PROGRESS" ||
+      normalized === "AWAITING_COMPLETION_CONFIRMATION"
+    ) {
+      tone =
+        "bg-amber-50 text-amber-800 border-amber-200 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800/60";
     } else if (normalized === "CANCELLED" || normalized === "EXPIRED") {
-      tone = "bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950/40 dark:text-rose-300 dark:border-rose-800/60";
+      tone =
+        "bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950/40 dark:text-rose-300 dark:border-rose-800/60";
     }
 
     return (
-      <span className={cn("inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-bold whitespace-nowrap", tone)}>
+      <span
+        className={cn(
+          "inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-bold whitespace-nowrap",
+          tone,
+        )}
+      >
         {label}
       </span>
     );
@@ -243,20 +304,35 @@ export default function AdminPatient360Screen({ patientId }: { patientId: string
   const getPaymentStatusBadge = (status: string) => {
     const normalized = (status || "").toUpperCase();
     let tone = "bg-surface-secondary text-text-secondary border-border-light";
-    let label = t(`patient360.paymentStatus.${normalized}` as any, { defaultValue: status });
+    let label = t(`patient360.paymentStatus.${normalized}` as any, {
+      defaultValue: status,
+    });
 
-    if (normalized === "CAPTURED" || normalized === "SUCCEEDED" || normalized === "PAID") {
-      tone = "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800/60";
+    if (
+      normalized === "CAPTURED" ||
+      normalized === "SUCCEEDED" ||
+      normalized === "PAID"
+    ) {
+      tone =
+        "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800/60";
     } else if (normalized === "REFUNDED") {
-      tone = "bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-800/60";
+      tone =
+        "bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-800/60";
     } else if (normalized === "PENDING") {
-      tone = "bg-amber-50 text-amber-800 border-amber-200 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800/60";
+      tone =
+        "bg-amber-50 text-amber-800 border-amber-200 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800/60";
     } else if (normalized === "FAILED" || normalized === "EXPIRED") {
-      tone = "bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950/40 dark:text-rose-300 dark:border-rose-800/60";
+      tone =
+        "bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950/40 dark:text-rose-300 dark:border-rose-800/60";
     }
 
     return (
-      <span className={cn("inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-bold whitespace-nowrap", tone)}>
+      <span
+        className={cn(
+          "inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-bold whitespace-nowrap",
+          tone,
+        )}
+      >
         {label}
       </span>
     );
@@ -265,11 +341,12 @@ export default function AdminPatient360Screen({ patientId }: { patientId: string
   const pageTitle = patient?.displayName ?? t("details.unknownName");
   const age = calculateAge(patient?.dateOfBirth);
 
+  const patientCountryCode = patient?.countryCode;
   const matchedCountry = useMemo(() => {
-    if (!patient?.countryCode) return null;
-    const code = patient.countryCode.toUpperCase();
+    if (!patientCountryCode) return null;
+    const code = patientCountryCode.toUpperCase();
     return countries.find((c) => c.isoCode.toUpperCase() === code);
-  }, [countries, patient?.countryCode]);
+  }, [countries, patientCountryCode]);
 
   const countryDisplayName = useMemo(() => {
     const code = (patient?.countryCode || "").toUpperCase();
@@ -296,11 +373,15 @@ export default function AdminPatient360Screen({ patientId }: { patientId: string
         label: t("patient360.tabs.profile"),
         icon: <User className="h-4 w-4" />,
       },
-      {
-        key: "wallet" as const,
-        label: t("patient360.tabs.wallet"),
-        icon: <Wallet className="h-4 w-4" />,
-      },
+      ...(canReadWallet
+        ? [
+            {
+              key: "wallet" as const,
+              label: t("patient360.tabs.wallet"),
+              icon: <Wallet className="h-4 w-4" />,
+            },
+          ]
+        : []),
       {
         key: "sessions" as const,
         label: t("patient360.tabs.sessions"),
@@ -316,8 +397,18 @@ export default function AdminPatient360Screen({ patientId }: { patientId: string
         label: t("patient360.tabs.assessments"),
         icon: <FileText className="h-4 w-4" />,
       },
+      {
+        key: "packages" as const,
+        label: locale === "ar" ? "الباقات" : "Packages",
+        icon: <Package className="h-4 w-4" />,
+      },
+      {
+        key: "academy" as const,
+        label: locale === "ar" ? "التدريبات" : "Academy",
+        icon: <GraduationCap className="h-4 w-4" />,
+      },
     ],
-    [t],
+    [canReadWallet, t],
   );
 
   // Table Columns Definitions
@@ -328,7 +419,7 @@ export default function AdminPatient360Screen({ patientId }: { patientId: string
         header: t("patient360.wallet.entryType"),
         accessor: (row) => row.entryType,
         cell: (row) => (
-          <span className="font-semibold text-text-primary text-sm dark:text-white/95">
+          <span className="text-text-primary text-sm font-semibold dark:text-white/95">
             {row.entryType}
           </span>
         ),
@@ -356,7 +447,7 @@ export default function AdminPatient360Screen({ patientId }: { patientId: string
         header: t("patient360.wallet.amount"),
         accessor: (row) => row.amount,
         cell: (row) => (
-          <span className="font-mono text-sm font-bold text-text-primary tabular-nums dark:text-white/95">
+          <span className="text-text-primary font-mono text-sm font-bold tabular-nums dark:text-white/95">
             {row.direction === "CREDIT" ? "+" : "-"}{" "}
             {formatMoney(row.amount, row.currencyCode, locale)}
           </span>
@@ -368,7 +459,9 @@ export default function AdminPatient360Screen({ patientId }: { patientId: string
         accessor: (row) => row.effectiveAt,
         cell: (row) => (
           <span className="text-text-secondary text-sm">
-            {formatEffectiveViewerDateTime(row.effectiveAt, viewerTimeZone, { locale })}
+            {formatEffectiveViewerDateTime(row.effectiveAt, viewerTimeZone, {
+              locale,
+            })}
           </span>
         ),
         hideOnMobile: true,
@@ -384,17 +477,22 @@ export default function AdminPatient360Screen({ patientId }: { patientId: string
         header: t("patient360.sessions.code"),
         accessor: (row) => row.sessionCode,
         cell: (row) => (
-          <span className="font-mono text-xs font-bold text-text-primary dark:text-white/95">
+          <Link
+            href={`/admin/sessions/runtime-inspection?sessionId=${row.id}`}
+            className="text-primary font-mono text-xs font-bold hover:underline"
+            onClick={(e) => e.stopPropagation()}
+          >
             {row.sessionCode}
-          </span>
+          </Link>
         ),
       },
       {
         id: "practitioner",
         header: t("patient360.sessions.practitioner"),
-        accessor: (row) => row.practitioner.displayName ?? row.practitioner.slug,
+        accessor: (row) =>
+          row.practitioner.displayName ?? row.practitioner.slug,
         cell: (row) => (
-          <span className="text-sm font-semibold text-text-primary dark:text-white/95">
+          <span className="text-text-primary text-sm font-semibold dark:text-white/95">
             {row.practitioner.displayName ?? row.practitioner.slug}
           </span>
         ),
@@ -410,9 +508,13 @@ export default function AdminPatient360Screen({ patientId }: { patientId: string
         header: t("patient360.sessions.start"),
         accessor: (row) => row.scheduledStartAt ?? "",
         cell: (row) => (
-          <span className="text-sm text-text-secondary">
+          <span className="text-text-secondary text-sm">
             {row.scheduledStartAt
-              ? formatEffectiveViewerDateTime(row.scheduledStartAt, viewerTimeZone, { locale })
+              ? formatEffectiveViewerDateTime(
+                  row.scheduledStartAt,
+                  viewerTimeZone,
+                  { locale },
+                )
               : "-"}
           </span>
         ),
@@ -423,8 +525,8 @@ export default function AdminPatient360Screen({ patientId }: { patientId: string
         header: t("patient360.sessions.mode"),
         accessor: (row) => row.sessionMode,
         cell: (row) => (
-          <div className="flex items-center gap-1.5 text-sm text-text-secondary">
-            <Video className="h-3.5 w-3.5 text-primary" />
+          <div className="text-text-secondary flex items-center gap-1.5 text-sm">
+            <Video className="text-primary h-3.5 w-3.5" />
             <span>{row.sessionMode}</span>
           </div>
         ),
@@ -441,9 +543,13 @@ export default function AdminPatient360Screen({ patientId }: { patientId: string
         header: t("patient360.payments.total"),
         accessor: (row) => row.amountTotal,
         cell: (row) => (
-          <span className="font-mono text-sm font-bold text-text-primary tabular-nums dark:text-white/95">
+          <Link
+            href={`/admin/payments/${row.id}`}
+            className="text-primary font-mono text-sm font-bold tabular-nums hover:underline"
+            onClick={(e) => e.stopPropagation()}
+          >
             {formatMoney(row.amountTotal, row.currency, locale)}
-          </span>
+          </Link>
         ),
       },
       {
@@ -457,7 +563,7 @@ export default function AdminPatient360Screen({ patientId }: { patientId: string
         header: t("patient360.payments.provider"),
         accessor: (row) => row.provider,
         cell: (row) => (
-          <span className="rounded-md bg-surface-secondary px-2 py-0.5 text-xs font-bold text-text-secondary">
+          <span className="bg-surface-secondary text-text-secondary rounded-md px-2 py-0.5 text-xs font-bold">
             {row.provider}
           </span>
         ),
@@ -468,7 +574,7 @@ export default function AdminPatient360Screen({ patientId }: { patientId: string
         header: t("patient360.payments.split"),
         accessor: (row) => `${row.amountFromWallet}-${row.amountFromGateway}`,
         cell: (row) => (
-          <div className="text-xs text-text-secondary space-y-0.5">
+          <div className="text-text-secondary space-y-0.5 text-xs">
             <p>
               {t("patient360.payments.fromWallet")}:{" "}
               {formatMoney(row.amountFromWallet, row.currency, locale)}
@@ -486,8 +592,10 @@ export default function AdminPatient360Screen({ patientId }: { patientId: string
         header: t("patient360.payments.createdAt"),
         accessor: (row) => row.createdAt,
         cell: (row) => (
-          <span className="text-sm text-text-secondary">
-            {formatEffectiveViewerDateTime(row.createdAt, viewerTimeZone, { locale })}
+          <span className="text-text-secondary text-sm">
+            {formatEffectiveViewerDateTime(row.createdAt, viewerTimeZone, {
+              locale,
+            })}
           </span>
         ),
         hideOnMobile: true,
@@ -504,10 +612,12 @@ export default function AdminPatient360Screen({ patientId }: { patientId: string
         accessor: (row) => row.assessmentTitle,
         cell: (row) => (
           <div className="min-w-0">
-            <p className="truncate text-sm font-bold text-text-primary dark:text-white/95">
+            <p className="text-text-primary truncate text-sm font-bold dark:text-white/95">
               {row.assessmentTitle}
             </p>
-            <p className="truncate text-xs text-text-muted">{row.assessmentSlug}</p>
+            <p className="text-text-muted truncate text-xs">
+              {row.assessmentSlug}
+            </p>
           </div>
         ),
       },
@@ -526,7 +636,7 @@ export default function AdminPatient360Screen({ patientId }: { patientId: string
         header: t("patient360.assessments.result"),
         accessor: (row) => row.resultBand ?? "",
         cell: (row) => (
-          <span className="text-sm font-semibold text-text-secondary">
+          <span className="text-text-secondary text-sm font-semibold">
             {row.resultBand ?? "-"}
           </span>
         ),
@@ -537,9 +647,11 @@ export default function AdminPatient360Screen({ patientId }: { patientId: string
         header: t("patient360.assessments.completedAt"),
         accessor: (row) => row.completedAt ?? "",
         cell: (row) => (
-          <span className="text-sm text-text-secondary">
+          <span className="text-text-secondary text-sm">
             {row.completedAt
-              ? formatEffectiveViewerDateTime(row.completedAt, viewerTimeZone, { locale })
+              ? formatEffectiveViewerDateTime(row.completedAt, viewerTimeZone, {
+                  locale,
+                })
               : "-"}
           </span>
         ),
@@ -556,7 +668,7 @@ export default function AdminPatient360Screen({ patientId }: { patientId: string
         <button
           type="button"
           onClick={() => router.push(`/admin/patients` as any)}
-          className="inline-flex items-center gap-1.5 text-xs font-bold text-text-muted transition hover:text-primary"
+          className="text-text-muted hover:text-primary inline-flex items-center gap-1.5 text-xs font-bold transition"
         >
           <DirectionalArrowIcon direction="back" className="h-4 w-4" />
           <span>{t("patient360.back")}</span>
@@ -567,9 +679,9 @@ export default function AdminPatient360Screen({ patientId }: { patientId: string
             <button
               type="button"
               onClick={() => setIsCountryModalOpen(true)}
-              className="inline-flex items-center gap-1.5 rounded-xl border border-border-light bg-surface px-3 py-1.5 text-xs font-bold text-text-secondary shadow-2xs transition hover:border-primary/40 hover:text-primary active:scale-95"
+              className="border-border-light bg-surface text-text-secondary hover:border-primary/40 hover:text-primary inline-flex items-center gap-1.5 rounded-xl border px-3 py-1.5 text-xs font-bold shadow-2xs transition active:scale-95"
             >
-              <Globe className="h-3.5 w-3.5 text-primary" />
+              <Globe className="text-primary h-3.5 w-3.5" />
               <span>{t("patient360.quickActions.changeCountry")}</span>
             </button>
           )}
@@ -578,9 +690,14 @@ export default function AdminPatient360Screen({ patientId }: { patientId: string
             type="button"
             onClick={handleRefreshActiveTab}
             disabled={isRefetching}
-            className="inline-flex items-center gap-1.5 rounded-xl border border-border-light bg-surface px-3 py-1.5 text-xs font-bold text-text-secondary shadow-2xs transition hover:border-primary/40 hover:text-primary active:scale-95 disabled:opacity-50"
+            className="border-border-light bg-surface text-text-secondary hover:border-primary/40 hover:text-primary inline-flex items-center gap-1.5 rounded-xl border px-3 py-1.5 text-xs font-bold shadow-2xs transition active:scale-95 disabled:opacity-50"
           >
-            <RefreshCw className={cn("h-3.5 w-3.5 text-text-muted", isRefetching && "animate-spin")} />
+            <RefreshCw
+              className={cn(
+                "text-text-muted h-3.5 w-3.5",
+                isRefetching && "animate-spin",
+              )}
+            />
             <span>{t("actions.retry")}</span>
           </button>
         </div>
@@ -589,7 +706,7 @@ export default function AdminPatient360Screen({ patientId }: { patientId: string
       {/* ── 2. Unified Profile Shell ── */}
       <SurfaceCard variant="page" className="overflow-hidden p-0 shadow-xs">
         {isLoading ? (
-          <div className="p-6 text-center text-sm font-bold text-text-muted">
+          <div className="text-text-muted p-6 text-center text-sm font-bold">
             {t("states.loading")}
           </div>
         ) : isError || !patient ? (
@@ -605,23 +722,28 @@ export default function AdminPatient360Screen({ patientId }: { patientId: string
         ) : (
           <div>
             {/* Identity Hero Header */}
-            <div className="border-b border-border-light bg-surface px-5 py-4 dark:bg-surface-secondary/40">
+            <div className="border-border-light bg-surface dark:bg-surface-secondary/40 border-b px-5 py-4">
               <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                 {/* Left: Avatar & Identity */}
                 <div className="flex items-center gap-3.5">
                   <div className="relative">
-                    <AvatarText name={pageTitle} className="h-12 w-12 rounded-2xl text-sm font-black shadow-xs ring-1 ring-border-light" />
+                    <AvatarText
+                      name={pageTitle}
+                      className="ring-border-light h-12 w-12 rounded-2xl text-sm font-black shadow-xs ring-1"
+                    />
                     <span
                       className={cn(
-                        "absolute -bottom-0.5 -end-0.5 h-3.5 w-3.5 rounded-full border-2 border-surface shadow-xs",
-                        patient.status === "ACTIVE" ? "bg-emerald-500" : "bg-amber-500",
+                        "border-surface absolute -end-0.5 -bottom-0.5 h-3.5 w-3.5 rounded-full border-2 shadow-xs",
+                        patient.status === "ACTIVE"
+                          ? "bg-emerald-500"
+                          : "bg-amber-500",
                       )}
                     />
                   </div>
 
                   <div className="space-y-1">
                     <div className="flex flex-wrap items-center gap-2">
-                      <h1 className="text-base font-extrabold text-text-primary dark:text-white/95">
+                      <h1 className="text-text-primary text-base font-extrabold dark:text-white/95">
                         {pageTitle}
                       </h1>
 
@@ -654,7 +776,7 @@ export default function AdminPatient360Screen({ patientId }: { patientId: string
                       </span>
                     </div>
 
-                    <p className="text-xs text-text-secondary">
+                    <p className="text-text-secondary text-xs">
                       {t("patient360.subtitle")}
                     </p>
                   </div>
@@ -665,26 +787,32 @@ export default function AdminPatient360Screen({ patientId }: { patientId: string
                   <button
                     type="button"
                     onClick={() => handleCopyId(patient.userId)}
-                    className="inline-flex items-center gap-1.5 rounded-xl border border-border-light bg-surface-secondary/40 px-2.5 py-1.5 text-xs font-mono text-text-secondary transition hover:border-primary/40 hover:text-text-primary"
+                    className="border-border-light bg-surface-secondary/40 text-text-secondary hover:border-primary/40 hover:text-text-primary inline-flex items-center gap-1.5 rounded-xl border px-2.5 py-1.5 font-mono text-xs transition"
                     title={patient.userId}
                   >
                     {copiedId ? (
                       <>
                         <Check className="h-3.5 w-3.5 text-emerald-600" />
-                        <span className="text-emerald-600 font-bold">{t("patient360.quickActions.copied")}</span>
+                        <span className="font-bold text-emerald-600">
+                          {t("patient360.quickActions.copied")}
+                        </span>
                       </>
                     ) : (
                       <>
-                        <Copy className="h-3.5 w-3.5 text-text-muted" />
+                        <Copy className="text-text-muted h-3.5 w-3.5" />
                         <span>{patient.userId.slice(0, 10)}...</span>
                       </>
                     )}
                   </button>
 
-                  <div className="inline-flex items-center gap-1.5 rounded-xl border border-border-light bg-surface-secondary/40 px-2.5 py-1.5 text-xs text-text-muted">
-                    <CalendarClock className="h-3.5 w-3.5 text-text-muted" />
+                  <div className="border-border-light bg-surface-secondary/40 text-text-muted inline-flex items-center gap-1.5 rounded-xl border px-2.5 py-1.5 text-xs">
+                    <CalendarClock className="text-text-muted h-3.5 w-3.5" />
                     <span>
-                      {formatEffectiveViewerDate(patient.createdAt, viewerTimeZone, { locale })}
+                      {formatEffectiveViewerDate(
+                        patient.createdAt,
+                        viewerTimeZone,
+                        { locale },
+                      )}
                     </span>
                   </div>
                 </div>
@@ -692,23 +820,27 @@ export default function AdminPatient360Screen({ patientId }: { patientId: string
             </div>
 
             {/* ── 3. High-Capacity Scalable Tabs Bar ── */}
-            <div className="border-b border-border-light bg-surface-secondary/20 px-4">
+            <div className="border-border-light bg-surface-secondary/20 border-b px-4">
               <div className="flex items-center gap-1.5 overflow-x-auto py-2">
                 {tabs.map((item) => {
-                  const isActive = tab === item.key;
+                  const isActive = effectiveTab === item.key;
                   return (
                     <button
                       key={item.key}
                       type="button"
                       onClick={() => setTab(item.key)}
                       className={cn(
-                        "inline-flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-bold transition-all duration-150 active:scale-95 whitespace-nowrap",
+                        "inline-flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-bold whitespace-nowrap transition-all duration-150 active:scale-95",
                         isActive
                           ? "bg-primary text-white shadow-2xs"
                           : "text-text-secondary hover:bg-surface hover:text-text-primary",
                       )}
                     >
-                      <span className={cn(isActive ? "text-white" : "text-text-muted")}>
+                      <span
+                        className={cn(
+                          isActive ? "text-white" : "text-text-muted",
+                        )}
+                      >
                         {item.icon}
                       </span>
                       <span>{item.label}</span>
@@ -721,14 +853,14 @@ export default function AdminPatient360Screen({ patientId }: { patientId: string
             {/* ── 4. Tab Content Panels ── */}
             <div className="p-4 sm:p-5">
               {/* TAB 1: PROFILE DETAILS (البيانات الأساسية - بدون أي تكرار) */}
-              {tab === "profile" && (
+              {effectiveTab === "profile" && (
                 <div className="grid gap-4 md:grid-cols-2">
                   {/* Card 1: معلومات التواصل والإقامة */}
-                  <div className="rounded-2xl border border-border-light bg-surface p-4 shadow-2xs dark:bg-surface-secondary/40">
-                    <div className="flex items-center justify-between border-b border-border-light pb-2.5">
+                  <div className="border-border-light bg-surface dark:bg-surface-secondary/40 rounded-2xl border p-4 shadow-2xs">
+                    <div className="border-border-light flex items-center justify-between border-b pb-2.5">
                       <div className="flex items-center gap-2">
-                        <User className="h-4 w-4 text-primary" />
-                        <span className="text-xs font-bold text-text-primary dark:text-white/95">
+                        <User className="text-primary h-4 w-4" />
+                        <span className="text-text-primary text-xs font-bold dark:text-white/95">
                           {t("details.section.profile")}
                         </span>
                       </div>
@@ -737,39 +869,50 @@ export default function AdminPatient360Screen({ patientId }: { patientId: string
                     <div className="mt-3 space-y-3 text-xs">
                       {/* Name */}
                       <div className="flex items-center justify-between gap-2">
-                        <span className="text-text-muted">{t("fields.displayName")}</span>
-                        <span className="font-bold text-text-primary dark:text-white/95">
+                        <span className="text-text-muted">
+                          {t("fields.displayName")}
+                        </span>
+                        <span className="text-text-primary font-bold dark:text-white/95">
                           {pageTitle}
                         </span>
                       </div>
 
                       {/* Email */}
                       <div className="flex items-center justify-between gap-2">
-                        <span className="text-text-muted">{t("fields.email")}</span>
-                        <span className="font-semibold text-text-primary dark:text-white/90">
+                        <span className="text-text-muted">
+                          {t("fields.email")}
+                        </span>
+                        <span className="text-text-primary font-semibold dark:text-white/90">
                           {patient.primaryEmail || "-"}
                         </span>
                       </div>
 
                       {/* Phone */}
                       <div className="flex items-center justify-between gap-2">
-                        <span className="text-text-muted">{t("fields.phone")}</span>
-                        <span className="font-mono font-semibold text-text-primary dark:text-white/90" dir="ltr">
+                        <span className="text-text-muted">
+                          {t("fields.phone")}
+                        </span>
+                        <span
+                          className="text-text-primary font-mono font-semibold dark:text-white/90"
+                          dir="ltr"
+                        >
                           {patient.primaryPhone || "-"}
                         </span>
                       </div>
 
                       {/* Country */}
                       <div className="flex items-center justify-between gap-2">
-                        <span className="text-text-muted">{t("patient360.profile.country")}</span>
+                        <span className="text-text-muted">
+                          {t("patient360.profile.country")}
+                        </span>
                         <div className="flex items-center gap-1.5">
-                          <span className="font-semibold text-text-primary dark:text-white/90">
+                          <span className="text-text-primary font-semibold dark:text-white/90">
                             {countryDisplayName}
                           </span>
                           <button
                             type="button"
                             onClick={() => setIsCountryModalOpen(true)}
-                            className="text-xs font-bold text-primary hover:underline"
+                            className="text-primary text-xs font-bold hover:underline"
                           >
                             ({t("patient360.quickActions.changeCountry")})
                           </button>
@@ -779,11 +922,11 @@ export default function AdminPatient360Screen({ patientId }: { patientId: string
                   </div>
 
                   {/* Card 2: البيانات الشخصية والنظام */}
-                  <div className="rounded-2xl border border-border-light bg-surface p-4 shadow-2xs dark:bg-surface-secondary/40">
-                    <div className="flex items-center justify-between border-b border-border-light pb-2.5">
+                  <div className="border-border-light bg-surface dark:bg-surface-secondary/40 rounded-2xl border p-4 shadow-2xs">
+                    <div className="border-border-light flex items-center justify-between border-b pb-2.5">
                       <div className="flex items-center gap-2">
-                        <ShieldCheck className="h-4 w-4 text-primary" />
-                        <span className="text-xs font-bold text-text-primary dark:text-white/95">
+                        <ShieldCheck className="text-primary h-4 w-4" />
+                        <span className="text-text-primary text-xs font-bold dark:text-white/95">
                           {t("patient360.profile.sectionTitle")}
                         </span>
                       </div>
@@ -792,22 +935,26 @@ export default function AdminPatient360Screen({ patientId }: { patientId: string
                     <div className="mt-3 space-y-3 text-xs">
                       {/* Gender */}
                       <div className="flex items-center justify-between gap-2">
-                        <span className="text-text-muted">{t("patient360.profile.gender")}</span>
-                        <span className="font-semibold text-text-primary dark:text-white/90">
-                          {patient.gender ? (
-                            patient.gender === "MALE"
+                        <span className="text-text-muted">
+                          {t("patient360.profile.gender")}
+                        </span>
+                        <span className="text-text-primary font-semibold dark:text-white/90">
+                          {patient.gender
+                            ? patient.gender === "MALE"
                               ? t("patient360.gender.MALE")
                               : patient.gender === "FEMALE"
-                              ? t("patient360.gender.FEMALE")
-                              : patient.gender
-                          ) : "-"}
+                                ? t("patient360.gender.FEMALE")
+                                : patient.gender
+                            : "-"}
                         </span>
                       </div>
 
                       {/* Date of Birth & Age */}
                       <div className="flex items-center justify-between gap-2">
-                        <span className="text-text-muted">{t("patient360.profile.dob")}</span>
-                        <span className="font-mono font-semibold text-text-primary dark:text-white/90">
+                        <span className="text-text-muted">
+                          {t("patient360.profile.dob")}
+                        </span>
+                        <span className="text-text-primary font-mono font-semibold dark:text-white/90">
                           {patient.dateOfBirth
                             ? `${patient.dateOfBirth}${age ? ` (${t("patient360.quickActions.yearsOld", { age })})` : ""}`
                             : "-"}
@@ -816,11 +963,13 @@ export default function AdminPatient360Screen({ patientId }: { patientId: string
 
                       {/* User ID */}
                       <div className="flex items-center justify-between gap-2">
-                        <span className="text-text-muted">{t("fields.userId")}</span>
+                        <span className="text-text-muted">
+                          {t("fields.userId")}
+                        </span>
                         <button
                           type="button"
                           onClick={() => handleCopyId(patient.userId)}
-                          className="font-mono text-xs font-bold text-text-secondary hover:text-primary"
+                          className="text-text-secondary hover:text-primary font-mono text-xs font-bold"
                         >
                           {patient.userId}
                         </button>
@@ -828,9 +977,15 @@ export default function AdminPatient360Screen({ patientId }: { patientId: string
 
                       {/* Created At */}
                       <div className="flex items-center justify-between gap-2">
-                        <span className="text-text-muted">{t("fields.createdAt")}</span>
+                        <span className="text-text-muted">
+                          {t("fields.createdAt")}
+                        </span>
                         <span className="text-text-primary dark:text-white/90">
-                          {formatEffectiveViewerDateTime(patient.createdAt, viewerTimeZone, { locale })}
+                          {formatEffectiveViewerDateTime(
+                            patient.createdAt,
+                            viewerTimeZone,
+                            { locale },
+                          )}
                         </span>
                       </div>
                     </div>
@@ -839,30 +994,50 @@ export default function AdminPatient360Screen({ patientId }: { patientId: string
               )}
 
               {/* TAB 2: WALLET */}
-              {tab === "wallet" && (
+              {effectiveTab === "wallet" && (
                 <div className="space-y-4">
-                  <div className="flex items-center justify-between gap-2 border-b border-border-light pb-2">
-                    <h2 className="text-xs font-extrabold text-text-primary dark:text-white/95">
+                  <div className="border-border-light flex items-center justify-between gap-2 border-b pb-2">
+                    <h2 className="text-text-primary text-xs font-extrabold dark:text-white/95">
                       {t("patient360.tabs.wallet")}
                     </h2>
                     {walletSummaryError && (
-                      <Button variant="outline" size="sm" onClick={() => refetchWalletSummary()}>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => refetchWalletSummary()}
+                      >
                         {t("actions.retry")}
                       </Button>
                     )}
                   </div>
 
                   <div className="grid grid-cols-2 gap-3 sm:max-w-md">
-                    <div className="rounded-2xl border border-border-light bg-surface p-3.5 shadow-2xs">
-                      <span className="text-xs font-bold text-text-muted">{t("wallet.available")}</span>
-                      <p className="mt-1 font-mono text-base font-black text-text-primary">
-                        {walletSummaryLoading ? "..." : formatMoney(wallet?.availableBalance ?? "0", walletCurrency, locale)}
+                    <div className="border-border-light bg-surface rounded-2xl border p-3.5 shadow-2xs">
+                      <span className="text-text-muted text-xs font-bold">
+                        {t("wallet.available")}
+                      </span>
+                      <p className="text-text-primary mt-1 font-mono text-base font-black">
+                        {walletSummaryLoading
+                          ? "..."
+                          : formatMoney(
+                              wallet?.availableBalance ?? "0",
+                              walletCurrency,
+                              locale,
+                            )}
                       </p>
                     </div>
-                    <div className="rounded-2xl border border-border-light bg-surface p-3.5 shadow-2xs">
-                      <span className="text-xs font-bold text-text-muted">{t("wallet.reserved")}</span>
-                      <p className="mt-1 font-mono text-base font-black text-text-primary">
-                        {walletSummaryLoading ? "..." : formatMoney(wallet?.reservedBalance ?? "0", walletCurrency, locale)}
+                    <div className="border-border-light bg-surface rounded-2xl border p-3.5 shadow-2xs">
+                      <span className="text-text-muted text-xs font-bold">
+                        {t("wallet.reserved")}
+                      </span>
+                      <p className="text-text-primary mt-1 font-mono text-base font-black">
+                        {walletSummaryLoading
+                          ? "..."
+                          : formatMoney(
+                              wallet?.reservedBalance ?? "0",
+                              walletCurrency,
+                              locale,
+                            )}
                       </p>
                     </div>
                   </div>
@@ -872,10 +1047,14 @@ export default function AdminPatient360Screen({ patientId }: { patientId: string
                     columns={walletEntryColumns}
                     getRowId={(row) => row.id}
                     loading={walletEntriesLoading}
-                    error={walletEntriesError ? t("states.walletEntriesError") : null}
+                    error={
+                      walletEntriesError ? t("states.walletEntriesError") : null
+                    }
                     emptyState={{
                       title: t("patient360.wallet.entriesEmptyTitle"),
-                      description: t("patient360.wallet.entriesEmptyDescription"),
+                      description: t(
+                        "patient360.wallet.entriesEmptyDescription",
+                      ),
                     }}
                     pagination={walletEntriesData?.pagination}
                     onPageChange={(next) => setWalletEntriesPage(next)}
@@ -890,14 +1069,18 @@ export default function AdminPatient360Screen({ patientId }: { patientId: string
               )}
 
               {/* TAB 3: SESSIONS */}
-              {tab === "sessions" && (
+              {effectiveTab === "sessions" && (
                 <div className="space-y-4">
-                  <div className="flex items-center justify-between gap-2 border-b border-border-light pb-2">
-                    <h2 className="text-xs font-extrabold text-text-primary dark:text-white/95">
+                  <div className="border-border-light flex items-center justify-between gap-2 border-b pb-2">
+                    <h2 className="text-text-primary text-xs font-extrabold dark:text-white/95">
                       {t("patient360.tabs.sessions")}
                     </h2>
                     {sessionsError && (
-                      <Button variant="outline" size="sm" onClick={() => refetchSessions()}>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => refetchSessions()}
+                      >
                         {t("actions.retry")}
                       </Button>
                     )}
@@ -908,7 +1091,9 @@ export default function AdminPatient360Screen({ patientId }: { patientId: string
                     columns={sessionColumns}
                     getRowId={(row) => row.id}
                     loading={sessionsLoading}
-                    error={sessionsError ? t("patient360.sessions.loadError") : null}
+                    error={
+                      sessionsError ? t("patient360.sessions.loadError") : null
+                    }
                     emptyState={{
                       title: t("patient360.sessions.emptyTitle"),
                       description: t("patient360.sessions.emptyDescription"),
@@ -926,14 +1111,18 @@ export default function AdminPatient360Screen({ patientId }: { patientId: string
               )}
 
               {/* TAB 4: PAYMENTS */}
-              {tab === "payments" && (
+              {effectiveTab === "payments" && (
                 <div className="space-y-4">
-                  <div className="flex items-center justify-between gap-2 border-b border-border-light pb-2">
-                    <h2 className="text-xs font-extrabold text-text-primary dark:text-white/95">
+                  <div className="border-border-light flex items-center justify-between gap-2 border-b pb-2">
+                    <h2 className="text-text-primary text-xs font-extrabold dark:text-white/95">
                       {t("patient360.tabs.payments")}
                     </h2>
                     {paymentsError && (
-                      <Button variant="outline" size="sm" onClick={() => refetchPayments()}>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => refetchPayments()}
+                      >
                         {t("actions.retry")}
                       </Button>
                     )}
@@ -944,7 +1133,9 @@ export default function AdminPatient360Screen({ patientId }: { patientId: string
                     columns={paymentColumns}
                     getRowId={(row) => row.id}
                     loading={paymentsLoading}
-                    error={paymentsError ? t("patient360.payments.loadError") : null}
+                    error={
+                      paymentsError ? t("patient360.payments.loadError") : null
+                    }
                     emptyState={{
                       title: t("patient360.payments.emptyTitle"),
                       description: t("patient360.payments.emptyDescription"),
@@ -961,15 +1152,178 @@ export default function AdminPatient360Screen({ patientId }: { patientId: string
                 </div>
               )}
 
-              {/* TAB 5: ASSESSMENTS */}
-              {tab === "assessments" && (
+              {effectiveTab === "packages" && (
                 <div className="space-y-4">
-                  <div className="flex items-center justify-between gap-2 border-b border-border-light pb-2">
-                    <h2 className="text-xs font-extrabold text-text-primary dark:text-white/95">
+                  <h2 className="text-text-primary text-xs font-extrabold dark:text-white/95">
+                    {locale === "ar" ? "الباقات المرتبطة" : "Linked packages"}
+                  </h2>
+                  {!patient?.packages?.length ? (
+                    <div className="border-border-light text-text-muted rounded-xl border border-dashed p-6 text-center text-sm">
+                      {locale === "ar"
+                        ? "لا توجد باقات مرتبطة بهذا المريض."
+                        : "No packages linked to this patient."}
+                    </div>
+                  ) : (
+                    <div className="grid gap-3 md:grid-cols-2">
+                      {patient.packages.map((pkg) => (
+                        <div
+                          key={pkg.id}
+                          className="border-border-light bg-surface-secondary/40 rounded-2xl border p-4"
+                        >
+                          <div className="flex items-start justify-between gap-3">
+                            <div>
+                              <p className="text-text-primary font-semibold">
+                                {pkg.title || pkg.planCode || pkg.id}
+                              </p>
+                              <p className="text-text-muted text-xs">
+                                {pkg.practitioner?.name || "-"}
+                              </p>
+                            </div>
+                            <span className="text-text-secondary text-xs font-bold">
+                              {pkg.status}
+                            </span>
+                          </div>
+                          <div className="text-text-secondary mt-3 grid grid-cols-3 gap-2 text-xs">
+                            <span>
+                              {locale === "ar" ? "الإجمالي" : "Total"}:{" "}
+                              {pkg.sessionCount}
+                            </span>
+                            <span>
+                              {locale === "ar" ? "المتاح" : "Available"}:{" "}
+                              {pkg.availableSessions}
+                            </span>
+                            <span>
+                              {locale === "ar" ? "المكتمل" : "Completed"}:{" "}
+                              {pkg.completedSessions}
+                            </span>
+                          </div>
+                          {pkg.nextSessionAt ? (
+                            <p className="text-text-muted mt-2 text-xs">
+                              {locale === "ar"
+                                ? "الجلسة القادمة"
+                                : "Next session"}
+                              :{" "}
+                              {new Date(pkg.nextSessionAt).toLocaleString(
+                                locale === "ar" ? "ar-EG" : "en-US",
+                              )}
+                            </p>
+                          ) : null}
+                          <div className="mt-3 flex flex-wrap gap-2">
+                            {pkg.settlementId ? (
+                              <Link
+                                href={`/admin/package-settlements/${pkg.settlementId}`}
+                                className="text-primary text-xs font-semibold hover:underline"
+                              >
+                                {locale === "ar"
+                                  ? "عرض سياق الباقة"
+                                  : "Open package context"}
+                              </Link>
+                            ) : pkg.planCode ? (
+                              <Link
+                                href={`/admin/package-plans/${pkg.planCode}`}
+                                className="text-primary text-xs font-semibold hover:underline"
+                              >
+                                {locale === "ar"
+                                  ? "عرض خطة الباقة"
+                                  : "Open package plan"}
+                              </Link>
+                            ) : null}
+                            {pkg.practitioner ? (
+                              <Link
+                                href={`/admin/practitioners/${pkg.practitioner.id}`}
+                                className="text-primary text-xs font-semibold hover:underline"
+                              >
+                                {locale === "ar"
+                                  ? "عرض الممارس"
+                                  : "Open practitioner"}
+                              </Link>
+                            ) : null}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {effectiveTab === "academy" && (
+                <div className="space-y-4">
+                  <h2 className="text-text-primary text-xs font-extrabold dark:text-white/95">
+                    {locale === "ar"
+                      ? "التدريبات المرتبطة"
+                      : "Linked academy enrollments"}
+                  </h2>
+                  {!patient?.academy?.length ? (
+                    <div className="border-border-light text-text-muted rounded-xl border border-dashed p-6 text-center text-sm">
+                      {locale === "ar"
+                        ? "لا توجد تسجيلات تدريب لهذا المريض."
+                        : "No academy enrollments for this patient."}
+                    </div>
+                  ) : (
+                    <div className="grid gap-3 md:grid-cols-2">
+                      {patient.academy.map((enrollment) => (
+                        <div
+                          key={enrollment.id}
+                          className="border-border-light bg-surface-secondary/40 rounded-2xl border p-4"
+                        >
+                          <div className="flex items-start justify-between gap-3">
+                            <div>
+                              <p className="text-text-primary font-semibold">
+                                {locale === "ar"
+                                  ? enrollment.programTitleAr
+                                  : enrollment.programTitleEn}
+                              </p>
+                              <p className="text-text-muted text-xs">
+                                {enrollment.status} · {enrollment.paymentStatus}
+                              </p>
+                            </div>
+                            <span className="text-text-secondary text-xs">
+                              {enrollment.currency} {enrollment.amount}
+                            </span>
+                          </div>
+                          <div className="text-text-secondary mt-3 text-xs">
+                            {locale === "ar" ? "الحضور" : "Attendance"}:{" "}
+                            {enrollment.attendanceCount}/
+                            {enrollment.totalSessions}
+                          </div>
+                          <div className="mt-3 flex flex-wrap gap-2">
+                            <Link
+                              href={`/admin/academy/programs/${enrollment.programId}/learners`}
+                              className="text-primary text-xs font-semibold hover:underline"
+                            >
+                              {locale === "ar"
+                                ? "عرض التسجيل في التدريب"
+                                : "Open academy enrollment"}
+                            </Link>
+                            {enrollment.paymentId ? (
+                              <Link
+                                href={`/admin/payments/${enrollment.paymentId}`}
+                                className="text-primary text-xs font-semibold hover:underline"
+                              >
+                                {locale === "ar" ? "عرض الدفع" : "View payment"}
+                              </Link>
+                            ) : null}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* TAB 5: ASSESSMENTS */}
+              {effectiveTab === "assessments" && (
+                <div className="space-y-4">
+                  <div className="border-border-light flex items-center justify-between gap-2 border-b pb-2">
+                    <h2 className="text-text-primary text-xs font-extrabold dark:text-white/95">
                       {t("patient360.tabs.assessments")}
                     </h2>
                     {assessmentsError && (
-                      <Button variant="outline" size="sm" onClick={() => refetchAssessments()}>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => refetchAssessments()}
+                      >
                         {t("actions.retry")}
                       </Button>
                     )}
@@ -980,7 +1334,11 @@ export default function AdminPatient360Screen({ patientId }: { patientId: string
                     columns={assessmentColumns}
                     getRowId={(row) => row.submissionId}
                     loading={assessmentsLoading}
-                    error={assessmentsError ? t("patient360.assessments.loadError") : null}
+                    error={
+                      assessmentsError
+                        ? t("patient360.assessments.loadError")
+                        : null
+                    }
                     emptyState={{
                       title: t("patient360.assessments.emptyTitle"),
                       description: t("patient360.assessments.emptyDescription"),

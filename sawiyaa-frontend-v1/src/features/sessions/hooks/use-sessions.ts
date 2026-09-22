@@ -89,6 +89,7 @@ export function usePatientSession(
     queryFn: () => getPatientSession(sessionId!),
     enabled: Boolean(sessionId),
     staleTime: 30_000,
+    refetchOnWindowFocus: true,
     ...extraOptions,
   });
 }
@@ -102,6 +103,7 @@ export function usePatientSessions(params?: ListSessionsParams) {
     queryKey: patientSessionQueryKeys.list(safeParams),
     queryFn: () => getPatientSessions(safeParams),
     staleTime: 30_000,
+    refetchOnWindowFocus: true,
   });
 }
 
@@ -114,6 +116,7 @@ export function usePatientSessionSummary() {
     queryKey: patientSessionSummaryQueryKeys.all,
     queryFn: getPatientSessionSummary,
     staleTime: 30_000,
+    refetchOnWindowFocus: true,
   });
 }
 
@@ -185,6 +188,7 @@ export function usePractitionerSessions(params?: ListSessionsParams) {
     queryKey: practitionerSessionQueryKeys.list(safeParams),
     queryFn: () => getPractitionerSessions(safeParams),
     staleTime: 30_000,
+    refetchOnWindowFocus: true,
   });
 }
 
@@ -201,6 +205,7 @@ export function usePractitionerSession(sessionId: string | null) {
     queryFn: () => getPractitionerSession(sessionId!),
     enabled: Boolean(sessionId),
     staleTime: 30_000,
+    refetchOnWindowFocus: true,
   });
 }
 

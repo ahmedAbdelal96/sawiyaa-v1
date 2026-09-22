@@ -53,6 +53,7 @@
       "durationMinutes": "{minutes} min"
     },
     "actions": {
+      "bookSession": "Book a session",
       "viewDetails": "View details",
       "continuePayment": "Continue payment",
       "viewPractitioner": "View practitioner",
@@ -100,7 +101,7 @@
       "originalPrice": "Reg. {amount}",
       "payableTotal": "Total payable",
       "viewPractitioner": "View practitioner",
-      "choosePackage": "Choose package"
+      "choosePackage": "Buy package"
     }
   },
   "detail": {
@@ -146,6 +147,7 @@
     },
     "progressHeading": "Session completion progress",
     "progressValue": "{completed} of {total} sessions completed",
+    "activeNotice": "Your package is active. Sessions are ready to book.",
     "progressFacts": {
       "live": "{count} active or upcoming",
       "pending": "{count} pending",
@@ -154,6 +156,12 @@
     "sessionsEyebrow": "Linked Sessions",
     "sessionsHeading": "Linked session history",
     "sessionsNote": "Sessions linked to this package and their current schedule.",
+    "financialHeading": "Payment history",
+    "financialStatus": "Payment status",
+    "financialRefunds": "Refund history",
+    "entitlementHeading": "Entitlement decisions",
+    "walletRefund": "Refunded to wallet",
+    "viewWallet": "View wallet activity",
     "nextSessionLabel": "Next upcoming session",
     "noSessionsHeading": "No linked sessions found",
     "noSessionsNote": "No sessions have been booked or linked to this package purchase yet.",
@@ -171,7 +179,12 @@
     "openable": "Joinable now",
     "viewOnly": "View only",
     "openSession": "Join session",
-    "viewSession": "View session"
+    "viewSession": "View session",
+    "bookingConflict": "That package entitlement or time is no longer available",
+    "bookingError": "We could not book this package session",
+    "bookingRetry": "Refresh the package and choose another available time.",
+    "booking": "Booking...",
+    "close": "Close"
   },
   "payment": {
     "modalEyebrow": "Secure Checkout",

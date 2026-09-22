@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Optional } from '@nestjs/common';
 import { SessionProvider } from '@prisma/client';
 import { PaymentRegionalPricingMode } from '@common/payments/payment-region.resolver';
 import {
@@ -6,6 +6,7 @@ import {
   PackagePurchaseSessionSummaryViewModel,
 } from '../types/package-purchases.types';
 import { SessionOperationalInterpreterService } from '@modules/sessions/services/session-operational-interpreter.service';
+import { PackageEntitlementService } from '../services/package-entitlement.service';
 
 type PurchaseRecord = {
   id: string;
@@ -37,6 +38,40 @@ type PurchaseRecord = {
   discountAmountSnapshot: { toString(): string } | string | null;
   patientPayableTotalSnapshot: { toString(): string } | string | null;
   paymentExpiresAt: Date | null;
+  payment?: {
+    id: string;
+    status: string;
+    amountTotal: { toString(): string } | string;
+    amountFromWallet: { toString(): string } | string;
+    amountFromGateway: { toString(): string } | string;
+    currencyCode: string;
+    initiatedAt: Date;
+    capturedAt: Date | null;
+    failedAt: Date | null;
+    expiredAt: Date | null;
+    refunds?: Array<{
+      id: string;
+      amount: { toString(): string } | string;
+      currencyCode: string;
+      status: string;
+      destination: string;
+      refundReason: string | null;
+      requestedAt: Date;
+      processedAt: Date | null;
+      failedAt: Date | null;
+      customerWalletCreditedAt: Date | null;
+      sessionId: string | null;
+    }>;
+  } | null;
+  packageEntitlementDecisions?: Array<{
+    id: string;
+    sessionId: string;
+    decisionType: string;
+    reasonCode: string;
+    sessionStatusSnapshot: string;
+    decidedAt: Date;
+    session?: { sessionCode: string; scheduledStartAt: Date | null } | null;
+  }>;
   createdAt: Date;
   updatedAt: Date;
   sessions: Array<{
@@ -69,7 +104,11 @@ const SCHEDULED_STATUSES = new Set([
 
 @Injectable()
 export class PackagePurchasePresenter {
-  constructor(private readonly operationalInterpreter: SessionOperationalInterpreterService) {}
+  constructor(
+    private readonly operationalInterpreter: SessionOperationalInterpreterService,
+    @Optional()
+    private readonly packageEntitlementService?: PackageEntitlementService,
+  ) {}
 
   async toViewModel(input: {
     purchase: PurchaseRecord;
@@ -85,14 +124,32 @@ export class PackagePurchasePresenter {
     );
 
     const totalSessions = input.purchase.sessionCountSnapshot;
-    const consumedSessions = rawSessions.filter((session) =>
-      new Set(['COMPLETED', 'CANCELLED', 'EXPIRED', 'PATIENT_NO_SHOW', 'PRACTITIONER_NO_SHOW', 'BOTH_NO_SHOW']).has(session.status)
-      && session.packageEntitlementDecision?.decisionType !== 'RESTORE_TO_PACKAGE',
-    ).length;
-    const completedSessions = Math.min(totalSessions, consumedSessions);
+    const entitlement = (
+      this.packageEntitlementService ?? new PackageEntitlementService()
+    ).summarize(totalSessions, rawSessions);
+    const {
+      consumedSessions,
+      completedSessions,
+      reservedSessions,
+      availableSessions,
+    } = entitlement;
     const scheduledSessions = linkedSessionItems.filter((s) =>
       SCHEDULED_STATUSES.has(s.status),
     ).length;
+    const nextSessionStartAt =
+      rawSessions
+        .filter(
+          (session) =>
+            SCHEDULED_STATUSES.has(session.status) &&
+            session.scheduledStartAt &&
+            session.scheduledStartAt.getTime() >= now.getTime(),
+        )
+        .sort(
+          (left, right) =>
+            left.scheduledStartAt!.getTime() -
+            right.scheduledStartAt!.getTime(),
+        )[0]
+        ?.scheduledStartAt?.toISOString() ?? null;
 
     // Remaining sessions can never be negative (final defensive boundary)
     const remainingSessions = Math.max(0, totalSessions - completedSessions);
@@ -148,10 +205,14 @@ export class PackagePurchasePresenter {
       practitioner,
       progress: {
         totalSessions,
+        consumedSessions,
         completedSessions,
+        reservedSessions,
+        availableSessions,
         remainingSessions,
         scheduledSessions,
         progressPercent,
+        nextSessionStartAt,
       },
       durationMinutes: input.purchase.sessionDurationMinutesSnapshot,
       sessionMode: input.purchase.sessionModeSnapshot,
@@ -188,6 +249,45 @@ export class PackagePurchasePresenter {
       linkedSessionsCount: linkedSessionItems.length,
       createdAt: input.purchase.createdAt.toISOString(),
       updatedAt: input.purchase.updatedAt.toISOString(),
+      payment: input.purchase.payment
+        ? {
+            id: input.purchase.payment.id,
+            status: input.purchase.payment.status,
+            amountTotal: String(input.purchase.payment.amountTotal),
+            amountFromWallet: String(input.purchase.payment.amountFromWallet),
+            amountFromGateway: String(input.purchase.payment.amountFromGateway),
+            currency: input.purchase.payment.currencyCode,
+            initiatedAt: input.purchase.payment.initiatedAt.toISOString(),
+            capturedAt: input.purchase.payment.capturedAt?.toISOString() ?? null,
+            failedAt: input.purchase.payment.failedAt?.toISOString() ?? null,
+            expiredAt: input.purchase.payment.expiredAt?.toISOString() ?? null,
+            refundedAt:
+              input.purchase.payment.refunds?.find((refund) => refund.processedAt)?.processedAt?.toISOString() ?? null,
+            refunds: (input.purchase.payment.refunds ?? []).map((refund) => ({
+              id: refund.id,
+              status: refund.status,
+              destination: refund.destination,
+              amount: String(refund.amount),
+              currency: refund.currencyCode,
+              reason: refund.refundReason,
+              requestedAt: refund.requestedAt.toISOString(),
+              processedAt: refund.processedAt?.toISOString() ?? null,
+              failedAt: refund.failedAt?.toISOString() ?? null,
+              customerWalletCreditedAt: refund.customerWalletCreditedAt?.toISOString() ?? null,
+              sessionId: refund.sessionId,
+            })),
+          }
+        : null,
+      entitlementHistory: (input.purchase.packageEntitlementDecisions ?? []).map((decision) => ({
+        id: decision.id,
+        sessionId: decision.sessionId,
+        sessionCode: decision.session?.sessionCode ?? null,
+        decisionType: decision.decisionType,
+        reasonCode: decision.reasonCode,
+        sessionStatus: decision.sessionStatusSnapshot,
+        decidedAt: decision.decidedAt.toISOString(),
+        scheduledStartAt: decision.session?.scheduledStartAt?.toISOString() ?? null,
+      })),
     };
   }
 

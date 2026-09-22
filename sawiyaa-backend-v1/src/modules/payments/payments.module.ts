@@ -53,6 +53,10 @@ import { MarkPaymentSucceededUseCase } from './use-cases/mark-payment-succeeded.
 import { ReconcileSessionPaymentReturnUseCase } from './use-cases/reconcile-session-payment-return.use-case';
 import { RequestPaymentRefundUseCase } from './use-cases/request-payment-refund.use-case';
 import { RetryPaymentRefundUseCase } from './use-cases/retry-payment-refund.use-case';
+import { PaymentProviderRecoveryService } from './services/payment-provider-recovery.service';
+import { PackageRefundPolicyService } from './services/package-refund-policy.service';
+import { AdminPaymentOperationalExceptionsController } from './controllers/admin-payment-operational-exceptions.controller';
+import { PaymentOperationalExceptionService } from './services/payment-operational-exception.service';
 
 /**
  * Payments Module owns payment initiation, provider webhook handling,
@@ -77,6 +81,7 @@ import { RetryPaymentRefundUseCase } from './use-cases/retry-payment-refund.use-
     PaymentWebhooksController,
     AdminPaymentRefundsController,
     AdminPatientPaymentsController,
+    AdminPaymentOperationalExceptionsController,
   ],
   providers: [
     PaymentAccessPolicy,
@@ -119,6 +124,9 @@ import { RetryPaymentRefundUseCase } from './use-cases/retry-payment-refund.use-
     ListPaymentRefundsUseCase,
     RequestPaymentRefundUseCase,
     RetryPaymentRefundUseCase,
+    PaymentProviderRecoveryService,
+    PackageRefundPolicyService,
+    PaymentOperationalExceptionService,
   ],
   exports: [
     PaymentRepository,
@@ -130,6 +138,7 @@ import { RetryPaymentRefundUseCase } from './use-cases/retry-payment-refund.use-
     PaymentRuntimeConfigService,
     ValidatePaymentStatusTransitionService,
     ExpirePaymentUseCase,
+    PaymentProviderRecoveryService,
   ],
 })
 export class PaymentsModule {}

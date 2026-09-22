@@ -11,6 +11,10 @@ import {
   View,
 } from "react-native";
 import * as Linking from "expo-linking";
+import {
+  isCanonicallyCapturedPayment,
+  resolveCheckoutFunding,
+} from "../../../../src/features/patient/payments/checkout-funding";
 import * as WebBrowser from "expo-web-browser";
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -231,7 +235,7 @@ function RefundPolicyModal({
             </Text>
 
             <View style={styles.modalClausesList}>
-              {policy.clauses
+              {(policy.clauses ?? [])
                 .slice()
                 .sort((left, right) => left.sortOrder - right.sortOrder)
                 .map((clause, index) => (
@@ -373,17 +377,8 @@ export default function SessionPaymentCheckoutScreen() {
   }, [id]);
 
   const split = useMemo(() => {
-    if (!breakdown) {
-      return { walletUsed: 0, gatewayRemaining: 0 };
-    }
-
-    const total = toNumber(breakdown.netPaidAmount);
-    const walletPart = useWalletBalance
-      ? Math.min(toNumber(walletBalance), total)
-      : 0;
-    const gatewayPart = Math.max(total - walletPart, 0);
-    return { walletUsed: walletPart, gatewayRemaining: gatewayPart };
-  }, [breakdown, useWalletBalance, walletBalance]);
+    return resolveCheckoutFunding(breakdown, useWalletBalance);
+  }, [breakdown, useWalletBalance]);
 
   const payableSession = session?.operational?.actions?.canPay === true;
   const gatewayPaymentRequired = split.gatewayRemaining > 0;
@@ -701,7 +696,7 @@ export default function SessionPaymentCheckoutScreen() {
       const paidByWallet = toNumber(payment.amountFromWallet) > 0;
       const paidByGateway = toNumber(payment.amountFromGateway) > 0;
 
-      if (payment.status === "CAPTURED" || payment.status === "AUTHORIZED") {
+      if (isCanonicallyCapturedPayment(payment.status)) {
         setFlowMessage(t("patientPaymentsFlow.checkout.paymentSuccess"));
         navigateToPaymentReturn({
           redirect_status: "succeeded",
@@ -1317,7 +1312,17 @@ export default function SessionPaymentCheckoutScreen() {
           title={
             initiateMutation.isPending || isLaunchingCheckout
               ? t("patientPaymentsFlow.checkout.processing")
-              : t("patientPaymentsFlow.checkout.confirmButton")
+              : !breakdown
+                ? t("patientPaymentsFlow.checkout.confirmButton")
+                : !gatewayPaymentRequired
+                  ? (isRtl ? "أكد الحجز من رصيد المحفظة" : "Confirm with wallet balance")
+                  : split.walletUsed > 0 && split.gatewayRemaining > 0
+                    ? (isRtl
+                        ? `ادفع ${formatMoney(split.gatewayRemaining.toFixed(2), paymentCurrency, locale)} وأكد الحجز`
+                        : `Pay ${formatMoney(split.gatewayRemaining.toFixed(2), paymentCurrency, locale)} & Confirm`)
+                    : (isRtl
+                        ? `ادفع ${formatMoney(breakdown.netPaidAmount, paymentCurrency, locale)} وأكد الحجز`
+                        : `Pay ${formatMoney(breakdown.netPaidAmount, paymentCurrency, locale)} & Confirm`)
           }
           loading={initiateMutation.isPending || isLaunchingCheckout}
           onPress={handleInitiatePayment}

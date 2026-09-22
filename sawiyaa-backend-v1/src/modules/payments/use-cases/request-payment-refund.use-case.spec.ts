@@ -10,6 +10,7 @@ import { RequestPaymentRefundUseCase } from './request-payment-refund.use-case';
 describe('RequestPaymentRefundUseCase', () => {
   function buildUseCase(overrides?: {
     paymentStatus?: PaymentStatus;
+    paymentProvider?: PaymentProvider;
     activeRefund?: { id: string } | null;
     succeededRefundTotal?: string;
     providerOutcome?: 'SUCCEEDED' | 'PROCESSING' | 'FAILED';
@@ -35,7 +36,7 @@ describe('RequestPaymentRefundUseCase', () => {
     const paymentRepository = {
       findById: jest.fn().mockResolvedValue({
         id: 'payment_1',
-        provider: PaymentProvider.STRIPE,
+        provider: overrides?.paymentProvider ?? PaymentProvider.STRIPE,
         providerPaymentRef: 'pi_123',
         providerOrderRef: null,
         status: overrides?.paymentStatus ?? PaymentStatus.CAPTURED,
@@ -233,6 +234,26 @@ describe('RequestPaymentRefundUseCase', () => {
       providerOutcome: 'FAILED',
     });
 
+    setup.paymentRepository.findRefundById
+      .mockResolvedValueOnce({
+        id: 'refund_1',
+        status: 'REQUESTED',
+        sessionId: 'session_1',
+        destination: RefundDestination.ORIGINAL_METHOD,
+        amount: new Prisma.Decimal('100'),
+        currencyCode: 'USD',
+      })
+      .mockResolvedValueOnce({ id: 'refund_1', status: 'PROCESSING' });
+    setup.paymentRepository.updateRefund
+      .mockResolvedValueOnce({
+        id: 'refund_1',
+        status: 'PROCESSING',
+        sessionId: 'session_1',
+        destination: RefundDestination.ORIGINAL_METHOD,
+        amount: new Prisma.Decimal('100'),
+        currencyCode: 'USD',
+      })
+      .mockResolvedValueOnce({ id: 'refund_1', status: 'FAILED', amount: new Prisma.Decimal('100'), currencyCode: 'USD' });
     await setup.useCase.execute({
       paymentId: 'payment_1',
       actorUserId: 'admin_1',
@@ -245,7 +266,14 @@ describe('RequestPaymentRefundUseCase', () => {
     expect(
       setup.operationalNotificationService.notifyRefundFailed,
     ).toHaveBeenCalledTimes(1);
-    expect(setup.paymentRepository.createRefundEvent).toHaveBeenCalledTimes(2);
+    expect(setup.paymentRepository.createRefundEvent).toHaveBeenCalledTimes(3);
+    expect(setup.paymentRepository.createRefundEvent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        eventType: 'PROVIDER_PENDING',
+        reason: 'PROVIDER_REFUND_DISPATCH_STARTED',
+      }),
+      expect.anything(),
+    );
   });
 
   it('finalizes customer wallet refunds inside the refund transaction', async () => {
@@ -305,5 +333,96 @@ describe('RequestPaymentRefundUseCase', () => {
         destination: RefundDestination.ORIGINAL_METHOD,
       }),
     ).rejects.toThrow(ConflictException);
+  });
+
+  it('finalizes an unresolved Paymob refund from evidence through the canonical ledger path', async () => {
+    const setup = buildUseCase({
+      paymentProvider: PaymentProvider.PAYMOB,
+      paymentStatus: PaymentStatus.REFUND_PENDING,
+    });
+    const unresolvedRefund = {
+      id: 'refund_1',
+      paymentId: 'payment_1',
+      sessionId: 'session_1',
+      status: 'PROCESSING',
+      destination: RefundDestination.ORIGINAL_METHOD,
+      amount: new Prisma.Decimal('100.00'),
+      currencyCode: 'USD',
+      metadataJson: {
+        providerReconciliation: { outcome: 'UNKNOWN', attempts: 2 },
+      },
+    };
+    setup.paymentRepository.findRefundById
+      .mockResolvedValueOnce(unresolvedRefund)
+      .mockResolvedValueOnce(unresolvedRefund)
+      .mockResolvedValueOnce(unresolvedRefund)
+      .mockResolvedValueOnce({
+        ...unresolvedRefund,
+        status: 'SUCCEEDED',
+        processedAt: new Date(),
+      });
+    setup.paymentRepository.updateRefund.mockResolvedValue({
+      ...unresolvedRefund,
+      status: 'SUCCEEDED',
+      processedAt: new Date(),
+    });
+
+    await setup.useCase.manuallyFinalizeProviderRefund({
+      paymentId: 'payment_1',
+      refundId: 'refund_1',
+      actorUserId: 'finance_admin_1',
+      outcome: 'SUCCEEDED',
+      evidenceReference: 'paymob-case-123',
+      reason: 'Provider settlement export confirms the refund.',
+      evidenceMetadata: { settlementBatch: 'batch-42' },
+    });
+
+    expect(setup.paymentRepository.createRefundEvent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        eventType: 'PROVIDER_PENDING',
+        actorUserId: 'finance_admin_1',
+        externalReference: 'paymob-case-123',
+        metadataJson: expect.objectContaining({
+          action: 'MANUAL_PROVIDER_REFUND_FINALIZATION_REQUESTED',
+          outcome: 'SUCCEEDED',
+        }),
+      }),
+      expect.anything(),
+    );
+    expect(setup.postRefundLedgerEntriesUseCase.execute).toHaveBeenCalledTimes(1);
+    expect(
+      setup.sessionEarningReviewService.invalidatePendingReviewsForPayment,
+    ).toHaveBeenCalledTimes(1);
+  });
+
+  it('rejects evidence finalization unless provider reconciliation remains unknown', async () => {
+    const setup = buildUseCase({ paymentProvider: PaymentProvider.PAYMOB });
+    const resolvedRefund = {
+      id: 'refund_1',
+      paymentId: 'payment_1',
+      sessionId: 'session_1',
+      status: 'PROCESSING',
+      destination: RefundDestination.ORIGINAL_METHOD,
+      amount: new Prisma.Decimal('100.00'),
+      currencyCode: 'USD',
+      metadataJson: { providerReconciliation: { outcome: 'SUCCEEDED' } },
+    };
+    setup.paymentRepository.findRefundById.mockResolvedValue(resolvedRefund);
+
+    await expect(
+      setup.useCase.manuallyFinalizeProviderRefund({
+        paymentId: 'payment_1',
+        refundId: 'refund_1',
+        actorUserId: 'finance_admin_1',
+        outcome: 'SUCCEEDED',
+        evidenceReference: 'paymob-case-123',
+        reason: 'Unsupported override attempt.',
+      }),
+    ).rejects.toMatchObject({
+      response: expect.objectContaining({
+        error: 'REFUND_MANUAL_FINALIZATION_NOT_ALLOWED',
+      }),
+    });
+    expect(setup.postRefundLedgerEntriesUseCase.execute).not.toHaveBeenCalled();
   });
 });

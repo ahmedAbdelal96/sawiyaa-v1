@@ -8,9 +8,9 @@ import {
 } from "@/features/practitioner-profile/api/practitioner-profile-ssr.api";
 import ProfileAbout from "@/features/practitioner-profile/components/ProfileAbout";
 import ProfileBookingPanel from "@/features/practitioner-profile/components/ProfileBookingPanel";
-import ProfileCredentials from "@/features/practitioner-profile/components/ProfileCredentials";
 import ProfileHeader from "@/features/practitioner-profile/components/ProfileHeader";
 import ProfileSpecialties from "@/features/practitioner-profile/components/ProfileSpecialties";
+import PackagePlansSection from "@/features/package-plans/components/PackagePlansSection";
 import {
 } from "@/features/practitioners-discovery/types/practitioner";
 import { fetchPublicSpecialties } from "@/features/specialties-public/api/specialties-ssr.api";
@@ -168,7 +168,6 @@ export default async function PatientPractitionerProfilePage({ params }: Props) 
                 languageLabels={languageLabels}
                 compact
               />
-              <ProfileCredentials profile={profile} compact />
             </div>
           </div>
 
@@ -179,6 +178,11 @@ export default async function PatientPractitionerProfilePage({ params }: Props) 
               instantBookingAvailability={instantBookingAvailability}
             />
           </div>
+        </div>
+
+        {/* Full-Width Package Plans Section */}
+        <div id="packages-section" className="w-full">
+          <PackagePlansSection slug={profile.slug} profile={profile} />
         </div>
       </div>
     </div>

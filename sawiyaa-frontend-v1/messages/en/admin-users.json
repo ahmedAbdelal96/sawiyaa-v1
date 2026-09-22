@@ -404,6 +404,14 @@
         "title": "Notifications",
         "description": "Permissions for notification operations."
       },
+      "articles": { "title": "Articles", "description": "Permissions for public article content." },
+      "help": { "title": "Help Center", "description": "Permissions for public help content." },
+      "reviews": { "title": "Reviews", "description": "Permissions for review reading and moderation." },
+      "specialties": { "title": "Specialties", "description": "Permissions for practitioner taxonomy." },
+      "packagePlans": { "title": "Package plans", "description": "Permissions for package catalog inspection and management." },
+      "assessmentAuthoring": { "title": "Assessment authoring", "description": "Permissions for clinical assessment definitions." },
+      "customerWallets": { "title": "Customer wallets", "description": "Permissions for customer wallet read access." },
+      "coupons": { "title": "Coupons", "description": "Permissions for discount coupon management." },
       "other": {
         "title": "Other",
         "description": "Additional permissions returned by the backend."
@@ -520,6 +528,36 @@
     },
     "notificationOpsRead": {
       "label": "View notification operations"
+    },
+    "articles": {
+      "read": { "label": "View articles", "description": "Read Admin articles, categories, and localized content." },
+      "manage": { "label": "Manage articles", "description": "Create, edit, publish, archive, and upload article content." }
+    },
+    "help": {
+      "read": { "label": "View Help Center", "description": "Read Help Center categories and questions." },
+      "manage": { "label": "Manage Help Center", "description": "Create, edit, delete, and reorder Help Center content." }
+    },
+    "reviews": {
+      "read": { "label": "View reviews", "description": "Read patient and practitioner reviews in Admin." },
+      "moderate": { "label": "Moderate reviews", "description": "Apply review decisions that affect public reputation and averages." }
+    },
+    "specialties": {
+      "read": { "label": "View specialties", "description": "Read specialty and category taxonomy." },
+      "manage": { "label": "Manage specialties", "description": "Create, edit, and activate or deactivate specialties." }
+    },
+    "packagePlans": {
+      "read": { "label": "View package plans", "description": "Inspect the standardized package plan catalog." },
+      "manage": { "label": "Manage package plans", "description": "Edit package plan display fields and availability state." }
+    },
+    "assessmentsAuthoring": {
+      "read": { "label": "View assessment authoring", "description": "Read assessment definitions, questions, and scoring configuration." },
+      "manage": { "label": "Manage assessment authoring", "description": "Create, edit, publish, and unpublish assessment definitions." }
+    },
+    "customerWallets": {
+      "read": { "label": "View customer wallets", "description": "Read customer wallet balances and ledger entries." }
+    },
+    "coupons": {
+      "manage": { "label": "Manage coupons", "description": "Create and configure discount coupons and revenue shares." }
     }
   }
 }

@@ -21,7 +21,10 @@ import RefundPolicyAcceptanceCard from "@/features/refund-policies/components/Re
 import { REFUND_POLICY_ERROR_CODES } from "@/features/refund-policies/lib/refund-policy-errors";
 import { useRefundPolicy } from "@/features/refund-policies/hooks/use-refund-policies";
 import type { PractitionerProfile } from "@/features/practitioner-profile/types/profile";
-import { formatDurationLabel, formatPercent } from "../lib/package-plan-display";
+import {
+  formatDurationLabel,
+  formatPercent,
+} from "../lib/package-plan-display";
 import { MoneyText } from "@/components/money/MoneyText";
 import { mapPackageQuoteMoney } from "../lib/package-money";
 import {
@@ -54,10 +57,23 @@ function sortPlans(plans: PackagePlanQuotedItem[]) {
   return [...plans].sort((a, b) => a.item.sortOrder - b.item.sortOrder);
 }
 
-function QuoteMoney({ amount, currencyCode }: { amount: string; currencyCode: string | null }) {
+function QuoteMoney({
+  amount,
+  currencyCode,
+}: {
+  amount: string;
+  currencyCode: string | null;
+}) {
   const t = useTranslations("common");
-  const money = mapPackageQuoteMoney({ amount, selectedCurrencyCode: currencyCode });
-  return money ? <MoneyText money={money} /> : <>{t("money.pricing.unavailable")}</>;
+  const money = mapPackageQuoteMoney({
+    amount,
+    selectedCurrencyCode: currencyCode,
+  });
+  return money ? (
+    <MoneyText money={money} />
+  ) : (
+    <>{t("money.pricing.unavailable")}</>
+  );
 }
 
 function StepBadge({
@@ -75,8 +91,8 @@ function StepBadge({
         complete
           ? "border-primary bg-primary/10 text-primary"
           : active
-            ? "border-primary/30 bg-white text-primary shadow-sm"
-            : "border-border-light bg-white text-text-muted"
+            ? "border-primary/30 text-primary bg-white shadow-sm"
+            : "border-border-light text-text-muted bg-white"
       }`}
     >
       {complete ? <CheckCircle2 size={12} /> : null}
@@ -105,37 +121,53 @@ export default function PackagePurchaseFlowModal({
   const initialPlan = useMemo(() => {
     if (!packageOptions.length) return null;
     return (
-      packageOptions.find((item) => item.item.code === initialPlanCode) ?? packageOptions[0] ?? null
+      packageOptions.find((item) => item.item.code === initialPlanCode) ??
+      packageOptions[0] ??
+      null
     );
   }, [initialPlanCode, packageOptions]);
 
   const [step, setStep] = useState<PurchaseStep>("choose-package");
-  const [selectedPlanCode, setSelectedPlanCode] = useState<string | null>(initialPlan?.item.code ?? null);
+  const [selectedPlanCode, setSelectedPlanCode] = useState<string | null>(
+    initialPlan?.item.code ?? null,
+  );
   const [selectedDuration, setSelectedDuration] = useState<30 | 60>(60);
   const [selectedSlots, setSelectedSlots] = useState<SelectableSlot[]>([]);
   const [purchaseError, setPurchaseError] = useState<string | null>(null);
   const [initiateError, setInitiateError] = useState<string | null>(null);
   const [policyNotice, setPolicyNotice] = useState<string | null>(null);
-  const [acceptedRefundPolicyId, setAcceptedRefundPolicyId] = useState<string | null>(null);
-  const [paymentClientSecret, setPaymentClientSecret] = useState<string | null>(null);
+  const [acceptedRefundPolicyId, setAcceptedRefundPolicyId] = useState<
+    string | null
+  >(null);
+  const [paymentClientSecret, setPaymentClientSecret] = useState<string | null>(
+    null,
+  );
   const [paymentReturnUrl, setPaymentReturnUrl] = useState("");
   const [isRedirecting, setIsRedirecting] = useState(false);
-  const [createdPurchase, setCreatedPurchase] = useState<PatientPackagePurchaseItem | null>(null);
+  const [createdPurchase, setCreatedPurchase] =
+    useState<PatientPackagePurchaseItem | null>(null);
 
   const createPurchase = useCreatePackagePurchase();
   const initiatePayment = useInitiatePackagePurchasePayment();
 
   const defaultDuration = 60;
-  const effectiveDuration: 30 | 60 = availableDurations.includes(selectedDuration)
+  const effectiveDuration: 30 | 60 = availableDurations.includes(
+    selectedDuration,
+  )
     ? selectedDuration
     : defaultDuration;
   const effectivePlanCode =
-    (selectedPlanCode && packageOptions.some((item) => item.item.code === selectedPlanCode)
+    (selectedPlanCode &&
+    packageOptions.some((item) => item.item.code === selectedPlanCode)
       ? selectedPlanCode
       : packageOptions[0]?.item.code) ?? null;
   const selectedPlan = useMemo(() => {
     if (!packageOptions.length) return null;
-    return packageOptions.find((item) => item.item.code === effectivePlanCode) ?? packageOptions[0] ?? null;
+    return (
+      packageOptions.find((item) => item.item.code === effectivePlanCode) ??
+      packageOptions[0] ??
+      null
+    );
   }, [effectivePlanCode, packageOptions]);
 
   const quoteInput = useMemo(() => {
@@ -152,14 +184,23 @@ export default function PackagePurchaseFlowModal({
   const quoteItem = quoteQuery.data?.item ?? null;
   const quote = quoteItem?.quote ?? null;
   const quoteCurrency = quote?.selectedCurrencyCode ?? null;
-  const requiredCount = quote?.sessionCount ?? selectedPlan?.item.sessionCount ?? 0;
+  const requiredCount =
+    quote?.sessionCount ?? selectedPlan?.item.sessionCount ?? 0;
   const quoteError = quoteQuery.error ? toAppError(quoteQuery.error) : null;
-  const currencyUnavailable = quoteError?.code === "PACKAGE_PLAN_CURRENCY_PRICE_UNAVAILABLE";
+  const currencyUnavailable =
+    quoteError?.code === "PACKAGE_PLAN_CURRENCY_PRICE_UNAVAILABLE";
   const currentQuotePlan = quoteItem?.item ?? selectedPlan?.item ?? null;
-  const purchaseNetAmount = quote?.patientPayableTotal ?? createdPurchase?.patientPayableTotal ?? "0";
-  const practitionerName = locale === "ar" ? profile.nameAr || profile.nameEn : profile.nameEn || profile.nameAr;
+  const purchaseNetAmount =
+    quote?.patientPayableTotal ?? createdPurchase?.patientPayableTotal ?? "0";
+  const practitionerName =
+    locale === "ar"
+      ? profile.nameAr || profile.nameEn
+      : profile.nameEn || profile.nameAr;
   const selectedSlotsPreview = useMemo(
-    () => [...selectedSlots].sort((left, right) => left.startsAt.localeCompare(right.startsAt)),
+    () =>
+      [...selectedSlots].sort((left, right) =>
+        left.startsAt.localeCompare(right.startsAt),
+      ),
     [selectedSlots],
   );
 
@@ -169,15 +210,21 @@ export default function PackagePurchaseFlowModal({
     error: packageRefundPolicyError,
     refetch: refetchPackageRefundPolicy,
   } = useRefundPolicy("PACKAGE", {
-    enabled: isOpen && isPatient && profile.acceptsPackage !== false,
+    // The practitioner package endpoint is the eligibility source of truth;
+    // the profile projection may omit or default this legacy flag.
+    enabled: isOpen && isPatient,
   });
   const packageRefundPolicy = packageRefundPolicyData?.item ?? null;
-  const packageRefundPolicyAppError = packageRefundPolicyError ? toAppError(packageRefundPolicyError) : null;
-  const packagePolicyReady = Boolean(packageRefundPolicy && packageRefundPolicy.isActive);
+  const packageRefundPolicyAppError = packageRefundPolicyError
+    ? toAppError(packageRefundPolicyError)
+    : null;
+  const packagePolicyReady = Boolean(
+    packageRefundPolicy && packageRefundPolicy.isActive,
+  );
   const reviewActionDisabled =
     createPurchase.isPending ||
     initiatePayment.isPending ||
-    selectedSlots.length !== requiredCount ||
+    selectedSlots.length > 1 ||
     !quote ||
     packageRefundPolicyLoading ||
     !packagePolicyReady ||
@@ -230,7 +277,7 @@ export default function PackagePurchaseFlowModal({
   }
 
   function canProceedToReview() {
-    return Boolean(quote && selectedSlots.length === requiredCount);
+    return Boolean(quote && selectedSlots.length <= 1);
   }
 
   async function handleConfirmPurchase() {
@@ -239,12 +286,18 @@ export default function PackagePurchaseFlowModal({
       return;
     }
 
-    if (selectedSlots.length !== requiredCount) {
-      setPurchaseError(t("packages.flow.errors.slotCountMismatch", { total: requiredCount }));
+    if (selectedSlots.length > 1) {
+      setPurchaseError(
+        t("packages.flow.errors.slotCountMismatch", { total: 1 }),
+      );
       return;
     }
 
-    if (!packageRefundPolicy || packageRefundPolicyAppError?.code === REFUND_POLICY_ERROR_CODES.activeNotFound) {
+    if (
+      !packageRefundPolicy ||
+      packageRefundPolicyAppError?.code ===
+        REFUND_POLICY_ERROR_CODES.activeNotFound
+    ) {
       setPurchaseError(t("packages.flow.errors.policyUnavailable"));
       return;
     }
@@ -278,7 +331,8 @@ export default function PackagePurchaseFlowModal({
         purchaseId,
         input: {
           acceptedRefundPolicyId: acceptedRefundPolicyId ?? "",
-          returnUrl: typeof window !== "undefined" ? window.location.href : undefined,
+          returnUrl:
+            typeof window !== "undefined" ? window.location.href : undefined,
         },
       });
       const payment = paymentResponse.item;
@@ -291,7 +345,9 @@ export default function PackagePurchaseFlowModal({
 
       if (payment.clientSecret) {
         setPaymentClientSecret(payment.clientSecret);
-        setPaymentReturnUrl(typeof window !== "undefined" ? window.location.href : "");
+        setPaymentReturnUrl(
+          typeof window !== "undefined" ? window.location.href : "",
+        );
         setStep("pay");
         return;
       }
@@ -338,29 +394,6 @@ export default function PackagePurchaseFlowModal({
 
   if (!isOpen) return null;
 
-  if (profile.acceptsPackage === false) {
-    return (
-      <Modal isOpen={isOpen} onClose={handleClose} size="lg">
-        <ModalHeader
-          eyebrow={t("packages.flow.eyebrow")}
-          title={t("packages.flow.disabledTitle")}
-          description={t("packages.flow.disabledSubtitle")}
-        />
-        <ModalBody>
-          <StateCard
-            title={t("packages.flow.disabledEmptyTitle")}
-            note={t("packages.flow.disabledEmptyNote")}
-          />
-        </ModalBody>
-        <ModalFooter>
-          <Button variant="outline" onClick={handleClose}>
-            {t("packages.flow.close")}
-          </Button>
-        </ModalFooter>
-      </Modal>
-    );
-  }
-
   if (!packageOptions.length) {
     return null;
   }
@@ -394,8 +427,8 @@ export default function PackagePurchaseFlowModal({
                 label: t("packages.flow.signInToContinue"),
                 href: (
                   <Link
-                  href="/signin/patient"
-                    className="inline-flex items-center justify-center rounded-2xl bg-primary px-5 py-3 text-sm font-semibold text-white transition hover:bg-primary-hover"
+                    href="/signin/patient"
+                    className="bg-primary hover:bg-primary-hover inline-flex items-center justify-center rounded-2xl px-5 py-3 text-sm font-semibold text-white transition"
                   >
                     {t("packages.flow.signInToContinue")}
                   </Link>
@@ -416,29 +449,35 @@ export default function PackagePurchaseFlowModal({
                       onClick={() => handleSelectPlan(plan.item.code)}
                       className={`rounded-[24px] border p-4 text-start transition ${
                         active
-                          ? "border-primary bg-primary-light shadow-sm dark:bg-primary/10"
-                          : "border-border-light bg-white hover:border-primary/40 dark:bg-surface-secondary"
+                          ? "border-primary bg-primary-light dark:bg-primary/10 shadow-sm"
+                          : "border-border-light hover:border-primary/40 dark:bg-surface-secondary bg-white"
                       }`}
                     >
                       <div className="flex items-start justify-between gap-3">
                         <div>
-                          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary">
-                            {plan.item.code}
+                          <p className="text-primary text-[11px] font-semibold tracking-[0.18em] uppercase">
+                            {t("packages.plan.badge")}
                           </p>
-                          <h3 className="mt-1 text-base font-semibold text-text-primary dark:text-white/90">
-                            {plan.item.title}
+                          <h3 className="text-text-primary mt-1 text-base font-semibold dark:text-white/90">
+                            {locale === "ar"
+                              ? t("packages.plan.titleTemplate", {
+                                  count: plan.item.sessionCount,
+                                })
+                              : plan.item.title}
                           </h3>
                         </div>
                         <Badge variant="solid" color="primary" size="sm">
                           {formatPercent(plan.quote.discountPercent)}
                         </Badge>
                       </div>
-                      <p className="mt-3 text-sm leading-6 text-text-secondary">
+                      <p className="text-text-secondary mt-3 text-sm leading-6">
                         {plan.item.description}
                       </p>
                       <div className="mt-4 flex items-center justify-between gap-3 rounded-2xl bg-white/80 px-3 py-2 text-xs dark:bg-white/5">
-                        <span className="text-text-muted">{t("packages.plan.sessionCount")}</span>
-                        <span className="font-semibold text-text-primary dark:text-white/90">
+                        <span className="text-text-muted">
+                          {t("packages.plan.sessionCount")}
+                        </span>
+                        <span className="text-text-primary font-semibold dark:text-white/90">
                           {plan.item.sessionCount} {t("packages.plan.sessions")}
                         </span>
                       </div>
@@ -447,9 +486,9 @@ export default function PackagePurchaseFlowModal({
                 })}
               </div>
 
-              <div className="grid gap-3 rounded-[28px] border border-border-light bg-surface p-4 dark:bg-white/5 md:grid-cols-3">
+              <div className="border-border-light bg-surface grid gap-3 rounded-[28px] border p-4 md:grid-cols-3 dark:bg-white/5">
                 <div className="space-y-2">
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-text-muted">
+                  <p className="text-text-muted text-[11px] font-semibold tracking-[0.16em] uppercase">
                     {t("packages.flow.duration")}
                   </p>
                   <div className="flex flex-wrap gap-2">
@@ -465,10 +504,12 @@ export default function PackagePurchaseFlowModal({
                           className={`inline-flex items-center justify-center rounded-full border px-3 py-1.5 text-xs font-semibold transition ${
                             active
                               ? "border-primary bg-primary/10 text-primary"
-                              : "border-border-light bg-white text-text-secondary hover:border-primary/40 hover:text-primary dark:bg-white/5"
+                              : "border-border-light text-text-secondary hover:border-primary/40 hover:text-primary bg-white dark:bg-white/5"
                           } ${enabled ? "" : "cursor-not-allowed opacity-45"}`}
                         >
-                          {duration === 30 ? t("booking.duration30") : t("booking.duration60")}
+                          {duration === 30
+                            ? t("booking.duration30")
+                            : t("booking.duration60")}
                         </button>
                       );
                     })}
@@ -476,30 +517,37 @@ export default function PackagePurchaseFlowModal({
                 </div>
 
                 <div className="space-y-2">
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-text-muted">
+                  <p className="text-text-muted text-[11px] font-semibold tracking-[0.16em] uppercase">
                     {t("packages.flow.sessionMode")}
                   </p>
-                  <Badge variant="light" color="info" size="sm" startIcon={<Sparkles size={14} />}>
+                  <Badge
+                    variant="light"
+                    color="info"
+                    size="sm"
+                    startIcon={<Sparkles size={14} />}
+                  >
                     {t("packages.flow.videoOnly")}
                   </Badge>
                 </div>
               </div>
 
               {quoteQuery.isLoading ? (
-                <div className="grid gap-3 rounded-[28px] border border-border-light bg-surface p-4 dark:bg-white/5 md:grid-cols-3">
+                <div className="border-border-light bg-surface grid gap-3 rounded-[28px] border p-4 md:grid-cols-3 dark:bg-white/5">
                   <Skeleton className="h-20 rounded-2xl" />
                   <Skeleton className="h-20 rounded-2xl" />
                   <Skeleton className="h-20 rounded-2xl" />
                 </div>
               ) : quote ? (
-                <div className="rounded-[28px] border border-border-light bg-white p-4 dark:bg-surface-secondary">
+                <div className="border-border-light dark:bg-surface-secondary rounded-[28px] border bg-white p-4">
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <div>
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-text-muted">
+                      <p className="text-text-muted text-[11px] font-semibold tracking-[0.16em] uppercase">
                         {t("packages.flow.previewHeading")}
                       </p>
-                      <h4 className="mt-1 text-lg font-semibold text-text-primary dark:text-white/90">
-                        {currentQuotePlan?.title ?? selectedPlan?.item.title ?? ""}
+                      <h4 className="text-text-primary mt-1 text-lg font-semibold dark:text-white/90">
+                        {currentQuotePlan?.title ??
+                          selectedPlan?.item.title ??
+                          ""}
                       </h4>
                     </div>
                     <Badge variant="solid" color="primary" size="sm">
@@ -508,43 +556,53 @@ export default function PackagePurchaseFlowModal({
                   </div>
 
                   <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-                    <div className="rounded-2xl bg-surface px-4 py-3 dark:bg-white/5">
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-text-muted">
+                    <div className="bg-surface rounded-2xl px-4 py-3 dark:bg-white/5">
+                      <p className="text-text-muted text-[11px] font-semibold tracking-[0.16em] uppercase">
                         {t("packages.quote.baseSessionPrice")}
                       </p>
-                      <p className="mt-1 text-base font-semibold text-text-primary dark:text-white/90">
-                        <QuoteMoney amount={quote.selectedBaseSessionPrice} currencyCode={quoteCurrency} />
+                      <p className="text-text-primary mt-1 text-base font-semibold dark:text-white/90">
+                        <QuoteMoney
+                          amount={quote.selectedBaseSessionPrice}
+                          currencyCode={quoteCurrency}
+                        />
                       </p>
                     </div>
-                    <div className="rounded-2xl bg-surface px-4 py-3 dark:bg-white/5">
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-text-muted">
+                    <div className="bg-surface rounded-2xl px-4 py-3 dark:bg-white/5">
+                      <p className="text-text-muted text-[11px] font-semibold tracking-[0.16em] uppercase">
                         {t("packages.quote.regularTotal")}
                       </p>
-                      <p className="mt-1 text-base font-semibold text-text-primary dark:text-white/90">
-                        <QuoteMoney amount={quote.undiscountedTotal} currencyCode={quoteCurrency} />
+                      <p className="text-text-primary mt-1 text-base font-semibold dark:text-white/90">
+                        <QuoteMoney
+                          amount={quote.undiscountedTotal}
+                          currencyCode={quoteCurrency}
+                        />
                       </p>
                     </div>
-                    <div className="rounded-2xl bg-surface px-4 py-3 dark:bg-white/5">
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-text-muted">
+                    <div className="bg-surface rounded-2xl px-4 py-3 dark:bg-white/5">
+                      <p className="text-text-muted text-[11px] font-semibold tracking-[0.16em] uppercase">
                         {t("packages.quote.discountAmount")}
                       </p>
-                      <p className="mt-1 text-base font-semibold text-success-700 dark:text-success-300">
-                        <QuoteMoney amount={quote.discountAmount} currencyCode={quoteCurrency} />
+                      <p className="text-success-700 dark:text-success-300 mt-1 text-base font-semibold">
+                        <QuoteMoney
+                          amount={quote.discountAmount}
+                          currencyCode={quoteCurrency}
+                        />
                       </p>
                     </div>
-                    <div className="rounded-2xl bg-primary-light px-4 py-3 dark:bg-primary/10">
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-primary">
+                    <div className="bg-primary-light dark:bg-primary/10 rounded-2xl px-4 py-3">
+                      <p className="text-primary text-[11px] font-semibold tracking-[0.16em] uppercase">
                         {t("packages.quote.payableTotal")}
                       </p>
-                      <p className="mt-1 text-lg font-bold text-primary">
-                        <QuoteMoney amount={quote.patientPayableTotal} currencyCode={quoteCurrency} />
+                      <p className="text-primary mt-1 text-lg font-bold">
+                        <QuoteMoney
+                          amount={quote.patientPayableTotal}
+                          currencyCode={quoteCurrency}
+                        />
                       </p>
                     </div>
                   </div>
 
-                  <div className="mt-4 flex flex-wrap gap-2 text-xs text-text-muted">
-                    <span>{selectedPlan?.item.code ?? ""}</span>
-                    <span>•</span>
+                  <div className="text-text-muted mt-4 flex flex-wrap gap-2 text-xs">
                     <span>{formatDurationLabel(quote.durationMinutes)}</span>
                     <span>•</span>
                     <span>{quoteCurrency}</span>
@@ -573,28 +631,28 @@ export default function PackagePurchaseFlowModal({
 
           {step === "choose-times" && quote ? (
             <section className="space-y-4">
-              <div className="grid gap-3 rounded-[28px] border border-border-light bg-surface p-4 dark:bg-white/5 md:grid-cols-3">
+              <div className="border-border-light bg-surface grid gap-3 rounded-[28px] border p-4 md:grid-cols-3 dark:bg-white/5">
                 <div>
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-text-muted">
+                  <p className="text-text-muted text-[11px] font-semibold tracking-[0.16em] uppercase">
                     {t("packages.flow.selectedPackage")}
                   </p>
-                  <p className="mt-1 text-sm font-semibold text-text-primary dark:text-white/90">
+                  <p className="text-text-primary mt-1 text-sm font-semibold dark:text-white/90">
                     {selectedPlan?.item.title ?? ""}
                   </p>
                 </div>
                 <div>
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-text-muted">
+                  <p className="text-text-muted text-[11px] font-semibold tracking-[0.16em] uppercase">
                     {t("packages.flow.selectedDuration")}
                   </p>
-                  <p className="mt-1 text-sm font-semibold text-text-primary dark:text-white/90">
+                  <p className="text-text-primary mt-1 text-sm font-semibold dark:text-white/90">
                     {formatDurationLabel(selectedDuration)}
                   </p>
                 </div>
                 <div>
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-text-muted">
+                  <p className="text-text-muted text-[11px] font-semibold tracking-[0.16em] uppercase">
                     {t("packages.flow.selectedCurrency")}
                   </p>
-                  <p className="mt-1 text-sm font-semibold text-text-primary dark:text-white/90">
+                  <p className="text-text-primary mt-1 text-sm font-semibold dark:text-white/90">
                     {quoteCurrency ?? t("packages.errors.currencyUnavailable")}
                   </p>
                 </div>
@@ -604,6 +662,7 @@ export default function PackagePurchaseFlowModal({
                 slug={slug}
                 durationMinutes={selectedDuration}
                 requiredCount={requiredCount}
+                maxSelectableCount={1}
                 selectedSlots={selectedSlots}
                 onChange={setSelectedSlots}
               />
@@ -613,17 +672,17 @@ export default function PackagePurchaseFlowModal({
           {step === "review" && quote ? (
             <section className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_360px] lg:items-start">
               <div className="space-y-4">
-                <div className="rounded-[28px] border border-border-light bg-white p-4 shadow-sm dark:bg-surface-secondary">
+                <div className="border-border-light dark:bg-surface-secondary rounded-[28px] border bg-white p-4 shadow-sm">
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div className="space-y-2">
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-text-muted">
+                      <p className="text-text-muted text-[11px] font-semibold tracking-[0.16em] uppercase">
                         {t("packages.flow.reviewHeading")}
                       </p>
-                      <h4 className="text-lg font-semibold text-text-primary dark:text-white/90">
+                      <h4 className="text-text-primary text-lg font-semibold dark:text-white/90">
                         {selectedPlan?.item.title ?? ""}
                       </h4>
                       {practitionerName ? (
-                        <p className="text-sm text-text-secondary">
+                        <p className="text-text-secondary text-sm">
                           {t("packages.flow.practitioner")}: {practitionerName}
                         </p>
                       ) : null}
@@ -637,48 +696,51 @@ export default function PackagePurchaseFlowModal({
                   </div>
 
                   <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-                    <div className="rounded-2xl bg-surface px-4 py-3 dark:bg-white/5">
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-text-muted">
+                    <div className="bg-surface rounded-2xl px-4 py-3 dark:bg-white/5">
+                      <p className="text-text-muted text-[11px] font-semibold tracking-[0.16em] uppercase">
                         {t("packages.plan.sessionCount")}
                       </p>
-                      <p className="mt-1 text-base font-semibold text-text-primary dark:text-white/90">
-                        {selectedPlan?.item.sessionCount} {t("packages.plan.sessions")}
+                      <p className="text-text-primary mt-1 text-base font-semibold dark:text-white/90">
+                        {selectedPlan?.item.sessionCount}{" "}
+                        {t("packages.plan.sessions")}
                       </p>
                     </div>
-                    <div className="rounded-2xl bg-surface px-4 py-3 dark:bg-white/5">
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-text-muted">
+                    <div className="bg-surface rounded-2xl px-4 py-3 dark:bg-white/5">
+                      <p className="text-text-muted text-[11px] font-semibold tracking-[0.16em] uppercase">
                         {t("packages.flow.selectedDuration")}
                       </p>
-                      <p className="mt-1 text-base font-semibold text-text-primary dark:text-white/90">
+                      <p className="text-text-primary mt-1 text-base font-semibold dark:text-white/90">
                         {formatDurationLabel(selectedDuration)}
                       </p>
                     </div>
-                    <div className="rounded-2xl bg-surface px-4 py-3 dark:bg-white/5">
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-text-muted">
+                    <div className="bg-surface rounded-2xl px-4 py-3 dark:bg-white/5">
+                      <p className="text-text-muted text-[11px] font-semibold tracking-[0.16em] uppercase">
                         {t("packages.flow.selectedCurrency")}
                       </p>
-                      <p className="mt-1 text-base font-semibold text-text-primary dark:text-white/90">
-                        {quoteCurrency ? t(`packages.currency.${quoteCurrency}`) : t("packages.errors.currencyUnavailable")}
+                      <p className="text-text-primary mt-1 text-base font-semibold dark:text-white/90">
+                        {quoteCurrency
+                          ? t(`packages.currency.${quoteCurrency}`)
+                          : t("packages.errors.currencyUnavailable")}
                       </p>
                     </div>
-                    <div className="rounded-2xl bg-primary-light px-4 py-3 dark:bg-primary/10">
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-primary">
+                    <div className="bg-primary-light dark:bg-primary/10 rounded-2xl px-4 py-3">
+                      <p className="text-primary text-[11px] font-semibold tracking-[0.16em] uppercase">
                         {t("packages.quote.discount")}
                       </p>
-                      <p className="mt-1 text-lg font-bold text-primary">
+                      <p className="text-primary mt-1 text-lg font-bold">
                         {formatPercent(quote.discountPercent)}
                       </p>
                     </div>
                   </div>
                 </div>
 
-                <div className="rounded-[28px] border border-border-light bg-surface p-4 dark:bg-white/5">
+                <div className="border-border-light bg-surface rounded-[28px] border p-4 dark:bg-white/5">
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <div>
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-text-muted">
+                      <p className="text-text-muted text-[11px] font-semibold tracking-[0.16em] uppercase">
                         {t("packages.flow.selectedSessions")}
                       </p>
-                      <p className="mt-1 text-sm text-text-secondary">
+                      <p className="text-text-secondary mt-1 text-sm">
                         {t("packages.flow.chosenSlots")}
                       </p>
                     </div>
@@ -694,28 +756,32 @@ export default function PackagePurchaseFlowModal({
                     {selectedSlotsPreview.map((slot, index) => (
                       <li
                         key={slot.startsAt}
-                        className="rounded-[20px] border border-border-light bg-white px-4 py-3 dark:bg-surface-secondary"
+                        className="border-border-light dark:bg-surface-secondary rounded-[20px] border bg-white px-4 py-3"
                       >
                         <div className="flex items-start justify-between gap-3">
                           <div className="space-y-1">
-                            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-text-muted">
+                            <p className="text-text-muted text-[11px] font-semibold tracking-[0.16em] uppercase">
                               {index + 1} / {requiredCount}
                             </p>
-                            <p className="text-sm font-semibold text-text-primary dark:text-white/90">
+                            <p className="text-text-primary text-sm font-semibold dark:text-white/90">
                               {formatDayLabel(slot.startsAt, numLocale)}
                             </p>
-                            <p className="text-sm text-text-secondary">
-                              {formatTimeLabel(slot.startsAt, numLocale)} • {formatDurationLabel(selectedDuration)}
+                            <p className="text-text-secondary text-sm">
+                              {formatTimeLabel(slot.startsAt, numLocale)} •{" "}
+                              {formatDurationLabel(selectedDuration)}
                             </p>
                           </div>
                           <button
                             type="button"
                             onClick={() =>
                               setSelectedSlots((current) =>
-                                current.filter((selected) => selected.startsAt !== slot.startsAt),
+                                current.filter(
+                                  (selected) =>
+                                    selected.startsAt !== slot.startsAt,
+                                ),
                               )
                             }
-                            className="inline-flex items-center gap-2 rounded-full border border-border-light bg-white px-3 py-2 text-xs font-semibold text-text-primary transition hover:border-primary/40 hover:text-primary dark:bg-white/5"
+                            className="border-border-light text-text-primary hover:border-primary/40 hover:text-primary inline-flex items-center gap-2 rounded-full border bg-white px-3 py-2 text-xs font-semibold transition dark:bg-white/5"
                           >
                             <X size={12} />
                             {t("packages.flow.removeSlot")}
@@ -726,41 +792,53 @@ export default function PackagePurchaseFlowModal({
                   </ol>
                 </div>
 
-                <div className="rounded-[28px] border border-border-light bg-white p-4 dark:bg-surface-secondary">
-                  <p className="text-sm font-semibold text-text-primary dark:text-white/90">
+                <div className="border-border-light dark:bg-surface-secondary rounded-[28px] border bg-white p-4">
+                  <p className="text-text-primary text-sm font-semibold dark:text-white/90">
                     {t("packages.flow.previewHeading")}
                   </p>
                   <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-                    <div className="rounded-2xl bg-surface px-4 py-3 dark:bg-white/5">
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-text-muted">
+                    <div className="bg-surface rounded-2xl px-4 py-3 dark:bg-white/5">
+                      <p className="text-text-muted text-[11px] font-semibold tracking-[0.16em] uppercase">
                         {t("packages.quote.baseSessionPrice")}
                       </p>
-                      <p className="mt-1 text-base font-semibold text-text-primary dark:text-white/90">
-                        <QuoteMoney amount={quote.selectedBaseSessionPrice} currencyCode={quoteCurrency} />
+                      <p className="text-text-primary mt-1 text-base font-semibold dark:text-white/90">
+                        <QuoteMoney
+                          amount={quote.selectedBaseSessionPrice}
+                          currencyCode={quoteCurrency}
+                        />
                       </p>
                     </div>
-                    <div className="rounded-2xl bg-surface px-4 py-3 dark:bg-white/5">
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-text-muted">
+                    <div className="bg-surface rounded-2xl px-4 py-3 dark:bg-white/5">
+                      <p className="text-text-muted text-[11px] font-semibold tracking-[0.16em] uppercase">
                         {t("packages.quote.regularTotal")}
                       </p>
-                      <p className="mt-1 text-base font-semibold text-text-primary dark:text-white/90">
-                        <QuoteMoney amount={quote.undiscountedTotal} currencyCode={quoteCurrency} />
+                      <p className="text-text-primary mt-1 text-base font-semibold dark:text-white/90">
+                        <QuoteMoney
+                          amount={quote.undiscountedTotal}
+                          currencyCode={quoteCurrency}
+                        />
                       </p>
                     </div>
-                    <div className="rounded-2xl bg-surface px-4 py-3 dark:bg-white/5">
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-text-muted">
+                    <div className="bg-surface rounded-2xl px-4 py-3 dark:bg-white/5">
+                      <p className="text-text-muted text-[11px] font-semibold tracking-[0.16em] uppercase">
                         {t("packages.quote.discountAmount")}
                       </p>
-                      <p className="mt-1 text-base font-semibold text-success-700 dark:text-success-300">
-                        <QuoteMoney amount={quote.discountAmount} currencyCode={quoteCurrency} />
+                      <p className="text-success-700 dark:text-success-300 mt-1 text-base font-semibold">
+                        <QuoteMoney
+                          amount={quote.discountAmount}
+                          currencyCode={quoteCurrency}
+                        />
                       </p>
                     </div>
-                    <div className="rounded-2xl bg-primary-light px-4 py-3 dark:bg-primary/10">
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-primary">
+                    <div className="bg-primary-light dark:bg-primary/10 rounded-2xl px-4 py-3">
+                      <p className="text-primary text-[11px] font-semibold tracking-[0.16em] uppercase">
                         {t("packages.quote.payableTotal")}
                       </p>
-                      <p className="mt-1 text-lg font-bold text-primary">
-                        <QuoteMoney amount={quote.patientPayableTotal} currencyCode={quoteCurrency} />
+                      <p className="text-primary mt-1 text-lg font-bold">
+                        <QuoteMoney
+                          amount={quote.patientPayableTotal}
+                          currencyCode={quoteCurrency}
+                        />
                       </p>
                     </div>
                   </div>
@@ -778,24 +856,37 @@ export default function PackagePurchaseFlowModal({
                 />
 
                 {policyNotice ? (
-                  <p className="rounded-2xl border border-warning-200 bg-warning-50 px-4 py-3 text-xs leading-6 text-warning-800 dark:border-warning-400/30 dark:bg-warning-500/10 dark:text-warning-200">
+                  <p className="border-warning-200 bg-warning-50 text-warning-800 dark:border-warning-400/30 dark:bg-warning-500/10 dark:text-warning-200 rounded-2xl border px-4 py-3 text-xs leading-6">
                     {policyNotice}
                   </p>
                 ) : null}
 
-                {purchaseError ? <StateCard title={purchaseError} note={t("packages.flow.reviewRetryHint")} /> : null}
-                {initiateError ? <StateCard title={initiateError} note={t("packages.flow.reviewRetryHint")} /> : null}
+                {purchaseError ? (
+                  <StateCard
+                    title={purchaseError}
+                    note={t("packages.flow.reviewRetryHint")}
+                  />
+                ) : null}
+                {initiateError ? (
+                  <StateCard
+                    title={initiateError}
+                    note={t("packages.flow.reviewRetryHint")}
+                  />
+                ) : null}
               </div>
 
               <aside className="space-y-4 lg:sticky lg:top-4">
-                <div className="rounded-[28px] border border-border-light bg-primary-light/35 p-4 shadow-sm dark:bg-primary/10">
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-primary">
+                <div className="border-border-light bg-primary-light/35 dark:bg-primary/10 rounded-[28px] border p-4 shadow-sm">
+                  <p className="text-primary text-[11px] font-semibold tracking-[0.16em] uppercase">
                     {t("packages.quote.payableTotal")}
                   </p>
-                  <p className="mt-2 text-3xl font-bold text-primary">
-                    <QuoteMoney amount={quote.patientPayableTotal} currencyCode={quoteCurrency} />
+                  <p className="text-primary mt-2 text-3xl font-bold">
+                    <QuoteMoney
+                      amount={quote.patientPayableTotal}
+                      currencyCode={quoteCurrency}
+                    />
                   </p>
-                  <p className="mt-2 text-sm text-text-secondary">
+                  <p className="text-text-secondary mt-2 text-sm">
                     {t("packages.flow.slotProgress", {
                       selected: selectedSlotsPreview.length,
                       total: requiredCount,
@@ -813,11 +904,11 @@ export default function PackagePurchaseFlowModal({
                   </Button>
 
                   {reviewActionHelper ? (
-                    <p className="mt-3 text-xs leading-6 text-text-muted">
+                    <p className="text-text-muted mt-3 text-xs leading-6">
                       {reviewActionHelper}
                     </p>
                   ) : null}
-                  <p className="mt-2 text-xs leading-6 text-text-muted">
+                  <p className="text-text-muted mt-2 text-xs leading-6">
                     {t("packages.flow.payNote")}
                   </p>
                 </div>
@@ -827,21 +918,26 @@ export default function PackagePurchaseFlowModal({
 
           {step === "pay" && paymentClientSecret ? (
             <section className="space-y-4">
-              <div className="rounded-[28px] border border-border-light bg-surface p-4 dark:bg-white/5">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-text-muted">
+              <div className="border-border-light bg-surface rounded-[28px] border p-4 dark:bg-white/5">
+                <p className="text-text-muted text-[11px] font-semibold tracking-[0.16em] uppercase">
                   {t("packages.flow.payHeading")}
                 </p>
-                <p className="mt-1 text-sm font-semibold text-text-primary dark:text-white/90">
+                <p className="text-text-primary mt-1 text-sm font-semibold dark:text-white/90">
                   {selectedPlan?.item.title ?? ""}
                 </p>
-                <p className="mt-1 text-sm text-text-secondary">{t("packages.flow.payNote")}</p>
+                <p className="text-text-secondary mt-1 text-sm">
+                  {t("packages.flow.payNote")}
+                </p>
               </div>
 
               <StripePaymentForm
                 clientSecret={paymentClientSecret}
                 netPaidAmount={purchaseNetAmount}
                 currency={quoteCurrency!.toUpperCase()}
-                returnUrl={paymentReturnUrl || (typeof window !== "undefined" ? window.location.href : "")}
+                returnUrl={
+                  paymentReturnUrl ||
+                  (typeof window !== "undefined" ? window.location.href : "")
+                }
               />
             </section>
           ) : null}
@@ -856,7 +952,7 @@ export default function PackagePurchaseFlowModal({
 
         <ModalFooter className="sticky bottom-0">
           <div className="flex w-full flex-wrap items-center justify-between gap-3">
-            <div className="text-xs text-text-muted">
+            <div className="text-text-muted text-xs">
               {quote ? (
                 <span>
                   {t("packages.flow.slotProgress", {
@@ -882,10 +978,10 @@ export default function PackagePurchaseFlowModal({
                   {t("packages.flow.back")}
                 </Button>
               ) : (
-                  <Button variant="outline" onClick={handleClose}>
-                    {t("packages.flow.close")}
-                  </Button>
-                )}
+                <Button variant="outline" onClick={handleClose}>
+                  {t("packages.flow.close")}
+                </Button>
+              )}
 
               {step === "choose-package" ? (
                 <Button

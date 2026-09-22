@@ -6,6 +6,10 @@ import {
   Prisma,
 } from '@prisma/client';
 import { AppLoggerService } from '@common/logging/app-logger.service';
+import {
+  SecurityAuditActorType as AuditActorType,
+  SecurityAuditSource,
+} from '@common/security-audit/security-audit.types';
 import { PaymentRepository } from '../repositories/payment.repository';
 import { PaymentProviderRegistryService } from '../services/payment-provider-registry.service';
 import { ExpirePaymentUseCase } from './expire-payment.use-case';
@@ -50,6 +54,21 @@ export class HandlePaymobWebhookUseCase {
     );
 
     if (duplicate) {
+      const duplicatePayment = await this.paymentRepository.findById(
+        duplicate.paymentId,
+      );
+      if (
+        webhook.outcome === 'SUCCEEDED' &&
+        duplicatePayment?.status === PaymentStatus.CAPTURED
+      ) {
+        // Re-enter the idempotent capture orchestrator so a historical crash
+        // after capture can repair package/academy post-commit projections.
+        await this.markPaymentSucceededUseCase.execute({
+          paymentId: duplicate.paymentId,
+          providerEventRef: webhook.providerEventRef,
+          payload: webhook.payload,
+        });
+      }
       return {
         received: true,
         handled: true,
@@ -86,7 +105,7 @@ export class HandlePaymobWebhookUseCase {
       !gatewayMoneyMatchesPayment({
         amountMinor: webhook.amountMinor,
         currencyCode: webhook.currencyCode,
-        expectedAmount: payment.amountTotal,
+        expectedAmount: payment.amountFromGateway,
         expectedCurrencyCode: payment.currencyCode,
       })
     ) {
@@ -148,7 +167,9 @@ export class HandlePaymobWebhookUseCase {
       if (!receipt.duplicate) {
         await this.paymentRepository.createEvent({
           paymentId: payment.id,
-          eventType: PaymentEventType.PROVIDER_WEBHOOK_RECEIVED,
+          eventType: PaymentEventType.PAYMENT_LATE_SUCCESS_REVIEW_REQUIRED,
+          actorType: AuditActorType.PAYMENT_WEBHOOK,
+          source: SecurityAuditSource.PAYMENT_WEBHOOK,
           providerEventRef: webhook.providerEventRef,
           reason: 'PAYMENT_SUCCESS_RECEIVED_AFTER_EXPIRY',
           payloadJson: webhook.payload as Prisma.InputJsonValue,
@@ -287,9 +308,12 @@ export class HandlePaymobWebhookUseCase {
         : record;
     const hmacHeader = ['x-paymob-hmac', 'hmac', 'x-hmac'].some((key) => {
       const value = input.headers[key];
-      return Array.isArray(value) ? Boolean(value[0]?.trim()) : Boolean(value?.trim());
+      return Array.isArray(value)
+        ? Boolean(value[0]?.trim())
+        : Boolean(value?.trim());
     });
-    const hmacQuery = typeof input.query?.hmac === 'string' && Boolean(input.query.hmac.trim());
+    const hmacQuery =
+      typeof input.query?.hmac === 'string' && Boolean(input.query.hmac.trim());
 
     this.logger.debug(
       {
@@ -298,7 +322,8 @@ export class HandlePaymobWebhookUseCase {
         type: typeof record.type === 'string' ? record.type : null,
         hasHmac: hmacHeader || hmacQuery,
         transactionId:
-          typeof transaction.id === 'string' || typeof transaction.id === 'number'
+          typeof transaction.id === 'string' ||
+          typeof transaction.id === 'number'
             ? String(transaction.id)
             : null,
       },

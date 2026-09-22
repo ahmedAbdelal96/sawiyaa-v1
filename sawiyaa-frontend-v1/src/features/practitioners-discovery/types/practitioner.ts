@@ -112,8 +112,8 @@ export type PractitionerFeeBounds = {
 
 export type PractitionerAvailabilityFilterSupport = {
   onlineNowSupported: true;
-  availableTodaySupported: false;
-  availableThisWeekSupported: false;
+  availableTodaySupported: true;
+  availableThisWeekSupported: true;
 };
 
 export type PractitionerFiltersMetadata = {
@@ -149,6 +149,7 @@ export type PractitionerQueryParams = {
   gender?: "male" | "female";
   duration?: 30 | 60;
   onlineNow?: boolean;
+  instantBookingEnabled?: boolean;
   availableToday?: boolean;
   availableThisWeek?: boolean;
   acceptsCoupon?: boolean;

@@ -17,6 +17,7 @@
     "title": "Filters",
     "availability": "Availability",
     "onlineNow": "Online now",
+    "instantBookingEnabled": "Instant booking enabled",
     "availableToday": "Available today",
     "availableThisWeek": "Available this week",
     "category": "Main specialty area",
@@ -102,7 +103,8 @@
     "jo": "Jordan"
   },
   "card": {
-    "verified": "Verified",
+    "verified": "Verified on Sawiyaa",
+    "verifiedExplanation": "This practitioner has passed Sawiyaa's approval and publication requirements.",
     "yearsExp": "yrs exp",
     "sessions": "sessions",
     "reviews": "reviews",

@@ -3,7 +3,6 @@ import type {
   PractitionerProfile,
   PublicPractitionerInstantBookingAvailability,
 } from "../types/profile";
-import PackagePlansSection from "@/features/package-plans/components/PackagePlansSection";
 import PublicAvailabilityViewer from "./PublicAvailabilityViewer";
 import ProfileInstantActionCard from "./ProfileInstantActionCard";
 
@@ -44,9 +43,6 @@ export default async function ProfileBookingPanel({
           displaySessionPrice60={profile.sessionPrice60 ?? null}
         />
       </div>
-
-      {/* Package Plans */}
-      <PackagePlansSection slug={profile.slug} profile={profile} />
     </div>
   );
 }

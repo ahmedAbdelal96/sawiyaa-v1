@@ -1067,6 +1067,9 @@
       "expectedEnd": "موعد الانتهاء المحدد",
       "internalNotes": "ملاحظات داخلية",
       "timeline": "السجل الزمني للأحداث",
+      "timelineEmpty": "لا توجد أحداث مسجلة للجلسة حتى الآن.",
+      "previousAppointment": "الموعد السابق",
+      "newAppointment": "الموعد الجديد",
       "reason": "السبب:",
       "patientProfile": "ملف المريض",
       "gender": "الجنس",
@@ -1108,7 +1111,9 @@
       "NO_SHOW_PATIENT": "تغيب المريض",
       "NO_SHOW_PRACTITIONER": "تغيب المختص",
       "PROVIDER_ROOM_CREATED": "أُنشئت الغرفة المباشرة",
-      "PROVIDER_ROOM_ENDED": "أُغلقت الغرفة المباشرة"
+      "PROVIDER_ROOM_ENDED": "أُغلقت الغرفة المباشرة",
+      "RESCHEDULED": "تم تغيير موعد الجلسة",
+      "UNKNOWN": "تحديث على الجلسة"
     },
     "paymentStatuses": {
       "CREATED": "تم إنشاء الدفع",

@@ -10,15 +10,20 @@ type Props = {
   children: ReactNode;
   locale: string;
   messages: Parameters<typeof NextIntlClientProvider>[0]["messages"];
+  timeZone?: string;
 };
 
-export function AppIntlProvider({ children, locale, messages }: Props) {
+export function AppIntlProvider({ children, locale, messages, timeZone = "Africa/Cairo" }: Props) {
   return (
     <NextIntlClientProvider
       locale={locale}
       messages={messages}
+      timeZone={timeZone}
       onError={(error) => {
-        if (error.code === IntlErrorCode.MISSING_MESSAGE) {
+        if (
+          error.code === IntlErrorCode.MISSING_MESSAGE ||
+          error.code === IntlErrorCode.ENVIRONMENT_FALLBACK
+        ) {
           return;
         }
 
@@ -44,4 +49,3 @@ export function AppIntlProvider({ children, locale, messages }: Props) {
     </NextIntlClientProvider>
   );
 }
-

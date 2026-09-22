@@ -574,6 +574,7 @@
         "ATTENDANCE_JOINED": "Attendance joined",
         "ATTENDANCE_LEFT": "Attendance left",
         "SESSION_CREATED": "Session created",
+        "RESCHEDULED": "Appointment time changed",
         "PAYMENT_PENDING": "Payment pending",
         "PAYMENT_CONFIRMED": "Payment confirmed",
         "PRACTITIONER_ACCEPTED": "Practitioner accepted",

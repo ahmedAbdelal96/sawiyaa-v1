@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { forwardRef, Module } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PermissionResolverService } from '@common/guards/authorization/permission-resolver.service';
 import { PermissionsGuard } from '@common/guards/authorization/permissions.guard';
@@ -51,7 +51,7 @@ import { PractitionersModule } from '@modules/practitioners/practitioners.module
  * Notifications module provides the operational notification stack and the authenticated in-app feed.
  */
 @Module({
-  imports: [ConfigModule, PractitionersModule],
+  imports: [ConfigModule, forwardRef(() => PractitionersModule)],
   controllers: [
     AdminNotificationOpsController,
     AdminAuditLogController,

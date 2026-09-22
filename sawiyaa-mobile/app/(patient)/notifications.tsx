@@ -156,7 +156,7 @@ export default function PatientNotificationsScreen() {
 
   const unreadCount = unreadCountQuery.data?.item.unreadCount ?? 0;
   const items = useMemo(
-    () => listQuery.data?.items ?? [],
+    () => (listQuery.data?.items ?? []) as UserNotificationItem[],
     [listQuery.data?.items],
   );
   const filteredItems = useMemo(() => {
@@ -205,27 +205,66 @@ export default function PatientNotificationsScreen() {
     }
   };
 
-  const getNotificationIcon = (typeSlug: string) => {
+  const getNotificationPresentationStyle = (typeSlug: string) => {
     const slug = typeSlug.toLowerCase();
-    if (slug.includes("message") || slug.includes("chat")) {
-      return "chatbubble-ellipses-outline" as const;
+    if (
+      slug.includes("message") ||
+      slug.includes("chat") ||
+      slug.includes("support")
+    ) {
+      return {
+        icon: "chatbubbles" as const,
+        iconBg: "#E0F2FE",
+        iconColor: "#0284C7",
+      };
     }
-    if (slug.includes("session")) {
-      return "calendar-outline" as const;
+    if (
+      slug.includes("session") ||
+      slug.includes("booking") ||
+      slug.includes("appointment")
+    ) {
+      return {
+        icon: "calendar" as const,
+        iconBg: "#DCFCE7",
+        iconColor: "#16A34A",
+      };
     }
-    if (slug.includes("payment") || slug.includes("wallet")) {
-      return "card-outline" as const;
+    if (
+      slug.includes("payment") ||
+      slug.includes("wallet") ||
+      slug.includes("payout")
+    ) {
+      return {
+        icon: "wallet" as const,
+        iconBg: "#DCFCE7",
+        iconColor: "#16A34A",
+      };
     }
-    return "notifications-outline" as const;
+    if (
+      slug.includes("cancel") ||
+      slug.includes("warning") ||
+      slug.includes("urgent")
+    ) {
+      return {
+        icon: "alert-circle" as const,
+        iconBg: "#FFE4E6",
+        iconColor: "#E11D48",
+      };
+    }
+    return {
+      icon: "notifications" as const,
+      iconBg: "#F1F5F9",
+      iconColor: "#475569",
+    };
   };
 
   return (
     <Screen bg="background" testID="notifications-screen">
-      <Header
-        title={t("patientNotifications.title")}
-      />
+      <Header title={t("patientNotifications.title")} />
 
-      {listQuery.isLoading && !listQuery.data ? <NotificationFeedSkeleton /> : null}
+      {listQuery.isLoading && !listQuery.data ? (
+        <NotificationFeedSkeleton />
+      ) : null}
 
       {listQuery.isError && !listQuery.isLoading ? (
         <ErrorState
@@ -254,7 +293,12 @@ export default function PatientNotificationsScreen() {
                   isRTL ? styles.rowRtl : styles.rowLtr,
                 ]}
               >
-                <View style={[styles.summaryTextWrap, { alignItems: isRTL ? "flex-end" : "flex-start" }]}>
+                <View
+                  style={[
+                    styles.summaryTextWrap,
+                    { alignItems: isRTL ? "flex-end" : "flex-start" },
+                  ]}
+                >
                   <Text
                     color={theme.colors.textSecondary}
                     style={styles.summaryBody}
@@ -291,16 +335,26 @@ export default function PatientNotificationsScreen() {
                       ? t("patientNotifications.markAllLoading")
                       : t("patientNotifications.markAll")
                   }
-                  style={[styles.markAllButton, isRTL ? styles.rowRtl : styles.rowLtr]}
+                  style={[
+                    styles.markAllButton,
+                    isRTL ? styles.rowRtl : styles.rowLtr,
+                  ]}
                   activeOpacity={0.82}
                 >
                   <Ionicons
                     name="checkmark-done-outline"
                     size={16}
                     color={theme.colors.primary}
-                    style={{ marginRight: isRTL ? 0 : 4, marginLeft: isRTL ? 4 : 0 }}
+                    style={{
+                      marginRight: isRTL ? 0 : 4,
+                      marginLeft: isRTL ? 4 : 0,
+                    }}
                   />
-                  <Text color={theme.colors.primary} weight="700" style={{ fontSize: 13 }}>
+                  <Text
+                    color={theme.colors.primary}
+                    weight="700"
+                    style={{ fontSize: 13 }}
+                  >
                     {markAllReadMutation.isPending
                       ? t("patientNotifications.markAllLoading")
                       : t("patientNotifications.markAll")}
@@ -337,7 +391,11 @@ export default function PatientNotificationsScreen() {
                       >
                         <Text
                           weight={selected ? "700" : "600"}
-                          color={selected ? theme.colors.onPrimary : theme.colors.textSecondary}
+                          color={
+                            selected
+                              ? theme.colors.onPrimary
+                              : theme.colors.textSecondary
+                          }
                           style={styles.filterText}
                         >
                           {t(`patientNotifications.filters.${value}`)}
@@ -381,6 +439,9 @@ export default function PatientNotificationsScreen() {
                 primaryAction: item.primaryAction,
               },
             );
+            const presentationStyle = getNotificationPresentationStyle(
+              item.typeSlug,
+            );
 
             return (
               <TouchableOpacity
@@ -391,7 +452,12 @@ export default function PatientNotificationsScreen() {
                 accessibilityLabel={`${isUnread ? t("patientNotifications.statusUnread") : t("patientNotifications.statusRead")}. ${presentation.title}. ${presentation.body}`}
                 style={[
                   styles.itemRowWrapper,
-                  { borderBottomColor: theme.colors.borderLight },
+                  {
+                    backgroundColor: theme.colors.surface,
+                    borderColor: isUnread
+                      ? theme.colors.primary
+                      : theme.colors.borderLight,
+                  },
                 ]}
               >
                 <View
@@ -406,20 +472,14 @@ export default function PatientNotificationsScreen() {
                       style={[
                         styles.iconWrap,
                         {
-                          backgroundColor: isUnread
-                            ? theme.colors.primarySoft
-                            : theme.colors.iconContainerMuted,
+                          backgroundColor: presentationStyle.iconBg,
                         },
                       ]}
                     >
                       <Ionicons
-                        name={getNotificationIcon(item.typeSlug)}
+                        name={presentationStyle.icon}
                         size={18}
-                        color={
-                          isUnread
-                            ? theme.colors.primary
-                            : theme.colors.textMuted
-                        }
+                        color={presentationStyle.iconColor}
                       />
                     </View>
                     {isUnread ? (
@@ -478,7 +538,10 @@ export default function PatientNotificationsScreen() {
                           {t("patientNotifications.openAction")}
                         </Text>
                         <Ionicons
-                          name={getDirectionalIcon("disclosure", Boolean(isRTL))}
+                          name={getDirectionalIcon(
+                            "disclosure",
+                            Boolean(isRTL),
+                          )}
                           size={14}
                           color={theme.colors.primary}
                         />
@@ -486,7 +549,6 @@ export default function PatientNotificationsScreen() {
                     ) : null}
                   </View>
                 </View>
-                <View style={styles.rowDivider} />
               </TouchableOpacity>
             );
           }}
@@ -587,9 +649,10 @@ const styles = StyleSheet.create({
     textTransform: "uppercase",
   },
   itemRowWrapper: {
-    paddingVertical: 14,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    paddingHorizontal: 2,
+    padding: 13,
+    borderWidth: 1,
+    borderRadius: 16,
+    marginBottom: 8,
   },
   itemContentLayout: {
     flexDirection: "row",

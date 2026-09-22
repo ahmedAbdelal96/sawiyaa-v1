@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { forwardRef, Module } from '@nestjs/common';
 import { ActiveAccountGuard } from '@common/guards/account-state/active-account.guard';
 import { JwtAccessAuthGuard } from '@common/guards/authentication/jwt-access-auth.guard';
 import { RolesGuard } from '@common/guards/authorization/roles.guard';
@@ -77,7 +77,7 @@ import { FinancialOperationsModule } from '@modules/financial-operations/financi
     ConfigModule,
     PatientsModule,
     ReviewsModule,
-    FinancialOperationsModule,
+    forwardRef(() => FinancialOperationsModule),
   ],
   controllers: [PractitionerProfileController, PublicPractitionerController],
   providers: [

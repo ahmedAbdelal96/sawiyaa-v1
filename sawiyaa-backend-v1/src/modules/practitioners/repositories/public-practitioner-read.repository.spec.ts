@@ -1,5 +1,4 @@
 import type { PrismaService } from '@common/prisma/prisma.service';
-import { AvailabilityWeekStatus } from '@prisma/client';
 import {
   PublicPractitionerSessionDuration,
 } from '../dto/list-public-practitioners.dto';
@@ -106,7 +105,7 @@ describe('PublicPractitionerReadRepository', () => {
     );
   });
 
-  it('filters availableToday using published availability weeks that cover the current day', async () => {
+  it('leaves availableToday evaluation to the concrete public-window evaluator', async () => {
     await repository.listPublic({
       locale: 'en',
       currencyCode: 'EGP',
@@ -115,25 +114,12 @@ describe('PublicPractitionerReadRepository', () => {
 
     expect(prisma.practitionerProfile.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: expect.objectContaining({
-          availabilityWeeks: {
-            some: expect.objectContaining({
-              status: AvailabilityWeekStatus.PUBLISHED,
-              weekStartDate: expect.objectContaining({ lte: expect.any(Date) }),
-              weekEndDate: expect.objectContaining({ gte: expect.any(Date) }),
-              slots: {
-                some: expect.objectContaining({
-                  weekday: expect.any(String),
-                }),
-              },
-            }),
-          },
-        }),
+        where: expect.not.objectContaining({ availabilityWeeks: expect.anything() }),
       }),
     );
   });
 
-  it('filters availableThisWeek using published availability weeks with slots only', async () => {
+  it('leaves availableThisWeek evaluation to the concrete public-window evaluator', async () => {
     await repository.listPublic({
       locale: 'en',
       currencyCode: 'EGP',
@@ -142,14 +128,27 @@ describe('PublicPractitionerReadRepository', () => {
 
     expect(prisma.practitionerProfile.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
+        where: expect.not.objectContaining({ availabilityWeeks: expect.anything() }),
+      }),
+    );
+  });
+
+  it('combines online-now and instant-booking-enabled presence filters', async () => {
+    await repository.listPublic({
+      locale: 'ar',
+      onlineNow: true,
+      instantBookingEnabled: true,
+    });
+
+    expect(prisma.practitionerProfile.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
         where: expect.objectContaining({
-          availabilityWeeks: {
-            some: {
-              status: AvailabilityWeekStatus.PUBLISHED,
-              slots: {
-                some: {},
-              },
-            },
+          presence: {
+            is: expect.objectContaining({
+              status: 'ONLINE',
+              isInstantBookingEnabled: true,
+              lastSeenAtUtc: expect.objectContaining({ gte: expect.any(Date) }),
+            }),
           },
         }),
       }),

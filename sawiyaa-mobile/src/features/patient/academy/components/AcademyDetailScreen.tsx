@@ -19,6 +19,7 @@ import { formatViewerDate } from "../../../../lib/time-formatting";
 import { usePublicAcademyProgram } from "../hooks";
 import { PriceDisplay } from "../../../../components/money";
 import { academyPriceOf, formatAcademySessionDateRange } from "../display";
+import type { AcademyProgramSession } from "../types";
 
 export default function AcademyDetailScreen({
   slug,
@@ -41,13 +42,18 @@ export default function AcademyDetailScreen({
     }
     return `auth:${user.id}:${role ?? "unknown"}`;
   }, [isAuthLoading, role, user]);
-  const courseQuery = usePublicAcademyProgram(slug, { cacheScopeKey: authScopeKey });
+  const courseQuery = usePublicAcademyProgram(slug, {
+    cacheScopeKey: authScopeKey,
+  });
   const course = courseQuery.data ?? null;
   const coverUri = resolveMediaUrl(course?.coverImageUrl);
-  const startLabel = course?.startAt ? formatViewerDate(course.startAt, { locale }) : null;
+  const startLabel = course?.startAt
+    ? formatViewerDate(course.startAt, { locale })
+    : null;
   const price = academyPriceOf(course ?? {});
-  const canEnroll = price.status === "PAID" && course?.registrationOpen === true;
-  const lectures = course?.sessions ?? [];
+  const canEnroll =
+    price.status === "PAID" && course?.registrationOpen === true;
+  const lectures = (course?.sessions ?? []) as AcademyProgramSession[];
   const contentBlocks = useMemo(
     () => (course?.description ? splitCourseContent(course.description) : []),
     [course?.description],
@@ -87,20 +93,44 @@ export default function AcademyDetailScreen({
                 ]}
               >
                 {coverUri ? (
-                  <Image source={{ uri: coverUri }} style={styles.heroImage} resizeMode="cover" />
+                  <Image
+                    source={{ uri: coverUri }}
+                    style={styles.heroImage}
+                    resizeMode="cover"
+                  />
                 ) : (
-                  <Ionicons name="library-outline" size={24} color={theme.colors.primary} />
+                  <Ionicons
+                    name="library-outline"
+                    size={24}
+                    color={theme.colors.primary}
+                  />
                 )}
               </View>
 
               <View style={styles.heroContent}>
-                <View style={[styles.heroTopRow, { flexDirection: rowDirection }]}>
-                  <View style={[styles.priceTag, { backgroundColor: theme.colors.primaryLight }]}>
-                    <PriceDisplay price={price} color={theme.colors.primary} weight="700" style={styles.price} />
+                <View
+                  style={[styles.heroTopRow, { flexDirection: rowDirection }]}
+                >
+                  <View
+                    style={[
+                      styles.priceTag,
+                      { backgroundColor: theme.colors.primaryLight },
+                    ]}
+                  >
+                    <PriceDisplay
+                      price={price}
+                      color={theme.colors.primary}
+                      weight="700"
+                      style={styles.price}
+                    />
                   </View>
                 </View>
 
-                <Text weight="600" style={[styles.title, { textAlign }]} numberOfLines={2}>
+                <Text
+                  weight="600"
+                  style={[styles.title, { textAlign }]}
+                  numberOfLines={2}
+                >
                   {course.title}
                 </Text>
 
@@ -116,17 +146,41 @@ export default function AcademyDetailScreen({
 
                 <View style={[styles.metaRow, { flexDirection: rowDirection }]}>
                   {startLabel ? (
-                    <View style={[styles.metaBadge, { backgroundColor: theme.colors.surfaceMuted }]}>
-                      <Ionicons name="calendar-outline" size={13} color={theme.colors.textSecondary} />
-                      <Text color={theme.colors.textSecondary} style={styles.metaText}>
+                    <View
+                      style={[
+                        styles.metaBadge,
+                        { backgroundColor: theme.colors.surfaceMuted },
+                      ]}
+                    >
+                      <Ionicons
+                        name="calendar-outline"
+                        size={13}
+                        color={theme.colors.textSecondary}
+                      />
+                      <Text
+                        color={theme.colors.textSecondary}
+                        style={styles.metaText}
+                      >
                         {startLabel}
                       </Text>
                     </View>
                   ) : null}
                   {course.sessions?.length ? (
-                    <View style={[styles.metaBadge, { backgroundColor: theme.colors.surfaceMuted }]}>
-                      <Ionicons name="book-outline" size={13} color={theme.colors.textSecondary} />
-                      <Text color={theme.colors.textSecondary} style={styles.metaText}>
+                    <View
+                      style={[
+                        styles.metaBadge,
+                        { backgroundColor: theme.colors.surfaceMuted },
+                      ]}
+                    >
+                      <Ionicons
+                        name="book-outline"
+                        size={13}
+                        color={theme.colors.textSecondary}
+                      />
+                      <Text
+                        color={theme.colors.textSecondary}
+                        style={styles.metaText}
+                      >
                         {t("academy.detail.lectures", {
                           count: course.sessions.length,
                         })}
@@ -169,7 +223,9 @@ export default function AcademyDetailScreen({
                   const startTime = new Date(lecture.startsAt).getTime();
                   const endTime = new Date(lecture.endsAt).getTime();
                   const durationMinutes =
-                    Number.isFinite(startTime) && Number.isFinite(endTime) && endTime > startTime
+                    Number.isFinite(startTime) &&
+                    Number.isFinite(endTime) &&
+                    endTime > startTime
                       ? Math.max(1, Math.round((endTime - startTime) / 60000))
                       : null;
                   const durationLabel = durationMinutes
@@ -194,7 +250,13 @@ export default function AcademyDetailScreen({
                             { backgroundColor: theme.colors.primaryLight },
                           ]}
                         >
-                          <Text weight="600" style={[styles.lessonIndex, { color: theme.colors.primary }]}>
+                          <Text
+                            weight="600"
+                            style={[
+                              styles.lessonIndex,
+                              { color: theme.colors.primary },
+                            ]}
+                          >
                             {index + 1}
                           </Text>
                         </View>
@@ -208,7 +270,11 @@ export default function AcademyDetailScreen({
                         )}
                       </View>
                       <View style={styles.lessonMeta}>
-                        <Text weight="600" style={[styles.lessonTitle, { textAlign }]} numberOfLines={1}>
+                        <Text
+                          weight="600"
+                          style={[styles.lessonTitle, { textAlign }]}
+                          numberOfLines={1}
+                        >
                           {lecture.title || t("academy.detail.unnamedLesson")}
                         </Text>
                         <Text
@@ -246,8 +312,18 @@ export default function AcademyDetailScreen({
             />
             <View style={styles.ctaVerticalStack}>
               <View style={[styles.priceRow, { flexDirection: rowDirection }]}>
-                <Text color={theme.colors.textSecondary} style={[styles.priceLabelSub, { textAlign }]}>{t("academy.detail.priceTitle")}</Text>
-                <PriceDisplay price={price} color={theme.colors.primary} weight="700" style={[styles.priceValue, { textAlign }]} />
+                <Text
+                  color={theme.colors.textSecondary}
+                  style={[styles.priceLabelSub, { textAlign }]}
+                >
+                  {t("academy.detail.priceTitle")}
+                </Text>
+                <PriceDisplay
+                  price={price}
+                  color={theme.colors.primary}
+                  weight="700"
+                  style={[styles.priceValue, { textAlign }]}
+                />
               </View>
               <Button
                 title={t("academy.detail.subscribeNow")}
@@ -273,7 +349,10 @@ function splitCourseContent(content: string) {
     .replace(/\r\n/g, "\n")
     .replace(/<\s*br\s*\/?>/gi, "\n")
     .replace(/<li[^>]*>/gi, "\n- ")
-    .replace(/<\/(p|div|section|article|header|blockquote|h[1-6]|ul|ol|li)>/gi, "\n")
+    .replace(
+      /<\/(p|div|section|article|header|blockquote|h[1-6]|ul|ol|li)>/gi,
+      "\n",
+    )
     .replace(/<script[\s\S]*?<\/script>/gi, "")
     .replace(/<style[\s\S]*?<\/style>/gi, "")
     .replace(/<[^>]+>/g, "")

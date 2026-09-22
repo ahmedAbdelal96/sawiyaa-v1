@@ -51,4 +51,16 @@ describe("buildSessionLaneItems", () => {
     expect(items[0].id).toBe("conversation-0");
     expect(items[0].href).toContain("session-0");
   });
+
+  it("preserves the backend lifecycle state for read-only session history", () => {
+    const [item] = buildSessionLaneItems("patient", [
+      conversation({
+        sessionStatus: "AWAITING_ADMIN_RESOLUTION",
+        lastMessage: { id: "message-1" } as CanonicalConversation["lastMessage"],
+      }),
+    ]);
+
+    expect(item.sessionStatus).toBe("AWAITING_ADMIN_RESOLUTION");
+    expect(item.status).toBe("AWAITING_ADMIN_RESOLUTION");
+  });
 });

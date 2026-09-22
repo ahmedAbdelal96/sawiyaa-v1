@@ -60,6 +60,9 @@ export interface PublicPractitionerDetailsViewModel {
   displayName: string | null;
   professionalTitle: string | null;
   fullBio: string | null;
+  /** Approved localized biographies from the public professional-content projection. */
+  bioAr: string | null;
+  bioEn: string | null;
   specialties: Array<{
     specialtyId: string;
     slug: string;
@@ -94,10 +97,6 @@ export interface PublicPractitionerDetailsViewModel {
     publishedRatingsCount: number;
     writtenReviewsCount: number;
     totalReviews: number;
-  };
-  credentialsSummary: {
-    totalCredentials: number;
-    approvedCredentials: number;
   };
   isVerified: boolean;
   avatarUrl: string | null;

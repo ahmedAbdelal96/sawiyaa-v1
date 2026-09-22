@@ -273,6 +273,24 @@
     }
   },
   "profile": {
+    "editingSplit": {
+      "title": "Manage profile",
+      "quickTitle": "Quick Edit",
+      "quickDescription": "Update operational data without waiting for Administration review.",
+      "requestTitle": "Submit Change Request",
+      "requestDescription": "Identity and professional-information changes require Administration review before patients see the new values.",
+      "prices": "Prices",
+      "instantBooking": "Instant Booking prices",
+      "settlement": "Bank account",
+      "availability": "Schedule",
+      "presence": "Availability status",
+      "specialties": "Specialties and credentials",
+      "credentials": "Certificates and licenses",
+      "open": "Open",
+      "openRequest": "Submit change request",
+      "pendingTitle": "Change requests",
+      "pendingNotice": "Your current approved data remains visible to patients while the changes are reviewed."
+    },
     "request": {
       "feedback": {
         "error": "Could not submit the profile change request right now.",

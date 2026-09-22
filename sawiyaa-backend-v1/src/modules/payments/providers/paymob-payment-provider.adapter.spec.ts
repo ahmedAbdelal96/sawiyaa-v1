@@ -346,6 +346,85 @@ describe('PaymobPaymentProviderAdapter', () => {
       }),
     ).toThrow(BadRequestException);
   });
+
+  it('recovers payment truth through the official merchant-order inquiry', async () => {
+    const adapter = buildAdapter();
+    const fetchMock = jest
+      .spyOn(global, 'fetch' as never)
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ token: 'auth_token' }), { status: 200 }),
+      )
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            id: 9001,
+            success: true,
+            pending: false,
+            amount_cents: 150000,
+            currency: 'EGP',
+            order: { id: 777, merchant_order_id: 'payment_123' },
+          }),
+          { status: 200 },
+        ),
+      );
+    const result = await adapter.reconcilePayment({
+      paymentId: 'payment_123',
+      providerPaymentRef: null,
+      providerOrderRef: null,
+      amountMinor: 150000,
+      currency: 'EGP',
+    });
+    expect(result).toMatchObject({
+      outcome: 'SUCCEEDED',
+      providerPaymentRef: '9001',
+      providerOrderRef: '777',
+      amountMinor: 150000,
+      currencyCode: 'EGP',
+    });
+    expect(fetchMock.mock.calls[1]?.[0]).toBe(
+      'https://accept.paymob.com/api/ecommerce/orders/transaction_inquiry',
+    );
+  });
+
+  it('proves a lost refund response by provider refund transaction id', async () => {
+    const adapter = buildAdapter();
+    jest
+      .spyOn(global, 'fetch' as never)
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ token: 'auth_token' }), { status: 200 }),
+      )
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            id: 9901,
+            success: true,
+            pending: false,
+            is_refund: true,
+            amount_cents: 25000,
+            currency: 'EGP',
+            parent_transaction: 9001,
+          }),
+          { status: 200 },
+        ),
+      );
+    await expect(
+      adapter.reconcileRefund({
+        refundId: 'refund-1',
+        paymentId: 'payment_123',
+        providerPaymentRef: '777',
+        providerOrderRef: '777',
+        providerTransactionRef: '9001',
+        providerRefundRef: '9901',
+        amountMinor: 25000,
+        priorSucceededRefundMinor: 0,
+        currency: 'EGP',
+      }),
+    ).resolves.toMatchObject({
+      outcome: 'SUCCEEDED',
+      providerRefundRef: '9901',
+      amountMinor: 25000,
+    });
+  });
 });
 
 function buildWebhookEvent(input: {

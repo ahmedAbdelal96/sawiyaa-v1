@@ -97,6 +97,14 @@
       "title": "Payment succeeded",
       "subtitle": "Payment · Session payment"
     },
+    "payments-package-purchase-succeeded": {
+      "title": "Package payment completed",
+      "subtitle": "Payment · Package"
+    },
+    "payments-academy-payment-succeeded": {
+      "title": "Training payment completed",
+      "subtitle": "Payment · Training"
+    },
     "payments-payment-failed": {
       "title": "Payment failed",
       "subtitle": "Payment · Session payment"

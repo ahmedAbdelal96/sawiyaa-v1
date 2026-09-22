@@ -104,6 +104,47 @@ export class CreateOrGetGeneralChatConversationUseCase {
         });
       }
 
+      // The generic conversation endpoint is also a session-chat boundary.
+      // Enforce the same read policy as the participant-scoped session route
+      // before creating (or returning) a conversation. Older test doubles may
+      // still return a boolean, so only evaluate the richer production link.
+      if (
+        typeof linkedSession === 'object' &&
+        linkedSession !== null &&
+        'status' in linkedSession
+      ) {
+        const sessionAvailability =
+          this.generalChatAvailabilityService.resolveAvailability({
+            conversation: {
+              status: 'OPEN' as never,
+              closedAt: null,
+              adminLock: {
+                disabledAt: null,
+                disabledByUserId: null,
+                disabledReason: null,
+                enabledAt: null,
+                enabledByUserId: null,
+              },
+              practitionerLock: {
+                disabledAt: null,
+                disabledByUserId: null,
+                disabledReason: null,
+                enabledAt: null,
+                enabledByUserId: null,
+              },
+            },
+            linkedSession,
+          });
+
+        if (!sessionAvailability.canRead) {
+          throw new ForbiddenException({
+            messageKey: 'chat.errors.sessionChatReadOnly',
+            errorCode: GENERAL_CHAT_ERROR_CODES.sessionChatReadOnly,
+            reason: sessionAvailability.reason,
+          });
+        }
+      }
+
       // Check existing canonical conversation by sessionId first
       const sessionConversations =
         await this.generalChatRepository.findConversationsBySessionId(

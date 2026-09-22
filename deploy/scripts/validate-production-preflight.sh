@@ -71,7 +71,11 @@ if [[ "$CHECK_LOCK_ONLY" == 1 ]]; then (( BLOCKERS == 0 )); exit; fi
 
 # The backend uses a non-root UID and the log directory is a host bind mount.
 # Validate the actual container identity rather than host user records.
-if (( MOCK )); then
+if (( TARGET_ONLY )); then
+  # Detached release worktrees do not own the active host runtime directories;
+  # bootstrap-only preflight validates those directories on the live checkout.
+  skip RUNTIME_DIRECTORY_CHECK_TARGET_ONLY
+elif (( MOCK )); then
   warn RUNTIME_DIRECTORY_CHECK_MOCKED
 elif [[ -d "$PROJECT_DIR/logs/backend" ]]; then
   if docker run --rm --user "$RUNTIME_UID:$RUNTIME_GID" \
@@ -207,6 +211,34 @@ if [[ -f "$VALIDATOR" ]]; then
   (( contract_exit == 0 )) && pass ENVIRONMENT_CONTRACT || block ENVIRONMENT_CONTRACT
 else
   block ENVIRONMENT_VALIDATOR_MISSING
+fi
+
+# Daily webhook verification is read-only and runs only after the environment
+# contract passes. It never creates, updates, or deletes a provider resource.
+DAILY_VALIDATOR="${SAWIYAA_DAILY_WEBHOOK_VALIDATOR_PATH:-$PROJECT_DIR/deploy/scripts/validate-daily-webhook.js}"
+if (( MOCK )); then
+  warn DAILY_WEBHOOK_CHECK_MOCKED
+elif (( contract_exit != 0 )); then
+  skip DAILY_WEBHOOK_CHECK_DEPENDENCY_ENVIRONMENT_CONTRACT
+elif [[ -f "$DAILY_VALIDATOR" ]]; then
+  daily_check=1
+  if command -v node >/dev/null 2>&1; then
+    node "$DAILY_VALIDATOR" "$BACKEND_ENV" && daily_check=0
+  elif command -v docker >/dev/null 2>&1; then
+    docker run --rm --network host \
+      --read-only --tmpfs /tmp:rw,nosuid,nodev,size=16m \
+      -v "$PROJECT_DIR:/workspace:ro" \
+      -v "$BACKEND_ENV:/inputs/backend.env:ro" \
+      "${SAWIYAA_VALIDATOR_NODE_IMAGE:-node:20-bookworm-slim}" \
+      node /workspace/deploy/scripts/validate-daily-webhook.js /inputs/backend.env && daily_check=0
+  fi
+  if (( daily_check == 0 )); then
+    :
+  else
+    block DAILY_WEBHOOK_NOT_READY
+  fi
+else
+  block DAILY_WEBHOOK_VALIDATOR_MISSING
 fi
 
 # 11. GeoIP file check without printing its value.

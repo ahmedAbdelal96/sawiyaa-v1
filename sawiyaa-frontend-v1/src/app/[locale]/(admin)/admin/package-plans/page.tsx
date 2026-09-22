@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import AdminPackagePlansScreen from "@/features/admin/package-plans/components/AdminPackagePlansScreen";
+import AdminPermissionGate from "@/components/admin/AdminPermissionGate";
+import { PermissionKey } from "@/lib/auth/permissions";
 
 type Props = {
   params: Promise<{ locale: string }>;
@@ -20,5 +22,11 @@ export default async function AdminPackagePlansPage({ params }: Props) {
   const { locale } = await params;
   setRequestLocale(locale);
 
-  return <AdminPackagePlansScreen />;
+  return (
+    <AdminPermissionGate
+      requiredPermissions={[PermissionKey.PACKAGE_PLANS_READ]}
+    >
+      <AdminPackagePlansScreen />
+    </AdminPermissionGate>
+  );
 }

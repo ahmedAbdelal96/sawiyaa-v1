@@ -20,6 +20,7 @@ export function useAdminSessionRuntimeInspection(
     queryFn: () => getAdminSessionRuntimeInspection(sessionId ?? ""),
     enabled: Boolean(sessionId) && enabled,
     staleTime: 10_000,
+    refetchOnWindowFocus: true,
   });
 }
 
@@ -32,6 +33,7 @@ export function useAdminSessionAttendance(
     queryFn: () => getAdminSessionAttendance(sessionId ?? ""),
     enabled: Boolean(sessionId) && enabled,
     staleTime: 10_000,
+    refetchOnWindowFocus: true,
   });
 }
 

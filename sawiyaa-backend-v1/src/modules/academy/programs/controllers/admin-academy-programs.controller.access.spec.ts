@@ -24,4 +24,23 @@ describe('AdminAcademyProgramsController access contract', () => {
       PermissionKey.ACADEMY_ENROLLMENTS_CREATE_MANUAL,
     ]);
   });
+
+  it('requires academy read permission for the registrant list', () => {
+    const method = (
+      AdminAcademyProgramsController.prototype as unknown as Record<
+        string,
+        unknown
+      >
+    ).listProgramEnrollments as (...args: never[]) => unknown;
+    expect(Reflect.getMetadata(PERMISSIONS_KEY, method)).toEqual([
+      PermissionKey.ACADEMY_READ,
+    ]);
+  });
+
+  it('keeps attendance read and write permissions centralized', () => {
+    const readMethod = (AdminAcademyProgramsController.prototype as unknown as Record<string, unknown>).listProgramAttendance as (...args: never[]) => unknown;
+    const writeMethod = (AdminAcademyProgramsController.prototype as unknown as Record<string, unknown>).saveProgramAttendance as (...args: never[]) => unknown;
+    expect(Reflect.getMetadata(PERMISSIONS_KEY, readMethod)).toEqual([PermissionKey.ACADEMY_READ]);
+    expect(Reflect.getMetadata(PERMISSIONS_KEY, writeMethod)).toEqual([PermissionKey.ACADEMY_MANAGE]);
+  });
 });

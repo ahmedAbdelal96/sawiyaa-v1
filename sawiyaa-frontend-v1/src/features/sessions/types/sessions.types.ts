@@ -189,6 +189,10 @@ export type SessionItem = {
     occurredAt: string;
     actorType: string | null;
     reason: string | null;
+    previousStartAt?: string | null;
+    previousEndAt?: string | null;
+    newStartAt?: string | null;
+    newEndAt?: string | null;
   }>;
 };
 

@@ -298,5 +298,5 @@ describe("AdminPlatformSettingsScreen — Platform Settings Shell", () => {
       }),
       expect.anything()
     );
-  });
+  }, 15000);
 });

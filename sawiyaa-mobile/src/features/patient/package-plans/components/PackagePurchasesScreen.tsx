@@ -84,10 +84,13 @@ function PackagePurchaseCard({
   });
 
   const completedCount = getPackagePurchaseCompletionCount(purchase);
-  const remainingCount = Math.max(purchase.sessionCount - completedCount, 0);
+  const remainingCount =
+    purchase.progress?.availableSessions ??
+    Math.max(purchase.sessionCount - completedCount, 0);
+  const reservedCount = purchase.progress?.reservedSessions ?? 0;
   const nextUpcomingSession = getNextUpcomingPackageSession(purchase);
   const canContinuePayment = canContinuePackagePurchasePayment(purchase);
-  const title = t("packagePurchases.plans.generic", {
+  const title = purchase.title || t("packagePurchases.plans.generic", {
     count: purchase.sessionCount,
     defaultValue: `${purchase.sessionCount} session package`,
   });
@@ -140,6 +143,15 @@ function PackagePurchaseCard({
           <Text weight="600" style={[styles.planTitle, { textAlign }]}>
             {title}
           </Text>
+          {purchase.practitioner?.displayName ? (
+            <Text
+              color={theme.colors.textSecondary}
+              style={[styles.practitionerName, { textAlign }]}
+              numberOfLines={1}
+            >
+              {purchase.practitioner.displayName}
+            </Text>
+          ) : null}
         </View>
         <StatusChip label={statusLabel} tone={getPackagePurchaseStatusTone(purchase.status)} showDot={false} />
       </View>
@@ -148,10 +160,11 @@ function PackagePurchaseCard({
         <View style={[styles.metaRow, { flexDirection: rowDirection }]}>
           <Ionicons name="calendar-outline" size={15} color={theme.colors.textSecondary} style={styles.metaIcon} />
           <Text color={theme.colors.textSecondary} style={[styles.metaLine, { textAlign }]}>
-            {t("packagePurchases.card.usedSummary", {
+            {t("packagePurchases.card.balanceSummary", {
               completed: completedCount,
+              available: remainingCount,
+              reserved: reservedCount,
               total: purchase.sessionCount,
-              remaining: remainingCount,
             })}
           </Text>
         </View>
@@ -183,6 +196,17 @@ function PackagePurchaseCard({
       </View>
 
       <PackagePurchaseDetailsHint label={t("packagePurchases.card.viewDetails")} onPress={handleOpenDetails} />
+
+      {purchase.status === "ACTIVE" && remainingCount > 0 ? (
+        <CompactActionRow
+          label={t("packagePurchases.list.bookSession", "Book a package session")}
+          onPress={() =>
+            router.push(`/(patient)/package-purchases/${purchase.id}/book` as never)
+          }
+          accessibilityLabel={t("packagePurchases.list.bookSession", "Book a package session")}
+          style={styles.bookAction}
+        />
+      ) : null}
 
       {purchase.status === "PENDING_PAYMENT" && canContinuePayment ? (
         <CompactActionRow
@@ -344,6 +368,11 @@ const styles = StyleSheet.create({
     fontSize: 16,
     lineHeight: 22,
   },
+  practitionerName: {
+    fontSize: 12,
+    lineHeight: 18,
+    marginTop: 2,
+  },
   metaStack: {
     gap: 6,
     paddingVertical: 4,
@@ -377,6 +406,9 @@ const styles = StyleSheet.create({
   },
   paymentAction: {
     marginTop: 2,
+  },
+  bookAction: {
+    marginTop: 0,
   },
   footerStack: {
     gap: 8,

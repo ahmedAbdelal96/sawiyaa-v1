@@ -26,10 +26,10 @@ import {
 } from "@/features/practitioner-profile/api/practitioner-profile-ssr.api";
 import ProfileAbout from "@/features/practitioner-profile/components/ProfileAbout";
 import ProfileBookingPanel from "@/features/practitioner-profile/components/ProfileBookingPanel";
-import ProfileCredentials from "@/features/practitioner-profile/components/ProfileCredentials";
 import ProfileHeader from "@/features/practitioner-profile/components/ProfileHeader";
-import RelatedPractitioners from "@/features/practitioner-profile/components/RelatedPractitioners";
 import ProfileSpecialties from "@/features/practitioner-profile/components/ProfileSpecialties";
+import PackagePlansSection from "@/features/package-plans/components/PackagePlansSection";
+import RelatedPractitioners from "@/features/practitioner-profile/components/RelatedPractitioners";
 import { fetchPublicPractitioners } from "@/features/practitioners-discovery/api/practitioners-ssr.api";
 import { type PublicPractitioner } from "@/features/practitioners-discovery/types/practitioner";
 import { getLocalizedLanguageLabel, SUPPORTED_LANGUAGE_CODES } from "@/constants/reference-data";
@@ -166,6 +166,7 @@ export default async function PractitionerProfilePage({ params }: Props) {
           countryLabel={countryLabel}
           specialtyLabels={specialtyLabels}
           languageLabels={languageLabels}
+          showBookingCta
         />
 
         <div className="grid grid-cols-1 gap-5 lg:grid-cols-[340px_minmax(0,1fr)] items-start">
@@ -179,7 +180,6 @@ export default async function PractitionerProfilePage({ params }: Props) {
                 languageLabels={languageLabels}
                 compact
               />
-              <ProfileCredentials profile={profile} compact />
             </div>
           </div>
 
@@ -190,6 +190,11 @@ export default async function PractitionerProfilePage({ params }: Props) {
               instantBookingAvailability={instantBookingAvailability}
             />
           </div>
+        </div>
+
+        {/* Full-Width Package Plans Section */}
+        <div id="packages-section" className="w-full">
+          <PackagePlansSection slug={profile.slug} profile={profile} />
         </div>
 
         <RelatedPractitioners

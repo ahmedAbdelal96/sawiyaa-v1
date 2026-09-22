@@ -1,5 +1,10 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { StyleSheet, TouchableOpacity, useWindowDimensions, View } from "react-native";
+import {
+  StyleSheet,
+  TouchableOpacity,
+  useWindowDimensions,
+  View,
+} from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
@@ -80,13 +85,19 @@ function RequestCard({
   const { theme } = useTheme();
   const { t } = useTranslation();
   const isArabic = locale.startsWith("ar");
-  const patientLabel = request.patient?.displayName?.trim() || t("instantBooking.practitioner.request.unknownPatient");
+  const patientLabel =
+    request.patient?.displayName?.trim() ||
+    t("instantBooking.practitioner.request.unknownPatient");
   const initials = getPatientInitials(request.patient?.displayName);
   const durationLabel = t("instantBooking.practitioner.request.duration", {
     minutes: request.requestedDurationMinutes,
   });
   const modeLabel = t(`instantBooking.modes.${request.sessionMode}` as const);
-  const expiresLabel = formatInstantBookingExpiry(request.expiresAt, locale, nowMs);
+  const expiresLabel = formatInstantBookingExpiry(
+    request.expiresAt,
+    locale,
+    nowMs,
+  );
   const statusLabel = t(`instantBooking.statuses.${request.status}` as const);
   const tone = requestTone(request.status);
   const isPending = request.status === "PENDING";
@@ -122,14 +133,28 @@ function RequestCard({
       <View style={[styles.topRow, isArabic ? styles.rowReverse : styles.row]}>
         <View style={styles.avatarWrap}>
           {request.patient?.displayName ? (
-            <View style={[styles.avatarFallback, { backgroundColor: theme.colors.primaryLight }]}>
+            <View
+              style={[
+                styles.avatarFallback,
+                { backgroundColor: theme.colors.primaryLight },
+              ]}
+            >
               <Text weight="700" color={theme.colors.primary}>
                 {initials}
               </Text>
             </View>
           ) : (
-            <View style={[styles.avatarFallback, { backgroundColor: theme.colors.surfaceSecondary }]}>
-              <Ionicons name="person" size={22} color={theme.colors.textMuted} />
+            <View
+              style={[
+                styles.avatarFallback,
+                { backgroundColor: theme.colors.surfaceSecondary },
+              ]}
+            >
+              <Ionicons
+                name="person"
+                size={22}
+                color={theme.colors.textMuted}
+              />
             </View>
           )}
         </View>
@@ -140,7 +165,11 @@ function RequestCard({
               <Text weight="600" style={styles.title} numberOfLines={1}>
                 {patientLabel}
               </Text>
-              <Text color={theme.colors.textSecondary} style={styles.subtitle} numberOfLines={1}>
+              <Text
+                color={theme.colors.textSecondary}
+                style={styles.subtitle}
+                numberOfLines={1}
+              >
                 {t("instantBooking.practitioner.request.detailsLine", {
                   duration: durationLabel,
                   mode: modeLabel,
@@ -155,7 +184,10 @@ function RequestCard({
               label={t("instantBooking.practitioner.request.fields.expiresAt")}
               status="default"
             />
-            <StatusBadge label={formatInstantBookingDateTime(request.requestedAt, locale)} status="info" />
+            <StatusBadge
+              label={formatInstantBookingDateTime(request.requestedAt, locale)}
+              status="info"
+            />
             {request.responseReason ? (
               <StatusBadge
                 label={t("instantBooking.practitioner.request.hasReason")}
@@ -166,15 +198,31 @@ function RequestCard({
         </View>
       </View>
 
-      <View style={[styles.timelineCard, { borderColor: theme.colors.borderLight, backgroundColor: theme.colors.surface }]}>
+      <View
+        style={[
+          styles.timelineCard,
+          {
+            borderColor: theme.colors.borderLight,
+            backgroundColor: theme.colors.surface,
+          },
+        ]}
+      >
         <View style={styles.timelineRow}>
-          <Ionicons name="time-outline" size={14} color={theme.colors.textSecondary} />
+          <Ionicons
+            name="time-outline"
+            size={14}
+            color={theme.colors.textSecondary}
+          />
           <Text color={theme.colors.textSecondary} style={styles.timelineText}>
             {formatInstantBookingDateTime(request.expiresAt, locale)}
           </Text>
         </View>
         <View style={styles.timelineRow}>
-          <Ionicons name="flash-outline" size={14} color={theme.colors.textSecondary} />
+          <Ionicons
+            name="flash-outline"
+            size={14}
+            color={theme.colors.textSecondary}
+          />
           <Text color={theme.colors.textSecondary} style={styles.timelineText}>
             {expiresLabel}
           </Text>
@@ -182,17 +230,44 @@ function RequestCard({
       </View>
 
       {request.responseReason ? (
-        <View style={[styles.responseReason, { borderColor: theme.colors.borderLight, backgroundColor: theme.colors.surface }]}>
-          <Ionicons name="chatbubble-ellipses-outline" size={16} color={theme.colors.textSecondary} />
-          <Text color={theme.colors.textSecondary} style={styles.responseReasonText}>
+        <View
+          style={[
+            styles.responseReason,
+            {
+              borderColor: theme.colors.borderLight,
+              backgroundColor: theme.colors.surface,
+            },
+          ]}
+        >
+          <Ionicons
+            name="chatbubble-ellipses-outline"
+            size={16}
+            color={theme.colors.textSecondary}
+          />
+          <Text
+            color={theme.colors.textSecondary}
+            style={styles.responseReasonText}
+          >
             {request.responseReason}
           </Text>
         </View>
       ) : null}
 
       {actionError ? (
-        <View style={[styles.responseReason, { borderColor: theme.colors.errorLight, backgroundColor: theme.colors.errorLight }]}>
-          <Ionicons name="alert-circle-outline" size={16} color={theme.colors.error} />
+        <View
+          style={[
+            styles.responseReason,
+            {
+              borderColor: theme.colors.errorLight,
+              backgroundColor: theme.colors.errorLight,
+            },
+          ]}
+        >
+          <Ionicons
+            name="alert-circle-outline"
+            size={16}
+            color={theme.colors.error}
+          />
           <Text color={theme.colors.error} style={styles.responseReasonText}>
             {actionError}
           </Text>
@@ -295,7 +370,10 @@ export default function PractitionerInstantBookingRequestsScreen() {
 
   const locale = i18n.language?.startsWith("ar") ? "ar-SA" : "en-US";
   const { theme } = useTheme();
-  const requests = useMemo(() => requestsQuery.data?.items ?? [], [requestsQuery.data?.items]);
+  const requests = useMemo(
+    () => (requestsQuery.data?.items ?? []) as InstantBookingRequest[],
+    [requestsQuery.data?.items],
+  );
   const pendingRequests = useMemo(
     () => requests.filter((request) => request.status === "PENDING"),
     [requests],
@@ -310,7 +388,9 @@ export default function PractitionerInstantBookingRequestsScreen() {
     }
 
     return [...pendingRequests].sort(
-      (left, right) => new Date(left.expiresAt).getTime() - new Date(right.expiresAt).getTime(),
+      (left, right) =>
+        new Date(left.expiresAt).getTime() -
+        new Date(right.expiresAt).getTime(),
     )[0];
   }, [pendingRequests]);
 
@@ -369,11 +449,18 @@ export default function PractitionerInstantBookingRequestsScreen() {
     }
   };
 
-  if (requestsQuery.isLoading || pendingQuery.isLoading || presenceQuery.isLoading) {
+  if (
+    requestsQuery.isLoading ||
+    pendingQuery.isLoading ||
+    presenceQuery.isLoading
+  ) {
     return (
       <Screen bg="background">
         <Header title={t("instantBooking.practitioner.queue.title")} />
-        <LoadingState fullScreen message={t("instantBooking.practitioner.errors.loadingHeading")} />
+        <LoadingState
+          fullScreen
+          message={t("instantBooking.practitioner.errors.loadingHeading")}
+        />
       </Screen>
     );
   }
@@ -413,7 +500,10 @@ export default function PractitionerInstantBookingRequestsScreen() {
               <Text weight="700" style={styles.summaryTitle}>
                 {t("instantBooking.practitioner.queue.eyebrow")}
               </Text>
-              <Text color={theme.colors.textSecondary} style={styles.summarySubtitle}>
+              <Text
+                color={theme.colors.textSecondary}
+                style={styles.summarySubtitle}
+              >
                 {t("instantBooking.practitioner.queue.subtitle")}
               </Text>
             </View>
@@ -423,25 +513,45 @@ export default function PractitionerInstantBookingRequestsScreen() {
                   ? t("instantBooking.practitioner.queue.enabled")
                   : t("instantBooking.practitioner.queue.disabled")
               }
-              status={presenceQuery.data?.presence?.isInstantBookingEnabled ? "success" : "warning"}
+              status={
+                presenceQuery.data?.presence?.isInstantBookingEnabled
+                  ? "success"
+                  : "warning"
+              }
             />
           </View>
 
-          <View style={[styles.summaryGrid, isCompact && styles.summaryGridCompact]}>
+          <View
+            style={[styles.summaryGrid, isCompact && styles.summaryGridCompact]}
+          >
             <SummaryBlock
-              label={t("instantBooking.practitioner.queue.summary.pendingCount")}
+              label={t(
+                "instantBooking.practitioner.queue.summary.pendingCount",
+              )}
               value={String(pendingRequests.length)}
               tone="warning"
               compact={isCompact}
             />
             <SummaryBlock
-              label={t("instantBooking.practitioner.queue.summary.nearestExpiry")}
-              value={nearestExpiry ? formatInstantBookingExpiry(nearestExpiry.expiresAt, locale, nowMs) : t("instantBooking.practitioner.queue.summary.noPending")}
+              label={t(
+                "instantBooking.practitioner.queue.summary.nearestExpiry",
+              )}
+              value={
+                nearestExpiry
+                  ? formatInstantBookingExpiry(
+                      nearestExpiry.expiresAt,
+                      locale,
+                      nowMs,
+                    )
+                  : t("instantBooking.practitioner.queue.summary.noPending")
+              }
               tone="default"
               compact={isCompact}
             />
             <SummaryBlock
-              label={t("instantBooking.practitioner.queue.summary.liveHintTitle")}
+              label={t(
+                "instantBooking.practitioner.queue.summary.liveHintTitle",
+              )}
               value={t("instantBooking.practitioner.queue.summary.liveHint")}
               tone="info"
               compact={isCompact}
@@ -451,10 +561,21 @@ export default function PractitionerInstantBookingRequestsScreen() {
           <TouchableOpacity
             activeOpacity={0.86}
             onPress={() => router.push("/(practitioner)/availability" as never)}
-            style={[styles.summaryAction, { borderColor: theme.colors.borderLight }]}
+            style={[
+              styles.summaryAction,
+              { borderColor: theme.colors.borderLight },
+            ]}
           >
-            <Ionicons name="pulse-outline" size={16} color={theme.colors.primary} />
-            <Text weight="600" color={theme.colors.primary} style={styles.summaryActionText}>
+            <Ionicons
+              name="pulse-outline"
+              size={16}
+              color={theme.colors.primary}
+            />
+            <Text
+              weight="600"
+              color={theme.colors.primary}
+              style={styles.summaryActionText}
+            >
               {t("instantBooking.practitioner.queue.openAvailability")}
             </Text>
           </TouchableOpacity>
@@ -473,7 +594,11 @@ export default function PractitionerInstantBookingRequestsScreen() {
             ]}
           >
             <View style={styles.feedbackRow}>
-              <Ionicons name="checkmark-circle-outline" size={18} color={theme.colors.success} />
+              <Ionicons
+                name="checkmark-circle-outline"
+                size={18}
+                color={theme.colors.success}
+              />
               <Text weight="600" color={theme.colors.success}>
                 {pageMessage}
               </Text>
@@ -485,7 +610,13 @@ export default function PractitionerInstantBookingRequestsScreen() {
           <EmptyState
             title={t("instantBooking.practitioner.empty.title")}
             description={t("instantBooking.practitioner.empty.note")}
-            icon={<Ionicons name="flash-outline" size={44} color={theme.colors.textMuted} />}
+            icon={
+              <Ionicons
+                name="flash-outline"
+                size={44}
+                color={theme.colors.textMuted}
+              />
+            }
           />
         ) : (
           <View style={styles.sections}>
@@ -495,8 +626,16 @@ export default function PractitionerInstantBookingRequestsScreen() {
               requests={pendingRequests}
               locale={locale}
               nowMs={nowMs}
-              acceptingRequestId={acceptMutation.isPending ? acceptMutation.variables ?? null : null}
-              rejectingRequestId={rejectMutation.isPending ? rejectMutation.variables?.requestId ?? null : null}
+              acceptingRequestId={
+                acceptMutation.isPending
+                  ? (acceptMutation.variables ?? null)
+                  : null
+              }
+              rejectingRequestId={
+                rejectMutation.isPending
+                  ? (rejectMutation.variables?.requestId ?? null)
+                  : null
+              }
               actionErrors={actionErrors}
               onAccept={handleAccept}
               onReject={handleReject}
@@ -508,8 +647,16 @@ export default function PractitionerInstantBookingRequestsScreen() {
               requests={handledRequests}
               locale={locale}
               nowMs={nowMs}
-              acceptingRequestId={acceptMutation.isPending ? acceptMutation.variables ?? null : null}
-              rejectingRequestId={rejectMutation.isPending ? rejectMutation.variables?.requestId ?? null : null}
+              acceptingRequestId={
+                acceptMutation.isPending
+                  ? (acceptMutation.variables ?? null)
+                  : null
+              }
+              rejectingRequestId={
+                rejectMutation.isPending
+                  ? (rejectMutation.variables?.requestId ?? null)
+                  : null
+              }
               actionErrors={actionErrors}
               onAccept={handleAccept}
               onReject={handleReject}
@@ -563,10 +710,19 @@ function SummaryBlock({
         },
       ]}
     >
-      <Text color={theme.colors.textMuted} style={styles.summaryBlockLabel} numberOfLines={1}>
+      <Text
+        color={theme.colors.textMuted}
+        style={styles.summaryBlockLabel}
+        numberOfLines={1}
+      >
         {label}
       </Text>
-      <Text weight="600" color={colors.valueColor} style={styles.summaryBlockValue} numberOfLines={2}>
+      <Text
+        weight="600"
+        color={colors.valueColor}
+        style={styles.summaryBlockValue}
+        numberOfLines={2}
+      >
         {value}
       </Text>
     </View>

@@ -17,6 +17,7 @@ import { ResolvePractitionerTimezoneService } from '@modules/availability/servic
 import { ValidateSessionConflictsService } from '@modules/sessions/services/validate-session-conflicts.service';
 import { ValidateSessionDurationService } from '@modules/sessions/services/validate-session-duration.service';
 import type { Prisma } from '@prisma/client';
+import { InstantBookingRequestRepository } from '../repositories/instant-booking-request.repository';
 
 /**
  * Instant booking eligibility composes visibility, live presence, pricing and conflict checks.
@@ -31,6 +32,7 @@ export class ValidateInstantBookingEligibilityService {
     private readonly resolvePractitionerTimezoneService: ResolvePractitionerTimezoneService,
     private readonly validateSessionDurationService: ValidateSessionDurationService,
     private readonly validateSessionConflictsService: ValidateSessionConflictsService,
+    private readonly instantBookingRequestRepository: InstantBookingRequestRepository,
   ) {}
 
   async assertPractitionerCanReceiveInstantBooking(input: {
@@ -56,6 +58,8 @@ export class ValidateInstantBookingEligibilityService {
     sessionMode: SessionMode;
     nowUtc: Date;
     currencyCode?: 'EGP' | 'USD';
+    tx?: Prisma.TransactionClient;
+    excludeInstantBookingRequestId?: string;
   }): Promise<{ startsAtUtc: Date; endsAtUtc: Date; timezone: string }> {
     this.validateSessionDurationService.validate(input.durationMinutes);
 
@@ -118,6 +122,23 @@ export class ValidateInstantBookingEligibilityService {
       });
     }
 
+    const activeHold =
+      await this.instantBookingRequestRepository.findActivePendingRequestForPractitioner(
+        {
+          practitionerId: input.practitioner.id,
+          now: input.nowUtc,
+          excludeRequestId: input.excludeInstantBookingRequestId,
+        },
+        input.tx,
+      );
+
+    if (activeHold) {
+      throw new ConflictException({
+        messageKey: 'instantBooking.errors.practitionerBusy',
+        error: 'INSTANT_BOOKING_PRACTITIONER_BUSY',
+      });
+    }
+
     if (input.currencyCode) {
       const price =
         input.currencyCode === 'EGP'
@@ -146,6 +167,7 @@ export class ValidateInstantBookingEligibilityService {
       practitionerId: input.practitioner.id,
       scheduledStartAtUtc: input.nowUtc,
       scheduledEndAtUtc: endsAtUtc,
+      tx: input.tx,
     });
 
     return {

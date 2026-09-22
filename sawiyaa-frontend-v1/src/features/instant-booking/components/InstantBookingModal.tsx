@@ -27,6 +27,12 @@ import type {
   InstantBookingRequest,
 } from "../types/instant-booking.types";
 
+function createInstantBookingIdempotencyKey(): string {
+  return typeof crypto !== "undefined" && crypto.randomUUID
+    ? crypto.randomUUID()
+    : `ib-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+}
+
 type Props = {
   isOpen: boolean;
   onClose: () => void;
@@ -74,11 +80,7 @@ export default function InstantBookingModal({
   const [apiError, setApiError] = useState<string | null>(null);
 
   // Preserve idempotency key across retries of the SAME submission
-  const idempotencyKeyRef = useRef<string>(
-    typeof crypto !== "undefined" && crypto.randomUUID
-      ? crypto.randomUUID()
-      : `ib-${Date.now()}-${Math.random().toString(36).slice(2)}`,
-  );
+  const idempotencyKeyRef = useRef<string>(createInstantBookingIdempotencyKey());
 
   const createMutation = useCreatePatientInstantBookingRequest();
   const cancelMutation = useCancelPatientInstantBookingRequest();
@@ -146,8 +148,11 @@ export default function InstantBookingModal({
     setApiError(null);
     try {
       const created = await createMutation.mutateAsync({
-        practitionerSlug: practitioner.slug,
-        durationMinutes: selectedDuration,
+        input: {
+          practitionerSlug: practitioner.slug,
+          durationMinutes: selectedDuration,
+        },
+        idempotencyKey: idempotencyKeyRef.current,
       });
       setActiveRequestId(created.id);
     } catch (err: unknown) {
@@ -196,6 +201,7 @@ export default function InstantBookingModal({
         requestId: activeRequestId,
         reason: "Patient cancelled from modal",
       });
+      idempotencyKeyRef.current = createInstantBookingIdempotencyKey();
       setConfirmCancel(false);
     } catch {
       // Error handled by mutation state

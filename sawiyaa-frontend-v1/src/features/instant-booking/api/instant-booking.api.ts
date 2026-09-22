@@ -57,10 +57,14 @@ export async function getPatientInstantBookingPractitioners(
  */
 export async function createPatientInstantBookingRequest(
   input: CreatePatientInstantBookingRequestInput,
+  idempotencyKey?: string,
 ): Promise<InstantBookingRequest> {
   const response = await httpClient.post<ApiPayload<InstantBookingRequestResponseData>>(
     "/patients/me/instant-booking-requests",
     input,
+    idempotencyKey
+      ? { headers: { "Idempotency-Key": idempotencyKey } }
+      : undefined,
   );
 
   return extractData(response.data).item;

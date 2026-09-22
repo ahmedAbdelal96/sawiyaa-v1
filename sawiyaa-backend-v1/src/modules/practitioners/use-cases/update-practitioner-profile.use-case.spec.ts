@@ -1,5 +1,6 @@
 import { BadRequestException } from '@nestjs/common';
 import { UpdatePractitionerProfileUseCase } from './update-practitioner-profile.use-case';
+import { PractitionerChangeReviewPolicy } from '../policies/practitioner-change-review.policy';
 
 describe('UpdatePractitionerProfileUseCase', () => {
   const prisma = {
@@ -43,6 +44,9 @@ describe('UpdatePractitionerProfileUseCase', () => {
   const practitionerTimezoneChangeGuardService = {
     assertCanChange: jest.fn(),
   } as never;
+  const changeReviewService = {
+    upsert: jest.fn(),
+  } as never;
 
   const useCase = new UpdatePractitionerProfileUseCase(
     prisma,
@@ -58,6 +62,10 @@ describe('UpdatePractitionerProfileUseCase', () => {
     practitionerPayoutDestinationValidationService,
     getPractitionerProfileUseCase,
     practitionerTimezoneChangeGuardService,
+    undefined,
+    undefined,
+    new PractitionerChangeReviewPolicy(),
+    changeReviewService,
   );
 
   const baseProfile = {
@@ -233,5 +241,30 @@ describe('UpdatePractitionerProfileUseCase', () => {
     expect(
       practitionerUserRepository.updateProfilePreferences,
     ).not.toHaveBeenCalled();
+  });
+
+  it('stages an approved practitioner display name and keeps the live user value', async () => {
+    await expect(
+      useCase.execute({
+        userId: 'user-1',
+        locale: 'ar',
+        currentUser,
+        data: { displayName: 'Dr. New Name' },
+      }),
+    ).resolves.toBeTruthy();
+
+    expect(changeReviewService.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        practitionerId: 'profile-1',
+        profile: { displayName: 'Dr. New Name' },
+      }),
+    );
+    expect(
+      practitionerUserRepository.updateProfilePreferences,
+    ).toHaveBeenCalledWith(
+      'user-1',
+      expect.not.objectContaining({ displayName: 'Dr. New Name' }),
+      expect.any(Object),
+    );
   });
 });

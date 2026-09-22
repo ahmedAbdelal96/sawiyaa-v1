@@ -12,6 +12,40 @@ describe('ManageAdminAcademyProgramEnrollmentsUseCase', () => {
     return { useCase, updateEnrollment };
   }
 
+  it('exports the complete filtered dataset through the lean admin projection', async () => {
+    const findAdminEnrollmentsForExport = jest.fn().mockResolvedValue([
+      { id: 'enrollment-1' },
+      { id: 'enrollment-2' },
+    ]);
+    const presentAdminEnrollmentListItem = jest.fn((item) => ({ id: item.id }));
+    const useCase = new ManageAdminAcademyProgramEnrollmentsUseCase(
+      {} as any,
+      { findAdminEnrollmentsForExport } as any,
+      { presentAdminEnrollmentListItem } as any,
+    );
+
+    const result = await useCase.exportEnrollments({
+      academyProgramId: 'program-a',
+      q: 'sara',
+      country: 'EG',
+      status: 'CONFIRMED',
+      paymentStatus: 'CAPTURED',
+      locale: 'en',
+    } as any);
+
+    expect(findAdminEnrollmentsForExport).toHaveBeenCalledWith({
+      academyProgramId: 'program-a',
+      q: 'sara',
+      country: 'EG',
+      status: 'CONFIRMED',
+      paymentStatus: 'CAPTURED',
+      sortBy: undefined,
+      sortDir: undefined,
+    });
+    expect(presentAdminEnrollmentListItem).toHaveBeenCalledTimes(2);
+    expect(result.items).toEqual([{ id: 'enrollment-1' }, { id: 'enrollment-2' }]);
+  });
+
   it('does not fabricate attendance when marking completed', async () => {
     const { useCase, updateEnrollment } = createUseCase({ id: 'enrollment-1', confirmedAt: null, completedAt: null });
 

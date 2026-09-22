@@ -168,6 +168,20 @@ export class UserNotificationsPresenter {
       normalized.relatedEntityId = raw.relatedEntityId;
     }
 
+    if (typeof raw.amount === 'string' || typeof raw.amount === 'number') {
+      normalized.amount = String(raw.amount);
+    }
+
+    if (typeof raw.currencyCode === 'string' && raw.currencyCode.trim()) {
+      normalized.currencyCode = raw.currencyCode.trim().toUpperCase();
+    }
+
+    for (const key of ['packagePurchaseId', 'enrollmentId', 'payoutId', 'refundId', 'financialEventType', 'context']) {
+      if (typeof raw[key] === 'string' && raw[key].trim()) {
+        normalized[key] = raw[key].trim();
+      }
+    }
+
     if (typeof raw.category === 'string') {
       normalized.category = raw.category;
     }

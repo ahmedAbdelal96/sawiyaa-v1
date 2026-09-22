@@ -87,10 +87,7 @@ export default async function PatientArticleDetailPage({ params }: Props) {
   if (!article) notFound();
 
   return (
-    <div className="app-max-content mx-auto space-y-5 px-4 py-8 sm:space-y-6">
-      <section className="app-panel-soft rounded-[28px] p-4 sm:p-5">
-        <PatientQuickNav />
-      </section>
+    <div className="app-max-content mx-auto px-4 py-4 sm:py-6">
       <PatientArticleDetailScreen article={article} />
     </div>
   );

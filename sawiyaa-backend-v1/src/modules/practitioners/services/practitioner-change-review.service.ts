@@ -12,6 +12,10 @@ import {
 type DbClient = PrismaService | Prisma.TransactionClient;
 
 type ProfileOverrides = Partial<{
+  /** Applicant identity value is staged in the existing application snapshot. */
+  displayName: string | null;
+  /** Approved avatar remains live until the proposed replacement is approved. */
+  avatarUrl: string | null;
   practitionerType: string | null;
   practitionerGender: string | null;
   professionalTitle: string | null;
@@ -142,7 +146,13 @@ export class PractitionerChangeReviewService {
     );
 
     const snapshot = this.snapshotService.build({
-      user: profile.user,
+      user: {
+        ...profile.user,
+        displayName:
+          input.profile?.displayName !== undefined
+            ? input.profile.displayName
+            : profile.user.displayName,
+      },
       profile: {
         practitionerType: String(
           input.profile?.practitionerType ?? profile.practitionerType,
@@ -189,7 +199,10 @@ export class PractitionerChangeReviewService {
         reviewNotes: credential.reviewNotes,
       })),
       payoutDestination: profile.payoutDestination,
-      avatarUrl: profile.avatarUrl,
+      avatarUrl:
+        input.profile?.avatarUrl !== undefined
+          ? input.profile.avatarUrl
+          : profile.avatarUrl,
     });
 
     // Serialize the requested section so Admin can render exact before/after data.
@@ -241,6 +254,18 @@ export class PractitionerChangeReviewService {
           locales: mergedLocales,
         };
       }
+    }
+    // Keep an earlier pending identity value when another profile section is
+    // edited before Administration decides the active change request.
+    if (
+      previousSections.includes('PROFILE') &&
+      previous?.applicant &&
+      input.profile?.displayName === undefined
+    ) {
+      requested.applicant = {
+        ...(requested.applicant ?? {}),
+        displayName: previous.applicant.displayName,
+      };
     }
     if (
       previousSections.includes('SPECIALTIES') &&

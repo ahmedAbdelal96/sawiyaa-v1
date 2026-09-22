@@ -89,6 +89,19 @@ function routeFromPatientHref(href: string) {
     return "/(patient)/payments";
   }
 
+  if (head === "package-purchases") {
+    return second
+      ? `/(patient)/package-purchases/${second}`
+      : "/(patient)/package-purchases";
+  }
+
+  if (head === "academy") {
+    if (second === "program-enrollments" && third) {
+      return `/(patient)/academy/program-enrollments/${third}`;
+    }
+    return second ? `/(patient)/academy/${second}` : "/(patient)/academy";
+  }
+
   if (head === "support") {
     return second ? `/(patient)/support/${second}` : "/(patient)/support";
   }

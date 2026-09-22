@@ -45,6 +45,7 @@ describe('ResolveSessionJoinContractUseCase', () => {
     provider?: SessionProvider;
     hasPriorJoinEvidence?: boolean;
     finalManualDecision?: SessionAdminDecisionType | null;
+    promotionOutcome?: 'transitioned' | 'skipped' | 'idempotent';
   }) {
     const createdEvents: Array<{ eventType: string; actorUserId: string }> = [];
     const prisma = {
@@ -108,6 +109,10 @@ describe('ResolveSessionJoinContractUseCase', () => {
     };
     const validateSessionStatusTransitionService = {
       transition: jest.fn().mockImplementation(async ({ session, to }: any) => ({ ...session, status: to })),
+      transitionIfCurrentStatus: jest.fn().mockImplementation(async ({ to }: any) => ({
+        outcome: overrides?.promotionOutcome ?? 'transitioned',
+        session: { ...baseSession, status: to },
+      })),
     };
     const prepareSessionRuntimeUseCase = {
       execute: jest.fn().mockResolvedValue({}),
@@ -141,6 +146,7 @@ describe('ResolveSessionJoinContractUseCase', () => {
       sessionVideoProviderRegistryService,
       sessionVideoProviderResolverService,
       sessionRepository,
+      sessionLifecycleService: validateSessionStatusTransitionService,
       createdEvents,
     };
   }
@@ -384,6 +390,25 @@ describe('ResolveSessionJoinContractUseCase', () => {
     expect(result.item.canJoin).toBe(false);
     expect(result.item.joinToken).toBeNull();
     expect(result.item.blockedReason).toBe('SESSION_NOT_JOINABLE_STATUS');
-    expect(setup.sessionVideoProviderRegistryService.get).not.toHaveBeenCalled();
+      expect(setup.sessionVideoProviderRegistryService.get).not.toHaveBeenCalled();
+  });
+
+  it('uses a locked conditional promotion so a concurrent attendance transition cannot regress the session', async () => {
+    const setup = buildUseCase({ promotionOutcome: 'skipped' });
+
+    const result = await setup.useCase.execute({
+      userId: 'user_1',
+      actorType: 'PATIENT',
+      sessionId: 'session_1',
+    });
+
+    expect(result.item.canJoin).toBe(true);
+    expect(setup.sessionLifecycleService.transitionIfCurrentStatus).toHaveBeenCalledWith(
+      expect.objectContaining({
+        expectedStatuses: [SessionStatus.UPCOMING],
+        to: SessionStatus.READY_TO_JOIN,
+      }),
+    );
+    expect(setup.sessionLifecycleService.transition).not.toHaveBeenCalled();
   });
 });

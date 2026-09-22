@@ -37,8 +37,7 @@ export const FINANCIAL_OPS_ERROR_CODES = {
     'FINANCIAL_OPERATIONS_RECOVERY_AMOUNT_EXCEEDS_REMAINING',
   recoveryAlreadyResolved: 'FINANCIAL_OPERATIONS_RECOVERY_ALREADY_RESOLVED',
   recoveryReasonRequired: 'FINANCIAL_OPERATIONS_RECOVERY_REASON_REQUIRED',
-  practitionerWalletCurrencyMismatch:
-    'PRACTITIONER_WALLET_CURRENCY_MISMATCH',
+  practitionerWalletCurrencyMismatch: 'PRACTITIONER_WALLET_CURRENCY_MISMATCH',
   practitionerWalletNotFound: 'PRACTITIONER_WALLET_NOT_FOUND',
   practitionerWalletCurrencyUnresolved:
     'PRACTITIONER_WALLET_CURRENCY_UNRESOLVED',
@@ -374,6 +373,34 @@ export type PackageSettlementViewModel = {
   releasedPractitionerAmount: string;
   normalEquivalentUsedAmount: string;
   discountAppliedAmount: string;
+  availableSessions: number;
+  reservedSessions: number;
+  consumedSessions: number;
+  nextSessionStartAt: string | null;
+  payment: {
+    id: string;
+    status: string;
+    provider: string;
+    reference: string | null;
+    amount: string;
+    currency: string;
+    capturedAt: string | null;
+  } | null;
+  sessions: Array<{
+    id: string;
+    sessionCode: string;
+    status: string;
+    packageSessionIndex: number | null;
+    packageSessionCount: number | null;
+    scheduledStartAt: string | null;
+    scheduledEndAt: string | null;
+    paymentCoverageType: string;
+    entitlementDecision: {
+      decisionType: string;
+      reasonCode: string;
+      decidedAt: string;
+    } | null;
+  }>;
   reviewedAt: string | null;
   reviewedByAdminId: string | null;
   releasedAt: string | null;

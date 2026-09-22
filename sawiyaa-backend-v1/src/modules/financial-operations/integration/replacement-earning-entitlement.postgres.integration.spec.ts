@@ -1,3 +1,5 @@
+import { AccountingLedgerAccountService } from '@modules/financial-operations/services/accounting-ledger-account.service';
+import { AccountingJournalPostingService } from '@modules/financial-operations/services/accounting-journal-posting.service';
 /* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call */
 import { randomUUID } from 'node:crypto';
 import { PaymentProvider, PaymentPurpose, PaymentStatus, PractitionerStatus, PractitionerType, Prisma, SessionFlowType, SessionMode, SessionProvider, SessionStatus } from '@prisma/client';
@@ -12,7 +14,7 @@ import { WalletRepository } from '../repositories/wallet.repository';
 
 const databaseUrl = process.env.DATABASE_URL;
 const databaseName = databaseUrl ? decodeURIComponent(new URL(databaseUrl).pathname.slice(1)) : '';
-if (databaseName === 'fayed_db' || (databaseName && !/(phase3b1a|phase3b2a)/i.test(databaseName))) throw new Error(`Unsafe replacement earning database: ${databaseName}`);
+if (databaseName === 'fayed_db' || (databaseName && !/(phase3b1a|phase3b2a|^sawiyaa_redteam_[a-z0-9_]+$)/i.test(databaseName))) throw new Error(`Unsafe replacement earning database: ${databaseName}`);
 
 const describeIfDatabase = databaseUrl ? describe : describe.skip;
 
@@ -27,6 +29,7 @@ describeIfDatabase('replacement earning entitlement PostgreSQL proof', () => {
     new CalculatePackageSessionAllocationService(money),
     { refresh: jest.fn().mockResolvedValue(undefined) } as never,
     transfer,
+    new AccountingJournalPostingService(prisma, money, new AccountingLedgerAccountService(prisma)),
     {} as never,
   );
 
@@ -65,16 +68,18 @@ describeIfDatabase('replacement earning entitlement PostgreSQL proof', () => {
     const settlements = await prisma.practitionerSettlement.findMany({ where: { sourceReview: { earningEntitlementId: entitlementId } } });
     expect(payable).toHaveLength(1);
     expect(payable[0].sessionId).toBe(replacementId);
-    expect(payable[0].suggestedPractitionerPercentage?.toString()).toBe('30');
-    expect(payable[0].suggestedPractitionerAmount.toString()).toBe('30');
-    expect(payable[0].suggestedPlatformAmount.toString()).toBe('70');
+    // The immutable commission snapshot captured on the original payment is
+    // authoritative for the whole entitlement chain, including replacements.
+    expect(payable[0].suggestedPractitionerPercentage?.toString()).toBe('80');
+    expect(payable[0].suggestedPractitionerAmount.toString()).toBe('80');
+    expect(payable[0].suggestedPlatformAmount.toString()).toBe('20');
     expect(settlements).toHaveLength(0);
     const approved = await service.approveFinancialDecision({ reviewId: replacement!.reviewId, reviewerUserId: practitionerUserId, accountantApprovedSourceAmount: '25', overrideReason: 'Approved below system suggestion for proof' });
     const credited = await service.creditPractitionerWallet({ reviewId: replacement!.reviewId, approvedByUserId: practitionerUserId, approvedWalletCreditAmount: '1250', idempotencyKey: `replacement-stage-b:${replacement!.reviewId}` });
     const replayTransfer = await service.creditPractitionerWallet({ reviewId: replacement!.reviewId, approvedByUserId: practitionerUserId, approvedWalletCreditAmount: '1250', idempotencyKey: `replacement-stage-b:${replacement!.reviewId}` });
     const settlementsAfterApproval = await prisma.practitionerSettlement.findMany({ where: { sourceReview: { earningEntitlementId: entitlementId } } });
     expect(approved.item.accountantApprovedSourceAmount?.toString()).toBe('25');
-    expect(approved.item.accountingAdjustmentAmount?.toString()).toBe('-5');
+    expect(approved.item.accountingAdjustmentAmount?.toString()).toBe('-55');
     expect(credited.item.reviewStatus).toBe('APPROVED');
     expect(settlementsAfterApproval).toHaveLength(1);
     expect(settlementsAfterApproval[0].originalCurrencyCode).toBe('USD');

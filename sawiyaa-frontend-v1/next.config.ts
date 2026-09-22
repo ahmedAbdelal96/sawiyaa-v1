@@ -10,9 +10,6 @@ const nextConfig: NextConfig = {
   // are requested from the browser origin. Keep this narrowly scoped to the
   // local hosts used by the test/dev workflow.
   allowedDevOrigins: ["127.0.0.1", "localhost"],
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
   /* config options here */
   webpack(config) {
     const assetRule = config.module.rules.find(

@@ -163,6 +163,7 @@ export async function fetchPublicPractitioners(
       gender: params?.gender,
       duration: params?.duration,
       onlineNow: params?.onlineNow,
+      instantBookingEnabled: params?.instantBookingEnabled,
       availableToday: params?.availableToday,
       availableThisWeek: params?.availableThisWeek,
       acceptsCoupon: params?.acceptsCoupon,

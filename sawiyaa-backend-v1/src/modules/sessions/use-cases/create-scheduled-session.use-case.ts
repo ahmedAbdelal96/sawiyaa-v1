@@ -11,6 +11,7 @@ import {
   SessionStatus,
 } from '@prisma/client';
 import { SupportedLocale } from '@common/i18n/types/locale.types';
+import { resolvePaymentRegionalResolution } from '@common/payments/payment-region.resolver';
 import { PrismaService } from '@common/prisma/prisma.service';
 import { PublicPractitionerVisibilityPolicy } from '@modules/practitioners/policies/public-practitioner-visibility.policy';
 import { SessionMapper } from '../mappers/session.mapper';
@@ -61,6 +62,7 @@ export class CreateScheduledSessionUseCase {
     scheduledStartAt: string;
     durationMinutes: 30 | 60;
     sessionMode: SessionMode;
+    requestCountryIsoCode?: string | null;
   }) {
     this.validateSessionBookingRequestService.assertScheduledStartHasExplicitTimezone(
       input.scheduledStartAt,
@@ -157,6 +159,10 @@ export class CreateScheduledSessionUseCase {
     const expiresAt = new Date(
       Date.now() + this.paymentReservationMinutes * 60 * 1000,
     );
+    const pricingCurrencyCode = resolvePaymentRegionalResolution({
+      requestCountryIsoCode:
+        input.requestCountryIsoCode ?? patient.country?.isoCode ?? null,
+    }).currencyCode;
 
     try {
       const session = await this.prisma.$transaction(async (tx) => {
@@ -185,6 +191,7 @@ export class CreateScheduledSessionUseCase {
             scheduledEndAt: scheduledEndAtUtc,
             expiresAt,
             timezoneSnapshot: availabilityResult.timezone,
+            pricingCurrencyCode,
           },
           tx,
           'scheduled',

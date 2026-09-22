@@ -39,6 +39,7 @@ export function usePractitionerSessions(params?: ListSessionsQuery) {
     queryFn: () => getPractitionerSessions(params),
     enabled,
     staleTime: 30_000,
+    refetchOnWindowFocus: true,
   });
 }
 
@@ -53,6 +54,7 @@ export function usePractitionerSessionSummary() {
     },
     enabled,
     staleTime: 30_000,
+    refetchOnWindowFocus: true,
   });
 }
 
@@ -79,6 +81,7 @@ export function useInfinitePractitionerSessions(
     },
     enabled,
     staleTime: 30_000,
+    refetchOnWindowFocus: true,
   });
 }
 
@@ -92,6 +95,7 @@ export function usePractitionerSession(sessionId: string | null) {
     queryFn: () => getPractitionerSession(sessionId!),
     enabled: enabled && Boolean(sessionId),
     staleTime: 30_000,
+    refetchOnWindowFocus: true,
   });
 }
 
@@ -158,10 +162,13 @@ export function useMarkPractitionerSessionNoShow() {
     onSuccess: (data) => {
       queryClient.setQueryData(
         practitionerSessionQueryKeys.detail(data.item.id, locale),
-        data,
+        data.item,
       );
       queryClient.invalidateQueries({
         queryKey: practitionerSessionQueryKeys.all,
+      });
+      queryClient.invalidateQueries({
+        queryKey: practitionerSessionQueryKeys.detail(data.item.id),
       });
     },
   });

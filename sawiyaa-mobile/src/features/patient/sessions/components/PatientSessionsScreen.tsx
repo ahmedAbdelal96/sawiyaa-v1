@@ -51,16 +51,19 @@ export default function PatientSessionsScreen() {
 
   const sessions = useMemo(() => {
     const seen = new Set<string>();
-    return (sessionsQuery.data?.pages.flatMap((page) => page.items) ?? []).filter(
-      (session) => {
-        if (seen.has(session.id)) return false;
-        seen.add(session.id);
-        return true;
-      },
-    );
+    return (
+      sessionsQuery.data?.pages.flatMap((page) => page.items) ?? []
+    ).filter((session) => {
+      if (seen.has(session.id)) return false;
+      seen.add(session.id);
+      return true;
+    });
   }, [sessionsQuery.data?.pages]);
 
-  const groupedSessions = useMemo(() => splitPatientSessions(sessions), [sessions]);
+  const groupedSessions = useMemo(
+    () => splitPatientSessions(sessions),
+    [sessions],
+  );
   const visibleSessions = groupedSessions[activeTab];
 
   const loadNextPage = useCallback(() => {
@@ -79,9 +82,19 @@ export default function PatientSessionsScreen() {
   }, [sessionsQuery]);
 
   const onScroll = useCallback(
-    (event: { nativeEvent: { contentOffset: { y: number }; contentSize: { height: number }; layoutMeasurement: { height: number } } }) => {
-      const { contentOffset, contentSize, layoutMeasurement } = event.nativeEvent;
-      if (contentSize.height - (contentOffset.y + layoutMeasurement.height) < 520) {
+    (event: {
+      nativeEvent: {
+        contentOffset: { y: number };
+        contentSize: { height: number };
+        layoutMeasurement: { height: number };
+      };
+    }) => {
+      const { contentOffset, contentSize, layoutMeasurement } =
+        event.nativeEvent;
+      if (
+        contentSize.height - (contentOffset.y + layoutMeasurement.height) <
+        520
+      ) {
         loadNextPage();
       }
     },
@@ -109,6 +122,10 @@ export default function PatientSessionsScreen() {
       }
 
       const joinUrl = buildJoinUrl(contract);
+      if (!joinUrl) {
+        setFeedback(t("patientSessionsFlow.detail.joinError"));
+        return;
+      }
       const safeJoinUrl = normalizeAllowedExternalUrl(joinUrl);
       if (!safeJoinUrl) {
         setFeedback(t("patientSessionsFlow.detail.joinError"));
@@ -167,7 +184,10 @@ export default function PatientSessionsScreen() {
         scrollEventThrottle={16}
       >
         <View
-          style={[styles.tabs, direction === "rtl" ? styles.rowRtl : styles.rowLtr]}
+          style={[
+            styles.tabs,
+            direction === "rtl" ? styles.rowRtl : styles.rowLtr,
+          ]}
           accessibilityRole="tablist"
         >
           {(["upcoming", "history"] as const).map((tab) => {
@@ -184,11 +204,18 @@ export default function PatientSessionsScreen() {
                     : "patientSessionsFlow.list.sections.history",
                 )}
                 onPress={() => setActiveTab(tab)}
-                style={[styles.tab, selected && { backgroundColor: theme.colors.primary }]}
+                style={[
+                  styles.tab,
+                  selected && { backgroundColor: theme.colors.primary },
+                ]}
               >
                 <Text
                   weight="700"
-                  color={selected ? theme.colors.inverseOnSurface : theme.colors.textSecondary}
+                  color={
+                    selected
+                      ? theme.colors.inverseOnSurface
+                      : theme.colors.textSecondary
+                  }
                 >
                   {t(
                     tab === "upcoming"
@@ -293,10 +320,17 @@ function PatientSessionCard({
       <View style={[styles.identityRow, isRtl ? styles.rowRtl : styles.rowLtr]}>
         <Avatar name={practitionerName} size={44} label={practitionerName} />
         <View style={styles.identityCopy}>
-          <Text weight="700" style={[styles.practitionerName, isRtl && styles.textRtl]} numberOfLines={1}>
+          <Text
+            weight="700"
+            style={[styles.practitionerName, isRtl && styles.textRtl]}
+            numberOfLines={1}
+          >
             {practitionerName}
           </Text>
-          <Text color={theme.colors.textSecondary} style={[styles.sessionDate, isRtl && styles.textRtl]}>
+          <Text
+            color={theme.colors.textSecondary}
+            style={[styles.sessionDate, isRtl && styles.textRtl]}
+          >
             {session.scheduledStartAt
               ? formatDateTime(session.scheduledStartAt, locale)
               : t("patientSessionsFlow.common.notAvailable")}
@@ -356,8 +390,17 @@ function PatientSessionsEmpty({
   const { theme } = useTheme();
   return (
     <View style={styles.emptyState} testID="patient-sessions-empty-state">
-      <View style={[styles.emptyIcon, { backgroundColor: theme.colors.primaryLight }]}>
-        <Ionicons name="calendar-outline" size={24} color={theme.colors.primary} />
+      <View
+        style={[
+          styles.emptyIcon,
+          { backgroundColor: theme.colors.primaryLight },
+        ]}
+      >
+        <Ionicons
+          name="calendar-outline"
+          size={24}
+          color={theme.colors.primary}
+        />
       </View>
       <Text variant="h2" weight="700" style={styles.emptyTitle}>
         {title}
@@ -365,15 +408,23 @@ function PatientSessionsEmpty({
       <Text color={theme.colors.textSecondary} style={styles.emptyBody}>
         {body}
       </Text>
-      {actionLabel && onAction ? <Button title={actionLabel} onPress={onAction} /> : null}
+      {actionLabel && onAction ? (
+        <Button title={actionLabel} onPress={onAction} />
+      ) : null}
     </View>
   );
 }
 
 function statusTone(statusKey: ReturnType<typeof getPatientSessionStatusKey>) {
-  if (statusKey === "readyToJoin" || statusKey === "inProgress") return "success" as const;
+  if (statusKey === "readyToJoin" || statusKey === "inProgress")
+    return "success" as const;
   if (statusKey === "completed") return "default" as const;
-  if (statusKey === "cancelled" || statusKey === "noShow" || statusKey === "unavailable") return "error" as const;
+  if (
+    statusKey === "cancelled" ||
+    statusKey === "noShow" ||
+    statusKey === "unavailable"
+  )
+    return "error" as const;
   return "warning" as const;
 }
 
@@ -416,8 +467,19 @@ const styles = StyleSheet.create({
   textRtl: { textAlign: "right" },
   metaRow: { alignItems: "center", gap: 7 },
   cardAction: { marginTop: 2 },
-  emptyState: { alignItems: "center", gap: 8, paddingHorizontal: 18, paddingVertical: 56 },
-  emptyIcon: { alignItems: "center", borderRadius: 16, height: 52, justifyContent: "center", width: 52 },
+  emptyState: {
+    alignItems: "center",
+    gap: 8,
+    paddingHorizontal: 18,
+    paddingVertical: 56,
+  },
+  emptyIcon: {
+    alignItems: "center",
+    borderRadius: 16,
+    height: 52,
+    justifyContent: "center",
+    width: 52,
+  },
   emptyTitle: { textAlign: "center" },
   emptyBody: { maxWidth: 300, textAlign: "center" },
   footerText: { paddingVertical: 8, textAlign: "center" },

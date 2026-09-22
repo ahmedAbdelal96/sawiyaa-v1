@@ -1609,6 +1609,23 @@ Start **Phase UX-9 - Final Consistency Gate**. Do not start it automatically.
 
 The native profile and request screens still require a real Expo/native-device visual pass at AR/RTL and EN/LTR sizes. This is a validation blocker only; the mobile implementation uses the existing backend-authoritative Instant Booking workflow and shared route contracts.
 
+## Focused Current-Week Schedule Edit Fix — Execution Log
+
+- Corrected the Practitioner Schedule entry/editor gating so a current editable week remains accessible even when every existing slot is protected.
+- Preserved per-slot protection: past and booked/reserved slots remain locked, while unrelated future slots and new future times remain actionable.
+- Added client-side past-time prevention for newly selected current-week published slots; the Backend remains the final authority.
+- Validation: focused practitioner availability Jest suites passed (38 tests); changed-code TypeScript validation, runtime validation, release gate, and targeted lint passed.
+- Visual validation: **NOT VISUALLY VALIDATED** in a native device/emulator in this environment; deterministic tests cover the gating and past-time behavior. Web Playwright availability smoke was blocked by missing local practitioner credentials.
+- Backend scheduling policy, Session lifecycle, durations, timezone rules, booking windows, package behavior, and Instant Booking behavior were not changed.
+
+# Patient Session Timeline & Reschedule History P1 — Execution Log
+
+- Added the patient Session Detail timeline using the existing backend `SessionEvent` projection, including localized event labels and structured previous/new appointment timestamps for `RESCHEDULED` events.
+- Preserved the current appointment facts as the authoritative schedule; no client-side lifecycle, availability, payment, cancellation, or booking rules were changed.
+- Added English and Arabic timeline copy, with RTL/LTR-safe layout and an explicit empty state.
+- Validation: focused patient session Jest suites passed; mobile i18n validation, changed-code TypeScript validation, and full TypeScript compilation passed.
+- Native/device visual validation: **NOT VISUALLY VALIDATED** because no connected device/emulator was available in this environment.
+
 # 15. Product Guardrails
 
 1. Do not redesign a screen before identifying the user job.

@@ -9,7 +9,12 @@ export const adminNavigation: NavigationConfig = [
     namespace: "main",
     collapsible: false,
     items: [
-      { key: "dashboard", icon: <NavigationIcons.dashboard />, path: "/dashboard", namespace: "main" },
+      {
+        key: "dashboard",
+        icon: <NavigationIcons.dashboard />,
+        path: "/dashboard",
+        namespace: "main",
+      },
       {
         key: "messages",
         icon: <NavigationIcons.chat />,
@@ -34,10 +39,19 @@ export const adminNavigation: NavigationConfig = [
         key: "helpCenter",
         icon: <NavigationIcons.page />,
         namespace: "workspace",
+        requiredPermissions: [PK.HELP_READ],
         subItems: [
           { key: "helpCenterHome", path: "/help", namespace: "workspace" },
-          { key: "helpCategories", path: "/help/categories", namespace: "workspace" },
-          { key: "helpQuestions", path: "/help/questions", namespace: "workspace" },
+          {
+            key: "helpCategories",
+            path: "/help/categories",
+            namespace: "workspace",
+          },
+          {
+            key: "helpQuestions",
+            path: "/help/questions",
+            namespace: "workspace",
+          },
         ],
       },
     ],
@@ -60,9 +74,17 @@ export const adminNavigation: NavigationConfig = [
         icon: <NavigationIcons.users />,
         path: "/patients",
         namespace: "main",
-        requiredPermissions: [PK.PATIENTS_READ_ADMIN, PK.PATIENTS_SENSITIVE_READ],
+        requiredPermissions: [
+          PK.PATIENTS_READ_ADMIN,
+          PK.PATIENTS_SENSITIVE_READ,
+        ],
       },
-      { key: "practitioners", icon: <NavigationIcons.practitioners />, path: "/practitioners", namespace: "main" },
+      {
+        key: "practitioners",
+        icon: <NavigationIcons.practitioners />,
+        path: "/practitioners",
+        namespace: "main",
+      },
       {
         key: "practitionerApplications",
         icon: <NavigationIcons.practitioners />,
@@ -84,7 +106,13 @@ export const adminNavigation: NavigationConfig = [
         namespace: "main",
         requiredPermissions: [PK.FEATURED_PRACTITIONERS_READ],
       },
-      { key: "assessments", icon: <NavigationIcons.reports />, path: "/assessments", namespace: "main" },
+      {
+        key: "assessments",
+        icon: <NavigationIcons.reports />,
+        path: "/assessments",
+        namespace: "main",
+        requiredPermissions: [PK.ASSESSMENTS_AUTHORING_READ],
+      },
     ],
   },
   {
@@ -106,14 +134,22 @@ export const adminNavigation: NavigationConfig = [
         icon: <NavigationIcons.wallet />,
         path: "/finance",
         namespace: "main",
-        requiredPermissions: [PK.FINANCE_EVENTS_READ, PK.ACCOUNTING_READ, PK.FINANCIAL_SETTLEMENT_VIEW],
+        requiredPermissions: [
+          PK.FINANCE_EVENTS_READ,
+          PK.ACCOUNTING_READ,
+          PK.FINANCIAL_SETTLEMENT_VIEW,
+        ],
       },
       {
         key: "incomingPayments",
         icon: <NavigationIcons.payments />,
         path: "/payments",
         namespace: "main",
-        requiredPermissions: [PK.FINANCE_EVENTS_READ, PK.REFUNDS_APPROVE, PK.REFUNDS_RETRY],
+        requiredPermissions: [
+          PK.FINANCE_EVENTS_READ,
+          PK.REFUNDS_APPROVE,
+          PK.REFUNDS_RETRY,
+        ],
       },
       {
         key: "settlementWorkflow",
@@ -163,8 +199,16 @@ export const adminNavigation: NavigationConfig = [
         namespace: "main",
         requiredPermissions: [PK.FINANCE_EVENTS_READ],
         subItems: [
-          { key: "reportsPaymentsRevenue", path: "/reports/payments-revenue", namespace: "main" },
-          { key: "reportsPayouts", path: "/reports/payouts", namespace: "main" },
+          {
+            key: "reportsPaymentsRevenue",
+            path: "/reports/payments-revenue",
+            namespace: "main",
+          },
+          {
+            key: "reportsPayouts",
+            path: "/reports/payouts",
+            namespace: "main",
+          },
         ],
       },
     ],
@@ -180,6 +224,7 @@ export const adminNavigation: NavigationConfig = [
         icon: <NavigationIcons.payments />,
         path: "/package-plans",
         namespace: "main",
+        requiredPermissions: [PK.PACKAGE_PLANS_READ],
       },
       {
         key: "refundPolicies",
@@ -187,14 +232,26 @@ export const adminNavigation: NavigationConfig = [
         path: "/refund-policies",
         namespace: "main",
       },
-      { key: "articles", icon: <NavigationIcons.page />, path: "/articles", namespace: "workspace" },
+      {
+        key: "articles",
+        icon: <NavigationIcons.page />,
+        path: "/articles",
+        namespace: "workspace",
+        requiredPermissions: [PK.ARTICLES_READ],
+      },
       {
         key: "academy",
         icon: <NavigationIcons.academy />,
         path: "/academy/programs",
         namespace: "workspace",
       },
-      { key: "specialties", icon: <NavigationIcons.specialties />, path: "/specialties", namespace: "workspace" },
+      {
+        key: "specialties",
+        icon: <NavigationIcons.specialties />,
+        path: "/specialties",
+        namespace: "workspace",
+        requiredPermissions: [PK.SPECIALTIES_READ],
+      },
     ],
   },
   {
@@ -210,13 +267,35 @@ export const adminNavigation: NavigationConfig = [
         requiredPermissions: [PK.FINANCE_EVENTS_READ],
         subItems: [
           { key: "reportsHome", path: "/reports", namespace: "main" },
-          { key: "reportsSessions", path: "/reports/sessions", namespace: "main" },
-          { key: "reportsPaymentsRevenue", path: "/reports/payments-revenue", namespace: "main" },
-          { key: "reportsSupport", path: "/reports/support", namespace: "main" },
-          { key: "reportsCareRequests", path: "/reports/care-requests", namespace: "main" },
+          {
+            key: "reportsSessions",
+            path: "/reports/sessions",
+            namespace: "main",
+          },
+          {
+            key: "reportsPaymentsRevenue",
+            path: "/reports/payments-revenue",
+            namespace: "main",
+          },
+          {
+            key: "reportsSupport",
+            path: "/reports/support",
+            namespace: "main",
+          },
+          {
+            key: "reportsCareRequests",
+            path: "/reports/care-requests",
+            namespace: "main",
+          },
         ],
       },
-      { key: "reviews", icon: <NavigationIcons.reports />, path: "/reviews", namespace: "workspace" },
+      {
+        key: "reviews",
+        icon: <NavigationIcons.reports />,
+        path: "/reviews",
+        namespace: "workspace",
+        requiredPermissions: [PK.REVIEWS_READ],
+      },
       {
         key: "moderationReports",
         icon: <NavigationIcons.reports />,

@@ -289,7 +289,7 @@ export default function PatientSignInScreen() {
         <Text color={publicTheme.secondaryText} style={styles.footerLabel}>
           {t("auth.patientSignIn.noAccount", {
             defaultValue: isArabic
-              ? "ليس لديك حساب مريض؟"
+              ? "ليس لديك حساب بعد؟"
               : "Don't have an account?",
           })}
         </Text>

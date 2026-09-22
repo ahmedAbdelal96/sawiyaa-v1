@@ -94,6 +94,30 @@ export const notificationsSeedModule: SeedModule = {
         category: NotificationCategory.PAYMENT,
       },
       {
+        slug: 'payments.package-purchase-succeeded',
+        displayName: 'Package Purchase Payment Succeeded',
+        description: 'Patient notification for successful package payment and activation',
+        category: NotificationCategory.PAYMENT,
+      },
+      {
+        slug: 'payments.academy-payment-succeeded',
+        displayName: 'Academy Payment Succeeded',
+        description: 'Learner notification for successful academy enrollment payment',
+        category: NotificationCategory.PAYMENT,
+      },
+      {
+        slug: 'financial.practitioner-earning-credited',
+        displayName: 'Practitioner Earning Credited',
+        description: 'Practitioner notification when an approved earning is credited',
+        category: NotificationCategory.PAYMENT,
+      },
+      {
+        slug: 'financial.practitioner-payout-completed',
+        displayName: 'Practitioner Payout Completed',
+        description: 'Practitioner notification when a payout is completed',
+        category: NotificationCategory.PAYMENT,
+      },
+      {
         slug: 'sessions.session-confirmed',
         displayName: 'Session Confirmed (Patient)',
         description:

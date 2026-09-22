@@ -1,4 +1,9 @@
-import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  useInfiniteQuery,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
 import { useAuthenticatedQueryEnabled } from "../../auth/query-auth";
 import type { RefundPolicyType } from "../refund-policies/types";
 import {
@@ -7,6 +12,7 @@ import {
   fetchRefundPolicy,
   getMyPackagePurchase,
   initiatePatientPackagePurchasePayment,
+  bookPatientPackageSession,
   listMyPackagePurchases,
   quotePatientPackagePlan,
 } from "./api";
@@ -20,8 +26,18 @@ import type {
 
 export const packagePlanQueryKeys = {
   all: ["package-plans"] as const,
-  practitioner: (slug: string, params?: PackagePlansQuery, scopeKey?: string | null) =>
-    [...packagePlanQueryKeys.all, "practitioner", scopeKey ?? "guest", slug, params ?? {}] as const,
+  practitioner: (
+    slug: string,
+    params?: PackagePlansQuery,
+    scopeKey?: string | null,
+  ) =>
+    [
+      ...packagePlanQueryKeys.all,
+      "practitioner",
+      scopeKey ?? "guest",
+      slug,
+      params ?? {},
+    ] as const,
   quote: (input: PatientPackagePlanQuoteRequest) =>
     [...packagePlanQueryKeys.all, "quote", input] as const,
 };
@@ -30,7 +46,8 @@ export const packagePurchaseQueryKeys = {
   all: ["package-purchases"] as const,
   list: (params?: ListMyPackagePurchasesParams) =>
     [...packagePurchaseQueryKeys.all, "list", params ?? {}] as const,
-  detail: (purchaseId: string) => [...packagePurchaseQueryKeys.all, purchaseId] as const,
+  detail: (purchaseId: string) =>
+    [...packagePurchaseQueryKeys.all, purchaseId] as const,
 };
 
 export const refundPolicyQueryKeys = {
@@ -50,15 +67,25 @@ export function usePublicPractitionerPackagePlans(
       params,
       options?.cacheScopeKey,
     ),
-    queryFn: () => fetchPublicPractitionerPackagePlans(practitionerSlug!, params),
+    queryFn: () =>
+      fetchPublicPractitionerPackagePlans(practitionerSlug!, params),
     enabled: Boolean(practitionerSlug) && (options?.enabled ?? true),
-    staleTime: 60_000,
+    // Package availability is an eligibility surface: activating, archiving,
+    // or switching practitioners must never leave a stale profile offer.
+    staleTime: 0,
+    gcTime: 0,
+    refetchOnMount: "always",
+    refetchOnWindowFocus: true,
   });
 }
 
-export function usePackagePlanQuote(input: PatientPackagePlanQuoteRequest | null) {
+export function usePackagePlanQuote(
+  input: PatientPackagePlanQuoteRequest | null,
+) {
   return useQuery({
-    queryKey: input ? packagePlanQueryKeys.quote(input) : packagePlanQueryKeys.all,
+    queryKey: input
+      ? packagePlanQueryKeys.quote(input)
+      : packagePlanQueryKeys.all,
     queryFn: () => quotePatientPackagePlan(input!),
     enabled: Boolean(input),
     staleTime: 60_000,
@@ -73,10 +100,13 @@ export function useMyPackagePurchases(params?: ListMyPackagePurchasesParams) {
     queryFn: () => listMyPackagePurchases(params),
     enabled,
     staleTime: 30_000,
+    refetchOnMount: "always",
   });
 }
 
-export function useInfiniteMyPackagePurchases(params?: Omit<ListMyPackagePurchasesParams, "page">) {
+export function useInfiniteMyPackagePurchases(
+  params?: Omit<ListMyPackagePurchasesParams, "page">,
+) {
   const enabled = useAuthenticatedQueryEnabled("patient");
 
   return useInfiniteQuery({
@@ -97,6 +127,8 @@ export function useInfiniteMyPackagePurchases(params?: Omit<ListMyPackagePurchas
     },
     enabled,
     staleTime: 30_000,
+    refetchOnMount: "always",
+    refetchOnWindowFocus: true,
   });
 }
 
@@ -108,6 +140,7 @@ export function useMyPackagePurchase(purchaseId: string | null) {
     queryFn: () => getMyPackagePurchase(purchaseId!),
     enabled: enabled && Boolean(purchaseId),
     staleTime: 30_000,
+    refetchOnMount: "always",
   });
 }
 
@@ -134,8 +167,30 @@ export function useInitiatePackagePurchasePayment() {
     }) => initiatePatientPackagePurchasePayment(purchaseId, input),
     onSuccess: (_, variables) => {
       const { purchaseId } = variables;
-      queryClient.invalidateQueries({ queryKey: packagePurchaseQueryKeys.detail(purchaseId) });
+      queryClient.invalidateQueries({
+        queryKey: packagePurchaseQueryKeys.detail(purchaseId),
+      });
       queryClient.invalidateQueries({ queryKey: packagePurchaseQueryKeys.all });
+    },
+  });
+}
+
+export function useBookPackageSession() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      purchaseId,
+      scheduledStartAt,
+    }: {
+      purchaseId: string;
+      scheduledStartAt: string;
+    }) => bookPatientPackageSession(purchaseId, { scheduledStartAt }),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({
+        queryKey: packagePurchaseQueryKeys.detail(variables.purchaseId),
+      });
+      queryClient.invalidateQueries({ queryKey: packagePurchaseQueryKeys.all });
+      queryClient.invalidateQueries({ queryKey: ["patient-sessions"] });
     },
   });
 }

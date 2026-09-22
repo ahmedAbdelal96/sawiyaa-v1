@@ -1,4 +1,10 @@
 export const arFinancialOperationsCatalog = {
+  notifications: {
+    earningCreditedTitle: 'تم اعتماد الأرباح',
+    earningCreditedBody: 'تم اعتماد مبلغ {{amount}} {{currencyCode}} من أرباح جلستك.',
+    payoutCompletedTitle: 'اكتمل التحويل',
+    payoutCompletedBody: 'تم تحويل مبلغ {{amount}} {{currencyCode}} من مستحقاتك بنجاح.',
+  },
   errors: {
     paymentNotFound: 'لم يتم العثور على عملية الدفع.',
     paymentNotCaptured: 'لا يمكن ترحيل القيود إلا لعمليات الدفع المكتملة.',

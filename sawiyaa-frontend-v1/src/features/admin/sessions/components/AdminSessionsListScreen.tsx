@@ -543,6 +543,7 @@ export default function AdminSessionsListScreen() {
                       <div className="flex flex-wrap items-center gap-1">
                         <SessionStatusBadge
                           status={typeof row.status === "string" ? row.status : "DRAFT"}
+                          operational={row.operational}
                         />
                         {row.isDelayed ? (
                           <AdminStatusBadge tone="danger">

@@ -8,6 +8,7 @@ import { PaymentProvider, PaymentStatus } from '@prisma/client';
 import {
   PaymentProviderAdapter,
   PaymentProviderInitiationResult,
+  PaymentProviderReconciliationResult,
   PaymentProviderRefundResult,
   PaymentWebhookResult,
 } from './payment-provider-adapter.interface';
@@ -58,6 +59,9 @@ type PaymobWebhookEvent = {
   is_refunded?: boolean;
   is_standalone_payment?: boolean;
   is_voided?: boolean;
+  is_refund?: boolean;
+  refunded_amount_cents?: number | string | null;
+  parent_transaction?: number | string | null;
   owner?: number | string;
   source_data?: {
     pan?: string;
@@ -125,25 +129,25 @@ export class PaymobPaymentProviderAdapter implements PaymentProviderAdapter {
         : null;
     const integrationId =
       paymobCheckoutFlow === PaymobCheckoutFlow.LEGACY
-        ? (typeof this.paymentRuntimeConfigService
-              .resolvePaymobIntegrationIdForRoute === 'function'
-            ? this.paymentRuntimeConfigService.resolvePaymobIntegrationIdForRoute(
-                input.routeIntegrationKey ?? null,
-                selectedMethod,
-                {
-                  currencyCode: input.currency,
-                  checkoutCountryIsoCode: input.checkoutCountryIsoCode ?? null,
-                  operatingCountryIsoCode: input.operatingCountryIsoCode ?? null,
-                },
-              )
-            : this.paymentRuntimeConfigService.resolvePaymobIntegrationId(
-                selectedMethod,
-                {
-                  currencyCode: input.currency,
-                  checkoutCountryIsoCode: input.checkoutCountryIsoCode ?? null,
-                  operatingCountryIsoCode: input.operatingCountryIsoCode ?? null,
-                },
-              ))
+        ? typeof this.paymentRuntimeConfigService
+            .resolvePaymobIntegrationIdForRoute === 'function'
+          ? this.paymentRuntimeConfigService.resolvePaymobIntegrationIdForRoute(
+              input.routeIntegrationKey ?? null,
+              selectedMethod,
+              {
+                currencyCode: input.currency,
+                checkoutCountryIsoCode: input.checkoutCountryIsoCode ?? null,
+                operatingCountryIsoCode: input.operatingCountryIsoCode ?? null,
+              },
+            )
+          : this.paymentRuntimeConfigService.resolvePaymobIntegrationId(
+              selectedMethod,
+              {
+                currencyCode: input.currency,
+                checkoutCountryIsoCode: input.checkoutCountryIsoCode ?? null,
+                operatingCountryIsoCode: input.operatingCountryIsoCode ?? null,
+              },
+            )
         : null;
 
     if (
@@ -309,6 +313,7 @@ export class PaymobPaymentProviderAdapter implements PaymentProviderAdapter {
   }
 
   async refundPayment(input: {
+    refundId: string;
     paymentId: string;
     providerPaymentRef: string | null;
     providerOrderRef: string | null;
@@ -354,7 +359,13 @@ export class PaymobPaymentProviderAdapter implements PaymentProviderAdapter {
     if (!response.ok) {
       return {
         providerRefundRef: null,
-        outcome: 'FAILED',
+        // Paymob does not expose an idempotency contract for this refund POST.
+        // An HTTP error is therefore not evidence that no refund was created.
+        outcome: 'PROCESSING',
+        metadata: {
+          paymobRefundOutcome: 'UNKNOWN',
+          httpStatus: response.status,
+        },
       };
     }
 
@@ -677,6 +688,171 @@ export class PaymobPaymentProviderAdapter implements PaymentProviderAdapter {
     }
 
     return '';
+  }
+
+  async reconcilePayment(input: {
+    paymentId: string;
+    providerPaymentRef: string | null;
+    providerOrderRef: string | null;
+    amountMinor: number;
+    currency: string;
+  }): Promise<PaymentProviderReconciliationResult> {
+    const inquiry = await this.inquireLatestTransaction({
+      paymentId: input.paymentId,
+      providerOrderRef: input.providerOrderRef ?? input.providerPaymentRef,
+    });
+    if (!inquiry)
+      return {
+        outcome: 'NOT_FOUND',
+        evidence: { source: 'paymob-transaction-inquiry' },
+      };
+    const amountMinor = this.toNumber(inquiry.amount_cents);
+    const currencyCode = inquiry.currency?.toUpperCase() ?? null;
+    const outcome = inquiry.pending
+      ? 'PROCESSING'
+      : inquiry.success === true
+        ? inquiry.is_auth && !inquiry.is_capture
+          ? 'AUTHORIZED'
+          : 'SUCCEEDED'
+        : inquiry.success === false || inquiry.error_occured
+          ? 'FAILED'
+          : 'UNKNOWN';
+    return {
+      outcome,
+      providerPaymentRef: inquiry.id == null ? null : String(inquiry.id),
+      providerOrderRef:
+        inquiry.order?.id == null
+          ? input.providerOrderRef
+          : String(inquiry.order.id),
+      amountMinor,
+      currencyCode,
+      evidence: {
+        source: 'paymob-transaction-inquiry',
+        transactionId: inquiry.id == null ? null : String(inquiry.id),
+        pending: Boolean(inquiry.pending),
+        success: inquiry.success ?? null,
+        merchantOrderId:
+          inquiry.order?.merchant_order_id == null
+            ? null
+            : String(inquiry.order.merchant_order_id),
+      },
+    };
+  }
+
+  async reconcileRefund(input: {
+    refundId: string;
+    paymentId: string;
+    providerPaymentRef: string | null;
+    providerOrderRef: string | null;
+    providerTransactionRef?: string | null;
+    providerRefundRef: string | null;
+    amountMinor: number;
+    priorSucceededRefundMinor: number;
+    currency: string;
+  }): Promise<PaymentProviderReconciliationResult> {
+    const inquiry = input.providerRefundRef
+      ? await this.inquireTransactionById(input.providerRefundRef)
+      : await this.inquireLatestTransaction({
+          paymentId: input.paymentId,
+          providerOrderRef: input.providerOrderRef ?? input.providerPaymentRef,
+        });
+    if (!inquiry)
+      return {
+        outcome: 'NOT_FOUND',
+        evidence: { source: 'paymob-refund-inquiry' },
+      };
+    const currencyCode = inquiry.currency?.toUpperCase() ?? null;
+    const transactionAmount = this.toNumber(inquiry.amount_cents);
+    const refundedTotal = this.toNumber(inquiry.refunded_amount_cents);
+    const isMatchingRefund =
+      inquiry.is_refund === true &&
+      transactionAmount === input.amountMinor &&
+      (!input.providerTransactionRef ||
+        String(inquiry.parent_transaction ?? '') ===
+          input.providerTransactionRef);
+    const cumulativeProof =
+      !inquiry.is_refund &&
+      refundedTotal != null &&
+      refundedTotal === input.priorSucceededRefundMinor + input.amountMinor;
+    const outcome = inquiry.pending
+      ? 'PROCESSING'
+      : (isMatchingRefund || cumulativeProof) && inquiry.success !== false
+        ? 'SUCCEEDED'
+        : isMatchingRefund && inquiry.success === false
+          ? 'FAILED'
+          : 'UNKNOWN';
+    return {
+      outcome,
+      providerRefundRef:
+        inquiry.is_refund && inquiry.id != null
+          ? String(inquiry.id)
+          : input.providerRefundRef,
+      providerPaymentRef: input.providerPaymentRef,
+      amountMinor: isMatchingRefund ? transactionAmount : input.amountMinor,
+      currencyCode,
+      evidence: {
+        source: 'paymob-refund-inquiry',
+        transactionId: inquiry.id == null ? null : String(inquiry.id),
+        isRefund: Boolean(inquiry.is_refund),
+        parentTransaction:
+          inquiry.parent_transaction == null
+            ? null
+            : String(inquiry.parent_transaction),
+        refundedAmountMinor: refundedTotal,
+        expectedCumulativeRefundMinor:
+          input.priorSucceededRefundMinor + input.amountMinor,
+        pending: Boolean(inquiry.pending),
+        success: inquiry.success ?? null,
+      },
+    };
+  }
+
+  private async inquireLatestTransaction(input: {
+    paymentId: string;
+    providerOrderRef: string | null;
+  }): Promise<PaymobWebhookEvent | null> {
+    const token = await this.createAuthToken();
+    const base = this.paymentRuntimeConfigService.getPaymobConfig().baseUrl!;
+    const response = await fetch(
+      `${base}/ecommerce/orders/transaction_inquiry`,
+      {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(
+          input.providerOrderRef
+            ? { order_id: input.providerOrderRef }
+            : { merchant_order_id: input.paymentId },
+        ),
+      },
+    );
+    if (response.status === 404) return null;
+    if (!response.ok) throw this.providerInitFailed();
+    return (await response.json()) as PaymobWebhookEvent;
+  }
+
+  private async inquireTransactionById(
+    transactionId: string,
+  ): Promise<PaymobWebhookEvent | null> {
+    const token = await this.createAuthToken();
+    const base = this.paymentRuntimeConfigService.getPaymobConfig().baseUrl!;
+    const response = await fetch(
+      `${base}/acceptance/transactions/${encodeURIComponent(transactionId)}`,
+      {
+        headers: { Authorization: `Bearer ${token}` },
+      },
+    );
+    if (response.status === 404) return null;
+    if (!response.ok) throw this.providerInitFailed();
+    return (await response.json()) as PaymobWebhookEvent;
+  }
+
+  private toNumber(value: number | string | null | undefined): number | null {
+    if (value == null || value === '') return null;
+    const number = Number(value);
+    return Number.isFinite(number) ? number : null;
   }
 
   private parseAmountMinor(value: number | string | undefined): number | null {

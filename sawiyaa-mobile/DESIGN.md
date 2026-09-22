@@ -1,83 +1,272 @@
-﻿# Sawiyaa Mobile Design System
+# Sawiyaa Mobile Design System & Product Direction
 
-## Purpose
-This document defines durable mobile-first design-system and UX rules for the Sawiyaa Mobile App. It governs two first-class product experiences:
+> **Repository:** `D:\Web\full-projects\sawiyaa\sawiyaa-mobile`
+>
+> This document defines the permanent mobile design system, visual language, customer copy standards, and mobile interaction rules for the Sawiyaa Mobile App. It governs two first-class product experiences:
+>
+> ```text
+> Sawiyaa Mobile App
+> ├── Patient Experience
+> └── Practitioner Experience
+> ```
 
-```text
-Sawiyaa Mobile App
-├── Patient Experience
-└── Practitioner Experience
-```
+---
 
-Patient and Practitioner share infrastructure, design tokens, and primitives, but neither experience is a secondary extension of the other. This document is the foundation for product implementation, not a screen-by-screen spec.
+## 1. Product Experience North Star
 
-Sawiyaa is a warm, trusted healthcare marketplace and care journey app. It helps patients discover specialists, book care, pay safely, join sessions, read articles, manage packages, handle messages and notifications, and get support. It helps practitioners manage their schedule, sessions, messages, earnings, and essential account workflows.
+Sawiyaa should feel like a calm, trusted human service.
 
-This is not a generic hospital app. It is not a fitness app. It is not a cold admin dashboard. Do not invent features, visuals, or flows that do not exist in the product.
+The customer should feel:
+- **I can talk comfortably.**
+- **I understand what to do next.**
+- **I can find someone suitable for me.**
+- **My privacy is respected.**
+- **Booking is easy.**
+- **I am dealing with real trusted professionals.**
+- **I am not navigating a complicated healthcare system.**
 
-## Brand Lock
+The experience should **NOT** feel like:
+- hospital software
+- ERP software
+- an administrative healthcare portal
+- a technical workflow engine
+- a collection of disconnected features
 
-The current brand name is **Sawiyaa** in English and **سويّة** in Arabic.
+**Ease and speed are core product principles.** The shortest safe path should normally win.
 
-- **English name:** `Sawiyaa`
-- **Arabic name:** `سويّة`
-- **Domain:** `sawiyaa.com`
-- **Core tagline EN:** `Care for mind, body, and balance`
-- **Core tagline AR:** `رعاية للعقل والجسم والتوازن`
+---
 
-Use the current `Sawiyaa` / `سويّة` brand consistently in new user-facing UI, brand copy, visual prompts, onboarding screens, app metadata, and marketing surfaces.
+## 2. Primary Benchmark — Shezlong
 
-The product meaning behind Sawiyaa is balance, wellbeing, guided care, and a healthier emotional and physical journey. The visual identity should support mental health, nutrition, and psychological coaching without looking like a generic hospital, fitness tracker, or luxury spa.
+**Shezlong** (https://www.shezlong.com/ar?target=%2Far%2Fhome) is the primary benchmark for:
+- customer-facing language and emotional warmth
+- screen hierarchy and human-centered presentation
+- simple CTAs and early practitioner visibility
+- trust-building and helping uncertain users choose
+- low cognitive load and supportive Arabic wording
 
-## Reference Basis
-The Stitch reference folder in `sawiyaa-mobile/stich` shows the intended emotional direction and mobile presentation language.
+Sawiyaa should strongly learn from Shezlong's product communication model. This does **not** mean copying proprietary logos, illustrations, photography, or exact assets. We adopt the UX/copy school and product psychology while building a distinct, modern, premium Sawiyaa identity.
 
-What the reference contributes:
-- `welcome_splash` defines the brand tone: warm, calm, premium, and trust-led.
-- `patient_home` shows that the app should feel like a patient dashboard, not a dense operations panel.
-- `sessions_center` and `booking_slots` show the mobile-native structure for timeline, status, and slot selection.
-- `wallet_payments`, `messages_inbox`, and `notifications` show that information should be scannable, not paragraph-heavy.
-- `more_profile_hub`, `preferences_language`, `notification_preferences`, and `personal_information` show the grouping logic for settings and profile surfaces.
-- `practitioner_profile` and `care_packages` show how conversion surfaces should still feel human and concise.
-- `articles_care` shows content should read like a list and preview system, not a card wall.
+**Secondary Reference:** **Esaal** (https://esaal.me/home) serves as a secondary reference for conversion clarity and rapid decision pathways.
 
-The reference is a direction source only. It must not be copied literally, and it must not introduce fake product features.
+---
 
-## Product Identity
-Sawiyaa should always feel like:
-- A healthcare marketplace with care journeys, not a generic clinic directory.
-- Warm, reliable, and human.
-- Clear enough for patients under stress.
-- Premium, but never luxurious in a way that reduces trust.
+## 3. Customer Language
 
-Sawiyaa should never feel like:
-- A fitness tracker or biometrics app.
-- A medical device dashboard.
-- An internal ops console.
-- A copy-heavy education site.
+Never design customer-facing content around the internal word:
+❌ `"مريض"`
 
-The product should communicate trust through structure, clarity, pacing, and strong defaults, not through excessive explanation.
+Speak directly to the person (second-person language):
+- Prefer: `"اختار المختص المناسب لك"` instead of `"اختيار المختص المناسب للمريض"`
+- Prefer: `"جلساتك"` instead of `"جلسات المريض"`
+- Prefer: `"رسائلك"` instead of `"رسائل المريض"`
+- Prefer: `"حسابك"` instead of `"حساب المريض"`
+- Prefer: `"مواعيدك"` instead of `"مواعيد المريض"`
+- Prefer: `"محتاج مساعدة تختار؟"` instead of `"مسار توجيه المريض إلى المختص المناسب"`
 
-## Core UX Principle
-Do not over-explain obvious UI.
+---
 
-Avoid long instructional paragraphs inside normal app screens. Prefer short labels, clear hierarchy, helpful microcopy, and progressive disclosure. Use longer copy only for policy, payment risk, blocked states, support, or sensitive healthcare and finance explanations.
+## 4. Arabic Voice
 
-A patient should understand the screen from structure, labels, state, and CTA, not from repeated paragraphs.
+Arabic should feel:
+- **human**
+- **calm**
+- **warm**
+- **simple**
+- **respectful**
+- **reassuring**
+- **conversational without becoming slang-heavy**
 
-## Approved Product Navigation Foundation
+Use clear Arabic close to everyday Egyptian/Arabic speech.
+- Avoid overly formal institutional Arabic.
+- Avoid technical product language.
+- Avoid robotic wording.
+- Avoid unnecessarily long explanations.
 
-Patient primary navigation is `Home | Discover | Sessions | Messages | More`.
+### Examples of Target Voice:
+- `"مش عارف تبدأ منين؟ نساعدك."`
+- `"اختار المختص المناسب لك."`
+- `"اتكلم براحتك."`
+- `"احجز في الوقت المناسب لك."`
+- `"خصوصيتك محفوظة."`
+- `"شوف الخبرة والتخصص والمواعيد قبل ما تحجز."`
+- `"محتاج تتكلم دلوقتي؟ شوف المختصين المتاحين."`
 
-Practitioner primary navigation is `Home | Schedule | Sessions | Messages | More`.
+---
 
-Patient Discover owns search, filters, matching, specialist profiles, and booking entry. Practitioner Schedule owns day-first schedule management. Messages is the unified conversation inbox for session, support, and follow-up conversations. More owns genuinely secondary tools such as finance, notification settings, account/profile, support, content, promo codes, and logout.
+## 5. Words & Patterns to Avoid
 
-Notifications are not a primary bottom tab. Notification Center is a global app-header utility with a bell icon and unread state where supported. Notification Settings belong under More → Settings and are a separate destination.
+Avoid repeating product/technical concepts such as:
+- ❌ `"مسار واضح"` / `"رحلة واضحة"` / `"سياق واضح"` / `"قواعد واضحة"`
+- ❌ `"حالة الدفع واضحة"` / `"المعاينات الشكلية"` / `"إدارة رحلة الرعاية"` / `"مسار الرعاية"`
+- ❌ Do not tell customers that the platform is "clear". **Make the experience clear.**
+- ❌ Never expose payment state machines, runtime rules, chat eligibility constraints, system states, or backend failure terms in customer copy.
 
-Do not duplicate Schedule, Sessions, or Messages inside More. Home may use contextual CTAs for urgent work without becoming a second navigation owner.
+---
 
-## Visual Identity
+## 6. Do Not Diagnose the Customer
+
+Customer copy must not assume diagnoses.
+- Prefer: `"إيه اللي محتاج مساعدة فيه؟"` over language that assumes the customer knows a clinical diagnosis.
+- A customer understands: **قلق، نوم، ضغط، علاقات، مشاكل أسرية، مشاكل أطفال، توتر، مزاج** before knowing clinical specialties.
+
+---
+
+## 7. Visual Direction & Quality Bar
+
+The Sawiyaa visual system should be:
+- **modern, calm, premium but approachable, highly readable, spacious, human-centered, emotionally safe.**
+- Use strong hierarchy and intentional whitespace.
+- Avoid excessive small cards and card walls.
+- Avoid clutter and excessive competing CTAs.
+- Practitioner faces and human imagery should have meaningful visual importance.
+- Use the **Taste Skill** (`.agents/skills/taste-skill/SKILL.md`) as the implementation quality bar.
+
+---
+
+## 8. CTA Hierarchy
+
+Each screen should have a clear primary action.
+- Avoid multiple competing primary buttons.
+- For discovery/patient experiences:
+  - **Primary:** `"اختار مختص"`
+  - **Secondary:** `"ساعدني أختار"`
+- Practitioner login/switcher belongs in secondary navigation or dedicated screens, not as a competing hero CTA for customers.
+
+---
+
+## 9. Public & Discovery Experience Philosophy
+
+Discovery flows should answer the customer's questions in roughly this order:
+1. **هل المكان ده ممكن يساعدني؟** (Can this place help me?)
+2. **أبدأ منين؟** (Where do I start?)
+3. **مين الناس اللي ممكن أتكلم معاهم؟** (Who are the specialists I can talk to?)
+4. **هل هم مناسبين وموثوقين؟** (Are they qualified and trustworthy?)
+5. **الموضوع بيشتغل إزاي؟** (How does it work?)
+6. **هل خصوصيتي محفوظة؟** (Is my privacy safe?)
+7. **بكام وإمتى أقدر أحجز؟** (How much does it cost and when can I book?)
+8. **ماذا أفعل إذا لم أعرف من أختار؟** (What if I don't know who to choose?)
+
+---
+
+## 10. Customer Application Philosophy
+
+After authentication, the experience may become more functional but must stay human:
+- Avoid turning the customer area into an admin dashboard.
+- Prefer `"جلستك القادمة"` over `"Session status: READY_TO_JOIN"`.
+- Prefer `"ادخل الجلسة"` over exposing technical state names.
+- Customer screens should translate system state into human meaning.
+
+---
+
+## 11. Business Preservation Rule
+
+> **"Before redesigning an existing Sawiyaa screen, preserve the screen's BUSINESS CONTRACT, not its current VISUAL IMPLEMENTATION."**
+
+Every redesign begins with a business-function audit. Identify before changing:
+- current APIs and hooks
+- existing and hidden user actions
+- route state and parameters
+- permissions & auth guards
+- backend states & transitions
+- loading, error, and empty states
+- booking, pricing, payment, session, and messaging rules
+
+Do not remove functionality just because the current UI is visually poor. Business behavior is authoritative; frontend presentation may change radically around it.
+
+---
+
+## 12. Transformation Level
+
+For customer/patient redesign tasks:
+- **DO NOT default to minimum-change frontend edits.**
+- The expected transformation is substantial.
+- Old UI structures may be replaced when necessary.
+- The agent should preserve business capabilities, NOT old visual architecture.
+- *"Smallest coherent change"* refers to avoiding unrelated code churn. It does NOT mean keeping a weak UX.
+
+The agent may:
+- change screen composition & hierarchy
+- change component structure & visual language
+- move information & simplify presentation
+- replace old cards/sections
+- rewrite customer-facing copy
+- reduce unnecessary UI noise
+- create new mobile components
+
+as long as the business capability remains intact.
+
+---
+
+## 13. No Fake UI
+
+Never create controls that look functional but are not connected to real behavior. Do NOT add:
+- fake filters, fake reviews, fake ratings, fake availability, fake practitioner counts, fake statistics, fake trust logos, fake testimonials, fake online status.
+
+---
+
+## 14. Localization & RTL/LTR
+
+- Never solve Arabic redesign problems by hardcoding Arabic strings inside components.
+- Use localization infrastructure (`i18next` / `react-i18next`).
+- Respect both **Arabic (RTL)** and **English (LTR)**. Both languages must remain functional.
+- Arabic is the primary design review language for this redesign.
+- Use I18nManager / RTL-aware layouts. Directional indicators (chevrons, back arrows) must mirror correctly.
+
+---
+
+## 15. Native Mobile Interaction & Responsive Rules
+
+- Mobile application must follow **native mobile interaction patterns** (touch targets >= 44x44, bottom sheets, safe area insets, keyboard-avoiding views, scroll dismiss).
+- Do not force web page layouts into the mobile app.
+
+---
+
+## 16. Cross-Platform Consistency
+
+Web and Mobile share:
+- voice and Arabic copywriting tone
+- terminology (no "مريض" in customer UI)
+- emotional tone (calm, trusted, warm)
+- CTA philosophy and mental model
+- core color palette and brand identity
+
+Implementation and layout remain native to each platform.
+
+---
+
+## 17. Important Sawiyaa Domain Rules
+
+1. **Backend is Authoritative:** Business logic, access control, state transitions, and calculations originate from the backend.
+2. **Internal Terminology:** Domain entities (e.g. `Patient`, `Practitioner`) remain intact in types, hooks, routes, and APIs.
+3. **No Unapproved Business Changes:**
+   - Practitioner publication and verification rules must NOT be changed.
+   - Booking validation and slot calculation rules must NOT be changed.
+   - Pricing rules and currency conversion must NOT be changed.
+   - Session eligibility and room join rules must NOT be changed.
+   - Messaging eligibility rules must NOT be changed.
+   - Payment state machines must NOT be changed.
+   - Authentication and authorization guards must NOT be weakened.
+
+---
+
+## 18. Mobile Platform Architecture & Tech Stack
+
+- **Framework:** React Native 0.74.5, Expo SDK 51, React 18.2.0, TypeScript.
+- **Routing:** Expo Router v3 (`app/(patient)/`, `app/(practitioner)/`, `app/(auth)/`, `app/(public)/`).
+- **State Management:** Zustand (`zustand@4.5.2`), TanStack React Query (`@tanstack/react-query@5.28.9`).
+- **Internationalization:** `i18next` & `react-i18next` (`src/i18n/`).
+- **Typography:** Cairo (`Cairo-Regular`, `Cairo-Medium`, `Cairo-SemiBold`, `Cairo-Bold`), Outfit / Inter for Latin.
+- **Theme & Design Tokens:** `src/constants/theme.ts` (colors, spacing, shadows, typography).
+- **Core Components:** `src/components/ui/`, `src/components/mobile-shell/`, `src/features/`.
+- **Safe Area & Display:** `react-native-safe-area-context`, `react-native-screens`, `expo-status-bar`.
+- **Device & Storage:** `@react-native-async-storage/async-storage`, `expo-secure-store`.
+- **Currency Support:** EGP and USD only (centralized money formatting in `src/components/money/`).
+- **Brand Lock:** Strictly **Sawiyaa** / **سويّة** (English: `Sawiyaa`, Arabic: `سويّة`).
+
+---
+
+## 19. Visual Identity & Elevation
 
 The mobile visual language remains **Clinical Warmth**, now expressed through the **Sawiyaa** identity.
 
@@ -97,7 +286,6 @@ Visual direction:
 - Warm Gold used as a restrained premium accent only.
 - Muted Sand used for dividers, subtle surfaces, and soft section separation.
 - No loud gradients, neon colors, heavy glassmorphism, or decorative medical clichés.
-- No random ECG, heartbeat, cross, hospital, or fitness-device visual language.
 - Every screen should feel related to the same calm brand system, without becoming repetitive.
 
 ### Official Sawiyaa Color Palette

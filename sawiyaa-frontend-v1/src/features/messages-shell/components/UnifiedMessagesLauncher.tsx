@@ -78,6 +78,12 @@ function LaneItem({
   inSessionLane: boolean;
   priorityBadge: string;
 }) {
+  const tSessions = useTranslations("sessions");
+  const statusLabel =
+    inSessionLane && item.sessionStatus
+      ? tSessions(`status.${item.sessionStatus}`)
+      : item.status;
+
   return (
     <button
       type="button"
@@ -112,9 +118,9 @@ function LaneItem({
                 : (locale.startsWith("ar") ? "محادثة نشطة" : "Active conversation")}
             </p>
 
-            {item.status ? (
+            {statusLabel ? (
               <p className="mt-1 inline-flex rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-medium text-slate-600 dark:bg-white/10 dark:text-white/70">
-                {item.status}
+                {statusLabel}
               </p>
             ) : null}
           </div>

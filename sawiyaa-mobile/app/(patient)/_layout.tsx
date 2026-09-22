@@ -3,7 +3,6 @@ import { Tabs } from "expo-router";
 import { useTranslation } from "react-i18next";
 import { StyleSheet } from "react-native";
 import { useTheme } from "../../src/providers/ThemeProvider";
-import { useAppDirection } from "../../src/i18n/direction";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
@@ -16,7 +15,6 @@ export default function PatientLayout() {
   const { t } = useTranslation();
   const { theme } = useTheme();
   const insets = useSafeAreaInsets();
-  const { direction } = useAppDirection();
 
   return (
     <>
@@ -29,7 +27,6 @@ export default function PatientLayout() {
           tabBarActiveBackgroundColor: theme.colors.primarySoft,
           tabBarInactiveBackgroundColor: theme.colors.surfaceRaised,
           tabBarStyle: {
-            direction,
             backgroundColor: theme.colors.surfaceRaised,
             borderTopColor: theme.colors.divider,
             borderTopWidth: StyleSheet.hairlineWidth,

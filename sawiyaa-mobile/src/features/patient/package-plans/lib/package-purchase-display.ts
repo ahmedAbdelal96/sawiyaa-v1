@@ -256,6 +256,10 @@ export function getPackagePurchaseBookedSessionCount(
 export function getPackagePurchaseUnbookedSessionCount(
   purchase: PatientPackagePurchaseItem,
 ) {
+  if (purchase.progress?.availableSessions !== undefined) {
+    return Math.max(0, purchase.progress.availableSessions);
+  }
+
   return Math.max(
     purchase.sessionCount - getPackagePurchaseBookedSessionCount(purchase),
     0,
@@ -278,12 +282,30 @@ export function getPackagePurchaseUnbookedSessionIndexes(
     }
   }
 
+  // The backend entitlement projection is authoritative. Historical rows can
+  // keep every packageSessionIndex occupied after a RESTORE_TO_PACKAGE
+  // decision, so extend the display-only placeholders beyond the original
+  // range until they represent the returned available count.
+  if (purchase.progress?.availableSessions !== undefined) {
+    const available = Math.max(0, purchase.progress.availableSessions);
+    let nextIndex = purchase.sessionCount + 1;
+    while (missingIndexes.length < available) {
+      missingIndexes.push(nextIndex);
+      nextIndex += 1;
+    }
+    return missingIndexes.slice(0, available);
+  }
+
   return missingIndexes;
 }
 
 export function getPackagePurchaseCompletionCount(
   purchase: PatientPackagePurchaseItem,
 ) {
+  if (purchase.progress?.completedSessions !== undefined) {
+    return Math.max(0, purchase.progress.completedSessions);
+  }
+
   return purchase.linkedSessions.items.filter((session) =>
     session.operational.timelineBucket === "COMPLETED",
   ).length;

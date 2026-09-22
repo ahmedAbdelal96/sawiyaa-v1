@@ -58,7 +58,7 @@ export default function SupportListScreen() {
   const router = useRouter();
   const { returnTo } = useLocalSearchParams<{ returnTo?: string }>();
   const { theme } = useTheme();
-  const { chevronForward } = useAppDirection();
+  const { chevronForward, isRtl } = useAppDirection();
   const { t, i18n } = useTranslation();
   const [tab, setTab] = useState<TabFilter>("active");
   const returnToRoute =
@@ -67,7 +67,7 @@ export default function SupportListScreen() {
       : null;
 
   const query = usePatientSupportTickets({ page: 1, limit: 20 });
-  const allTickets = query.data?.items ?? [];
+  const allTickets = (query.data?.items ?? []) as SupportTicketItemDto[];
 
   const filtered = allTickets.filter((ticket) => {
     if (tab === "active") return ACTIVE_STATUSES.includes(ticket.status);
@@ -180,6 +180,58 @@ export default function SupportListScreen() {
           contentContainerStyle={styles.scroll}
           showsVerticalScrollIndicator={false}
         >
+          {/* Compact Reassuring Support Context */}
+          <View
+            style={[
+              styles.supportHeroCompact,
+              {
+                flexDirection: isRtl ? "row-reverse" : "row",
+                backgroundColor: theme.colors.surface,
+                borderColor: theme.colors.borderLight,
+              },
+            ]}
+          >
+            <View
+              style={[
+                styles.supportIconWrap,
+                { backgroundColor: theme.colors.primaryLight },
+              ]}
+            >
+              <Ionicons
+                name="chatbubbles-outline"
+                size={18}
+                color={theme.colors.primary}
+              />
+            </View>
+            <View
+              style={[
+                styles.supportHeroCopy,
+                { alignItems: isRtl ? "flex-end" : "flex-start" },
+              ]}
+            >
+              <Text
+                weight="600"
+                style={styles.supportHeroTitle}
+                color={theme.colors.textPrimary}
+              >
+                {isRtl
+                  ? "فريق الدعم هنا لمساعدتك"
+                  : "Support team is here to help"}
+              </Text>
+              <Text
+                color={theme.colors.textSecondary}
+                style={[
+                  styles.supportHeroSubtitle,
+                  { textAlign: isRtl ? "right" : "left" },
+                ]}
+              >
+                {isRtl
+                  ? "محتاج مساعدة في حجز، دفع، أو جلسة؟ يمكنك متابعة طلباتك هنا أو إنشاء طلب جديد عبر (+) بالأعلى."
+                  : "Need help with a booking, payment, or session? Track your requests here or start a new one using (+) above."}
+              </Text>
+            </View>
+          </View>
+
           {/* Filters */}
           <View style={styles.filters}>
             <FilterChip
@@ -308,5 +360,33 @@ const styles = StyleSheet.create({
   newTicketCtaText: {
     color: "#fff",
     fontSize: 16,
+  },
+  supportHeroCompact: {
+    borderRadius: 12,
+    borderWidth: 1,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    marginBottom: 12,
+    alignItems: "center",
+    gap: 12,
+  },
+  supportIconWrap: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  supportHeroCopy: {
+    flex: 1,
+    gap: 2,
+  },
+  supportHeroTitle: {
+    fontSize: 14,
+    lineHeight: 19,
+  },
+  supportHeroSubtitle: {
+    fontSize: 12,
+    lineHeight: 16,
   },
 });

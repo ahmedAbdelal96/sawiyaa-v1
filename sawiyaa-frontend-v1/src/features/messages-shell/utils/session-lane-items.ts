@@ -19,7 +19,25 @@ function getSessionPriority(item: CanonicalConversation) {
 }
 
 function mapSessionChatStatus(item: CanonicalConversation): UnifiedSessionChatStatus {
-  if (item.sessionStatus === "IN_PROGRESS") return "IN_PROGRESS";
+  const knownStatuses: UnifiedSessionChatStatus[] = [
+    "DRAFT",
+    "PENDING_PAYMENT",
+    "PENDING_PRACTITIONER_CONFIRMATION",
+    "UPCOMING",
+    "READY_TO_JOIN",
+    "IN_PROGRESS",
+    "AWAITING_COMPLETION_CONFIRMATION",
+    "AWAITING_ADMIN_RESOLUTION",
+    "COMPLETED",
+    "CANCELLED",
+    "PATIENT_NO_SHOW",
+    "PRACTITIONER_NO_SHOW",
+    "BOTH_NO_SHOW",
+    "EXPIRED",
+  ];
+  if (item.sessionStatus && knownStatuses.includes(item.sessionStatus as UnifiedSessionChatStatus)) {
+    return item.sessionStatus as UnifiedSessionChatStatus;
+  }
   if (item.canSend) return "READY_TO_JOIN";
   return "COMPLETED";
 }
@@ -45,7 +63,9 @@ export function buildSessionLaneItems(
       href: role === "patient"
         ? `/patient/sessions/${item.contextId}/chat`
         : `/practitioner/sessions/${item.contextId}/chat`,
-      status: item.sessionStatus?.replaceAll("_", " ") ?? item.status,
+      // Keep the canonical backend status; the launcher localizes it at the
+      // presentation boundary instead of leaking enum text to users.
+      status: item.sessionStatus ?? item.status,
       sessionStatus: mapSessionChatStatus(item),
       isSessionPriority: item.canSend,
       at: item.sessionScheduledStartAt ?? item.lastActivityAt,

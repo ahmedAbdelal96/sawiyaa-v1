@@ -16,6 +16,11 @@ export class BuildPatientJourneyNextStepsService {
 
   build(input: {
     hasPendingPayment: boolean;
+    pendingPayment?: {
+      id: string;
+      sessionId: string | null;
+      expiredAt: Date | null;
+    } | null;
     hasUpcomingSession: boolean;
     upcomingSessionStatus?: SessionStatus;
     hasOpenSupportTicket: boolean;
@@ -41,6 +46,8 @@ export class BuildPatientJourneyNextStepsService {
       input.hasPastSessions || input.continuityStage === 'RETURNING';
 
     if (isPaymentBlocked) {
+      const pendingPayment = input.pendingPayment ?? null;
+      const pendingPaymentSessionId = pendingPayment?.sessionId ?? null;
       nextSteps.push({
         type: 'COMPLETE_PAYMENT',
         label: 'Complete your pending payment',
@@ -49,11 +56,18 @@ export class BuildPatientJourneyNextStepsService {
         reasonText: 'You have a pending payment that blocks progress.',
         action: {
           type: 'OPEN_PENDING_PAYMENT',
-          targetType: 'PAYMENT',
-          targetId: null,
+          targetType: pendingPaymentSessionId ? 'SESSION' : 'PAYMENT',
+          targetId: pendingPaymentSessionId ?? pendingPayment?.id ?? null,
         },
-        entityRefs: [],
-        expiresAt: null,
+        entityRefs: pendingPayment
+          ? [
+              { entityType: 'PAYMENT', entityId: pendingPayment.id },
+              ...(pendingPaymentSessionId
+                ? [{ entityType: 'SESSION', entityId: pendingPaymentSessionId }]
+                : []),
+            ]
+          : [],
+        expiresAt: pendingPayment?.expiredAt?.toISOString() ?? null,
       });
     }
 

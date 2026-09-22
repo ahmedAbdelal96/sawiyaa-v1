@@ -1,4 +1,4 @@
-import { PaymentProvider, PaymentStatus } from '@prisma/client';
+import { PaymentEventType, PaymentProvider, PaymentStatus } from '@prisma/client';
 import { HandlePaymobWebhookUseCase } from './handle-paymob-webhook.use-case';
 
 describe('HandlePaymobWebhookUseCase', () => {
@@ -25,6 +25,7 @@ describe('HandlePaymobWebhookUseCase', () => {
       id: string;
       status: PaymentStatus;
       amountTotal?: string;
+      amountFromGateway?: string;
       currencyCode?: string;
     } | null;
   }) {
@@ -37,16 +38,20 @@ describe('HandlePaymobWebhookUseCase', () => {
     };
 
     const paymentRepository = {
-      findWebhookReceipt: jest
-        .fn()
-        .mockResolvedValue(input?.duplicate ?? null),
+      findWebhookReceipt: jest.fn().mockResolvedValue(input?.duplicate ?? null),
       findByProviderReference: jest
         .fn()
         .mockResolvedValue(
           input?.payment
-            ? { amountTotal: '10.00', currencyCode: 'USD', ...input.payment }
+            ? {
+                amountTotal: '10.00',
+                amountFromGateway: input.payment.amountTotal ?? '10.00',
+                currencyCode: 'USD',
+                ...input.payment,
+              }
             : null,
         ),
+      findById: jest.fn().mockResolvedValue(input?.payment ?? null),
       createEvent: jest.fn().mockResolvedValue({}),
       createWebhookReceipt: jest.fn().mockResolvedValue({}),
     };
@@ -104,6 +109,34 @@ describe('HandlePaymobWebhookUseCase', () => {
     expect(setup.logger.warn).toHaveBeenCalled();
   });
 
+  it('accepts only the gateway share of a mixed-funded discounted payment', async () => {
+    const setup = buildUseCase({
+      payment: {
+        id: 'mixed_payment',
+        status: PaymentStatus.PENDING,
+        amountTotal: '500.00',
+        amountFromGateway: '300.00',
+        currencyCode: 'EGP',
+      },
+    });
+    setup.registry
+      .get()
+      .parseAndVerifyWebhook.mockReturnValue({
+        ...webhookHandled,
+        amountMinor: 30000,
+        currencyCode: 'EGP',
+      });
+    await setup.useCase.execute({
+      rawBody: Buffer.from('{}'),
+      headers: {},
+      query: {},
+    });
+    expect(setup.markSucceeded.execute).toHaveBeenCalledTimes(1);
+    expect(setup.markSucceeded.execute).toHaveBeenCalledWith(
+      expect.objectContaining({ paymentId: 'mixed_payment' }),
+    );
+  });
+
   it('handles duplicate webhook delivery idempotently', async () => {
     const setup = buildUseCase({
       duplicate: { paymentId: 'payment_1' },
@@ -122,6 +155,23 @@ describe('HandlePaymobWebhookUseCase', () => {
       paymentId: 'payment_1',
     });
     expect(setup.markSucceeded.execute).not.toHaveBeenCalled();
+  });
+
+  it('re-enters idempotent capture for a duplicate success after capture', async () => {
+    const setup = buildUseCase({
+      duplicate: { paymentId: 'payment_1' },
+      payment: { id: 'payment_1', status: PaymentStatus.CAPTURED },
+    });
+
+    await setup.useCase.execute({
+      rawBody: Buffer.from('{}'),
+      headers: {},
+      query: {},
+    });
+
+    expect(setup.markSucceeded.execute).toHaveBeenCalledWith(
+      expect.objectContaining({ paymentId: 'payment_1' }),
+    );
   });
 
   it('does not re-run side effects on repeated terminal outcome', async () => {
@@ -278,8 +328,16 @@ describe('HandlePaymobWebhookUseCase', () => {
       .mockResolvedValueOnce({ paymentId: 'payment_1' });
 
     const results = await Promise.all([
-      setup.useCase.execute({ rawBody: Buffer.from('{}'), headers: {}, query: {} }),
-      setup.useCase.execute({ rawBody: Buffer.from('{}'), headers: {}, query: {} }),
+      setup.useCase.execute({
+        rawBody: Buffer.from('{}'),
+        headers: {},
+        query: {},
+      }),
+      setup.useCase.execute({
+        rawBody: Buffer.from('{}'),
+        headers: {},
+        query: {},
+      }),
     ]);
 
     expect(results).toEqual([
@@ -308,6 +366,7 @@ describe('HandlePaymobWebhookUseCase', () => {
     expect(setup.markSucceeded.execute).not.toHaveBeenCalled();
     expect(setup.paymentRepository.createEvent).toHaveBeenCalledWith(
       expect.objectContaining({
+        eventType: PaymentEventType.PAYMENT_LATE_SUCCESS_REVIEW_REQUIRED,
         reason: 'PAYMENT_SUCCESS_RECEIVED_AFTER_EXPIRY',
       }),
     );

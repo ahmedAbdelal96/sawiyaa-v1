@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { getTranslations, setRequestLocale } from "next-intl/server";
-import PatientSectionFrame from "@/components/patient/PatientSectionFrame";
 import PatientSessionsPanel from "@/features/sessions/components/PatientSessionsPanel";
 
 type Props = {
@@ -19,15 +18,6 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function PatientSessionsPage({ params }: Props) {
   const { locale } = await params;
   setRequestLocale(locale);
-  const t = await getTranslations({ locale, namespace: "sessions" });
 
-  return (
-    <PatientSectionFrame
-      eyebrow={t("list.heading")}
-      title={t("list.heading")}
-      description={t("meta.listDescription")}
-    >
-      <PatientSessionsPanel />
-    </PatientSectionFrame>
-  );
+  return <PatientSessionsPanel />;
 }

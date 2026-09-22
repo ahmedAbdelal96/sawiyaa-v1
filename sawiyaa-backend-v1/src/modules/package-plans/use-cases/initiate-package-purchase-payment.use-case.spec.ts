@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import {
   MarketType,
+  PackageSchedulePolicy,
   PaymentProvider,
   PaymentStatus,
   SessionMode,
@@ -147,6 +148,8 @@ describe('InitiatePackagePurchasePaymentUseCase', () => {
     practitionerId: 'practitioner-1',
     planCodeSnapshot: 'SESSIONS_4',
     packagePlanId: 'plan-1',
+    schedulePolicySnapshot:
+      PackageSchedulePolicy.REQUIRE_ALL_SESSIONS_AT_PURCHASE,
     selectedBaseSessionPriceSnapshot: '100.00',
     practitioner: {
       id: 'practitioner-1',
@@ -314,6 +317,33 @@ describe('InitiatePackagePurchasePaymentUseCase', () => {
     );
     expect(result.item.status).toBe(PaymentStatus.PENDING);
     expect(result.item.sessionId).toBeNull();
+  });
+
+  it('initiates payment for a buy-now package with no prebooked sessions', async () => {
+    (
+      packagePurchaseRepository.findByIdForPatient as jest.Mock
+    ).mockResolvedValue({
+      ...basePurchase,
+      schedulePolicySnapshot: PackageSchedulePolicy.ALLOW_SCHEDULE_LATER,
+      sessions: [],
+    });
+
+    const result = await useCase.execute({
+      userId: 'user-1',
+      purchaseId: 'purchase-1',
+      acceptedRefundPolicyId: 'refund-policy-version-1',
+      returnUrl: 'http://localhost:8081/package-purchases/purchase-1/pay',
+      displayLocale: 'en',
+    });
+
+    expect(paymentRepository.createPayment).toHaveBeenCalledTimes(1);
+    expect(providerAdapter.initiateSessionPayment).toHaveBeenCalledWith(
+      expect.objectContaining({
+        paymentId: 'payment-1',
+        sessionId: 'purchase-1',
+      }),
+    );
+    expect(result.item.status).toBe(PaymentStatus.PENDING);
   });
 
   it('refreshes an active hosted checkout instead of reusing a stale URL', async () => {

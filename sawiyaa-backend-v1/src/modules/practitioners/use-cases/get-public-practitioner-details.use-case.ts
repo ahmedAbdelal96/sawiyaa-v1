@@ -81,8 +81,6 @@ export class GetPublicPractitionerDetailsUseCase {
       });
     }
 
-    const approvedCredentials =
-      await this.publicReadRepository.countApprovedCredentials(profile.id);
     const ratingSummary =
       await this.sessionReviewRatingAggregationService.aggregateByPractitionerId(
         profile.id,
@@ -99,17 +97,34 @@ export class GetPublicPractitionerDetailsUseCase {
       sessionPrice60Egp: pricingProfile.sessionPrice60Egp,
       sessionPrice60Usd: pricingProfile.sessionPrice60Usd,
     });
+    const professionalContentTranslations = (profile.professionalContentTranslations ?? []).map((translation) => ({
+      locale: translation.locale as SupportedLocale,
+      professionalTitle: translation.professionalTitle,
+      bio: translation.bio,
+    }));
     const professionalContent = this.professionalContentResolver.resolve({
       requestedLocale: input.locale,
       primaryContentLocale: profile.primaryContentLocale,
-      translations: (profile.professionalContentTranslations ?? []).map((translation) => ({
-        locale: translation.locale as SupportedLocale,
-        professionalTitle: translation.professionalTitle,
-        bio: translation.bio,
-      })),
+      translations: professionalContentTranslations,
       legacyProfessionalTitle: profile.professionalTitle,
       legacyBio: profile.bio,
     });
+    const localizedBios = {
+      ar: this.professionalContentResolver.resolve({
+        requestedLocale: 'ar',
+        primaryContentLocale: profile.primaryContentLocale,
+        translations: professionalContentTranslations,
+        legacyProfessionalTitle: profile.professionalTitle,
+        legacyBio: profile.bio,
+      }).bio,
+      en: this.professionalContentResolver.resolve({
+        requestedLocale: 'en',
+        primaryContentLocale: profile.primaryContentLocale,
+        translations: professionalContentTranslations,
+        legacyProfessionalTitle: profile.professionalTitle,
+        legacyBio: profile.bio,
+      }).bio,
+    };
 
     return {
       item: this.mapper.toDetails({
@@ -118,6 +133,8 @@ export class GetPublicPractitionerDetailsUseCase {
         displayName: profile.user.displayName ?? null,
         professionalTitle: professionalContent.professionalTitle,
         fullBio: professionalContent.bio,
+        bioAr: localizedBios.ar,
+        bioEn: localizedBios.en,
         specialties: profile.specialties.map((link) => ({
           specialtyId: link.specialtyId,
           slug: link.specialty.slug,
@@ -213,10 +230,6 @@ export class GetPublicPractitionerDetailsUseCase {
           publishedRatingsCount: ratingSummary.publishedRatingsCount,
           writtenReviewsCount: ratingSummary.writtenReviewsCount,
           totalReviews: ratingSummary.publishedRatingsCount,
-        },
-        credentialsSummary: {
-          totalCredentials: profile._count.credentials,
-          approvedCredentials,
         },
         isVerified: visibility.isVerified,
         avatarUrl: storedAvatar

@@ -21,7 +21,11 @@ import { useTheme } from "../../src/providers/ThemeProvider";
 import { useAppDirection } from "../../src/i18n/direction";
 import { useGetPublicPractitionersInfinite } from "../../src/features/patient/discovery/api";
 import { usePublicPractitionerPackagePlans } from "../../src/features/patient/package-plans/hooks";
-import { formatMoney as formatCentralMoney, parseMoney } from "../../src/lib/money";
+import type { PackagePlanQuotedItem } from "../../src/features/patient/package-plans/types";
+import {
+  formatMoney as formatCentralMoney,
+  parseMoney,
+} from "../../src/lib/money";
 import { getProfessionalTitleLabel } from "../../src/features/practitioner/reference-data";
 import type { PublicPractitionerListItem } from "../../src/features/patient/discovery/types";
 import { hasPublicPractitionerRating } from "../../src/features/patient/discovery/rating";
@@ -36,9 +40,13 @@ function renderStarRating(rating: number) {
     if (score >= i) {
       stars.push(<Ionicons key={i} name="star" size={11} color={STAR_GOLD} />);
     } else if (score >= i - 0.5) {
-      stars.push(<Ionicons key={i} name="star-half" size={11} color={STAR_GOLD} />);
+      stars.push(
+        <Ionicons key={i} name="star-half" size={11} color={STAR_GOLD} />,
+      );
     } else {
-      stars.push(<Ionicons key={i} name="star-outline" size={11} color="#CBD5E1" />);
+      stars.push(
+        <Ionicons key={i} name="star-outline" size={11} color="#CBD5E1" />,
+      );
     }
   }
   return stars;
@@ -54,7 +62,9 @@ function formatPackageMoney(
 ): string {
   if (!amount) return "-";
   const money = parseMoney(String(amount), currency || "EGP");
-  return money ? formatCentralMoney(money, locale) : `${amount} ${currency || "EGP"}`;
+  return money
+    ? formatCentralMoney(money, locale)
+    : `${amount} ${currency || "EGP"}`;
 }
 
 // ---------------------------------------------------------------------------
@@ -76,8 +86,11 @@ function CompactPractitionerPackageCard({
   const [avatarFailed, setAvatarFailed] = React.useState(false);
 
   // Query practitioner's actual package plans from backend
-  const packagePlansQuery = usePublicPractitionerPackagePlans(practitioner.slug);
-  const fetchedPlans = packagePlansQuery.data?.items ?? [];
+  const packagePlansQuery = usePublicPractitionerPackagePlans(
+    practitioner.slug,
+  );
+  const fetchedPlans = (packagePlansQuery.data?.items ??
+    []) as PackagePlanQuotedItem[];
 
   const rawAvatarUrl = practitioner.avatarUrl;
   const isInvalidOrFakeUrl =
@@ -106,7 +119,9 @@ function CompactPractitionerPackageCard({
     if (fetchedPlans.length > 0) {
       return fetchedPlans.map((plan) => {
         const sessionCount = plan.item.sessionCount || 4;
-        const discountPercent = Math.round(Number(plan.item.discountPercent || 15));
+        const discountPercent = Math.round(
+          Number(plan.item.discountPercent || 15),
+        );
         const payableTotal = plan.quote.patientPayableTotal;
         const undiscountedTotal = plan.quote.undiscountedTotal;
         const discountAmount = plan.quote.discountAmount;
@@ -118,7 +133,11 @@ function CompactPractitionerPackageCard({
             : `${sessionCount} Sessions`,
           sessionCount,
           discountPercent,
-          payableTotalFormatted: formatPackageMoney(payableTotal, currency, locale),
+          payableTotalFormatted: formatPackageMoney(
+            payableTotal,
+            currency,
+            locale,
+          ),
           undiscountedTotalFormatted: formatPackageMoney(
             undiscountedTotal,
             currency,
@@ -153,7 +172,11 @@ function CompactPractitionerPackageCard({
         discountPercent: 15,
         payableTotalFormatted: formatPackageMoney(payable4, currency, locale),
         undiscountedTotalFormatted: formatPackageMoney(base4, currency, locale),
-        discountAmountFormatted: formatPackageMoney(discount4, currency, locale),
+        discountAmountFormatted: formatPackageMoney(
+          discount4,
+          currency,
+          locale,
+        ),
       },
       {
         code: "8_SESSIONS",
@@ -162,7 +185,11 @@ function CompactPractitionerPackageCard({
         discountPercent: 25,
         payableTotalFormatted: formatPackageMoney(payable8, currency, locale),
         undiscountedTotalFormatted: formatPackageMoney(base8, currency, locale),
-        discountAmountFormatted: formatPackageMoney(discount8, currency, locale),
+        discountAmountFormatted: formatPackageMoney(
+          discount8,
+          currency,
+          locale,
+        ),
       },
     ];
   }, [fetchedPlans, practitioner, currency, locale, isArabic]);
@@ -184,14 +211,21 @@ function CompactPractitionerPackageCard({
       ]}
     >
       {/* Top Accent Bar */}
-      <View style={[styles.goldBar, { backgroundColor: theme.colors.tertiary }]} />
+      <View
+        style={[styles.goldBar, { backgroundColor: theme.colors.tertiary }]}
+      />
 
       <View style={styles.cardPadding}>
         {/* Compact Header: Avatar + Info */}
         <View style={[styles.headerRow, { flexDirection: rowDirection }]}>
           {/* Avatar */}
           <View style={styles.avatarWrapper}>
-            <View style={[styles.avatarCircle, { backgroundColor: theme.colors.surfaceTertiary }]}>
+            <View
+              style={[
+                styles.avatarCircle,
+                { backgroundColor: theme.colors.surfaceTertiary },
+              ]}
+            >
               <Image
                 source={avatarSource}
                 style={styles.avatarImage}
@@ -207,38 +241,74 @@ function CompactPractitionerPackageCard({
           </View>
 
           {/* Info: Name, Title & Rating Inline */}
-          <View style={[styles.mainInfoWrap, { alignItems: isRtl ? "flex-end" : "flex-start" }]}>
-            <View style={[styles.nameRowInline, { flexDirection: rowDirection }]}>
-              <Text weight="bold" style={styles.displayName} color={theme.colors.textPrimary} numberOfLines={1}>
+          <View
+            style={[
+              styles.mainInfoWrap,
+              { alignItems: isRtl ? "flex-end" : "flex-start" },
+            ]}
+          >
+            <View
+              style={[styles.nameRowInline, { flexDirection: rowDirection }]}
+            >
+              <Text
+                weight="bold"
+                style={styles.displayName}
+                color={theme.colors.textPrimary}
+                numberOfLines={1}
+              >
                 {practitioner.displayName || practitioner.slug}
               </Text>
               {practitioner.isVerified ? (
-                <Ionicons name="checkmark-circle" size={14} color={theme.colors.primary} />
+                <Ionicons
+                  name="checkmark-circle"
+                  size={14}
+                  color={theme.colors.primary}
+                />
               ) : null}
             </View>
 
             <View style={[styles.subMetaRow, { flexDirection: rowDirection }]}>
-              <Text color={theme.colors.textSecondary} style={styles.professionalTitle} numberOfLines={1}>
-                {getProfessionalTitleLabel(practitioner.professionalTitle, isArabic) ||
+              <Text
+                color={theme.colors.textSecondary}
+                style={styles.professionalTitle}
+                numberOfLines={1}
+              >
+                {getProfessionalTitleLabel(
+                  practitioner.professionalTitle,
+                  isArabic,
+                ) ||
                   primarySpecialty?.title ||
                   "أخصائي"}
               </Text>
 
               {hasRating ? (
-                <View style={[styles.ratingInline, { flexDirection: rowDirection }]}>
-                  <View style={[styles.starsRow, { flexDirection: rowDirection }]}>
+                <View
+                  style={[styles.ratingInline, { flexDirection: rowDirection }]}
+                >
+                  <View
+                    style={[styles.starsRow, { flexDirection: rowDirection }]}
+                  >
                     {renderStarRating(averageRating!)}
                   </View>
-                  <Text weight="bold" style={styles.ratingText} color={theme.colors.textPrimary}>
+                  <Text
+                    weight="bold"
+                    style={styles.ratingText}
+                    color={theme.colors.textPrimary}
+                  >
                     {averageRating!.toFixed(1)}
                   </Text>
-                  <Text color={theme.colors.textMuted} style={styles.reviewsCount}>
+                  <Text
+                    color={theme.colors.textMuted}
+                    style={styles.reviewsCount}
+                  >
                     ({totalReviews!})
                   </Text>
                 </View>
-
               ) : (
-                <Text color={theme.colors.textMuted} style={styles.reviewsCount}>
+                <Text
+                  color={theme.colors.textMuted}
+                  style={styles.reviewsCount}
+                >
                   {t("discovery.list.noRatings")}
                 </Text>
               )}
@@ -269,20 +339,44 @@ function CompactPractitionerPackageCard({
               ]}
             >
               {/* Plan Title & Discount Tag */}
-              <View style={[styles.planLeftMeta, { flexDirection: rowDirection }]}>
-                <Text weight="bold" color={theme.colors.textPrimary} style={styles.planTitleText}>
+              <View
+                style={[styles.planLeftMeta, { flexDirection: rowDirection }]}
+              >
+                <Text
+                  weight="bold"
+                  color={theme.colors.textPrimary}
+                  style={styles.planTitleText}
+                >
                   {plan.title}
                 </Text>
-                <View style={[styles.discountTag, { backgroundColor: theme.colors.primarySoft }]}>
-                  <Text weight="bold" color={theme.colors.primary} style={styles.discountTagText}>
+                <View
+                  style={[
+                    styles.discountTag,
+                    { backgroundColor: theme.colors.primarySoft },
+                  ]}
+                >
+                  <Text
+                    weight="bold"
+                    color={theme.colors.primary}
+                    style={styles.discountTagText}
+                  >
                     -{plan.discountPercent}%
                   </Text>
                 </View>
               </View>
 
               {/* Price & Savings */}
-              <View style={[styles.planRightPrice, { alignItems: isRtl ? "flex-start" : "flex-end" }]}>
-                <Text weight="bold" color={theme.colors.primary} style={styles.packagePayablePrice}>
+              <View
+                style={[
+                  styles.planRightPrice,
+                  { alignItems: isRtl ? "flex-start" : "flex-end" },
+                ]}
+              >
+                <Text
+                  weight="bold"
+                  color={theme.colors.primary}
+                  style={styles.packagePayablePrice}
+                >
                   {plan.payableTotalFormatted}
                 </Text>
                 <Text color={theme.colors.textMuted} style={styles.savingsText}>
@@ -363,11 +457,20 @@ export default function PublicPackagesScreen() {
             },
           ]}
         >
-          <View style={[styles.goldBar, { backgroundColor: theme.colors.tertiary }]} />
+          <View
+            style={[styles.goldBar, { backgroundColor: theme.colors.tertiary }]}
+          />
 
           <View style={styles.heroPaddingCompact}>
-            <View style={[styles.heroHeaderRow, { flexDirection: rowDirection }]}>
-              <View style={[styles.heroIconBox, { backgroundColor: theme.colors.primarySoft }]}>
+            <View
+              style={[styles.heroHeaderRow, { flexDirection: rowDirection }]}
+            >
+              <View
+                style={[
+                  styles.heroIconBox,
+                  { backgroundColor: theme.colors.primarySoft },
+                ]}
+              >
                 <Ionicons name="gift" size={18} color={theme.colors.primary} />
               </View>
 
@@ -379,7 +482,10 @@ export default function PublicPackagesScreen() {
                 >
                   {isArabic ? "باقات الجلسات العلاجية" : "Session Packages"}
                 </Text>
-                <Text color={theme.colors.textSecondary} style={[styles.heroSubtitleCompact, { textAlign }]}>
+                <Text
+                  color={theme.colors.textSecondary}
+                  style={[styles.heroSubtitleCompact, { textAlign }]}
+                >
                   {isArabic
                     ? "وفّر أكثر واصل رحلتك العلاجية مع باقات الجلسات المخفضة لدى أفضل المختصين."
                     : "Save more with discounted session packages from top practitioners."}
@@ -388,17 +494,51 @@ export default function PublicPackagesScreen() {
             </View>
 
             {/* Benefits Pills */}
-            <View style={[styles.benefitsGrid, { flexDirection: rowDirection }]}>
-              <View style={[styles.benefitPill, { backgroundColor: theme.colors.surfaceTertiary, borderColor: theme.colors.borderLight }]}>
-                <Ionicons name="pricetag" size={12} color={theme.colors.primary} />
-                <Text weight="600" style={styles.benefitText} color={theme.colors.textPrimary}>
+            <View
+              style={[styles.benefitsGrid, { flexDirection: rowDirection }]}
+            >
+              <View
+                style={[
+                  styles.benefitPill,
+                  {
+                    backgroundColor: theme.colors.surfaceTertiary,
+                    borderColor: theme.colors.borderLight,
+                  },
+                ]}
+              >
+                <Ionicons
+                  name="pricetag"
+                  size={12}
+                  color={theme.colors.primary}
+                />
+                <Text
+                  weight="600"
+                  style={styles.benefitText}
+                  color={theme.colors.textPrimary}
+                >
                   {isArabic ? "خصم لـ 25%" : "Up to 25% OFF"}
                 </Text>
               </View>
 
-              <View style={[styles.benefitPill, { backgroundColor: theme.colors.surfaceTertiary, borderColor: theme.colors.borderLight }]}>
-                <Ionicons name="calendar" size={12} color={theme.colors.primary} />
-                <Text weight="600" style={styles.benefitText} color={theme.colors.textPrimary}>
+              <View
+                style={[
+                  styles.benefitPill,
+                  {
+                    backgroundColor: theme.colors.surfaceTertiary,
+                    borderColor: theme.colors.borderLight,
+                  },
+                ]}
+              >
+                <Ionicons
+                  name="calendar"
+                  size={12}
+                  color={theme.colors.primary}
+                />
+                <Text
+                  weight="600"
+                  style={styles.benefitText}
+                  color={theme.colors.textPrimary}
+                >
                   {isArabic ? "مرونة المواعيد" : "Flexible"}
                 </Text>
               </View>
@@ -413,7 +553,9 @@ export default function PublicPackagesScreen() {
           style={[styles.sectionHeading, { textAlign }]}
           color={theme.colors.textPrimary}
         >
-          {isArabic ? "المختصون المتاح لديهم باقات" : "Practitioners Offering Packages"}
+          {isArabic
+            ? "المختصون المتاح لديهم باقات"
+            : "Practitioners Offering Packages"}
         </Text>
 
         {/* Content States */}
@@ -426,19 +568,43 @@ export default function PublicPackagesScreen() {
             <ErrorState onRetry={() => void practitionersQuery.refetch()} />
           </View>
         ) : practitioners.length === 0 ? (
-          <View style={[styles.emptyBox, { backgroundColor: theme.colors.surface, borderColor: theme.colors.borderLight }]}>
-            <Ionicons name="gift-outline" size={28} color={theme.colors.textMuted} />
-            <Text weight="bold" style={styles.emptyTitle} color={theme.colors.textPrimary}>
-              {isArabic ? "لا يوجد مختصون متاحون حالياً للباقات" : "No Package Practitioners Available"}
+          <View
+            style={[
+              styles.emptyBox,
+              {
+                backgroundColor: theme.colors.surface,
+                borderColor: theme.colors.borderLight,
+              },
+            ]}
+          >
+            <Ionicons
+              name="gift-outline"
+              size={28}
+              color={theme.colors.textMuted}
+            />
+            <Text
+              weight="bold"
+              style={styles.emptyTitle}
+              color={theme.colors.textPrimary}
+            >
+              {isArabic
+                ? "لا يوجد مختصون متاحون حالياً للباقات"
+                : "No Package Practitioners Available"}
             </Text>
-            <Text color={theme.colors.textSecondary} style={styles.emptySubtitle}>
+            <Text
+              color={theme.colors.textSecondary}
+              style={styles.emptySubtitle}
+            >
               {isArabic
                 ? "يمكنك تصفح باقي المختصين وحجز جلسات فردية مباشرة."
                 : "Browse all available practitioners and book individual sessions."}
             </Text>
             <TouchableOpacity
               onPress={() => router.push("/(public)/discovery")}
-              style={[styles.browseBtn, { backgroundColor: theme.colors.primary }]}
+              style={[
+                styles.browseBtn,
+                { backgroundColor: theme.colors.primary },
+              ]}
             >
               <Text weight="bold" color="#FFFFFF" style={styles.browseBtnText}>
                 {isArabic ? "تصفح جميع المختصين" : "Browse All Practitioners"}

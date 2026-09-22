@@ -1323,6 +1323,22 @@ exports.Prisma.PaymentScalarFieldEnum = {
   updatedAt: 'updatedAt'
 };
 
+exports.Prisma.PaymentOperationalExceptionScalarFieldEnum = {
+  id: 'id',
+  paymentId: 'paymentId',
+  type: 'type',
+  status: 'status',
+  provider: 'provider',
+  ownerUserId: 'ownerUserId',
+  reason: 'reason',
+  resolutionNote: 'resolutionNote',
+  dedupeKey: 'dedupeKey',
+  createdByUserId: 'createdByUserId',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt',
+  resolvedAt: 'resolvedAt'
+};
+
 exports.Prisma.PaymentWebhookReceiptScalarFieldEnum = {
   id: 'id',
   provider: 'provider',
@@ -3370,6 +3386,7 @@ exports.SessionAttendanceParticipantRole = exports.$Enums.SessionAttendanceParti
 
 exports.SessionEventType = exports.$Enums.SessionEventType = {
   SESSION_CREATED: 'SESSION_CREATED',
+  RESCHEDULED: 'RESCHEDULED',
   PAYMENT_PENDING: 'PAYMENT_PENDING',
   PAYMENT_CONFIRMED: 'PAYMENT_CONFIRMED',
   PRACTITIONER_ACCEPTED: 'PRACTITIONER_ACCEPTED',
@@ -3481,6 +3498,20 @@ exports.PaymentStatus = exports.$Enums.PaymentStatus = {
   REFUNDED: 'REFUNDED'
 };
 
+exports.PaymentOperationalExceptionType = exports.$Enums.PaymentOperationalExceptionType = {
+  LATE_PROVIDER_SUCCESS: 'LATE_PROVIDER_SUCCESS',
+  WEBHOOK_CONFLICT: 'WEBHOOK_CONFLICT',
+  RECONCILIATION_ISSUE: 'RECONCILIATION_ISSUE',
+  UNKNOWN_PAYMENT_STATE: 'UNKNOWN_PAYMENT_STATE'
+};
+
+exports.PaymentOperationalExceptionStatus = exports.$Enums.PaymentOperationalExceptionStatus = {
+  OPEN: 'OPEN',
+  IN_REVIEW: 'IN_REVIEW',
+  RESOLVED: 'RESOLVED',
+  DISMISSED: 'DISMISSED'
+};
+
 exports.PaymentEventType = exports.$Enums.PaymentEventType = {
   PAYMENT_CREATED: 'PAYMENT_CREATED',
   PROVIDER_CHECKOUT_CREATED: 'PROVIDER_CHECKOUT_CREATED',
@@ -3490,6 +3521,7 @@ exports.PaymentEventType = exports.$Enums.PaymentEventType = {
   PAYMENT_FAILED: 'PAYMENT_FAILED',
   PAYMENT_CANCELLED: 'PAYMENT_CANCELLED',
   PAYMENT_EXPIRED: 'PAYMENT_EXPIRED',
+  PAYMENT_LATE_SUCCESS_REVIEW_REQUIRED: 'PAYMENT_LATE_SUCCESS_REVIEW_REQUIRED',
   REFUND_REQUESTED: 'REFUND_REQUESTED',
   REFUND_PROCESSED: 'REFUND_PROCESSED'
 };
@@ -3562,6 +3594,7 @@ exports.LedgerAccountScope = exports.$Enums.LedgerAccountScope = {
 
 exports.JournalEntrySourceType = exports.$Enums.JournalEntrySourceType = {
   PAYMENT_CAPTURED: 'PAYMENT_CAPTURED',
+  SESSION_EARNING_RECOGNIZED: 'SESSION_EARNING_RECOGNIZED',
   REFUND_SUCCEEDED: 'REFUND_SUCCEEDED',
   PRACTITIONER_PAYOUT: 'PRACTITIONER_PAYOUT'
 };
@@ -4288,6 +4321,7 @@ exports.Prisma.ModelName = {
   SessionAdminDecision: 'SessionAdminDecision',
   InstantBookingRequest: 'InstantBookingRequest',
   Payment: 'Payment',
+  PaymentOperationalException: 'PaymentOperationalException',
   PaymentWebhookReceipt: 'PaymentWebhookReceipt',
   PaymentEvent: 'PaymentEvent',
   Refund: 'Refund',

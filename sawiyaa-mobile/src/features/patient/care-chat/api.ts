@@ -10,14 +10,16 @@ import type {
 
 export async function listMyCareChatRequests(
   query?: ListCareChatRequestsQuery,
-) {
+): Promise<CareChatRequestListResponseData> {
   const response = await apiClient.get("/patients/me/care-chat/requests", {
     params: query,
   });
   return extractApiData<CareChatRequestListResponseData>(response);
 }
 
-export async function getMyCareChatRequest(requestId: string) {
+export async function getMyCareChatRequest(
+  requestId: string,
+): Promise<{ item: CareChatRequestItemDto }> {
   const response = await apiClient.get(
     `/patients/me/care-chat/requests/${requestId}`,
   );
@@ -26,7 +28,7 @@ export async function getMyCareChatRequest(requestId: string) {
 
 export async function createCareChatRequest(
   payload: CreateCareChatRequestPayload,
-) {
+): Promise<{ item: CareChatRequestItemDto }> {
   const response = await apiClient.post(
     "/patients/me/care-chat/requests",
     payload,
@@ -34,7 +36,9 @@ export async function createCareChatRequest(
   return extractApiData<{ item: CareChatRequestItemDto }>(response);
 }
 
-export async function getCareChatConversation(conversationId: string) {
+export async function getCareChatConversation(
+  conversationId: string,
+): Promise<{ item: CareChatConversationDetailsDto }> {
   const response = await apiClient.get(
     `/patients/me/care-chat/conversations/${conversationId}`,
   );
@@ -44,7 +48,7 @@ export async function getCareChatConversation(conversationId: string) {
 export async function sendCareChatMessage(
   conversationId: string,
   message: string,
-) {
+): Promise<{ item: CareChatMessageDto }> {
   const response = await apiClient.post(
     `/patients/me/care-chat/conversations/${conversationId}/messages`,
     { message },

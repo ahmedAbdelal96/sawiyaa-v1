@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { forwardRef, Module } from '@nestjs/common';
 import { ConfigModule } from '../config/config.module';
 import { JwtAccessAuthGuard } from '@common/guards/authentication/jwt-access-auth.guard';
 import { PermissionResolverService } from '@common/guards/authorization/permission-resolver.service';
@@ -106,6 +106,8 @@ import { AdminSettlementWorkflowUseCase } from './use-cases/admin-settlement-wor
 import { PractitionerCurrencyLifecycleService } from './services/practitioner-currency-lifecycle.service';
 import { AdminPractitionerWalletReadService } from './services/admin-practitioner-wallet-read.service';
 import { CalculatePractitionerPayoutConversionService } from './services/calculate-practitioner-payout-conversion.service';
+import { PackageEntitlementService } from '@modules/package-plans/services/package-entitlement.service';
+import { NotificationsModule } from '@modules/notifications/notifications.module';
 
 /**
  * Financial Operations Module owns the internal accounting layer:
@@ -113,7 +115,7 @@ import { CalculatePractitionerPayoutConversionService } from './services/calcula
  * Payments stays the collection layer and only hands off successful payments here.
  */
 @Module({
-  imports: [ConfigModule],
+  imports: [ConfigModule, forwardRef(() => NotificationsModule)],
   controllers: [
     PractitionerFinancialOperationsController,
     AdminPractitionerManualPayoutsController,
@@ -135,6 +137,7 @@ import { CalculatePractitionerPayoutConversionService } from './services/calcula
     PermissionsGuard,
     PermissionResolverService,
     FinancialOperationsMapper,
+    PackageEntitlementService,
     AccountingReadRepository,
     AccountingReconciliationRepository,
     FinancialOperationsPaymentRepository,
@@ -225,6 +228,7 @@ import { CalculatePractitionerPayoutConversionService } from './services/calcula
     CalculatePractitionerPayoutConversionService,
   ],
   exports: [
+    AccountingJournalPostingService,
     PostPaymentLedgerEntriesUseCase,
     PostPackageSessionLedgerEntriesUseCase,
     PostRefundLedgerEntriesUseCase,

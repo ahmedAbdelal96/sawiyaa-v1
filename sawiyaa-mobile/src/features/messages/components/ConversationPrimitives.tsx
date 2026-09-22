@@ -147,7 +147,6 @@ export function ConversationBubble({
                     : "#EEF4EF",
                   borderColor: isMine ? "transparent" : "#D9E4DB",
                   borderWidth: isMine ? 0 : 1,
-                  direction: textDir,
                 },
               ]}
             >
@@ -179,7 +178,6 @@ export function ConversationBubble({
           {
             flexDirection: "row" as const,
             justifyContent: isMine ? "flex-end" : "flex-start",
-            direction: "ltr" as const,
           },
         ]}
       >
@@ -245,7 +243,6 @@ export function ConversationBubble({
         {
           flexDirection: "row" as const,
           justifyContent: isMine ? "flex-end" : "flex-start",
-          direction: "ltr" as const,
         },
       ]}
     >
