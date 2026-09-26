@@ -23,7 +23,8 @@ type PatientNotificationCopyKey =
   | "instantBookingRequest"
   | "instantBookingAccepted"
   | "instantBookingRejected"
-  | "instantBookingExpired";
+  | "instantBookingExpired"
+  | "accountUpdate";
 
 const COPY_KEYS: Record<string, PatientNotificationCopyKey> = {
   "sessions.session-reminder": "sessionReminder",
@@ -50,6 +51,8 @@ const COPY_KEYS: Record<string, PatientNotificationCopyKey> = {
   "instant-booking.request-accepted": "instantBookingAccepted",
   "instant-booking.request-rejected": "instantBookingRejected",
   "instant-booking.request-expired": "instantBookingExpired",
+  "auth.password-changed": "accountUpdate",
+  "auth.password-reset-completed": "accountUpdate",
 };
 
 function contextName(item: UserNotificationItem) {

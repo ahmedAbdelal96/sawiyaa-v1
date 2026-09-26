@@ -9,6 +9,7 @@ import { useRouter } from "@/i18n/navigation";
 import AuthPasswordField from "./AuthPasswordField";
 import Label from "@/components/form/Label";
 import { usePatientChangePassword, usePractitionerChangePassword } from "@/features/auth/hooks/use-auth";
+import { getChangePasswordRedirectPath } from "@/features/auth/lib/change-password-redirect";
 
 type Props = { role: "patient" | "practitioner" };
 type FormValues = { currentPassword: string; newPassword: string; confirmPassword: string };
@@ -41,7 +42,7 @@ export default function ChangePasswordForm({ role }: Props) {
       await mutation.mutateAsync({ currentPassword: values.currentPassword, newPassword: values.newPassword });
       form.reset();
       setFeedback(t("success"));
-      window.setTimeout(() => router.replace(role === "patient" ? "/login/patient" : "/login/practitioner"), 900);
+      window.setTimeout(() => router.replace(getChangePasswordRedirectPath(role)), 900);
     } catch (error) {
       const code = errorCode(error);
       setFeedback(code === "CURRENT_PASSWORD_INVALID" ? t("currentPasswordInvalid") : code === "NEW_PASSWORD_MUST_DIFFER" ? t("newPasswordMustDiffer") : t("genericError"));

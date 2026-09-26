@@ -66,6 +66,86 @@ export class PaymentOperationalExceptionService {
     });
   }
 
+  async createAutomatic(input: {
+    paymentId: string;
+    type: PaymentOperationalExceptionType;
+    reason: string;
+    dedupeKey: string;
+    source: SecurityAuditSource;
+    metadata?: Record<string, unknown>;
+  }) {
+    try {
+      return await this.prisma.$transaction((tx) =>
+        this.createAutomaticInTransaction(tx, input),
+      );
+    } catch (error) {
+      if ((error as { code?: string } | null)?.code !== 'P2002') {
+        throw error;
+      }
+
+      const existing = await this.prisma.paymentOperationalException.findUnique({
+        where: { dedupeKey: input.dedupeKey },
+      });
+      if (!existing) throw error;
+      return { exception: existing, created: false };
+    }
+  }
+
+  async createAutomaticInTransaction(
+    tx: Prisma.TransactionClient,
+    input: {
+      paymentId: string;
+      type: PaymentOperationalExceptionType;
+      reason: string;
+      dedupeKey: string;
+      source: SecurityAuditSource;
+      metadata?: Record<string, unknown>;
+    },
+  ) {
+    const payment = await tx.payment.findUnique({
+      where: { id: input.paymentId },
+      select: { id: true, provider: true },
+    });
+    if (!payment) throw new NotFoundException({ error: 'PAYMENT_NOT_FOUND' });
+
+    const existing = await tx.paymentOperationalException.findUnique({
+      where: { dedupeKey: input.dedupeKey },
+    });
+    if (existing) return { exception: existing, created: false };
+
+    const exception = await tx.paymentOperationalException.create({
+      data: {
+        paymentId: payment.id,
+        type: input.type,
+        status: PaymentOperationalExceptionStatus.OPEN,
+        provider: payment.provider,
+        ownerUserId: null,
+        reason: input.reason.trim(),
+        dedupeKey: input.dedupeKey,
+        createdByUserId: null,
+      },
+    });
+
+    await this.securityAuditService.recordRequired(tx, {
+      action: 'finance.payment_exception.auto_detected',
+      outcome: SecurityAuditOutcome.SUCCESS,
+      actorType: 'SYSTEM',
+      source: input.source,
+      resourceType: 'PaymentOperationalException',
+      resourceId: exception.id,
+      reason: input.reason,
+      metadata: {
+        paymentId: payment.id,
+        type: input.type,
+        provider: payment.provider,
+        dedupeKey: input.dedupeKey,
+        ...(input.metadata ?? {}),
+      },
+    });
+
+    return { exception, created: true };
+  }
+
   list(query: {
     type?: PaymentOperationalExceptionType;
     status?: PaymentOperationalExceptionStatus;

@@ -136,16 +136,18 @@ export class CareChatConversationRepository {
         },
       },
     });
-    const counts = await Promise.all(conversations.map(async (conversation) => {
-      const cursor = conversation.participants[0] ?? null;
-      const count = await this.countUnreadForCursor({
-        conversationId: conversation.id,
-        userId: input.userId,
-        lastReadAt: cursor?.lastReadAt ?? null,
-        lastReadMessageId: cursor?.lastReadMessageId ?? null,
-      });
-      return count;
-    }));
+    const counts = await Promise.all(
+      conversations.map(async (conversation) => {
+        const cursor = conversation.participants[0] ?? null;
+        const count = await this.countUnreadForCursor({
+          conversationId: conversation.id,
+          userId: input.userId,
+          lastReadAt: cursor?.lastReadAt ?? null,
+          lastReadMessageId: cursor?.lastReadMessageId ?? null,
+        });
+        return count;
+      }),
+    );
     const unreadMessages = counts.reduce((total, count) => total + count, 0);
 
     return {
@@ -178,16 +180,18 @@ export class CareChatConversationRepository {
         },
       },
     });
-    const counts = await Promise.all(conversations.map(async (conversation) => {
-      const cursor = conversation.participants[0] ?? null;
-      const count = await this.countUnreadForCursor({
-        conversationId: conversation.id,
-        userId: input.userId,
-        lastReadAt: cursor?.lastReadAt ?? null,
-        lastReadMessageId: cursor?.lastReadMessageId ?? null,
-      });
-      return [conversation.id, count] as const;
-    }));
+    const counts = await Promise.all(
+      conversations.map(async (conversation) => {
+        const cursor = conversation.participants[0] ?? null;
+        const count = await this.countUnreadForCursor({
+          conversationId: conversation.id,
+          userId: input.userId,
+          lastReadAt: cursor?.lastReadAt ?? null,
+          lastReadMessageId: cursor?.lastReadMessageId ?? null,
+        });
+        return [conversation.id, count] as const;
+      }),
+    );
     return new Map(counts);
   }
 
@@ -208,7 +212,10 @@ export class CareChatConversationRepository {
           ? {
               OR: [
                 { sentAt: { gt: input.lastReadAt } },
-                { sentAt: input.lastReadAt, id: { gt: input.lastReadMessageId ?? '' } },
+                {
+                  sentAt: input.lastReadAt,
+                  id: { gt: input.lastReadMessageId ?? '' },
+                },
               ],
             }
           : {}),
@@ -233,6 +240,7 @@ export class CareChatConversationRepository {
       patient: {
         select: {
           id: true,
+          displayName: true,
           user: {
             select: {
               displayName: true,

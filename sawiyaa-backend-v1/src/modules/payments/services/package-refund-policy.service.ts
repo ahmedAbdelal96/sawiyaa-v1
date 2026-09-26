@@ -4,6 +4,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { resolvePatientDisplayName } from '@modules/patients/utils/resolve-patient-display-name.util';
 import {
   PaymentEventType,
   PaymentStatus,
@@ -105,7 +106,8 @@ export class PackageRefundPolicyService {
         where: { idempotencyKey },
         include: { session: { select: { sessionCode: true } } },
       });
-      if (byIdempotency) return { refund: byIdempotency, alreadyFinalized: true };
+      if (byIdempotency)
+        return { refund: byIdempotency, alreadyFinalized: true };
 
       const purchase = await this.purchaseRepository.findById(
         input.purchaseId,
@@ -131,11 +133,15 @@ export class PackageRefundPolicyService {
         payment.status !== PaymentStatus.PARTIALLY_REFUNDED &&
         payment.status !== PaymentStatus.REFUNDED
       ) {
-        throw new BadRequestException({ error: 'PACKAGE_PAYMENT_NOT_REFUNDABLE' });
+        throw new BadRequestException({
+          error: 'PACKAGE_PAYMENT_NOT_REFUNDABLE',
+        });
       }
 
       const preview = await this.buildPreview(purchase, tx);
-      const existingPurchaseAudit = ((purchase.metadataJson ?? {}) as Record<string, unknown>).packageRefund as Record<string, unknown> | undefined;
+      const existingPurchaseAudit = (
+        (purchase.metadataJson ?? {}) as Record<string, unknown>
+      ).packageRefund as Record<string, unknown> | undefined;
       const existingPackageRefunds = await tx.refund.findMany({
         where: { paymentId: payment.id },
         include: { session: { select: { sessionCode: true } } },
@@ -168,10 +174,14 @@ export class PackageRefundPolicyService {
       try {
         finalAmount = new Prisma.Decimal(amountText).toDecimalPlaces(2);
       } catch {
-        throw new BadRequestException({ error: 'PACKAGE_REFUND_AMOUNT_INVALID' });
+        throw new BadRequestException({
+          error: 'PACKAGE_REFUND_AMOUNT_INVALID',
+        });
       }
       if (!finalAmount.isFinite() || finalAmount.lt(0)) {
-        throw new BadRequestException({ error: 'PACKAGE_REFUND_AMOUNT_INVALID' });
+        throw new BadRequestException({
+          error: 'PACKAGE_REFUND_AMOUNT_INVALID',
+        });
       }
       const maxFinal = new Prisma.Decimal(preview.maxFinalRefundAmount);
       if (finalAmount.gt(maxFinal)) {
@@ -181,18 +191,26 @@ export class PackageRefundPolicyService {
       }
       const reason = input.reason?.trim();
       if (!reason) {
-        throw new BadRequestException({ error: 'PACKAGE_REFUND_REASON_REQUIRED' });
+        throw new BadRequestException({
+          error: 'PACKAGE_REFUND_REASON_REQUIRED',
+        });
       }
       const evidenceReference = input.evidenceReference?.trim() || null;
       if (preview.manualReviewRequired && !evidenceReference) {
-        throw new BadRequestException({ error: 'PACKAGE_REFUND_EVIDENCE_REQUIRED' });
+        throw new BadRequestException({
+          error: 'PACKAGE_REFUND_EVIDENCE_REQUIRED',
+        });
       }
       if (
         preview.suggestedRefundAmount != null &&
-        !finalAmount.equals(new Prisma.Decimal(preview.suggestedRefundAmount)) &&
+        !finalAmount.equals(
+          new Prisma.Decimal(preview.suggestedRefundAmount),
+        ) &&
         reason.length < 3
       ) {
-        throw new BadRequestException({ error: 'PACKAGE_REFUND_OVERRIDE_REASON_REQUIRED' });
+        throw new BadRequestException({
+          error: 'PACKAGE_REFUND_OVERRIDE_REASON_REQUIRED',
+        });
       }
 
       const now = new Date();
@@ -234,7 +252,10 @@ export class PackageRefundPolicyService {
             actorRoles: ['ADMIN'],
             source: SecurityAuditSource.HTTP_REQUEST,
             reason: 'PACKAGE_REFUNDED_ZERO_VALUE',
-            metadata: { packagePurchaseId: purchase.id, packageRefundPolicy: true },
+            metadata: {
+              packagePurchaseId: purchase.id,
+              packageRefundPolicy: true,
+            },
           });
         }
         await this.purchaseRepository.updateStatus(
@@ -242,11 +263,16 @@ export class PackageRefundPolicyService {
           {
             status: 'REFUNDED',
             refundedAt: now,
-            metadataJson: { ...((purchase.metadataJson ?? {}) as Record<string, unknown>), packageRefund: audit } as Prisma.InputJsonValue,
+            metadataJson: {
+              ...((purchase.metadataJson ?? {}) as Record<string, unknown>),
+              packageRefund: audit,
+            } as Prisma.InputJsonValue,
           },
           tx,
         );
-        const settlement = await tx.packageSettlement.findUnique({ where: { purchaseId: purchase.id } });
+        const settlement = await tx.packageSettlement.findUnique({
+          where: { purchaseId: purchase.id },
+        });
         if (settlement) {
           await tx.packageSettlement.update({
             where: { purchaseId: purchase.id },
@@ -257,15 +283,20 @@ export class PackageRefundPolicyService {
               releasablePractitionerAmount: new Prisma.Decimal(0),
               decision: 'PACKAGE_REFUND_ZERO_VALUE',
               notes: reason.slice(0, 1000),
-              metadataJson: { ...((settlement.metadataJson ?? {}) as Record<string, unknown>), packageRefund: audit } as Prisma.InputJsonValue,
+              metadataJson: {
+                ...((settlement.metadataJson ?? {}) as Record<string, unknown>),
+                packageRefund: audit,
+              } as Prisma.InputJsonValue,
             },
           });
         }
         return { refund: null, alreadyFinalized: false };
       }
-      const refundType = finalAmount.equals(payment.amountTotal) && new Prisma.Decimal(preview.priorRefundedAmount).isZero()
-        ? RefundType.FULL
-        : RefundType.PARTIAL;
+      const refundType =
+        finalAmount.equals(payment.amountTotal) &&
+        new Prisma.Decimal(preview.priorRefundedAmount).isZero()
+          ? RefundType.FULL
+          : RefundType.PARTIAL;
       const refund = await this.paymentRepository.createRefund(
         {
           paymentId: payment.id,
@@ -384,8 +415,14 @@ export class PackageRefundPolicyService {
           ? PaymentStatus.PARTIALLY_REFUNDED
           : payment.status;
       if (targetStatus !== payment.status) {
-        this.paymentTransitions.assertCanTransition(payment.status, targetStatus);
-        await tx.payment.update({ where: { id: payment.id }, data: { status: targetStatus } });
+        this.paymentTransitions.assertCanTransition(
+          payment.status,
+          targetStatus,
+        );
+        await tx.payment.update({
+          where: { id: payment.id },
+          data: { status: targetStatus },
+        });
       }
 
       // Keep the refund's financial posting on the canonical refund journal,
@@ -413,7 +450,10 @@ export class PackageRefundPolicyService {
         });
       }
 
-      const existingMetadata = (purchase.metadataJson ?? {}) as Record<string, unknown>;
+      const existingMetadata = (purchase.metadataJson ?? {}) as Record<
+        string,
+        unknown
+      >;
       await this.purchaseRepository.updateStatus(
         purchase.id,
         {
@@ -426,9 +466,18 @@ export class PackageRefundPolicyService {
         },
         tx,
       );
-      if (await tx.packageSettlement.findUnique({ where: { purchaseId: purchase.id } })) {
-        const settlement = await tx.packageSettlement.findUniqueOrThrow({ where: { purchaseId: purchase.id } });
-        const settlementMetadata = (settlement.metadataJson ?? {}) as Record<string, unknown>;
+      if (
+        await tx.packageSettlement.findUnique({
+          where: { purchaseId: purchase.id },
+        })
+      ) {
+        const settlement = await tx.packageSettlement.findUniqueOrThrow({
+          where: { purchaseId: purchase.id },
+        });
+        const settlementMetadata = (settlement.metadataJson ?? {}) as Record<
+          string,
+          unknown
+        >;
         await tx.packageSettlement.update({
           where: { purchaseId: purchase.id },
           data: {
@@ -464,16 +513,22 @@ export class PackageRefundPolicyService {
     evidenceReference?: string | null;
     idempotencyKey?: string | null;
   }) {
-    const purchase = await this.purchaseRepository.findByPaymentId(input.paymentId);
+    const purchase = await this.purchaseRepository.findByPaymentId(
+      input.paymentId,
+    );
     if (!purchase) {
       throw new NotFoundException({ error: 'PACKAGE_PURCHASE_NOT_FOUND' });
     }
     return this.finalize({ ...input, purchaseId: purchase.id });
   }
 
-  private async buildPreview(purchase: any, tx?: Prisma.TransactionClient): Promise<PackageRefundPreview> {
+  private async buildPreview(
+    purchase: any,
+    tx?: Prisma.TransactionClient,
+  ): Promise<PackageRefundPreview> {
     const payment = purchase.payment;
-    if (!payment) throw new BadRequestException({ error: 'PACKAGE_PAYMENT_REQUIRED' });
+    if (!payment)
+      throw new BadRequestException({ error: 'PACKAGE_PAYMENT_REQUIRED' });
     const summary = this.entitlementService.summarize(
       purchase.sessionCountSnapshot,
       purchase.sessions,
@@ -486,18 +541,25 @@ export class PackageRefundPolicyService {
           where: { paymentId: payment.id, status: RefundStatus.SUCCEEDED },
           _sum: { amount: true },
         })
-      : await this.paymentRepository.sumSucceededRefundAmountByPaymentId(payment.id);
-    const priorRefunded = (prior._sum.amount ?? new Prisma.Decimal(0)).toDecimalPlaces(2);
+      : await this.paymentRepository.sumSucceededRefundAmountByPaymentId(
+          payment.id,
+        );
+    const priorRefunded = (
+      prior._sum.amount ?? new Prisma.Decimal(0)
+    ).toDecimalPlaces(2);
     const maxFinal = Prisma.Decimal.max(
       new Prisma.Decimal(0),
       new Prisma.Decimal(payment.amountTotal).sub(priorRefunded),
     ).toDecimalPlaces(2);
     const snapshot = purchase.selectedBaseSessionPriceSnapshot
-      ? new Prisma.Decimal(purchase.selectedBaseSessionPriceSnapshot).toDecimalPlaces(2)
+      ? new Prisma.Decimal(
+          purchase.selectedBaseSessionPriceSnapshot,
+        ).toDecimalPlaces(2)
       : null;
     const currencyMatches =
       !purchase.selectedCurrencyCode ||
-      purchase.selectedCurrencyCode.toUpperCase() === payment.currencyCode.toUpperCase();
+      purchase.selectedCurrencyCode.toUpperCase() ===
+        payment.currencyCode.toUpperCase();
     const manualReviewRequired = !snapshot || !currencyMatches;
     const manualReviewReason = !snapshot
       ? 'MANUAL_PRICE_REVIEW_REQUIRED'
@@ -508,7 +570,10 @@ export class PackageRefundPolicyService {
       ? snapshot.mul(summary.consumedSessions).toDecimalPlaces(2)
       : null;
     const suggested = usedValue
-      ? Prisma.Decimal.max(new Prisma.Decimal(0), netPaid.sub(usedValue)).toDecimalPlaces(2)
+      ? Prisma.Decimal.max(
+          new Prisma.Decimal(0),
+          netPaid.sub(usedValue),
+        ).toDecimalPlaces(2)
       : null;
     const future = purchase.sessions.filter((session: any) =>
       PACKAGE_RESERVED_SESSION_STATUSES.has(session.status),
@@ -517,7 +582,10 @@ export class PackageRefundPolicyService {
       packagePurchaseId: purchase.id,
       patient: {
         id: purchase.patient.id,
-        displayName: purchase.patient.user?.displayName ?? null,
+        displayName: resolvePatientDisplayName(
+          purchase.patient,
+          purchase.patient.user,
+        ),
       },
       practitioner: {
         id: purchase.practitioner.id,
@@ -528,7 +596,10 @@ export class PackageRefundPolicyService {
       packageNetPaid: netPaid.toFixed(2),
       totalSessions: purchase.sessionCountSnapshot,
       usedSessions: summary.consumedSessions,
-      unusedSessions: Math.max(0, purchase.sessionCountSnapshot - summary.consumedSessions),
+      unusedSessions: Math.max(
+        0,
+        purchase.sessionCountSnapshot - summary.consumedSessions,
+      ),
       reservedSessions: summary.reservedSessions,
       standalonePriceSnapshot: snapshot?.toFixed(2) ?? null,
       standaloneSnapshots: snapshot ? [snapshot.toFixed(2)] : [],

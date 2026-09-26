@@ -1,7 +1,8 @@
 "use client";
 
-import { useCallback, useMemo, useState, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import { useLocale, useTranslations } from "next-intl";
+import { useSearchParams } from "next/navigation";
 import { ArrowLeft, ChevronLeft, ChevronRight, Clock, CalendarDays, CheckCircle2 } from "lucide-react";
 import { Link, useRouter } from "@/i18n/navigation";
 import { MoneyText } from "@/components/money/MoneyText";
@@ -19,7 +20,10 @@ import {
   projectAvailabilityWindow,
   type ProjectedAvailabilitySlot,
 } from "../lib/public-availability-slot-projection";
-import { buildPractitionerBookingAuthReturnPath } from "../lib/booking-auth-return";
+import {
+  buildPractitionerBookingAuthReturnPath,
+  parsePractitionerBookingIntent,
+} from "../lib/booking-auth-return";
 
 const VISIBLE_DATE_COLUMNS = 7;
 
@@ -161,13 +165,24 @@ export default function PublicAvailabilityViewer({
   const browseNextDatesLabel = tAvail("browseNextWeek");
 
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const bookingIntentDuration = useMemo(
+    () =>
+      parsePractitionerBookingIntent(
+        searchParams.get("intent"),
+        searchParams.get("duration"),
+      ),
+    [searchParams],
+  );
   const { user, isLoading: isAuthLoading } = useAuthState();
   const isPatient = user?.role === "PATIENT";
   const isAuthenticated = Boolean(user);
 
   const [dateWindowOffsetDays, setDateWindowOffsetDays] = useState(0);
   const [selectedDayKey, setSelectedDayKey] = useState<string | null>(null);
-  const [durationFilter, setDurationFilter] = useState<30 | 60>(30);
+  const [durationFilter, setDurationFilter] = useState<30 | 60>(
+    bookingIntentDuration ?? 30,
+  );
 
   const isMounted = useSyncExternalStore(
     () => () => {},
@@ -228,10 +243,24 @@ export default function PublicAvailabilityViewer({
   // Booking Flow State
   const [phase, setPhase] = useState<Phase>("browse");
   const [selectedSlot, setSelectedSlot] = useState<SelectableSlot | null>(null);
-  const [duration, setDuration] = useState<30 | 60>(60);
+  const [duration, setDuration] = useState<30 | 60>(
+    bookingIntentDuration ?? 60,
+  );
   const [createdSession, setCreatedSession] = useState<SessionItem | null>(null);
   const [bookingError, setBookingError] = useState<string | null>(null);
   const createSession = useCreateScheduledSession();
+
+  useEffect(() => {
+    if (bookingIntentDuration == null) return;
+
+    // The callback intentionally carries no slot. Re-fetch authoritative
+    // availability before the patient chooses a fresh slot.
+    void refetch();
+    document.getElementById("booking-panel")?.scrollIntoView({
+      behavior: "smooth",
+      block: "start",
+    });
+  }, [bookingIntentDuration, refetch]);
 
   const selectedDurationPrice = duration === 30 ? displaySessionPrice30 : displaySessionPrice60;
   const authReturnPath = buildPractitionerBookingAuthReturnPath(slug, duration);

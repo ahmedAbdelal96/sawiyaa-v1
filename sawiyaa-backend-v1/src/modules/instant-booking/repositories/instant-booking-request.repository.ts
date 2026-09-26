@@ -127,11 +127,14 @@ export class InstantBookingRequestRepository {
     });
   }
 
-  findConflictingPendingRequests(input: {
-    patientId?: string;
-    practitionerId?: string;
-    now: Date;
-  }, tx?: Prisma.TransactionClient) {
+  findConflictingPendingRequests(
+    input: {
+      patientId?: string;
+      practitionerId?: string;
+      now: Date;
+    },
+    tx?: Prisma.TransactionClient,
+  ) {
     return this.getDb(tx).instantBookingRequest.findMany({
       where: {
         status: InstantBookingRequestStatus.PENDING,
@@ -228,7 +231,9 @@ export class InstantBookingRequestRepository {
         expiresAt: {
           lte: input.now,
         },
-        ...(input.practitionerId ? { practitionerId: input.practitionerId } : {}),
+        ...(input.practitionerId
+          ? { practitionerId: input.practitionerId }
+          : {}),
       },
       data: {
         status: InstantBookingRequestStatus.EXPIRED,
@@ -282,6 +287,7 @@ export class InstantBookingRequestRepository {
     patient: {
       select: {
         id: true,
+        displayName: true,
         user: {
           select: {
             displayName: true,

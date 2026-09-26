@@ -11,6 +11,8 @@ import {
   RefundStatus,
 } from '@prisma/client';
 import { PrismaService } from '@common/prisma/prisma.service';
+import { PaymentOperationalExceptionService } from '@modules/payments/services/payment-operational-exception.service';
+import { SecurityAuditSource } from '@common/security-audit/security-audit.types';
 import { AccountingReconciliationDiagnosticsService } from './accounting-reconciliation-diagnostics.service';
 import { AccountingReconciliationAlertService } from './accounting-reconciliation-alert.service';
 import { FinanceReconciliationActionRepository } from '../repositories/finance-reconciliation-action.repository';
@@ -66,6 +68,8 @@ export class AccountingReconciliationOperationsService {
     private readonly configService: ConfigService,
     @Optional()
     private readonly actionRepository?: FinanceReconciliationActionRepository,
+    @Optional()
+    private readonly paymentOperationalExceptionService?: PaymentOperationalExceptionService,
   ) {}
 
   async runPayments(
@@ -1086,6 +1090,25 @@ export class AccountingReconciliationOperationsService {
             },
             tx,
           );
+        }
+
+        if (
+          this.paymentOperationalExceptionService &&
+          seed.scope === 'PAYMENTS' &&
+          seed.entityType === 'Payment'
+        ) {
+          await this.paymentOperationalExceptionService.createAutomaticInTransaction(tx, {
+            paymentId: seed.entityId,
+            type: 'RECONCILIATION_ISSUE',
+            reason: `Reconciliation issue ${seed.issueCode}: ${seed.message}`,
+            dedupeKey: `reconciliation:${issue.id}`,
+            source: SecurityAuditSource.SYSTEM,
+            metadata: {
+              reconciliationIssueId: issue.id,
+              issueCode: seed.issueCode,
+              detectedAt: issue.lastDetectedAt.toISOString(),
+            },
+          });
         }
       }
     });

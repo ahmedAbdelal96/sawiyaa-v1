@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { CouponRepository } from '../repositories/coupon.repository';
+import { resolvePatientDisplayName } from '@modules/patients/utils/resolve-patient-display-name.util';
 
 @Injectable()
 export class ListMyPractitionerCouponRedemptionsUseCase {
@@ -47,8 +48,10 @@ export class ListMyPractitionerCouponRedemptionsUseCase {
         sessionId: item.sessionId,
         sessionCode: item.session?.sessionCode ?? null,
         paymentId: item.paymentId,
-        patientDisplayName:
-          item.patient.displayName ?? item.patient.user.displayName ?? null,
+        patientDisplayName: resolvePatientDisplayName(
+          item.patient,
+          item.patient.user,
+        ),
         currencyCode: item.currencyCode,
         grossAmount: item.grossAmount.toString(),
         discountAmount: item.discountAmount.toString(),

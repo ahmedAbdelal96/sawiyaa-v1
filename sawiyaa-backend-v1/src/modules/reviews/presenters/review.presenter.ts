@@ -4,6 +4,7 @@ import {
   SessionReviewStatus,
 } from '@prisma/client';
 import { PendingPatientReviewItemView } from '../types/reviews.types';
+import { resolvePatientDisplayName } from '@modules/patients/utils/resolve-patient-display-name.util';
 
 @Injectable()
 export class ReviewPresenter {
@@ -82,11 +83,13 @@ export class ReviewPresenter {
       scheduledStartAt: Date | null;
     };
   }) {
-    const patientDisplayName =
-      item.patient.displayName ?? item.patient.user.displayName ?? null;
+    const patientDisplayName = resolvePatientDisplayName(
+      item.patient,
+      item.patient.user,
+    );
     const patientLabel = item.isAnonymous
       ? 'Anonymous patient'
-      : patientDisplayName ?? 'Patient';
+      : (patientDisplayName ?? 'Patient');
 
     return {
       ...this.presentPatientReviewItem(item),

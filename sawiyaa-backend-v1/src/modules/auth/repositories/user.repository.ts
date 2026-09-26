@@ -62,6 +62,9 @@ export class UserRepository {
           take: 1,
           select: { id: true, status: true },
         },
+        patientProfile: {
+          select: { displayName: true },
+        },
       },
     });
   }

@@ -35,6 +35,7 @@ export class UserRepository {
             isVerified: true,
           },
         },
+        patientProfile: { select: { displayName: true } },
       },
     });
   }
@@ -65,6 +66,7 @@ export class UserRepository {
   async patchCurrentUserProfile(input: {
     userId: string;
     displayName?: string;
+    isPatient?: boolean;
   }): Promise<{ id: string; displayName: string | null } | null> {
     const existing = await this.prisma.user.findUnique({
       where: { id: input.userId },
@@ -73,16 +75,25 @@ export class UserRepository {
 
     if (!existing) return null;
 
+    if (input.isPatient && input.displayName !== undefined) {
+      return this.prisma.$transaction(async (tx) => {
+        await tx.patientProfile.upsert({
+          where: { userId: input.userId },
+          create: { userId: input.userId, displayName: input.displayName },
+          update: { displayName: input.displayName },
+        });
+        return tx.user.update({
+          where: { id: input.userId },
+          data: { displayName: input.displayName },
+          select: { id: true, displayName: true },
+        });
+      });
+    }
+
     return this.prisma.user.update({
       where: { id: input.userId },
-      data: {
-        displayName:
-          input.displayName === undefined ? undefined : input.displayName,
-      },
-      select: {
-        id: true,
-        displayName: true,
-      },
+      data: { displayName: input.displayName },
+      select: { id: true, displayName: true },
     });
   }
 }

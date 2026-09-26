@@ -21,8 +21,7 @@ export const arAuthCatalog = {
     adminLoggedIn: 'تم تسجيل دخول الإدارة بنجاح',
     adminTokensRefreshed: 'تم تجديد جلسة الإدارة بنجاح',
     adminLoggedOut: 'تم تسجيل خروج الإدارة بنجاح',
-    practitionerAuthLockoutCleared:
-      'تم مسح الحظر المؤقت لحساب المعالج بنجاح',
+    practitionerAuthLockoutCleared: 'تم مسح الحظر المؤقت لحساب المعالج بنجاح',
     passwordChanged: 'تم تغيير كلمة المرور بنجاح. يرجى تسجيل الدخول مجدداً.',
   },
   notifications: {
@@ -30,6 +29,12 @@ export const arAuthCatalog = {
     practitionerLoginOtpBody: 'رمز OTP لدخول المعالج هو {{code}}',
     passwordResetTitle: 'رمز إعادة تعيين كلمة المرور',
     passwordResetBody: 'رمز إعادة تعيين كلمة المرور هو {{code}}',
+    passwordChangedTitle: 'تم تغيير كلمة المرور',
+    passwordChangedBody:
+      'تم تغيير كلمة مرور حسابك على سويّة بنجاح. إذا لم تكن أنت من قام بهذا التغيير، تواصل مع الدعم فورًا. لأمانك، تم إنهاء جلسات تسجيل الدخول الأخرى.',
+    passwordResetCompletedTitle: 'تمت إعادة تعيين كلمة المرور',
+    passwordResetCompletedBody:
+      'تمت إعادة تعيين كلمة مرور حسابك على سويّة بنجاح. لأمانك، تم إنهاء جلسات تسجيل الدخول الأخرى. إذا لم تكن أنت من قام بهذا التغيير، تواصل مع الدعم فورًا.',
   },
   errors: {
     invalidCredentials: 'البريد الإلكتروني أو كلمة المرور غير صحيحة',
@@ -54,7 +59,8 @@ export const arAuthCatalog = {
     passwordResetPatientOnly:
       'هذا البريد مسجل كحساب معالج. استخدم صفحة استعادة كلمة مرور المعالج.',
     passwordResetAccountNotFound: 'لا يوجد حساب مسجل بهذا البريد الإلكتروني.',
-    emailNotRegistered: 'تعذر إرسال رمز التحقق. تأكد من صحة البريد الإلكتروني وحاول مرة أخرى.',
+    emailNotRegistered:
+      'تعذر إرسال رمز التحقق. تأكد من صحة البريد الإلكتروني وحاول مرة أخرى.',
     accountEmailUnavailable: 'لا يوجد بريد إلكتروني صالح مرتبط بهذا الحساب.',
     accountNotEligible: 'هذا الحساب غير متاح لتسجيل الدخول حالياً.',
     passwordResetTokenInvalid:
@@ -77,7 +83,6 @@ export const arAuthCatalog = {
     currentPasswordInvalid: 'كلمة المرور الحالية غير صحيحة',
     newPasswordMustDiffer: 'يجب أن تختلف كلمة المرور الجديدة عن الحالية',
     passwordChangeUnavailable: 'تغيير كلمة المرور غير متاح لهذا الحساب',
-    loginTemporarilyLocked:
-      'تم قفل تسجيل الدخول مؤقتًا. حاول مرة أخرى لاحقًا.',
+    loginTemporarilyLocked: 'تم قفل تسجيل الدخول مؤقتًا. حاول مرة أخرى لاحقًا.',
   },
 };

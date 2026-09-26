@@ -12,6 +12,7 @@ import {
   mapUserRoleTypeToAppRole,
   normalizeAppRoles,
 } from '../utils/auth-role.util';
+import { resolvePatientDisplayName } from '@modules/patients/utils/resolve-patient-display-name.util';
 
 type UserWithAuthContext = {
   id: string;
@@ -29,6 +30,7 @@ type UserWithAuthContext = {
     id: string;
     status: string;
   }>;
+  patientProfile?: { displayName: string | null } | null;
 };
 
 /**
@@ -43,7 +45,9 @@ export class AuthUserContextMapper {
 
     return {
       id: user.id,
-      displayName: user.displayName,
+      displayName: this.hasRole(user, UserRoleType.PATIENT)
+        ? resolvePatientDisplayName(user.patientProfile, user)
+        : user.displayName,
       status: user.status,
       roles: normalizeAppRoles(
         user.roles.map((role) => mapUserRoleTypeToAppRole(role.role)),

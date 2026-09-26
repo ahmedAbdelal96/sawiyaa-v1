@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import type { SupportedLocale } from '@common/i18n/types/locale.types';
 import { AdminPatientDirectoryRepository } from '../repositories/admin-patient-directory.repository';
+import { resolvePatientDisplayName } from '@modules/patients/utils/resolve-patient-display-name.util';
 
 @Injectable()
 export class GetAdminPatientDetailsUseCase {
@@ -19,7 +20,7 @@ export class GetAdminPatientDetailsUseCase {
       item: {
         id: row.id,
         userId: row.userId,
-        displayName: row.user.displayName ?? row.displayName ?? null,
+        displayName: resolvePatientDisplayName(row, row.user),
         primaryEmail: row.user.emails[0]?.email ?? null,
         primaryPhone: row.user.phones[0]?.phone ?? null,
         status: row.user.status,

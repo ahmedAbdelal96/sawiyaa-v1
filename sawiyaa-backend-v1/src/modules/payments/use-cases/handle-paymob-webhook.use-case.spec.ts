@@ -69,6 +69,7 @@ describe('HandlePaymobWebhookUseCase', () => {
       warn: jest.fn(),
       debug: jest.fn(),
     };
+    const exceptionService = { createAutomatic: jest.fn().mockResolvedValue({ created: true }) };
 
     const useCase = new HandlePaymobWebhookUseCase(
       registry as never,
@@ -77,6 +78,7 @@ describe('HandlePaymobWebhookUseCase', () => {
       markFailed as never,
       expirePayment as never,
       logger as never,
+      exceptionService as never,
     );
 
     return {
@@ -87,8 +89,21 @@ describe('HandlePaymobWebhookUseCase', () => {
       markFailed,
       expirePayment,
       logger,
+      exceptionService,
     };
   }
+
+  it('opens one automatic case for an authoritative late-success event', async () => {
+    const setup = buildUseCase({
+      payment: { id: 'expired_payment', status: PaymentStatus.EXPIRED, amountTotal: '10.00', amountFromGateway: '10.00', currencyCode: 'USD' },
+    });
+    await setup.useCase.execute({ rawBody: Buffer.from('{}'), headers: {}, query: {} });
+    expect(setup.exceptionService.createAutomatic).toHaveBeenCalledWith(expect.objectContaining({
+      paymentId: 'expired_payment',
+      type: 'LATE_PROVIDER_SUCCESS',
+      dedupeKey: 'late-success:expired_payment:paymob:event_1',
+    }));
+  });
 
   it('handles unknown payment reference safely', async () => {
     const setup = buildUseCase({

@@ -139,6 +139,7 @@ import { PaymentOperationalExceptionService } from './services/payment-operation
     ValidatePaymentStatusTransitionService,
     ExpirePaymentUseCase,
     PaymentProviderRecoveryService,
+    PaymentOperationalExceptionService,
   ],
 })
 export class PaymentsModule {}

@@ -49,6 +49,7 @@
     "db:bootstrap:paymob-provider-control": "node scripts/bootstrap-paymob-provider-control.js",
     "db:sync:permissions": "ts-node --preferTsExts prisma/scripts/sync-permissions.ts",
     "db:sync:countries": "ts-node --preferTsExts prisma/scripts/sync-countries.ts",
+    "db:audit:patient-display-names": "ts-node -r tsconfig-paths/register --preferTsExts prisma/scripts/audit-patient-display-name-mismatches.ts",
     "db:reconcile:practitioner-change-requests": "ts-node --preferTsExts prisma/scripts/reconcile-practitioner-change-requests.ts",
     "seed:practitioner-finance": "ts-node --preferTsExts prisma/seed/practitioner-finance.seed.ts",
     "seed:qa:testsprite": "ts-node --preferTsExts prisma/seed/qa.testsprite.seed.ts",

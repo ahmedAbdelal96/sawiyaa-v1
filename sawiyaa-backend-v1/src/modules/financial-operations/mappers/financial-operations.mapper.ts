@@ -1,4 +1,5 @@
 import { Injectable, Optional } from '@nestjs/common';
+import { resolvePatientDisplayName } from '@modules/patients/utils/resolve-patient-display-name.util';
 import {
   LedgerEntry,
   PackageSettlement,
@@ -165,6 +166,7 @@ type PackageSettlementWithRelations = PackageSettlement & {
   } | null;
   patient?: {
     id: string;
+    displayName?: string | null;
     user?: {
       displayName: string | null;
     } | null;
@@ -651,7 +653,10 @@ export class FinancialOperationsMapper {
         settlement.practitioner?.user?.displayName ?? null,
       practitionerSlug: settlement.practitioner?.publicSlug ?? null,
       patientId: settlement.patientId,
-      patientDisplayName: settlement.patient?.user?.displayName ?? null,
+      patientDisplayName: resolvePatientDisplayName(
+        settlement.patient,
+        settlement.patient?.user,
+      ),
       packagePlanCode:
         settlement.purchase?.packagePlan?.code ??
         settlement.purchase?.planCodeSnapshot ??

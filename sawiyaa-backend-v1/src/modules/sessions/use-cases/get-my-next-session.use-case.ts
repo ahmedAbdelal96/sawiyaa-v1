@@ -5,6 +5,7 @@ import { PrismaService } from '@common/prisma/prisma.service';
 import { SupportedLocale } from '@common/i18n/types/locale.types';
 import { SessionOperationalInterpreterService } from '../services/session-operational-interpreter.service';
 import { buildOperationalNextSessionCandidateWhere } from '../utils/session-operational-candidate-predicates.util';
+import { resolvePatientDisplayName } from '@modules/patients/utils/resolve-patient-display-name.util';
 
 @Injectable()
 export class GetMyNextSessionUseCase {
@@ -57,7 +58,12 @@ export class GetMyNextSessionUseCase {
         providerSessionRef: true,
         videoRoomClosedAt: true,
         originalSessionId: true,
-        patient: { select: { user: { select: { displayName: true } } } },
+        patient: {
+          select: {
+            displayName: true,
+            user: { select: { displayName: true } },
+          },
+        },
         practitioner: {
           select: {
             user: { select: { displayName: true } },
@@ -83,7 +89,10 @@ export class GetMyNextSessionUseCase {
             avatarUrl: session.practitioner.avatarUrl ?? null,
           }
         : {
-            displayName: session.patient.user.displayName,
+            displayName: resolvePatientDisplayName(
+              session.patient,
+              session.patient.user,
+            ),
             avatarUrl: null,
           };
     const rolePath = role === AppRole.PATIENT ? 'patient' : 'practitioner';

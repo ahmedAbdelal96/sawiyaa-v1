@@ -108,6 +108,7 @@ import { AdminPractitionerWalletReadService } from './services/admin-practitione
 import { CalculatePractitionerPayoutConversionService } from './services/calculate-practitioner-payout-conversion.service';
 import { PackageEntitlementService } from '@modules/package-plans/services/package-entitlement.service';
 import { NotificationsModule } from '@modules/notifications/notifications.module';
+import { PaymentsModule } from '@modules/payments/payments.module';
 
 /**
  * Financial Operations Module owns the internal accounting layer:
@@ -115,7 +116,7 @@ import { NotificationsModule } from '@modules/notifications/notifications.module
  * Payments stays the collection layer and only hands off successful payments here.
  */
 @Module({
-  imports: [ConfigModule, forwardRef(() => NotificationsModule)],
+  imports: [ConfigModule, forwardRef(() => NotificationsModule), forwardRef(() => PaymentsModule)],
   controllers: [
     PractitionerFinancialOperationsController,
     AdminPractitionerManualPayoutsController,

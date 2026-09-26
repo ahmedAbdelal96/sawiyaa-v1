@@ -5,6 +5,7 @@ import {
 } from '@nestjs/common';
 import { I18nService } from '@common/i18n/services/i18n.service';
 import { SupportedLocale } from '@common/i18n/types/locale.types';
+import { AppRole } from '@common/enums/app-role.enum';
 import { UserRepository } from '../repositories/user.repository';
 
 @Injectable()
@@ -18,6 +19,7 @@ export class PatchCurrentUserProfileUseCase {
     userId: string;
     locale: SupportedLocale;
     displayName?: string;
+    roles?: AppRole[];
   }) {
     if (
       input.displayName !== undefined &&
@@ -32,6 +34,7 @@ export class PatchCurrentUserProfileUseCase {
     const updated = await this.userRepository.patchCurrentUserProfile({
       userId: input.userId,
       displayName: input.displayName,
+      isPatient: input.roles?.includes(AppRole.PATIENT) ?? false,
     });
 
     if (!updated) {

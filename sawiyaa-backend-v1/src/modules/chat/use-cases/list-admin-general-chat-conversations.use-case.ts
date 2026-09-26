@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
+import { resolvePatientDisplayName } from '@modules/patients/utils/resolve-patient-display-name.util';
 import { AdminGeneralChatRepository } from '../repositories/admin-general-chat.repository';
 import { GeneralChatModerationStateService } from '../services/general-chat-moderation-state.service';
 import { ListAdminGeneralChatConversationsDto } from '../dto/admin-general-chat-query.dto';
@@ -15,8 +16,8 @@ export class ListAdminGeneralChatConversationsUseCase {
     const page = Math.max(1, input.query.page ?? 1);
     const limit = Math.min(100, Math.max(1, input.query.limit ?? 20));
     const search = input.query.search?.trim();
-    const baseWhere = this.adminGeneralChatRepository.buildSessionConversationWhere(
-      {
+    const baseWhere =
+      this.adminGeneralChatRepository.buildSessionConversationWhere({
         search,
         patientId: input.query.patientId,
         practitionerId: input.query.practitionerId,
@@ -24,8 +25,7 @@ export class ListAdminGeneralChatConversationsUseCase {
         fromDate: input.query.fromDate,
         toDate: input.query.toDate,
         hasAttachmentsOnly: input.query.hasAttachmentsOnly,
-      },
-    );
+      });
     const statusWhere = this.adminGeneralChatRepository.buildStatusWhere(
       input.query.status,
     );
@@ -52,18 +52,19 @@ export class ListAdminGeneralChatConversationsUseCase {
             ? [{ updatedAt: orderDirection }, { id: 'asc' }]
             : [{ updatedAt: orderDirection }, { id: 'asc' }];
 
-    const [rows, totalItems] = await this.adminGeneralChatRepository.listConversations(
-      {
+    const [rows, totalItems] =
+      await this.adminGeneralChatRepository.listConversations({
         where,
         page,
         limit,
         orderBy,
-      },
-    );
+      });
 
     const conversationIds = rows.map((row) => row.id);
     const stats =
-      await this.adminGeneralChatRepository.getConversationStats(conversationIds);
+      await this.adminGeneralChatRepository.getConversationStats(
+        conversationIds,
+      );
 
     const items = rows.map((row) => {
       const latestMessage = row.messages[0] ?? null;
@@ -95,13 +96,9 @@ export class ListAdminGeneralChatConversationsUseCase {
         conversationId: row.id,
         sessionId: row.session?.id ?? '',
         sessionCode: row.session?.sessionCode ?? '',
-        patientName:
-          row.patient?.user.displayName ??
-          row.patient?.displayName ??
-          null,
+        patientName: resolvePatientDisplayName(row.patient, row.patient?.user),
         patientEmail: row.patient?.user.emails[0]?.email ?? null,
-        practitionerName:
-          row.practitioner?.user.displayName ?? null,
+        practitionerName: row.practitioner?.user.displayName ?? null,
         practitionerEmail: row.practitioner?.user.emails[0]?.email ?? null,
         sessionDateTime:
           row.session?.scheduledStartAt?.toISOString() ??

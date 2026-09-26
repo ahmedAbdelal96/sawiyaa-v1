@@ -32,6 +32,12 @@ export const enAuthCatalog = {
     practitionerLoginOtpBody: 'Your practitioner login OTP is {{code}}',
     passwordResetTitle: 'Password reset code',
     passwordResetBody: 'Your password reset code is {{code}}',
+    passwordChangedTitle: 'Password changed',
+    passwordChangedBody:
+      'Your Sawiyaa account password was changed successfully. If you did not make this change, contact support immediately. For your security, your other signed-in sessions were ended.',
+    passwordResetCompletedTitle: 'Password reset completed',
+    passwordResetCompletedBody:
+      'Your Sawiyaa account password was reset successfully. For your security, your other signed-in sessions were ended. If you did not make this change, contact support immediately.',
   },
   errors: {
     invalidCredentials: 'Invalid email or password',
@@ -60,8 +66,10 @@ export const enAuthCatalog = {
     passwordResetPatientOnly:
       'This email is registered as a practitioner account. Use practitioner password recovery.',
     passwordResetAccountNotFound: 'No account was found for this email.',
-    emailNotRegistered: 'We could not send the verification code. Check your email address and try again.',
-    accountEmailUnavailable: 'No valid email address is available for this account.',
+    emailNotRegistered:
+      'We could not send the verification code. Check your email address and try again.',
+    accountEmailUnavailable:
+      'No valid email address is available for this account.',
     accountNotEligible: 'This account is currently not eligible to sign in.',
     passwordResetTokenInvalid: 'Password reset token is invalid or expired',
     invalidRegistrationCountryCode:

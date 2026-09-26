@@ -5,6 +5,7 @@ import { UserRoleType, UserStatus } from '@prisma/client';
 import { normalizeAppRoles } from '@modules/auth/utils/auth-role.util';
 import { buildRoleSummary } from '../utils/role-summary.util';
 import { maskIdentityValue } from '../utils/mask-identity.util';
+import { resolvePatientDisplayName } from '@modules/patients/utils/resolve-patient-display-name.util';
 import {
   CurrentUserBasicsReadModel,
   CurrentUserProfileLinksReadModel,
@@ -28,7 +29,12 @@ export class CurrentUserMapper {
   }): CurrentUserReadModel {
     return {
       userId: input.basics.id,
-      displayName: input.basics.displayName,
+      displayName: input.roles.includes(AppRole.PATIENT)
+        ? resolvePatientDisplayName(
+            { displayName: input.basics.patientProfileDisplayName },
+            { displayName: input.basics.displayName },
+          )
+        : input.basics.displayName,
       locale: input.basics.locale,
       timezone: input.basics.timezone,
       avatarUrl: input.avatarUrl,
@@ -61,6 +67,7 @@ export class CurrentUserMapper {
   toBasics(record: {
     id: string;
     displayName: string | null;
+    patientProfile?: { displayName: string | null } | null;
     defaultLocale: string | null;
     timezone: string | null;
     status: UserStatus;
@@ -74,6 +81,7 @@ export class CurrentUserMapper {
     return {
       id: record.id,
       displayName: record.displayName,
+      patientProfileDisplayName: record.patientProfile?.displayName ?? null,
       locale: record.defaultLocale,
       timezone: record.timezone,
       accountStatus: record.status,

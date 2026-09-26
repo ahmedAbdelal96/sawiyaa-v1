@@ -173,7 +173,8 @@ export class SessionRepository {
     }
 
     const pricingCurrencyCode = data.pricingCurrencyCode ?? null;
-    const { pricingCurrencyCode: _pricingCurrencyCode, ...persistedData } = data;
+    const { pricingCurrencyCode: _pricingCurrencyCode, ...persistedData } =
+      data;
     data = persistedData;
 
     const createdAt =
@@ -1651,6 +1652,7 @@ export class SessionRepository {
     patient: {
       select: {
         id: true,
+        displayName: true,
         user: {
           select: {
             id: true,
@@ -1886,6 +1888,7 @@ export class SessionRepository {
     patient: {
       select: {
         id: true,
+        displayName: true,
         user: {
           select: {
             id: true,

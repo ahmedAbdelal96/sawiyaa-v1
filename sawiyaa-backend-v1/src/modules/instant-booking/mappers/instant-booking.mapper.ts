@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InstantBookingRequest, SessionMode } from '@prisma/client';
 import { InstantBookingRequestViewModel } from '../types/instant-booking.types';
+import { resolvePatientDisplayName } from '@modules/patients/utils/resolve-patient-display-name.util';
 
 type InstantBookingRequestWithRelations = InstantBookingRequest & {
   practitioner: {
@@ -12,6 +13,7 @@ type InstantBookingRequestWithRelations = InstantBookingRequest & {
   };
   patient: {
     id: string;
+    displayName?: string | null;
     user: {
       displayName: string | null;
     };
@@ -41,7 +43,10 @@ export class InstantBookingMapper {
       patient: request.patient
         ? {
             id: request.patient.id,
-            displayName: request.patient.user.displayName ?? null,
+            displayName: resolvePatientDisplayName(
+              request.patient,
+              request.patient.user,
+            ),
           }
         : null,
     };

@@ -610,6 +610,8 @@
       "packageSessionContext": "الجلسة {{packageSessionIndex}} من أصل {{packageSessionCount}} ضمن باقتك.",
       "genericTitle": "تحديث جديد",
       "genericBody": "لديك تحديث جديد على حسابك في سويّا.",
+      "accountUpdateTitle": "تحديث أمني على الحساب",
+      "accountUpdateBody": "تم تحديث إعدادات أمان حسابك على سويّا. إذا لم تكن أنت من قام بهذا التغيير، تواصل مع الدعم فورًا.",
       "sessionReminderTitle": "جلستك تبدأ قريبًا",
       "sessionReminderBody": "جلستك{{personContext}} تبدأ قريبًا{{packageContext}}.",
       "sessionConfirmedTitle": "تم تأكيد الجلسة",

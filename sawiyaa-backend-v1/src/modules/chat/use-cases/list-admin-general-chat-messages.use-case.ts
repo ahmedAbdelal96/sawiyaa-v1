@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { ConversationParticipantRole } from '@prisma/client';
+import { resolvePatientDisplayName } from '@modules/patients/utils/resolve-patient-display-name.util';
 import { AdminGeneralChatRepository } from '../repositories/admin-general-chat.repository';
 
 @Injectable()
@@ -8,10 +9,15 @@ export class ListAdminGeneralChatMessagesUseCase {
     private readonly adminGeneralChatRepository: AdminGeneralChatRepository,
   ) {}
 
-  async execute(input: { conversationId: string; page: number; limit: number }) {
-    const conversation = await this.adminGeneralChatRepository.findConversationById(
-      input.conversationId,
-    );
+  async execute(input: {
+    conversationId: string;
+    page: number;
+    limit: number;
+  }) {
+    const conversation =
+      await this.adminGeneralChatRepository.findConversationById(
+        input.conversationId,
+      );
     if (!conversation) {
       throw new NotFoundException({
         messageKey: 'chat.errors.conversationNotFound',
@@ -31,33 +37,32 @@ export class ListAdminGeneralChatMessagesUseCase {
     const participantNameByUserId = new Map<string, string | null>([
       [
         conversation.patient?.userId ?? '',
-        conversation.patient?.user.displayName ??
-          conversation.patient?.displayName ??
-          null,
+        resolvePatientDisplayName(
+          conversation.patient,
+          conversation.patient?.user,
+        ),
       ],
       [
         conversation.practitioner?.userId ?? '',
-        conversation.practitioner?.user.displayName ??
-          null,
+        conversation.practitioner?.user.displayName ?? null,
       ],
     ]);
 
-    const [messages, totalItems] = await this.adminGeneralChatRepository.listMessages(
-      {
+    const [messages, totalItems] =
+      await this.adminGeneralChatRepository.listMessages({
         conversationId: input.conversationId,
         page: input.page,
         limit: input.limit,
-      },
-    );
+      });
 
     return {
       items: messages.map((message) => {
         const senderRole = message.senderUserId
-          ? participantRoleByUserId.get(message.senderUserId) ??
-            ConversationParticipantRole.SYSTEM
+          ? (participantRoleByUserId.get(message.senderUserId) ??
+            ConversationParticipantRole.SYSTEM)
           : ConversationParticipantRole.SYSTEM;
         const senderName = message.senderUserId
-          ? participantNameByUserId.get(message.senderUserId) ?? null
+          ? (participantNameByUserId.get(message.senderUserId) ?? null)
           : null;
 
         return {
@@ -69,14 +74,14 @@ export class ListAdminGeneralChatMessagesUseCase {
           messageType: message.messageType,
           status: message.status,
           attachments: message.attachments.map((attachment) => {
-            const fileId = this.adminGeneralChatRepository.extractAttachmentFileId(
-              attachment.storageProvider,
-              attachment.fileUrl,
-            );
+            const fileId =
+              this.adminGeneralChatRepository.extractAttachmentFileId(
+                attachment.storageProvider,
+                attachment.fileUrl,
+              );
             return {
               fileId,
-              fileUrl:
-                `/api/v1/admin/chat/conversations/${input.conversationId}/attachments/${fileId}`,
+              fileUrl: `/api/v1/admin/chat/conversations/${input.conversationId}/attachments/${fileId}`,
               mimeType: attachment.mimeType,
               fileSize: attachment.fileSize ?? null,
               originalName: attachment.originalName ?? null,

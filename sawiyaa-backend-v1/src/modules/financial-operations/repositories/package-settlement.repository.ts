@@ -157,6 +157,7 @@ export class PackageSettlementRepository {
     patient: {
       select: {
         id: true,
+        displayName: true,
         user: {
           select: {
             displayName: true,

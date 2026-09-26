@@ -33,6 +33,14 @@
       "title": "رسالة جديدة في المحادثة",
       "subtitle": "محادثة · رسالة"
     },
+    "auth-password-changed": {
+      "title": "تم تغيير كلمة المرور",
+      "subtitle": "الأمان · حماية الحساب"
+    },
+    "auth-password-reset-completed": {
+      "title": "تمت إعادة تعيين كلمة المرور",
+      "subtitle": "الأمان · حماية الحساب"
+    },
     "messages-session-message-received": {
       "title": "رسالة جديدة في محادثة الجلسة",
       "subtitle": "محادثة · جلسة"

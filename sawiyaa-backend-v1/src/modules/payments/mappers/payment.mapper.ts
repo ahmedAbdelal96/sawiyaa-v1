@@ -9,6 +9,7 @@ import {
   SessionStatus,
 } from '@prisma/client';
 import { PaymentRegionalPricingMode } from '@common/payments/payment-region.resolver';
+import { resolvePatientDisplayName } from '@modules/patients/utils/resolve-patient-display-name.util';
 import {
   AdminPaymentOpsViewModel,
   PaymentAction,
@@ -18,7 +19,25 @@ import {
 } from '../types/payments.types';
 
 type PaymentWithRefundsAndSession = Payment & {
-  refunds?: Array<Pick<Refund, 'id' | 'paymentId' | 'sessionId' | 'refundType' | 'destination' | 'status' | 'amount' | 'currencyCode' | 'refundReason' | 'requestedAt' | 'processedAt' | 'failedAt' | 'customerWalletCreditedAt' | 'createdAt'> & { session?: { sessionCode: string } | null }>;
+  refunds?: Array<
+    Pick<
+      Refund,
+      | 'id'
+      | 'paymentId'
+      | 'sessionId'
+      | 'refundType'
+      | 'destination'
+      | 'status'
+      | 'amount'
+      | 'currencyCode'
+      | 'refundReason'
+      | 'requestedAt'
+      | 'processedAt'
+      | 'failedAt'
+      | 'customerWalletCreditedAt'
+      | 'createdAt'
+    > & { session?: { sessionCode: string } | null }
+  >;
   session?: {
     id: string;
     sessionCode: string;
@@ -40,10 +59,17 @@ export class PaymentMapper {
     'UNKNOWN_PROVIDER_FAILURE',
   ]);
 
-  private normalizeFailureCategory(reason: string | null | undefined): string | null {
+  private normalizeFailureCategory(
+    reason: string | null | undefined,
+  ): string | null {
     if (!reason) return null;
-    const value = reason.trim().toUpperCase().replace(/[^A-Z0-9_]/g, '_');
-    return this.safeFailureCategories.has(value) ? value : 'UNKNOWN_PROVIDER_FAILURE';
+    const value = reason
+      .trim()
+      .toUpperCase()
+      .replace(/[^A-Z0-9_]/g, '_');
+    return this.safeFailureCategories.has(value)
+      ? value
+      : 'UNKNOWN_PROVIDER_FAILURE';
   }
 
   private timelineEntry(input: {
@@ -240,7 +266,8 @@ export class PaymentMapper {
       requestedAt: refund.requestedAt.toISOString(),
       processedAt: refund.processedAt?.toISOString() ?? null,
       failedAt: refund.failedAt?.toISOString() ?? null,
-      customerWalletCreditedAt: refund.customerWalletCreditedAt?.toISOString() ?? null,
+      customerWalletCreditedAt:
+        refund.customerWalletCreditedAt?.toISOString() ?? null,
       createdAt: refund.createdAt.toISOString(),
     };
   }
@@ -313,9 +340,31 @@ export class PaymentMapper {
     failedAt: Date | null;
     expiredAt: Date | null;
     metadataJson?: Prisma.JsonValue | null;
-    patient?: { id: string; displayName: string | null; user?: { displayName: string | null } | null } | null;
-    patientPackagePurchase?: { id: string; titleSnapshot: string | null; planCodeSnapshot: string | null; status: string; packageSettlement?: { id: string; status: string } | null } | null;
-    academyProgramEnrollment?: { id: string; academyProgramId: string; status: string; paymentStatus: string; registeredAt: Date; academyProgram: { id: string; slug: string; titleAr: string; titleEn: string } } | null;
+    patient?: {
+      id: string;
+      displayName: string | null;
+      user?: { displayName: string | null } | null;
+    } | null;
+    patientPackagePurchase?: {
+      id: string;
+      titleSnapshot: string | null;
+      planCodeSnapshot: string | null;
+      status: string;
+      packageSettlement?: { id: string; status: string } | null;
+    } | null;
+    academyProgramEnrollment?: {
+      id: string;
+      academyProgramId: string;
+      status: string;
+      paymentStatus: string;
+      registeredAt: Date;
+      academyProgram: {
+        id: string;
+        slug: string;
+        titleAr: string;
+        titleEn: string;
+      };
+    } | null;
     session: {
       id: string;
       sessionCode: string;
@@ -327,8 +376,15 @@ export class PaymentMapper {
       providerRoomId: string | null;
       providerSessionRef: string | null;
       durationMinutes?: number;
-      practitioner?: { publicSlug: string | null; user: { displayName: string | null } | null } | null;
-      cancellationRecord?: { cancellationAllowed: boolean; cancelledPaymentId: string | null; createdAt: Date } | null;
+      practitioner?: {
+        publicSlug: string | null;
+        user: { displayName: string | null } | null;
+      } | null;
+      cancellationRecord?: {
+        cancellationAllowed: boolean;
+        cancelledPaymentId: string | null;
+        createdAt: Date;
+      } | null;
     } | null;
     refunds: Refund[];
     events: Array<{
@@ -339,10 +395,32 @@ export class PaymentMapper {
       occurredAt?: Date;
       createdAt: Date;
     }>;
-    sessionEvents?: Array<{ id: string; eventType: string; occurredAt?: Date | null; createdAt: Date }>;
-    walletEntries?: Array<{ id: string; entryType: string; direction: string; amount: Prisma.Decimal; currencyCode: string; occurredAt: Date; createdAt: Date }>;
-    webhookReceipts?: Array<{ id: string; providerEventRef: string; receivedAt: Date; processedAt: Date }>;
-    journalEntries?: Array<{ id: string; sourceType: string; occurredAt: Date }>;
+    sessionEvents?: Array<{
+      id: string;
+      eventType: string;
+      occurredAt?: Date | null;
+      createdAt: Date;
+    }>;
+    walletEntries?: Array<{
+      id: string;
+      entryType: string;
+      direction: string;
+      amount: Prisma.Decimal;
+      currencyCode: string;
+      occurredAt: Date;
+      createdAt: Date;
+    }>;
+    webhookReceipts?: Array<{
+      id: string;
+      providerEventRef: string;
+      receivedAt: Date;
+      processedAt: Date;
+    }>;
+    journalEntries?: Array<{
+      id: string;
+      sourceType: string;
+      occurredAt: Date;
+    }>;
     operationalExceptions?: Array<{
       id: string;
       type: string;
@@ -368,22 +446,29 @@ export class PaymentMapper {
       .reduce((sum, refund) => sum + Number(refund.amount.toString()), 0);
 
     const chronologicalEvents = [...payment.events].sort(
-      (a, b) => (a.occurredAt ?? a.createdAt).getTime() - (b.occurredAt ?? b.createdAt).getTime(),
+      (a, b) =>
+        (a.occurredAt ?? a.createdAt).getTime() -
+        (b.occurredAt ?? b.createdAt).getTime(),
     );
     const failureEvent = [...chronologicalEvents]
       .reverse()
       .find((event) => event.eventType === 'PAYMENT_FAILED');
-    const attemptEvents = chronologicalEvents.filter((event) =>
-      event.eventType === 'PROVIDER_CHECKOUT_CREATED' ||
-      event.eventType === 'PROVIDER_WEBHOOK_RECEIVED',
+    const attemptEvents = chronologicalEvents.filter(
+      (event) =>
+        event.eventType === 'PROVIDER_CHECKOUT_CREATED' ||
+        event.eventType === 'PROVIDER_WEBHOOK_RECEIVED',
     );
     const lastAttemptAt = attemptEvents.length
-      ? (attemptEvents[attemptEvents.length - 1].occurredAt ?? attemptEvents[attemptEvents.length - 1].createdAt)
-      : payment.failedAt ?? payment.initiatedAt;
-    const retryAvailable = payment.status === PaymentStatus.FAILED || payment.status === PaymentStatus.EXPIRED;
+      ? (attemptEvents[attemptEvents.length - 1].occurredAt ??
+        attemptEvents[attemptEvents.length - 1].createdAt)
+      : (payment.failedAt ?? payment.initiatedAt);
+    const retryAvailable =
+      payment.status === PaymentStatus.FAILED ||
+      payment.status === PaymentStatus.EXPIRED;
     const recommendedNextAction = retryAvailable
       ? 'RETRY_PAYMENT'
-      : payment.status === PaymentStatus.PENDING || payment.status === PaymentStatus.REQUIRES_ACTION
+      : payment.status === PaymentStatus.PENDING ||
+          payment.status === PaymentStatus.REQUIRES_ACTION
         ? 'AWAIT_PROVIDER'
         : payment.status === PaymentStatus.CAPTURED
           ? 'NONE'
@@ -428,7 +513,10 @@ export class PaymentMapper {
           occurredAt: entry.occurredAt,
         }),
       ),
-    ].sort((a, b) => a.occurredAt.localeCompare(b.occurredAt) || a.id.localeCompare(b.id));
+    ].sort(
+      (a, b) =>
+        a.occurredAt.localeCompare(b.occurredAt) || a.id.localeCompare(b.id),
+    );
 
     return {
       payment: {
@@ -470,7 +558,10 @@ export class PaymentMapper {
         failedAt: payment.failedAt?.toISOString() ?? null,
         expiredAt: payment.expiredAt?.toISOString() ?? null,
         patientId: payment.patient?.id ?? null,
-        patientName: payment.patient?.user?.displayName ?? payment.patient?.displayName ?? null,
+        patientName: resolvePatientDisplayName(
+          payment.patient,
+          payment.patient?.user,
+        ),
       },
       packagePurchase: payment.patientPackagePurchase
         ? {
@@ -478,7 +569,8 @@ export class PaymentMapper {
             title: payment.patientPackagePurchase.titleSnapshot,
             planCode: payment.patientPackagePurchase.planCodeSnapshot,
             status: payment.patientPackagePurchase.status,
-            settlementId: payment.patientPackagePurchase.packageSettlement?.id ?? null,
+            settlementId:
+              payment.patientPackagePurchase.packageSettlement?.id ?? null,
           }
         : null,
       academyEnrollment: payment.academyProgramEnrollment
@@ -486,11 +578,14 @@ export class PaymentMapper {
             id: payment.academyProgramEnrollment.id,
             programId: payment.academyProgramEnrollment.academyProgram.id,
             programSlug: payment.academyProgramEnrollment.academyProgram.slug,
-            programTitleAr: payment.academyProgramEnrollment.academyProgram.titleAr,
-            programTitleEn: payment.academyProgramEnrollment.academyProgram.titleEn,
+            programTitleAr:
+              payment.academyProgramEnrollment.academyProgram.titleAr,
+            programTitleEn:
+              payment.academyProgramEnrollment.academyProgram.titleEn,
             status: payment.academyProgramEnrollment.status,
             paymentStatus: payment.academyProgramEnrollment.paymentStatus,
-            registeredAt: payment.academyProgramEnrollment.registeredAt.toISOString(),
+            registeredAt:
+              payment.academyProgramEnrollment.registeredAt.toISOString(),
           }
         : null,
       session: payment.session
@@ -513,14 +608,20 @@ export class PaymentMapper {
             id: payment.session.id,
             sessionCode: payment.session.sessionCode,
             status: payment.session.status,
-            scheduledStartAt: payment.session.scheduledStartAt?.toISOString() ?? null,
-            scheduledEndAt: payment.session.scheduledEndAt?.toISOString() ?? null,
+            scheduledStartAt:
+              payment.session.scheduledStartAt?.toISOString() ?? null,
+            scheduledEndAt:
+              payment.session.scheduledEndAt?.toISOString() ?? null,
             durationMinutes: payment.session.durationMinutes ?? 0,
             practitionerName:
-              payment.session.practitioner?.user?.displayName ?? payment.session.practitioner?.publicSlug ?? null,
+              payment.session.practitioner?.user?.displayName ??
+              payment.session.practitioner?.publicSlug ??
+              null,
             bookingState: payment.session.status,
             paymentState: payment.status,
-            cancellationState: payment.session.cancellationRecord ? 'CANCELLED' : 'NOT_CANCELLED',
+            cancellationState: payment.session.cancellationRecord
+              ? 'CANCELLED'
+              : 'NOT_CANCELLED',
           }
         : null,
       failureDiagnosis: {
@@ -552,12 +653,15 @@ export class PaymentMapper {
         lastRefundAt: payment.refunds[0]?.requestedAt?.toISOString() ?? null,
       },
       refunds,
-      recentEvents: payment.events.slice(-15).reverse().map((event) => ({
-        id: event.id,
-        eventType: event.eventType,
-        providerEventRef: event.providerEventRef ?? null,
-        createdAt: event.createdAt.toISOString(),
-      })),
+      recentEvents: payment.events
+        .slice(-15)
+        .reverse()
+        .map((event) => ({
+          id: event.id,
+          eventType: event.eventType,
+          providerEventRef: event.providerEventRef ?? null,
+          createdAt: event.createdAt.toISOString(),
+        })),
       timeline,
       exceptions: (payment.operationalExceptions ?? []).map((exception) => ({
         id: exception.id,

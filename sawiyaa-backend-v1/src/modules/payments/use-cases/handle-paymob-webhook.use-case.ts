@@ -16,6 +16,8 @@ import { ExpirePaymentUseCase } from './expire-payment.use-case';
 import { MarkPaymentFailedUseCase } from './mark-payment-failed.use-case';
 import { MarkPaymentSucceededUseCase } from './mark-payment-succeeded.use-case';
 import { gatewayMoneyMatchesPayment } from '../utils/money-units.util';
+import { PaymentOperationalExceptionService } from '../services/payment-operational-exception.service';
+import { PaymentOperationalExceptionType } from '@prisma/client';
 
 @Injectable()
 export class HandlePaymobWebhookUseCase {
@@ -26,6 +28,7 @@ export class HandlePaymobWebhookUseCase {
     private readonly markPaymentFailedUseCase: MarkPaymentFailedUseCase,
     private readonly expirePaymentUseCase: ExpirePaymentUseCase,
     private readonly logger: AppLoggerService,
+    private readonly paymentOperationalExceptionService?: PaymentOperationalExceptionService,
   ) {}
 
   async execute(input: {
@@ -127,6 +130,14 @@ export class HandlePaymobWebhookUseCase {
         reason: 'FINANCIAL_MISMATCH_AMOUNT_OR_CURRENCY',
         payloadJson: webhook.payload as Prisma.InputJsonValue,
       });
+      await this.paymentOperationalExceptionService?.createAutomatic({
+        paymentId: payment.id,
+        type: PaymentOperationalExceptionType.WEBHOOK_CONFLICT,
+        reason: 'Provider success amount or currency did not match the payment snapshot.',
+        dedupeKey: `webhook-conflict:PAYMOB:${webhook.providerEventRef}`,
+        source: SecurityAuditSource.PAYMENT_WEBHOOK,
+        metadata: { providerEventRef: webhook.providerEventRef, conflict: 'AMOUNT_OR_CURRENCY_MISMATCH' },
+      });
       return { received: true, handled: false, paymentId: payment.id };
     }
 
@@ -173,6 +184,14 @@ export class HandlePaymobWebhookUseCase {
           providerEventRef: webhook.providerEventRef,
           reason: 'PAYMENT_SUCCESS_RECEIVED_AFTER_EXPIRY',
           payloadJson: webhook.payload as Prisma.InputJsonValue,
+        });
+        await this.paymentOperationalExceptionService?.createAutomatic({
+          paymentId: payment.id,
+          type: PaymentOperationalExceptionType.LATE_PROVIDER_SUCCESS,
+          reason: 'Provider success was received after the payment expired.',
+          dedupeKey: `late-success:${payment.id}:${webhook.providerEventRef}`,
+          source: SecurityAuditSource.PAYMENT_WEBHOOK,
+          metadata: { providerEventRef: webhook.providerEventRef },
         });
       }
       return {

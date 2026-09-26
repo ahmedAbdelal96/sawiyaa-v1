@@ -67,6 +67,7 @@ import { VerifyPractitionerLoginOtpUseCase } from './use-cases/verify-practition
 import { ChangePasswordUseCase } from './use-cases/change-password.use-case';
 import { PresenceModule } from '../presence/presence.module';
 import { VerificationModule } from '../verification/verification.module';
+import { NotificationsModule } from '../notifications/notifications.module';
 import { CountryRepository } from '../patients/repositories/country.repository';
 import { PractitionerLoginOtpConfigurationWarningService } from './services/practitioner-login-otp-configuration-warning.service';
 import { PhoneNumberValidationService } from '@common/validation/phone-number-validation.service';
@@ -74,7 +75,12 @@ import { PractitionerSpecialtyIntegrityService } from '@modules/practitioners/se
 import { PractitionerProfessionalContentAuthoringService } from '@modules/practitioners/services/practitioner-professional-content-authoring.service';
 
 @Module({
-  imports: [JwtModule.register({}), VerificationModule, PresenceModule],
+  imports: [
+    JwtModule.register({}),
+    VerificationModule,
+    PresenceModule,
+    NotificationsModule,
+  ],
   controllers: [
     PatientAuthController,
     TraineeAuthController,

@@ -2,6 +2,66 @@ import { PaymentOperationalExceptionStatus, PaymentOperationalExceptionType, Pay
 import { PaymentOperationalExceptionService } from './payment-operational-exception.service';
 
 describe('PaymentOperationalExceptionService', () => {
+  it('creates one system case for an automatic anomaly and preserves closed cases on replay', async () => {
+    const created = {
+      id: 'ex-auto',
+      paymentId: 'p1',
+      type: PaymentOperationalExceptionType.LATE_PROVIDER_SUCCESS,
+      status: PaymentOperationalExceptionStatus.OPEN,
+      provider: PaymentProvider.PAYMOB,
+    };
+    const tx = {
+      payment: { findUnique: jest.fn().mockResolvedValue({ id: 'p1', provider: PaymentProvider.PAYMOB }) },
+      paymentOperationalException: {
+        findUnique: jest.fn().mockResolvedValue(null),
+        create: jest.fn().mockResolvedValue(created),
+      },
+    };
+    const prisma = { $transaction: jest.fn(async (callback: (client: typeof tx) => Promise<unknown>) => callback(tx)), paymentOperationalException: { findUnique: jest.fn() } };
+    const audit = { recordRequired: jest.fn().mockResolvedValue(undefined) };
+    const service = new PaymentOperationalExceptionService(prisma as never, audit as never);
+
+    const result = await service.createAutomatic({
+      paymentId: 'p1',
+      type: PaymentOperationalExceptionType.LATE_PROVIDER_SUCCESS,
+      reason: 'Provider success arrived after expiry.',
+      dedupeKey: 'late-success:p1:event-1',
+      source: 'PAYMENT_WEBHOOK',
+    });
+
+    expect(result).toEqual({ exception: created, created: true });
+    expect(tx.paymentOperationalException.create).toHaveBeenCalledWith(expect.objectContaining({
+      data: expect.objectContaining({ dedupeKey: 'late-success:p1:event-1', createdByUserId: null }),
+    }));
+    expect(audit.recordRequired).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({
+      actorType: 'SYSTEM',
+      source: 'PAYMENT_WEBHOOK',
+    }));
+  });
+
+  it('returns the existing case when a concurrent automatic insert loses the unique-key race', async () => {
+    const existing = {
+      id: 'ex-existing',
+      paymentId: 'p1',
+      type: PaymentOperationalExceptionType.RECONCILIATION_ISSUE,
+      status: PaymentOperationalExceptionStatus.RESOLVED,
+      provider: PaymentProvider.STRIPE,
+    };
+    const prisma = {
+      $transaction: jest.fn().mockRejectedValue({ code: 'P2002' }),
+      paymentOperationalException: { findUnique: jest.fn().mockResolvedValue(existing) },
+    };
+    const service = new PaymentOperationalExceptionService(prisma as never, {} as never);
+
+    await expect(service.createAutomatic({
+      paymentId: 'p1',
+      type: PaymentOperationalExceptionType.RECONCILIATION_ISSUE,
+      reason: 'Reconciliation issue remains unresolved.',
+      dedupeKey: 'reconciliation:issue-1',
+      source: 'SYSTEM',
+    })).resolves.toEqual({ exception: existing, created: false });
+  });
+
   it('opens a case idempotently and records a safe audit event', async () => {
     const tx = {
       payment: { findUnique: jest.fn().mockResolvedValue({ id: 'p1', provider: PaymentProvider.PAYMOB }) },

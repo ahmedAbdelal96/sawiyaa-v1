@@ -45,6 +45,28 @@ export const notificationsSeedModule: SeedModule = {
         category: NotificationCategory.SECURITY,
       },
       {
+        slug: 'auth.password-changed',
+        displayName: 'Password Changed',
+        description:
+          'Patient security notification after a successful password change',
+        category: NotificationCategory.SECURITY,
+        supportsEmail: true,
+        supportsSms: false,
+        supportsPush: false,
+        supportsInApp: true,
+      },
+      {
+        slug: 'auth.password-reset-completed',
+        displayName: 'Password Reset Completed',
+        description:
+          'Patient security notification after a successful password reset',
+        category: NotificationCategory.SECURITY,
+        supportsEmail: true,
+        supportsSms: false,
+        supportsPush: false,
+        supportsInApp: true,
+      },
+      {
         slug: 'admin.practitioner-application-approved',
         displayName: 'Practitioner Application Approved',
         description: 'Admin decision notification for approved application',
@@ -96,19 +118,22 @@ export const notificationsSeedModule: SeedModule = {
       {
         slug: 'payments.package-purchase-succeeded',
         displayName: 'Package Purchase Payment Succeeded',
-        description: 'Patient notification for successful package payment and activation',
+        description:
+          'Patient notification for successful package payment and activation',
         category: NotificationCategory.PAYMENT,
       },
       {
         slug: 'payments.academy-payment-succeeded',
         displayName: 'Academy Payment Succeeded',
-        description: 'Learner notification for successful academy enrollment payment',
+        description:
+          'Learner notification for successful academy enrollment payment',
         category: NotificationCategory.PAYMENT,
       },
       {
         slug: 'financial.practitioner-earning-credited',
         displayName: 'Practitioner Earning Credited',
-        description: 'Practitioner notification when an approved earning is credited',
+        description:
+          'Practitioner notification when an approved earning is credited',
         category: NotificationCategory.PAYMENT,
       },
       {
@@ -390,8 +415,22 @@ export const notificationsSeedModule: SeedModule = {
         channel: NotificationChannel.EMAIL,
         slug: 'instant-booking.request-created.email.v1',
         translations: {
-          en: { subjectTemplate: 'New instant booking request', titleTemplate: 'New instant booking request', bodyTemplate: 'A patient sent you a new instant booking request. Open Sawiyaa to respond.', ctaLabel: 'Open request', ctaUrlTemplate: '{{appUrl}}{{routePath}}' },
-          ar: { subjectTemplate: 'طلب حجز فوري جديد', titleTemplate: 'طلب حجز فوري جديد', bodyTemplate: 'أرسل أحد المرضى طلب حجز فوري جديدًا. افتح سويّا للرد.', ctaLabel: 'افتح الطلب', ctaUrlTemplate: '{{appUrl}}{{routePath}}' },
+          en: {
+            subjectTemplate: 'New instant booking request',
+            titleTemplate: 'New instant booking request',
+            bodyTemplate:
+              'A patient sent you a new instant booking request. Open Sawiyaa to respond.',
+            ctaLabel: 'Open request',
+            ctaUrlTemplate: '{{appUrl}}{{routePath}}',
+          },
+          ar: {
+            subjectTemplate: 'طلب حجز فوري جديد',
+            titleTemplate: 'طلب حجز فوري جديد',
+            bodyTemplate:
+              'أرسل أحد المرضى طلب حجز فوري جديدًا. افتح سويّا للرد.',
+            ctaLabel: 'افتح الطلب',
+            ctaUrlTemplate: '{{appUrl}}{{routePath}}',
+          },
         },
       },
       {
@@ -399,8 +438,21 @@ export const notificationsSeedModule: SeedModule = {
         channel: NotificationChannel.EMAIL,
         slug: 'instant-booking.request-accepted.email.v1',
         translations: {
-          en: { subjectTemplate: 'Your instant booking was accepted', titleTemplate: 'Instant booking accepted', bodyTemplate: 'Your instant booking request was accepted. Continue to payment in Sawiyaa.', ctaLabel: 'Continue to payment', ctaUrlTemplate: '{{appUrl}}{{routePath}}' },
-          ar: { subjectTemplate: 'تم قبول الحجز الفوري', titleTemplate: 'تم قبول الحجز الفوري', bodyTemplate: 'تم قبول طلب الحجز الفوري. تابع إلى الدفع من سويّا.', ctaLabel: 'تابع إلى الدفع', ctaUrlTemplate: '{{appUrl}}{{routePath}}' },
+          en: {
+            subjectTemplate: 'Your instant booking was accepted',
+            titleTemplate: 'Instant booking accepted',
+            bodyTemplate:
+              'Your instant booking request was accepted. Continue to payment in Sawiyaa.',
+            ctaLabel: 'Continue to payment',
+            ctaUrlTemplate: '{{appUrl}}{{routePath}}',
+          },
+          ar: {
+            subjectTemplate: 'تم قبول الحجز الفوري',
+            titleTemplate: 'تم قبول الحجز الفوري',
+            bodyTemplate: 'تم قبول طلب الحجز الفوري. تابع إلى الدفع من سويّا.',
+            ctaLabel: 'تابع إلى الدفع',
+            ctaUrlTemplate: '{{appUrl}}{{routePath}}',
+          },
         },
       },
       {
@@ -408,8 +460,22 @@ export const notificationsSeedModule: SeedModule = {
         channel: NotificationChannel.EMAIL,
         slug: 'instant-booking.request-rejected.email.v1',
         translations: {
-          en: { subjectTemplate: 'Your instant booking was declined', titleTemplate: 'Instant booking declined', bodyTemplate: 'Your instant booking request was declined. Open Sawiyaa for the next step.', ctaLabel: 'Open request', ctaUrlTemplate: '{{appUrl}}{{routePath}}' },
-          ar: { subjectTemplate: 'تم رفض الحجز الفوري', titleTemplate: 'تم رفض الحجز الفوري', bodyTemplate: 'تم رفض طلب الحجز الفوري. افتح سويّا لمعرفة الخطوة التالية.', ctaLabel: 'افتح الطلب', ctaUrlTemplate: '{{appUrl}}{{routePath}}' },
+          en: {
+            subjectTemplate: 'Your instant booking was declined',
+            titleTemplate: 'Instant booking declined',
+            bodyTemplate:
+              'Your instant booking request was declined. Open Sawiyaa for the next step.',
+            ctaLabel: 'Open request',
+            ctaUrlTemplate: '{{appUrl}}{{routePath}}',
+          },
+          ar: {
+            subjectTemplate: 'تم رفض الحجز الفوري',
+            titleTemplate: 'تم رفض الحجز الفوري',
+            bodyTemplate:
+              'تم رفض طلب الحجز الفوري. افتح سويّا لمعرفة الخطوة التالية.',
+            ctaLabel: 'افتح الطلب',
+            ctaUrlTemplate: '{{appUrl}}{{routePath}}',
+          },
         },
       },
       {
@@ -417,8 +483,22 @@ export const notificationsSeedModule: SeedModule = {
         channel: NotificationChannel.EMAIL,
         slug: 'instant-booking.request-expired.email.v1',
         translations: {
-          en: { subjectTemplate: 'Your instant booking request expired', titleTemplate: 'Instant booking expired', bodyTemplate: 'Your instant booking request expired before a response. Open Sawiyaa to try again.', ctaLabel: 'Open instant booking', ctaUrlTemplate: '{{appUrl}}{{routePath}}' },
-          ar: { subjectTemplate: 'انتهت صلاحية طلب الحجز الفوري', titleTemplate: 'انتهت صلاحية الحجز الفوري', bodyTemplate: 'انتهت صلاحية طلب الحجز الفوري قبل وصول رد. افتح سويّا للمحاولة مرة أخرى.', ctaLabel: 'افتح الحجز الفوري', ctaUrlTemplate: '{{appUrl}}{{routePath}}' },
+          en: {
+            subjectTemplate: 'Your instant booking request expired',
+            titleTemplate: 'Instant booking expired',
+            bodyTemplate:
+              'Your instant booking request expired before a response. Open Sawiyaa to try again.',
+            ctaLabel: 'Open instant booking',
+            ctaUrlTemplate: '{{appUrl}}{{routePath}}',
+          },
+          ar: {
+            subjectTemplate: 'انتهت صلاحية طلب الحجز الفوري',
+            titleTemplate: 'انتهت صلاحية الحجز الفوري',
+            bodyTemplate:
+              'انتهت صلاحية طلب الحجز الفوري قبل وصول رد. افتح سويّا للمحاولة مرة أخرى.',
+            ctaLabel: 'افتح الحجز الفوري',
+            ctaUrlTemplate: '{{appUrl}}{{routePath}}',
+          },
         },
       },
       {
@@ -1051,7 +1131,8 @@ export const notificationsSeedModule: SeedModule = {
           en: {
             subjectTemplate: null,
             titleTemplate: 'Your session is starting now',
-            bodyTemplate: 'Your session is starting now. Open Sawiyaa to join securely.',
+            bodyTemplate:
+              'Your session is starting now. Open Sawiyaa to join securely.',
             ctaLabel: 'Join session',
             ctaUrlTemplate: '{{appUrl}}{{routePath}}',
           },
@@ -1065,6 +1146,82 @@ export const notificationsSeedModule: SeedModule = {
         },
       },
       {
+        typeSlug: 'auth.password-changed',
+        channel: NotificationChannel.IN_APP,
+        slug: 'auth.password-changed.in-app.v1',
+        translations: {
+          en: {
+            subjectTemplate: null,
+            titleTemplate: 'Password changed',
+            bodyTemplate:
+              'Your Sawiyaa account password was changed successfully. If you did not make this change, contact support immediately. For your security, your other signed-in sessions were ended.',
+          },
+          ar: {
+            subjectTemplate: null,
+            titleTemplate: 'تم تغيير كلمة المرور',
+            bodyTemplate:
+              'تم تغيير كلمة مرور حسابك على سويّة بنجاح. إذا لم تكن أنت من قام بهذا التغيير، تواصل مع الدعم فورًا. لأمانك، تم إنهاء جلسات تسجيل الدخول الأخرى.',
+          },
+        },
+      },
+      {
+        typeSlug: 'auth.password-changed',
+        channel: NotificationChannel.EMAIL,
+        slug: 'auth.password-changed.email.v1',
+        translations: {
+          en: {
+            subjectTemplate: 'Your Sawiyaa password was changed',
+            titleTemplate: 'Password changed',
+            bodyTemplate:
+              'Your Sawiyaa account password was changed successfully. If you did not make this change, contact support immediately. For your security, your other signed-in sessions were ended.',
+          },
+          ar: {
+            subjectTemplate: 'تم تغيير كلمة مرور حسابك على سويّة',
+            titleTemplate: 'تم تغيير كلمة المرور',
+            bodyTemplate:
+              'تم تغيير كلمة مرور حسابك على سويّة بنجاح. إذا لم تكن أنت من قام بهذا التغيير، تواصل مع الدعم فورًا. لأمانك، تم إنهاء جلسات تسجيل الدخول الأخرى.',
+          },
+        },
+      },
+      {
+        typeSlug: 'auth.password-reset-completed',
+        channel: NotificationChannel.IN_APP,
+        slug: 'auth.password-reset-completed.in-app.v1',
+        translations: {
+          en: {
+            subjectTemplate: null,
+            titleTemplate: 'Password reset completed',
+            bodyTemplate:
+              'Your Sawiyaa account password was reset successfully. For your security, your other signed-in sessions were ended. If you did not make this change, contact support immediately.',
+          },
+          ar: {
+            subjectTemplate: null,
+            titleTemplate: 'تمت إعادة تعيين كلمة المرور',
+            bodyTemplate:
+              'تمت إعادة تعيين كلمة مرور حسابك على سويّة بنجاح. لأمانك، تم إنهاء جلسات تسجيل الدخول الأخرى. إذا لم تكن أنت من قام بهذا التغيير، تواصل مع الدعم فورًا.',
+          },
+        },
+      },
+      {
+        typeSlug: 'auth.password-reset-completed',
+        channel: NotificationChannel.EMAIL,
+        slug: 'auth.password-reset-completed.email.v1',
+        translations: {
+          en: {
+            subjectTemplate: 'Your Sawiyaa password was reset',
+            titleTemplate: 'Password reset completed',
+            bodyTemplate:
+              'Your Sawiyaa account password was reset successfully. For your security, your other signed-in sessions were ended. If you did not make this change, contact support immediately.',
+          },
+          ar: {
+            subjectTemplate: 'تمت إعادة تعيين كلمة مرور حسابك على سويّة',
+            titleTemplate: 'تمت إعادة تعيين كلمة المرور',
+            bodyTemplate:
+              'تمت إعادة تعيين كلمة مرور حسابك على سويّة بنجاح. لأمانك، تم إنهاء جلسات تسجيل الدخول الأخرى. إذا لم تكن أنت من قام بهذا التغيير، تواصل مع الدعم فورًا.',
+          },
+        },
+      },
+      {
         typeSlug: 'sessions.session-starting-now',
         channel: NotificationChannel.EMAIL,
         slug: 'sessions.session-starting-now.email.v1',
@@ -1072,7 +1229,8 @@ export const notificationsSeedModule: SeedModule = {
           en: {
             subjectTemplate: 'Your Sawiyaa session is starting now',
             titleTemplate: 'Your session is starting now',
-            bodyTemplate: 'Your session is starting now. Open Sawiyaa to join securely.',
+            bodyTemplate:
+              'Your session is starting now. Open Sawiyaa to join securely.',
             ctaLabel: 'Join session',
             ctaUrlTemplate: '{{appUrl}}{{routePath}}',
           },
@@ -1093,14 +1251,16 @@ export const notificationsSeedModule: SeedModule = {
           en: {
             subjectTemplate: null,
             titleTemplate: 'Your session is waiting for you',
-            bodyTemplate: 'Your session started a few minutes ago. Open Sawiyaa to join securely.',
+            bodyTemplate:
+              'Your session started a few minutes ago. Open Sawiyaa to join securely.',
             ctaLabel: 'Join session',
             ctaUrlTemplate: '{{appUrl}}{{routePath}}',
           },
           ar: {
             subjectTemplate: null,
             titleTemplate: 'جلستك في انتظارك',
-            bodyTemplate: 'بدأت جلستك منذ دقائق قليلة. افتح سوايا للانضمام بشكل آمن.',
+            bodyTemplate:
+              'بدأت جلستك منذ دقائق قليلة. افتح سوايا للانضمام بشكل آمن.',
             ctaLabel: 'انضم للجلسة',
             ctaUrlTemplate: '{{appUrl}}{{routePath}}',
           },
@@ -1114,14 +1274,16 @@ export const notificationsSeedModule: SeedModule = {
           en: {
             subjectTemplate: 'Your Sawiyaa session is waiting for you',
             titleTemplate: 'Your session is waiting for you',
-            bodyTemplate: 'Your session started a few minutes ago. Open Sawiyaa to join securely.',
+            bodyTemplate:
+              'Your session started a few minutes ago. Open Sawiyaa to join securely.',
             ctaLabel: 'Join session',
             ctaUrlTemplate: '{{appUrl}}{{routePath}}',
           },
           ar: {
             subjectTemplate: 'جلستك على سوايا في انتظارك',
             titleTemplate: 'جلستك في انتظارك',
-            bodyTemplate: 'بدأت جلستك منذ دقائق قليلة. افتح سوايا للانضمام بشكل آمن.',
+            bodyTemplate:
+              'بدأت جلستك منذ دقائق قليلة. افتح سوايا للانضمام بشكل آمن.',
             ctaLabel: 'انضم للجلسة',
             ctaUrlTemplate: '{{appUrl}}{{routePath}}',
           },
@@ -1142,7 +1304,8 @@ export const notificationsSeedModule: SeedModule = {
           ar: {
             subjectTemplate: null,
             titleTemplate: 'ØªØ°ÙƒÙŠØ± Ø¨Ù…ÙˆØ¹Ø¯ Ø§Ù„Ø¬Ù„Ø³Ø©',
-            bodyTemplate: 'Ø³ØªØ¨Ø¯Ø£ Ø¬Ù„Ø³ØªÙƒ Ø®Ù„Ø§Ù„ {{offsetMinutes}} Ø¯Ù‚ÙŠÙ‚Ø©.',
+            bodyTemplate:
+              'Ø³ØªØ¨Ø¯Ø£ Ø¬Ù„Ø³ØªÙƒ Ø®Ù„Ø§Ù„ {{offsetMinutes}} Ø¯Ù‚ÙŠÙ‚Ø©.',
             ctaLabel: 'Ø§ÙØªØ­ Ø§Ù„Ø¬Ù„Ø³Ø©',
             ctaUrlTemplate: '{{appUrl}}{{routePath}}',
           },
@@ -1163,7 +1326,8 @@ export const notificationsSeedModule: SeedModule = {
           ar: {
             subjectTemplate: 'ØªØ°ÙƒÙŠØ± Ø¨Ù…ÙˆØ¹Ø¯ Ø§Ù„Ø¬Ù„Ø³Ø©',
             titleTemplate: 'ØªØ°ÙƒÙŠØ± Ø¨Ù…ÙˆØ¹Ø¯ Ø§Ù„Ø¬Ù„Ø³Ø©',
-            bodyTemplate: 'Ø³ØªØ¨Ø¯Ø£ Ø¬Ù„Ø³ØªÙƒ Ø®Ù„Ø§Ù„ {{offsetMinutes}} Ø¯Ù‚ÙŠÙ‚Ø©.',
+            bodyTemplate:
+              'Ø³ØªØ¨Ø¯Ø£ Ø¬Ù„Ø³ØªÙƒ Ø®Ù„Ø§Ù„ {{offsetMinutes}} Ø¯Ù‚ÙŠÙ‚Ø©.',
             ctaLabel: 'Ø§ÙØªØ­ Ø§Ù„Ø¬Ù„Ø³Ø©',
             ctaUrlTemplate: '{{appUrl}}{{routePath}}',
           },

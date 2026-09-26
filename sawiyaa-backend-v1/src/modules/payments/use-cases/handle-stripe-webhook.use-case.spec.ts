@@ -74,6 +74,7 @@ describe('HandleStripeWebhookUseCase', () => {
     const logger = {
       warn: jest.fn(),
     };
+    const exceptionService = { createAutomatic: jest.fn().mockResolvedValue({ created: true }) };
 
     const useCase = new HandleStripeWebhookUseCase(
       registry as never,
@@ -82,6 +83,7 @@ describe('HandleStripeWebhookUseCase', () => {
       markFailed as never,
       expirePayment as never,
       logger as never,
+      exceptionService as never,
     );
 
     return {
@@ -92,8 +94,37 @@ describe('HandleStripeWebhookUseCase', () => {
       markFailed,
       expirePayment,
       logger,
+      exceptionService,
     };
   }
+
+  it('opens one automatic case for an authoritative late-success event', async () => {
+    const setup = buildUseCase({
+      payment: { id: 'expired_payment', status: PaymentStatus.EXPIRED, amountTotal: '10.00', amountFromGateway: '10.00', currencyCode: 'USD' },
+    });
+    await setup.useCase.execute({ rawBody: Buffer.from('{}'), headers: {}, query: {} });
+    expect(setup.exceptionService.createAutomatic).toHaveBeenCalledWith(expect.objectContaining({
+      paymentId: 'expired_payment',
+      type: 'LATE_PROVIDER_SUCCESS',
+      dedupeKey: 'late-success:expired_payment:stripe:event_1',
+    }));
+  });
+
+  it('opens a conflict case for an amount or currency mismatch but not for normal replay', async () => {
+    const mismatch = buildUseCase({
+      payment: { id: 'mismatch_payment', status: PaymentStatus.PENDING, amountTotal: '10.00', amountFromGateway: '10.00', currencyCode: 'USD' },
+    });
+    mismatch.registry.get().parseAndVerifyWebhook.mockReturnValue({ ...webhookHandled, amountMinor: 9999 });
+    await mismatch.useCase.execute({ rawBody: Buffer.from('{}'), headers: {}, query: {} });
+    expect(mismatch.exceptionService.createAutomatic).toHaveBeenCalledWith(expect.objectContaining({ type: 'WEBHOOK_CONFLICT' }));
+
+    const replay = buildUseCase({
+      duplicate: { paymentId: 'replayed_payment' },
+      payment: { id: 'replayed_payment', status: PaymentStatus.CAPTURED },
+    });
+    await replay.useCase.execute({ rawBody: Buffer.from('{}'), headers: {}, query: {} });
+    expect(replay.exceptionService.createAutomatic).not.toHaveBeenCalled();
+  });
 
   it('accepts only the gateway share of a mixed-funded discounted payment', async () => {
     const setup = buildUseCase({

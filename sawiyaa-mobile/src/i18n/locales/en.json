@@ -535,6 +535,8 @@
       "packageSessionContext": "Session {{packageSessionIndex}} of {{packageSessionCount}} in your package.",
       "genericTitle": "New update",
       "genericBody": "There is a new update for your Sawiyaa account.",
+      "accountUpdateTitle": "Account security update",
+      "accountUpdateBody": "Your Sawiyaa account security settings were updated. If you did not make this change, contact support immediately.",
       "sessionReminderTitle": "Your session starts soon",
       "sessionReminderBody": "Your session{{personContext}} starts soon{{packageContext}}.",
       "sessionConfirmedTitle": "Session confirmed",

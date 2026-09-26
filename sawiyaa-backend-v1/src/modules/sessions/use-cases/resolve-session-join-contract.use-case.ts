@@ -18,6 +18,7 @@ import { ResolveSessionJoinReadinessService } from '../services/resolve-session-
 import { SessionVideoProviderRegistryService } from '../services/session-video-provider-registry.service';
 import { SessionVideoProviderResolverService } from '../services/session-video-provider-resolver.service';
 import { computeSessionPostEndReconnectGraceClosesAt } from '../utils/session-join-policy.util';
+import { resolvePatientDisplayName } from '@modules/patients/utils/resolve-patient-display-name.util';
 import { PrepareSessionRuntimeUseCase } from './prepare-session-runtime.use-case';
 import { SessionSchedulePolicyService } from '@modules/config/services/session-schedule-policy.service';
 import {
@@ -142,13 +143,12 @@ export class ResolveSessionJoinContractUseCase {
       !readiness.canJoin &&
       readiness.blockedReason === 'SESSION_JOIN_WINDOW_CLOSED'
     ) {
-      const graceJoinAllowed =
-        await this.canUsePostEndReconnectGrace({
-          session: effectiveSession,
-          userId: input.userId,
-          now,
-          joinAfterEndGraceMinutes: schedulePolicy.join.joinAfterEndGraceMinutes,
-        });
+      const graceJoinAllowed = await this.canUsePostEndReconnectGrace({
+        session: effectiveSession,
+        userId: input.userId,
+        now,
+        joinAfterEndGraceMinutes: schedulePolicy.join.joinAfterEndGraceMinutes,
+      });
 
       if (graceJoinAllowed) {
         usedPostEndReconnectGrace = true;
@@ -216,15 +216,17 @@ export class ResolveSessionJoinContractUseCase {
         actorType: input.actorType,
         displayName:
           input.actorType === 'PATIENT'
-            ? effectiveSession.patient.user.displayName
-            : effectiveSession.practitioner.user.displayName,
-        expiresAt:
-          usedPostEndReconnectGrace
-            ? computeSessionPostEndReconnectGraceClosesAt(
-                effectiveSession.scheduledEndAt,
-                schedulePolicy.join.joinAfterEndGraceMinutes,
+            ? resolvePatientDisplayName(
+                effectiveSession.patient,
+                effectiveSession.patient.user,
               )
-            : readiness.joinClosesAt,
+            : effectiveSession.practitioner.user.displayName,
+        expiresAt: usedPostEndReconnectGrace
+          ? computeSessionPostEndReconnectGraceClosesAt(
+              effectiveSession.scheduledEndAt,
+              schedulePolicy.join.joinAfterEndGraceMinutes,
+            )
+          : readiness.joinClosesAt,
       });
       joinToken = tokenResult.token;
       tokenExpiresAt = this.normalizeDate(tokenResult.expiresAt);

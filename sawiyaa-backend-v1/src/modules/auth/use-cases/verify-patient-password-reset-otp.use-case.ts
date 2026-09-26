@@ -1,4 +1,4 @@
-import { ConflictException, Injectable, Optional } from '@nestjs/common';
+import { ForbiddenException, Injectable, Optional } from '@nestjs/common';
 import { I18nService } from '@common/i18n/services/i18n.service';
 import { SupportedLocale } from '@common/i18n/types/locale.types';
 import { OtpPurpose, UserRoleType } from '@prisma/client';
@@ -20,6 +20,13 @@ export class VerifyPatientPasswordResetOtpUseCase {
     @Optional() private readonly securityAuditService?: SecurityAuditService,
   ) {}
 
+  private throwGenericOtpFailure(): never {
+    throw new ForbiddenException({
+      messageKey: 'auth.errors.otpCodeInvalid',
+      error: 'OTP_CODE_INVALID',
+    });
+  }
+
   async execute(input: {
     email: string;
     code: string;
@@ -30,10 +37,7 @@ export class VerifyPatientPasswordResetOtpUseCase {
       await this.userEmailRepository.findByEmailForAuth(normalizedEmail);
 
     if (!userEmail) {
-      throw new ConflictException({
-        messageKey: 'auth.errors.passwordResetAccountNotFound',
-        error: 'PASSWORD_RESET_ACCOUNT_NOT_FOUND',
-      });
+      this.throwGenericOtpFailure();
     }
 
     const hasPatientRole = userEmail.user.roles.some(
@@ -41,10 +45,7 @@ export class VerifyPatientPasswordResetOtpUseCase {
     );
 
     if (!hasPatientRole) {
-      throw new ConflictException({
-        messageKey: 'auth.errors.passwordResetAccountNotFound',
-        error: 'PASSWORD_RESET_ACCOUNT_NOT_FOUND',
-      });
+      this.throwGenericOtpFailure();
     }
 
     const challenge = await this.verifyOtpChallengeUseCase.execute({
@@ -59,10 +60,7 @@ export class VerifyPatientPasswordResetOtpUseCase {
       ) ?? false;
 
     if (!challenge.user || !verifiedForPatient) {
-      throw new ConflictException({
-        messageKey: 'auth.errors.passwordResetAccountNotFound',
-        error: 'PASSWORD_RESET_ACCOUNT_NOT_FOUND',
-      });
+      this.throwGenericOtpFailure();
     }
 
     const resetToken = this.passwordResetTokenService.generateToken();

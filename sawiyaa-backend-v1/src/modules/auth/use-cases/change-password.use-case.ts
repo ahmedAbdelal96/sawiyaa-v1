@@ -2,8 +2,10 @@ import {
   BadRequestException,
   ForbiddenException,
   Injectable,
+  Optional,
   UnauthorizedException,
 } from '@nestjs/common';
+import { randomUUID } from 'node:crypto';
 import { PrismaService } from '@common/prisma/prisma.service';
 import { SecurityAuditService } from '@common/security-audit/security-audit.service';
 import { SecurityAuditOutcome, UserRoleType, UserStatus } from '@prisma/client';
@@ -12,6 +14,7 @@ import { UserRepository } from '../repositories/user.repository';
 import { HashPasswordUseCase } from './hash-password.use-case';
 import { InvalidateUserTokensUseCase } from './invalidate-user-tokens.use-case';
 import { VerifyPasswordUseCase } from './verify-password.use-case';
+import { OperationalNotificationService } from '@modules/notifications/services/operational-notification.service';
 
 /**
  * Authenticated credential rotation.  We deliberately invalidate every session,
@@ -27,6 +30,8 @@ export class ChangePasswordUseCase {
     private readonly hashPasswordUseCase: HashPasswordUseCase,
     private readonly invalidateUserTokensUseCase: InvalidateUserTokensUseCase,
     private readonly securityAuditService: SecurityAuditService,
+    @Optional()
+    private readonly operationalNotificationService?: OperationalNotificationService,
   ) {}
 
   async execute(input: {
@@ -37,15 +42,24 @@ export class ChangePasswordUseCase {
     ipAddress?: string | null;
     userAgent?: string | null;
   }) {
-    const user = await this.userRepository.findByIdWithAuthContext(input.userId);
-    if (!user || user.status !== UserStatus.ACTIVE || !user.roles.some((entry) => entry.role === input.role)) {
+    const user = await this.userRepository.findByIdWithAuthContext(
+      input.userId,
+    );
+    if (
+      !user ||
+      user.status !== UserStatus.ACTIVE ||
+      !user.roles.some((entry) => entry.role === input.role)
+    ) {
       throw new ForbiddenException({
         messageKey: 'auth.errors.accountNotActive',
         error: 'ACCOUNT_NOT_ACTIVE',
       });
     }
 
-    const identity = await this.authIdentityRepository.findPasswordIdentityByUserId(input.userId);
+    const identity =
+      await this.authIdentityRepository.findPasswordIdentityByUserId(
+        input.userId,
+      );
     if (!identity?.passwordHash) {
       throw new BadRequestException({
         messageKey: 'auth.errors.passwordChangeUnavailable',
@@ -53,7 +67,10 @@ export class ChangePasswordUseCase {
       });
     }
 
-    const currentPasswordMatches = await this.verifyPasswordUseCase.execute(input.currentPassword, identity.passwordHash);
+    const currentPasswordMatches = await this.verifyPasswordUseCase.execute(
+      input.currentPassword,
+      identity.passwordHash,
+    );
     if (!currentPasswordMatches) {
       this.securityAuditService.logAsync({
         action: `auth.${input.role.toLowerCase()}.password-change.failure`,
@@ -70,16 +87,27 @@ export class ChangePasswordUseCase {
       });
     }
 
-    if (await this.verifyPasswordUseCase.execute(input.newPassword, identity.passwordHash)) {
+    if (
+      await this.verifyPasswordUseCase.execute(
+        input.newPassword,
+        identity.passwordHash,
+      )
+    ) {
       throw new BadRequestException({
         messageKey: 'auth.errors.newPasswordMustDiffer',
         error: 'NEW_PASSWORD_MUST_DIFFER',
       });
     }
 
-    const passwordHash = await this.hashPasswordUseCase.execute(input.newPassword);
+    const passwordHash = await this.hashPasswordUseCase.execute(
+      input.newPassword,
+    );
     await this.prisma.$transaction(async (tx) => {
-      await this.authIdentityRepository.updatePasswordHash(input.userId, passwordHash, tx);
+      await this.authIdentityRepository.updatePasswordHash(
+        input.userId,
+        passwordHash,
+        tx,
+      );
       await this.invalidateUserTokensUseCase.execute(input.userId, tx);
     });
 
@@ -94,6 +122,19 @@ export class ChangePasswordUseCase {
       ipAddress: input.ipAddress ?? null,
       userAgent: input.userAgent ?? null,
     });
+
+    if (input.role === UserRoleType.PATIENT) {
+      try {
+        await this.operationalNotificationService?.notifyPatientPasswordChanged(
+          {
+            userId: input.userId,
+            eventId: randomUUID(),
+          },
+        );
+      } catch {
+        // Notification delivery is informational and must not affect auth truth.
+      }
+    }
 
     return { currentSessionInvalidated: true };
   }

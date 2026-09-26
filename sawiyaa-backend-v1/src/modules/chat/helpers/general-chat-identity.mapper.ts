@@ -6,6 +6,7 @@ import {
 import { SupportedLocale } from '@common/i18n/types/locale.types';
 import { PractitionerProfessionalContentResolver } from '@modules/practitioners/services/practitioner-professional-content-resolver.service';
 import { GeneralChatParticipantIdentityDto } from '../dto/general-chat-response.dto';
+import { resolvePatientDisplayName } from '@modules/patients/utils/resolve-patient-display-name.util';
 
 export type GeneralChatParticipantDirectoryRecord = {
   id: string;
@@ -53,11 +54,7 @@ function resolveDisplayName(
     );
   }
 
-  return (
-    normalizeText(record.displayName) ??
-    normalizeText(record.patientProfile?.displayName) ??
-    'Patient'
-  );
+  return resolvePatientDisplayName(record.patientProfile, record, 'Patient')!;
 }
 
 function resolveSubtitle(

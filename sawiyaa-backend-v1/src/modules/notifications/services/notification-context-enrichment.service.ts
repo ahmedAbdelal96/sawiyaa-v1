@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '@common/prisma/prisma.service';
 import { SupportedLocale } from '@common/i18n/types/locale.types';
+import { resolvePatientDisplayName } from '@modules/patients/utils/resolve-patient-display-name.util';
 import { PractitionerProfessionalContentRepository } from '@modules/practitioners/repositories/practitioner-professional-content.repository';
 import { PractitionerProfessionalContentResolver } from '@modules/practitioners/services/practitioner-professional-content-resolver.service';
 import {
@@ -414,8 +415,10 @@ export class NotificationContextEnrichmentService {
 
           if (conversation) {
             context.patientName =
-              asString(conversation.patient?.displayName) ??
-              asString(conversation.patient?.user?.displayName);
+              resolvePatientDisplayName(
+                conversation.patient,
+                conversation.patient?.user,
+              ) ?? undefined;
             context.practitionerName = getPractitionerName(
               conversation.practitioner,
             );
@@ -431,9 +434,10 @@ export class NotificationContextEnrichmentService {
             const session = sessId ? sessionsMap.get(sessId) : undefined;
             if (session) {
               context.patientName =
-                asString(session.patient?.displayName) ??
-                asString(session.patient?.user?.displayName) ??
-                context.patientName;
+                resolvePatientDisplayName(
+                  session.patient,
+                  session.patient?.user,
+                ) ?? context.patientName;
               context.practitionerName =
                 getPractitionerName(session.practitioner) ??
                 context.practitionerName;
@@ -470,8 +474,10 @@ export class NotificationContextEnrichmentService {
           const session = sessionId ? sessionsMap.get(sessionId) : undefined;
           if (session) {
             context.patientName =
-              asString(session.patient?.displayName) ??
-              asString(session.patient?.user?.displayName);
+              resolvePatientDisplayName(
+                session.patient,
+                session.patient?.user,
+              ) ?? undefined;
             context.practitionerName = getPractitionerName(
               session.practitioner,
             );
@@ -497,8 +503,8 @@ export class NotificationContextEnrichmentService {
           if (ticket) {
             context.supportTicketSubject = asString(ticket.subject);
             context.patientName =
-              asString(ticket.patient?.displayName) ??
-              asString(ticket.patient?.user?.displayName);
+              resolvePatientDisplayName(ticket.patient, ticket.patient?.user) ??
+              undefined;
             context.practitionerName = getPractitionerName(ticket.practitioner);
 
             primaryAction.kind = 'support';
@@ -516,8 +522,10 @@ export class NotificationContextEnrichmentService {
           const session = sessionId ? sessionsMap.get(sessionId) : undefined;
           if (session) {
             context.patientName =
-              asString(session.patient?.displayName) ??
-              asString(session.patient?.user?.displayName);
+              resolvePatientDisplayName(
+                session.patient,
+                session.patient?.user,
+              ) ?? undefined;
             context.practitionerName = getPractitionerName(
               session.practitioner,
             );

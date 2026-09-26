@@ -7,6 +7,7 @@ import { useAuth } from "../../src/providers/AuthProvider";
 import { Card, ErrorState, Header, LoadingState, Screen, Text } from "../../src/components/ui";
 import { useTheme } from "../../src/providers/ThemeProvider";
 import { usePatientHome } from "../../src/features/patient/journey/hooks";
+import { usePatientProfile } from "../../src/features/patient/profile/hooks";
 import { SpecialistHorizontalRail } from "../../src/features/patient/journey/components/SpecialistHorizontalRail";
 import { useAppDirection } from "../../src/i18n/direction";
 import { formatPatientDateTime } from "../../src/lib/time-formatting";
@@ -24,6 +25,7 @@ export default function PatientHomeScreen() {
 
   const locale = i18n.language?.startsWith("ar") ? "ar-SA" : "en-US";
   const nextSessionQuery = useMyNextSession();
+  const profileQuery = usePatientProfile();
   const homeQuery = usePatientHome({
     enabled: !nextSessionQuery.isPending && !nextSessionQuery.data,
   });
@@ -40,7 +42,10 @@ export default function PatientHomeScreen() {
   const showTopRated = topRated?.status !== "NOT_IMPLEMENTED" && (topRated?.items?.length ?? 0) > 0;
   const showRecentlyVisited = recentlyVisited.length > 0;
 
-  const displayName = user?.displayName?.trim() || t("profileScreen.fallbackName");
+  const displayName =
+    profileQuery.data?.profile?.displayName?.trim() ||
+    user?.displayName?.trim() ||
+    t("profileScreen.fallbackName");
   const homeError = !nextSession && homeQuery.isError;
   const homeLoading =
     !nextSession &&

@@ -11,6 +11,7 @@ import {
   CareRequestsReportOverview,
   CareRequestsReportRow,
 } from '../types/care-requests-report.types';
+import { resolvePatientDisplayName } from '@modules/patients/utils/resolve-patient-display-name.util';
 
 @Injectable()
 export class PrismaCareRequestsReportProvider implements CareRequestsReportProvider {
@@ -174,7 +175,7 @@ export class PrismaCareRequestsReportProvider implements CareRequestsReportProvi
       revokedAt: row.revokedAt?.toISOString() ?? null,
       patientId: row.patientId,
       practitionerId: row.practitionerId,
-      patientName: row.patient?.user?.displayName ?? row.patient?.displayName ?? null,
+      patientName: resolvePatientDisplayName(row.patient, row.patient?.user),
       practitionerName: row.practitioner?.user?.displayName ?? null,
       requestedByUserId: row.requestedByUserId,
       reviewedByUserId: row.reviewedByUserId,

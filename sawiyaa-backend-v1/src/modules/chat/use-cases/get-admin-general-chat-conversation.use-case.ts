@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { AdminGeneralChatRepository } from '../repositories/admin-general-chat.repository';
+import { resolvePatientDisplayName } from '@modules/patients/utils/resolve-patient-display-name.util';
 import { GeneralChatModerationStateService } from '../services/general-chat-moderation-state.service';
 
 @Injectable()
@@ -10,9 +11,10 @@ export class GetAdminGeneralChatConversationUseCase {
   ) {}
 
   async execute(input: { conversationId: string }) {
-    const conversation = await this.adminGeneralChatRepository.findConversationById(
-      input.conversationId,
-    );
+    const conversation =
+      await this.adminGeneralChatRepository.findConversationById(
+        input.conversationId,
+      );
 
     if (!conversation) {
       throw new NotFoundException({
@@ -62,16 +64,15 @@ export class GetAdminGeneralChatConversationUseCase {
         attachmentsCount: participantStats.attachmentsCount,
         patient: {
           id: conversation.patient?.id ?? '',
-          displayName:
-            conversation.patient?.user.displayName ??
-            conversation.patient?.displayName ??
-            null,
+          displayName: resolvePatientDisplayName(
+            conversation.patient,
+            conversation.patient?.user,
+          ),
           email: conversation.patient?.user.emails[0]?.email ?? null,
         },
         practitioner: {
           id: conversation.practitioner?.id ?? '',
-          displayName:
-            conversation.practitioner?.user.displayName ?? null,
+          displayName: conversation.practitioner?.user.displayName ?? null,
           email: conversation.practitioner?.user.emails[0]?.email ?? null,
         },
         session: {
@@ -106,8 +107,7 @@ export class GetAdminGeneralChatConversationUseCase {
             null,
           disabledByUserId:
             moderationState.practitionerLockState.disabledByUserId,
-          disabledReason:
-            moderationState.practitionerLockState.disabledReason,
+          disabledReason: moderationState.practitionerLockState.disabledReason,
           enabledAt:
             moderationState.practitionerLockState.enabledAt?.toISOString() ??
             null,

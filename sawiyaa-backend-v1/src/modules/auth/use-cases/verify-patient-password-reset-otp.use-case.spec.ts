@@ -1,4 +1,4 @@
-import { ConflictException } from '@nestjs/common';
+import { ForbiddenException } from '@nestjs/common';
 import { OtpPurpose, UserRoleType } from '@prisma/client';
 import { VerifyPatientPasswordResetOtpUseCase } from './verify-patient-password-reset-otp.use-case';
 
@@ -27,6 +27,17 @@ describe('VerifyPatientPasswordResetOtpUseCase', () => {
   beforeEach(() => {
     jest.clearAllMocks();
   });
+
+  async function captureFailure(
+    action: () => Promise<unknown>,
+  ): Promise<unknown> {
+    try {
+      await action();
+      throw new Error('Expected action to fail');
+    } catch (error: unknown) {
+      return error;
+    }
+  }
 
   it('creates a short-lived reset token after OTP verification', async () => {
     userEmailRepository.findByEmailForAuth.mockResolvedValue({
@@ -61,7 +72,49 @@ describe('VerifyPatientPasswordResetOtpUseCase', () => {
     expect(result.nextStep).toBe('SET_NEW_PASSWORD');
   });
 
-  it('throws conflict when resolved account is not a patient', async () => {
+  it('uses the same external OTP error for an unknown account as for an invalid OTP', async () => {
+    userEmailRepository.findByEmailForAuth.mockResolvedValue(null);
+
+    const unknownAccountError = await captureFailure(() =>
+      useCase.execute({
+        email: 'unknown@example.com',
+        code: '123456',
+        locale: 'en',
+      }),
+    );
+
+    userEmailRepository.findByEmailForAuth.mockResolvedValue({
+      user: { id: 'u1', roles: [{ role: UserRoleType.PATIENT }] },
+    });
+    verifyOtpChallengeUseCase.execute.mockRejectedValue(
+      new ForbiddenException({
+        messageKey: 'auth.errors.otpCodeInvalid',
+        error: 'OTP_CODE_INVALID',
+      }),
+    );
+
+    const invalidOtpError = await captureFailure(() =>
+      useCase.execute({
+        email: 'patient@example.com',
+        code: '123456',
+        locale: 'en',
+      }),
+    );
+
+    if (
+      !(unknownAccountError instanceof ForbiddenException) ||
+      !(invalidOtpError instanceof ForbiddenException)
+    ) {
+      throw new Error('Expected both failures to be forbidden OTP failures');
+    }
+    expect(unknownAccountError.getResponse()).toEqual(
+      invalidOtpError.getResponse(),
+    );
+    expect(verifyOtpChallengeUseCase.execute).toHaveBeenCalledTimes(1);
+    expect(passwordResetSessionRepository.create).not.toHaveBeenCalled();
+  });
+
+  it('uses the same external OTP error for a wrong-role account', async () => {
     userEmailRepository.findByEmailForAuth.mockResolvedValue({
       user: { id: 'u1', roles: [{ role: UserRoleType.PRACTITIONER }] },
     });
@@ -72,6 +125,12 @@ describe('VerifyPatientPasswordResetOtpUseCase', () => {
         code: '123456',
         locale: 'en',
       }),
-    ).rejects.toBeInstanceOf(ConflictException);
+    ).rejects.toMatchObject({
+      response: {
+        messageKey: 'auth.errors.otpCodeInvalid',
+        error: 'OTP_CODE_INVALID',
+      },
+    });
+    expect(verifyOtpChallengeUseCase.execute).not.toHaveBeenCalled();
   });
 });

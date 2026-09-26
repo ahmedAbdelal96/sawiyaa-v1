@@ -54,7 +54,8 @@ describe('notifications seed', () => {
     await notificationsSeedModule.run(prisma);
 
     const type = typeCreates.find(
-      (args) => args.data.slug === 'auth.practitioner-signup-email-verification',
+      (args) =>
+        args.data.slug === 'auth.practitioner-signup-email-verification',
     );
     expect(type).toBeDefined();
     if (!type)
@@ -73,7 +74,8 @@ describe('notifications seed', () => {
     });
 
     const template = templateCreates.find(
-      (args) => args.data.slug ===
+      (args) =>
+        args.data.slug ===
         'auth.practitioner-signup-email-verification.email.v1',
     );
     expect(template).toBeDefined();
@@ -89,7 +91,8 @@ describe('notifications seed', () => {
     });
 
     const translations = translationCreates.filter(
-      (args) => args.data.notificationTemplateId ===
+      (args) =>
+        args.data.notificationTemplateId ===
         'template-auth.practitioner-signup-email-verification.email.v1',
     );
     expect(translations.map((args) => args.data.locale).sort()).toEqual([
@@ -123,7 +126,9 @@ describe('notifications seed', () => {
     const prisma = {
       notificationType: {
         findUnique: jest.fn(() => Promise.resolve({ id: 'existing-type' })),
-        findUniqueOrThrow: jest.fn(() => Promise.resolve({ id: 'existing-type' })),
+        findUniqueOrThrow: jest.fn(() =>
+          Promise.resolve({ id: 'existing-type' }),
+        ),
         create,
       },
       notificationTemplate: {
@@ -131,7 +136,9 @@ describe('notifications seed', () => {
         create,
       },
       notificationTemplateTranslation: {
-        findUnique: jest.fn(() => Promise.resolve({ id: 'existing-translation' })),
+        findUnique: jest.fn(() =>
+          Promise.resolve({ id: 'existing-translation' }),
+        ),
         create,
       },
     } as unknown as PrismaClient;
@@ -139,6 +146,8 @@ describe('notifications seed', () => {
     await notificationsSeedModule.run(prisma);
 
     expect(create).not.toHaveBeenCalled();
-    expect((prisma as unknown as { notification: unknown }).notification).toBeUndefined();
+    expect(
+      (prisma as unknown as { notification: unknown }).notification,
+    ).toBeUndefined();
   });
 });
