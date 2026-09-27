@@ -7,6 +7,7 @@ import {
 } from '@prisma/client';
 import { SessionAccessPolicy } from '../policies/session-access.policy';
 import { PrepareSessionRuntimeUseCase } from './prepare-session-runtime.use-case';
+import { SessionRuntimePreparationService } from '../services/session-runtime-preparation.service';
 
 describe('PrepareSessionRuntimeUseCase', () => {
   type SessionFixture = {
@@ -43,8 +44,17 @@ describe('PrepareSessionRuntimeUseCase', () => {
     finalManualDecision?: SessionAdminDecisionType | null;
   }) {
     let currentSession: SessionFixture = overrides?.session ?? baseSession;
-    const transaction = <T>(fn: (tx: never) => Promise<T>): Promise<T> =>
-      fn({} as never);
+    let transactionActive = false;
+    const transaction = async <T>(
+      fn: (tx: never) => Promise<T>,
+    ): Promise<T> => {
+      transactionActive = true;
+      try {
+        return await fn({} as never);
+      } finally {
+        transactionActive = false;
+      }
+    };
     const prisma = {
       $transaction: jest.fn(transaction),
     };
@@ -67,11 +77,13 @@ describe('PrepareSessionRuntimeUseCase', () => {
         });
       }),
       createEvent: jest.fn().mockResolvedValue({}),
-      findLatestActiveSessionAdminDecision: jest.fn().mockResolvedValue(
-        overrides?.finalManualDecision
-          ? { decisionType: overrides.finalManualDecision }
-          : null,
-      ),
+      findLatestActiveSessionAdminDecision: jest
+        .fn()
+        .mockResolvedValue(
+          overrides?.finalManualDecision
+            ? { decisionType: overrides.finalManualDecision }
+            : null,
+        ),
     };
     const sessionPatientRepository = {
       findByUserId: jest.fn(() =>
@@ -85,9 +97,12 @@ describe('PrepareSessionRuntimeUseCase', () => {
       get: jest.fn().mockReturnValue({
         createRoom: overrides?.adapterError
           ? jest.fn().mockRejectedValue(new Error('provider failed'))
-          : jest.fn().mockResolvedValue({
-              roomId: 'room_1',
-              roomUrl: 'https://room.daily.co',
+          : jest.fn().mockImplementation(async () => {
+              expect(transactionActive).toBe(false);
+              return {
+                roomId: 'room_1',
+                roomUrl: 'https://room.daily.co',
+              };
             }),
       }),
     };
@@ -113,14 +128,17 @@ describe('PrepareSessionRuntimeUseCase', () => {
     };
 
     const useCase = new PrepareSessionRuntimeUseCase(
-      prisma as never,
       sessionRepository as never,
       sessionPatientRepository as never,
       sessionPractitionerRepository as never,
-      sessionVideoProviderRegistryService as never,
-      sessionVideoProviderResolverService as never,
       resolveSessionJoinReadinessService as never,
       new SessionAccessPolicy(),
+      new SessionRuntimePreparationService(
+        prisma as never,
+        sessionRepository as never,
+        sessionVideoProviderRegistryService as never,
+        sessionVideoProviderResolverService as never,
+      ),
     );
 
     return {
@@ -243,6 +261,20 @@ describe('PrepareSessionRuntimeUseCase', () => {
     });
   });
 
+  it('keeps the provider call outside every database transaction', async () => {
+    const setup = buildUseCase();
+
+    await setup.useCase.execute({
+      userId: 'user_1',
+      sessionId: 'session_1',
+      actorType: 'PATIENT',
+    });
+
+    expect(
+      setup.sessionVideoProviderRegistryService.get().createRoom,
+    ).toHaveBeenCalledTimes(1);
+  });
+
   it('does not prepare runtime after a final completed decision', async () => {
     const setup = buildUseCase({
       finalManualDecision: SessionAdminDecisionType.MARK_COMPLETED,
@@ -258,7 +290,9 @@ describe('PrepareSessionRuntimeUseCase', () => {
       response: { error: 'SESSION_RUNTIME_PREPARATION_NOT_ALLOWED' },
     });
 
-    expect(setup.sessionRepository.updateRuntimeIfMissing).not.toHaveBeenCalled();
+    expect(
+      setup.sessionRepository.updateRuntimeIfMissing,
+    ).not.toHaveBeenCalled();
   });
 
   it('revalidates after the runtime claim and does not provision after cancellation', async () => {
@@ -280,7 +314,11 @@ describe('PrepareSessionRuntimeUseCase', () => {
       response: { error: 'SESSION_RUNTIME_PREPARATION_NOT_ALLOWED' },
     });
 
-    expect(setup.sessionVideoProviderRegistryService.get).not.toHaveBeenCalled();
-    expect(setup.sessionRepository.updateRuntimeIfMissing).not.toHaveBeenCalled();
+    expect(
+      setup.sessionVideoProviderRegistryService.get,
+    ).not.toHaveBeenCalled();
+    expect(
+      setup.sessionRepository.updateRuntimeIfMissing,
+    ).not.toHaveBeenCalled();
   });
 });

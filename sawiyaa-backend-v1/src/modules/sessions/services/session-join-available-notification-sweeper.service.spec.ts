@@ -9,6 +9,7 @@ import { SessionRepository } from '../repositories/session.repository';
 import { SessionVideoProviderRegistryService } from './session-video-provider-registry.service';
 import { SessionVideoProviderResolverService } from './session-video-provider-resolver.service';
 import { ValidateSessionStatusTransitionService } from './validate-session-status-transition.service';
+import { SessionRuntimePreparationService } from './session-runtime-preparation.service';
 
 type JoinCandidate = {
   id: string;
@@ -154,22 +155,29 @@ describe('SessionJoinAvailableNotificationSweeperService', () => {
       lockRuntimePreparation: jest.fn().mockResolvedValue(undefined),
     } as unknown as SessionRepository;
 
+    let transactionActive = false;
     const prisma = {
-      $transaction: jest.fn((handler: (tx: never) => unknown) => {
+      $transaction: jest.fn(async (handler: (tx: never) => unknown) => {
         if (typeof handler === 'function') {
-          return handler({} as never);
+          transactionActive = true;
+          try {
+            return await handler({} as never);
+          } finally {
+            transactionActive = false;
+          }
         }
 
         return Promise.resolve(handler);
       }),
     } as unknown as PrismaService;
 
-    const adapterCreateRoom = jest.fn(() =>
-      Promise.resolve({
+    const adapterCreateRoom = jest.fn(() => {
+      expect(transactionActive).toBe(false);
+      return Promise.resolve({
         roomId: 'daily-room-1',
         roomUrl: 'https://provider.example/room',
-      }),
-    );
+      });
+    });
 
     const resolvePreparedProviderForSession = jest.fn(
       () => SessionProvider.DAILY,
@@ -239,23 +247,25 @@ describe('SessionJoinAvailableNotificationSweeperService', () => {
         });
       },
     );
-    const createPushNotification = jest.fn((input: JoinNotificationWriteInput) => {
-      if (
-        input.idempotencyKey &&
-        seenPushIdempotencyKeys.has(input.idempotencyKey)
-      ) {
-        return Promise.resolve(null);
-      }
+    const createPushNotification = jest.fn(
+      (input: JoinNotificationWriteInput) => {
+        if (
+          input.idempotencyKey &&
+          seenPushIdempotencyKeys.has(input.idempotencyKey)
+        ) {
+          return Promise.resolve(null);
+        }
 
-      if (input.idempotencyKey) {
-        seenPushIdempotencyKeys.add(input.idempotencyKey);
-      }
+        if (input.idempotencyKey) {
+          seenPushIdempotencyKeys.add(input.idempotencyKey);
+        }
 
-      pushNotificationWrites.push(input);
-      return Promise.resolve({
-        id: `push_notification_${pushNotificationWrites.length}`,
-      });
-    });
+        pushNotificationWrites.push(input);
+        return Promise.resolve({
+          id: `push_notification_${pushNotificationWrites.length}`,
+        });
+      },
+    );
     const notificationIntentWriterService = {
       createInAppNotification,
       createEmailNotification,
@@ -290,9 +300,13 @@ describe('SessionJoinAvailableNotificationSweeperService', () => {
       prisma,
       sessionRepository,
       resolveSessionJoinReadinessService,
-      sessionVideoProviderRegistryService,
-      sessionVideoProviderResolverService,
       sessionLifecycleService,
+      new SessionRuntimePreparationService(
+        prisma,
+        sessionRepository,
+        sessionVideoProviderRegistryService,
+        sessionVideoProviderResolverService,
+      ),
       notificationIntentWriterService,
       {
         resolve: jest.fn().mockResolvedValue({

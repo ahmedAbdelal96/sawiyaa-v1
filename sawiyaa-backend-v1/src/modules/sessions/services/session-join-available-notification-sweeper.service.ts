@@ -8,7 +8,6 @@ import {
 import { ConfigType } from '@nestjs/config';
 import {
   NotificationCategory,
-  SessionEventType,
   SessionStatus,
 } from '@prisma/client';
 import { AppLoggerService } from '@common/logging/app-logger.service';
@@ -26,9 +25,8 @@ import {
   SessionRepository,
   type SessionJoinNotificationCandidate,
 } from '../repositories/session.repository';
-import { SessionVideoProviderRegistryService } from './session-video-provider-registry.service';
-import { SessionVideoProviderResolverService } from './session-video-provider-resolver.service';
 import { SessionLifecycleService } from './session-lifecycle.service';
+import { SessionRuntimePreparationService } from './session-runtime-preparation.service';
 
 const SWEEP_INTERVAL_MS = 60_000;
 const SWEEP_BATCH_SIZE = 50;
@@ -44,9 +42,8 @@ export class SessionJoinAvailableNotificationSweeperService
     private readonly prisma: PrismaService,
     private readonly sessionRepository: SessionRepository,
     private readonly resolveSessionJoinReadinessService: ResolveSessionJoinReadinessService,
-    private readonly sessionVideoProviderRegistryService: SessionVideoProviderRegistryService,
-    private readonly sessionVideoProviderResolverService: SessionVideoProviderResolverService,
     private readonly sessionLifecycleService: SessionLifecycleService,
+    private readonly sessionRuntimePreparationService: SessionRuntimePreparationService,
     private readonly notificationIntentWriterService: NotificationIntentWriterService,
     private readonly sessionSchedulePolicyService: SessionSchedulePolicyService,
     private readonly i18nService: I18nService,
@@ -135,8 +132,7 @@ export class SessionJoinAvailableNotificationSweeperService
     const policy =
       this.sessionSchedulePolicyService.parseSnapshot(
         currentSession.schedulePolicySnapshotJson,
-      ) ??
-      (await this.sessionSchedulePolicyService.resolve());
+      ) ?? (await this.sessionSchedulePolicyService.resolve());
     const readiness = this.resolveSessionJoinReadinessService.resolve({
       status: currentSession.status,
       sessionMode: currentSession.sessionMode,
@@ -266,8 +262,7 @@ export class SessionJoinAvailableNotificationSweeperService
     const policy =
       this.sessionSchedulePolicyService.parseSnapshot(
         candidate.schedulePolicySnapshotJson,
-      ) ??
-      (await this.sessionSchedulePolicyService.resolve());
+      ) ?? (await this.sessionSchedulePolicyService.resolve());
     const readiness = this.resolveSessionJoinReadinessService.resolve({
       status: candidate.status,
       sessionMode: candidate.sessionMode,
@@ -299,96 +294,48 @@ export class SessionJoinAvailableNotificationSweeperService
       });
     }
 
-    const updated = await this.prisma.$transaction(async (tx) => {
-      await this.sessionRepository.lockRuntimePreparation(candidate.id, tx);
-      const current = await this.sessionRepository.findById(candidate.id, tx);
-      if (!current) {
-        throw new ConflictException({
-          messageKey: 'sessions.errors.sessionNotFound',
-          error: 'SESSION_NOT_FOUND',
-        });
-      }
-      if (current.providerRoomId && current.providerSessionRef) {
-        return current;
-      }
-      const currentPolicy =
-        this.sessionSchedulePolicyService.parseSnapshot(
-          current.schedulePolicySnapshotJson,
-        ) ?? (await this.sessionSchedulePolicyService.resolve());
-      const currentReadiness = this.resolveSessionJoinReadinessService.resolve({
-        status: current.status,
-        sessionMode: current.sessionMode,
-        scheduledStartAt: current.scheduledStartAt,
-        scheduledEndAt: current.scheduledEndAt,
-        joinOpenAt: current.joinOpenAt,
-        joinCloseAt: current.joinCloseAt,
-        provider: current.provider,
-        providerRoomId: current.providerRoomId,
-        providerSessionRef: current.providerSessionRef,
-        videoRoomClosedAt: current.videoRoomClosedAt,
-        joinEarlyMinutes: currentPolicy.join.joinEarlyMinutes,
-        joinAfterEndGraceMinutes: currentPolicy.join.joinAfterEndGraceMinutes,
-        now,
-      });
-      if (currentReadiness.blockedReason !== 'SESSION_RUNTIME_NOT_PREPARED') {
-        return current;
-      }
-      if (!current.scheduledStartAt || !current.scheduledEndAt) {
-        throw new ConflictException({
-          messageKey: 'sessions.errors.sessionScheduleMissing',
-          error: 'SESSION_SCHEDULE_MISSING',
-        });
-      }
-      const resolvedProvider =
-        this.sessionVideoProviderResolverService.resolvePreparedProviderForSession(
-          current,
-        );
-      const adapter = this.sessionVideoProviderRegistryService.get(resolvedProvider);
-      const room = await adapter.createRoom({
-        sessionId: current.id,
-        startsAt: current.scheduledStartAt,
-        endsAt: current.scheduledEndAt,
-      });
-      const roomId = room.roomId || room.roomName;
-      const updateResult = await this.sessionRepository.updateRuntimeIfMissing(
-        current.id,
-        {
-          provider: resolvedProvider,
-          providerRoomId: roomId,
-          providerSessionRef: room.roomUrl,
-        },
-        tx,
-      );
-
-      const persisted = await this.sessionRepository.findById(current.id, tx);
-      if (!persisted) {
-        throw new ConflictException({
-          messageKey: 'sessions.errors.sessionNotFound',
-          error: 'SESSION_NOT_FOUND',
-        });
-      }
-
-      if (updateResult.count > 0) {
-        await this.sessionRepository.createEvent(
-          {
-            sessionId: current.id,
-            eventType: SessionEventType.PROVIDER_ROOM_CREATED,
-            actorType: SecurityAuditActorType.SCHEDULED_JOB,
-            actorUserId: null,
-            source: SecurityAuditSource.SCHEDULED_JOB,
-            occurredAt: new Date(),
-            metadataJson: {
-              provider: resolvedProvider,
-              providerRoomId: roomId,
-              providerRoomUrl: room.roomUrl,
-              roomName: room.roomName ?? roomId,
-            },
-          },
-          tx,
-        );
-      }
-
-      return persisted;
+    const updated = await this.sessionRuntimePreparationService.prepare({
+      sessionId: candidate.id,
+      validate: async (current, tx) => {
+        const currentPolicy =
+          this.sessionSchedulePolicyService.parseSnapshot(
+            current.schedulePolicySnapshotJson,
+          ) ?? (await this.sessionSchedulePolicyService.resolve());
+        const currentReadiness =
+          this.resolveSessionJoinReadinessService.resolve({
+            status: current.status,
+            sessionMode: current.sessionMode,
+            scheduledStartAt: current.scheduledStartAt,
+            scheduledEndAt: current.scheduledEndAt,
+            joinOpenAt: current.joinOpenAt,
+            joinCloseAt: current.joinCloseAt,
+            provider: current.provider,
+            providerRoomId: current.providerRoomId,
+            providerSessionRef: current.providerSessionRef,
+            videoRoomClosedAt: current.videoRoomClosedAt,
+            joinEarlyMinutes: currentPolicy.join.joinEarlyMinutes,
+            joinAfterEndGraceMinutes:
+              currentPolicy.join.joinAfterEndGraceMinutes,
+            now,
+          });
+        if (
+          currentReadiness.blockedReason !== 'SESSION_RUNTIME_NOT_PREPARED' &&
+          !(current.providerRoomId && current.providerSessionRef)
+        ) {
+          return false;
+        }
+        if (!current.scheduledStartAt || !current.scheduledEndAt) {
+          throw new ConflictException({
+            messageKey: 'sessions.errors.sessionScheduleMissing',
+            error: 'SESSION_SCHEDULE_MISSING',
+          });
+        }
+      },
+      event: {
+        actorType: SecurityAuditActorType.SCHEDULED_JOB,
+        actorUserId: null,
+        source: SecurityAuditSource.SCHEDULED_JOB,
+      },
     });
 
     return {
@@ -695,5 +642,4 @@ export class SessionJoinAvailableNotificationSweeperService
     const rawAppUrl = this.appCfg.url;
     return rawAppUrl.endsWith('/') ? rawAppUrl.slice(0, -1) : rawAppUrl;
   }
-
 }

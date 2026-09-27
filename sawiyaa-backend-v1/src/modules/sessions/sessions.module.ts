@@ -28,6 +28,7 @@ import { ApplyManualNoShowFinancialEffectsService } from './services/apply-manua
 import { EvaluateSessionCancellationPolicyService } from './services/evaluate-session-cancellation-policy.service';
 import { ResolveSessionJoinReadinessService } from './services/resolve-session-join-readiness.service';
 import { SessionJoinAvailableNotificationSweeperService } from './services/session-join-available-notification-sweeper.service';
+import { SessionRuntimePreparationService } from './services/session-runtime-preparation.service';
 import { SessionReminderNotificationSweeperService } from './services/session-reminder-notification-sweeper.service';
 import { ParseDailyAttendanceWebhookService } from './services/parse-daily-attendance-webhook.service';
 import { SessionVideoProviderRegistryService } from './services/session-video-provider-registry.service';
@@ -169,6 +170,7 @@ import { GetAdminSessionSupportSummaryUseCase } from './use-cases/get-admin-sess
     CancelSessionUseCase,
     ExpireUnpaidSessionUseCase,
     SessionJoinAvailableNotificationSweeperService,
+    SessionRuntimePreparationService,
     SessionReminderNotificationSweeperService,
     NormalizeDailyAttendanceEvidenceService,
     MarkSessionInProgressFromAttendanceService,

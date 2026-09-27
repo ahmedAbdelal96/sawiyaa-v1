@@ -4,31 +4,27 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { SessionEventType, SessionMode, SessionProvider } from '@prisma/client';
-import { PrismaService } from '@common/prisma/prisma.service';
-import { SessionPatientRepository } from '../repositories/session-patient.repository';
-import { SessionPractitionerRepository } from '../repositories/session-practitioner.repository';
-import { SessionRepository } from '../repositories/session.repository';
-import { SessionAccessPolicy } from '../policies/session-access.policy';
-import { SessionVideoProviderRegistryService } from '../services/session-video-provider-registry.service';
-import { SessionVideoProviderResolverService } from '../services/session-video-provider-resolver.service';
-import { ResolveSessionJoinReadinessService } from '../services/resolve-session-join-readiness.service';
+import { SessionMode, SessionProvider } from '@prisma/client';
 import {
   SecurityAuditActorType,
   SecurityAuditSource,
 } from '@common/security-audit/security-audit.types';
+import { SessionPatientRepository } from '../repositories/session-patient.repository';
+import { SessionPractitionerRepository } from '../repositories/session-practitioner.repository';
+import { SessionRepository } from '../repositories/session.repository';
+import { SessionAccessPolicy } from '../policies/session-access.policy';
+import { ResolveSessionJoinReadinessService } from '../services/resolve-session-join-readiness.service';
+import { SessionRuntimePreparationService } from '../services/session-runtime-preparation.service';
 
 @Injectable()
 export class PrepareSessionRuntimeUseCase {
   constructor(
-    private readonly prisma: PrismaService,
     private readonly sessionRepository: SessionRepository,
     private readonly sessionPatientRepository: SessionPatientRepository,
     private readonly sessionPractitionerRepository: SessionPractitionerRepository,
-    private readonly sessionVideoProviderRegistryService: SessionVideoProviderRegistryService,
-    private readonly sessionVideoProviderResolverService: SessionVideoProviderResolverService,
     private readonly resolveSessionJoinReadinessService: ResolveSessionJoinReadinessService,
     private readonly sessionAccessPolicy: SessionAccessPolicy,
+    private readonly sessionRuntimePreparationService: SessionRuntimePreparationService,
   ) {}
 
   async execute(input: {
@@ -114,109 +110,48 @@ export class PrepareSessionRuntimeUseCase {
       });
     }
 
-    const updated = await this.prisma.$transaction(async (tx) => {
-      await this.sessionRepository.lockRuntimePreparation(session.id, tx);
-      const current = await this.sessionRepository.findById(session.id, tx);
-      if (!current) {
-        throw new NotFoundException({
-          messageKey: 'sessions.errors.sessionNotFound',
-          error: 'SESSION_NOT_FOUND',
-        });
-      }
-      const currentDecision =
-        await this.sessionRepository.findLatestActiveSessionAdminDecision(
-          current.id,
-          tx,
-        );
-      const currentReadiness = this.resolveSessionJoinReadinessService.resolve({
-        status: current.status,
-        sessionMode: current.sessionMode,
-        scheduledStartAt: current.scheduledStartAt,
-        scheduledEndAt: current.scheduledEndAt,
-        joinOpenAt: current.joinOpenAt,
-        joinCloseAt: current.joinCloseAt,
-        provider: current.provider,
-        providerRoomId: current.providerRoomId,
-        providerSessionRef: current.providerSessionRef,
-        videoRoomClosedAt: current.videoRoomClosedAt,
-        finalManualDecision: currentDecision?.decisionType ?? null,
-        now: new Date(),
-      });
-      if (!currentReadiness.canPrepareRuntime) {
-        throw new ConflictException({
-          messageKey: 'sessions.errors.runtimePreparationNotAllowed',
-          error: 'SESSION_RUNTIME_PREPARATION_NOT_ALLOWED',
-          messageParams: { reason: currentReadiness.blockedReason },
-        });
-      }
-      if (
-        current.provider !== SessionProvider.NONE &&
-        current.providerRoomId &&
-        current.providerSessionRef
-      ) {
-        return current;
-      }
-      if (!current.scheduledStartAt || !current.scheduledEndAt) {
-        throw new BadRequestException({
-          messageKey: 'sessions.errors.sessionScheduleMissing',
-          error: 'SESSION_SCHEDULE_MISSING',
-        });
-      }
-
-      const resolvedProvider =
-        this.sessionVideoProviderResolverService.resolvePreparedProviderForSession(
-          current,
-        );
-      const adapter = this.sessionVideoProviderRegistryService.get(resolvedProvider);
-      const room = await adapter.createRoom({
-        sessionId: current.id,
-        startsAt: current.scheduledStartAt,
-        endsAt: current.scheduledEndAt,
-      });
-      const roomId = room.roomId || room.roomName;
-      const updateResult = await this.sessionRepository.updateRuntimeIfMissing(
-        current.id,
-        {
-          provider: resolvedProvider,
-          providerRoomId: roomId,
-          providerSessionRef: room.roomUrl,
-        },
-        tx,
-      );
-
-      const persisted = await this.sessionRepository.findById(current.id, tx);
-      if (!persisted) {
-        throw new NotFoundException({
-          messageKey: 'sessions.errors.sessionNotFound',
-          error: 'SESSION_NOT_FOUND',
-        });
-      }
-
-      if (updateResult.count > 0) {
-        await this.sessionRepository.createEvent(
-          {
-            sessionId: current.id,
-            eventType: SessionEventType.PROVIDER_ROOM_CREATED,
-            actorType: input.userId
-              ? SecurityAuditActorType.USER
-              : SecurityAuditActorType.SYSTEM,
-            actorUserId: input.userId,
-            source: input.userId
-              ? SecurityAuditSource.HTTP_REQUEST
-              : SecurityAuditSource.SYSTEM,
-            occurredAt: new Date(),
-            metadataJson: {
-              provider: resolvedProvider,
-              providerRoomId: roomId,
-              providerRoomUrl: room.roomUrl,
-              roomName: room.roomName ?? roomId,
-            },
-          },
-          tx,
-        );
-      }
-
-      return persisted;
+    const updated = await this.sessionRuntimePreparationService.prepare({
+      sessionId: session.id,
+      validate: async (current, tx) => {
+        const currentDecision =
+          await this.sessionRepository.findLatestActiveSessionAdminDecision(
+            current.id,
+            tx,
+          );
+        const currentReadiness =
+          this.resolveSessionJoinReadinessService.resolve({
+            status: current.status,
+            sessionMode: current.sessionMode,
+            scheduledStartAt: current.scheduledStartAt,
+            scheduledEndAt: current.scheduledEndAt,
+            joinOpenAt: current.joinOpenAt,
+            joinCloseAt: current.joinCloseAt,
+            provider: current.provider,
+            providerRoomId: current.providerRoomId,
+            providerSessionRef: current.providerSessionRef,
+            videoRoomClosedAt: current.videoRoomClosedAt,
+            finalManualDecision: currentDecision?.decisionType ?? null,
+            now: new Date(),
+          });
+        if (!currentReadiness.canPrepareRuntime) {
+          throw new ConflictException({
+            messageKey: 'sessions.errors.runtimePreparationNotAllowed',
+            error: 'SESSION_RUNTIME_PREPARATION_NOT_ALLOWED',
+            messageParams: { reason: currentReadiness.blockedReason },
+          });
+        }
+        if (!current.scheduledStartAt || !current.scheduledEndAt) {
+          throw new BadRequestException({
+            messageKey: 'sessions.errors.sessionScheduleMissing',
+            error: 'SESSION_SCHEDULE_MISSING',
+          });
+        }
+      },
+      event: {
+        actorType: SecurityAuditActorType.USER,
+        actorUserId: input.userId,
+        source: SecurityAuditSource.HTTP_REQUEST,
+      },
     });
 
     return {

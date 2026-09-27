@@ -913,9 +913,10 @@ export class SessionRepository {
 
   /**
    * Serializes provider-runtime provisioning for one Session across backend
-   * instances. The caller keeps this transaction open through provider create
-   * and the conditional persistence claim, so a concurrent caller reuses the
-   * authoritative persisted runtime instead of creating another provider room.
+   * instances for each short database phase. Provider calls happen after the
+   * claim phase commits; the provider's deterministic room identity and this
+   * repository's conditional persistence claim keep concurrent callers on one
+   * authoritative persisted runtime.
    */
   async lockRuntimePreparation(
     sessionId: string,
