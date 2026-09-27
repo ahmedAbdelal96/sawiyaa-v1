@@ -6,6 +6,7 @@ import {
   SessionMode,
 } from '@prisma/client';
 import { resolvePaymentRegionalResolution } from '@common/payments/payment-region.resolver';
+import { CountryRepository } from '@modules/patients/repositories/country.repository';
 import { MoneyMathService } from '@modules/financial-rules/services/money-math.service';
 import { ResolveCommissionRuleService } from '@modules/financial-rules/services/resolve-commission-rule.service';
 import { ValidateSessionDurationService } from '@modules/sessions/services/validate-session-duration.service';
@@ -39,10 +40,6 @@ type PackagePlanQuoteInput = {
   selectedDurationMinutes: number;
   sessionMode: SessionMode;
   selectedCurrencyCode?: string | null;
-  patientCountryIsoCode?: string | null;
-  accountCountryIsoCode?: string | null;
-  checkoutCountryIsoCode?: string | null;
-  operatingCountryIsoCode?: string | null;
   patient: {
     id: string;
     countryId: string | null;
@@ -57,6 +54,7 @@ export class PackageQuoteCalculatorService {
     private readonly validatePackagePlanService: ValidatePackagePlanService,
     private readonly resolveCommissionRuleService: ResolveCommissionRuleService,
     private readonly moneyMathService: MoneyMathService,
+    private readonly countryRepository: CountryRepository,
   ) {}
 
   async calculate(
@@ -130,6 +128,11 @@ export class PackageQuoteCalculatorService {
     let roundingAdjustment: Prisma.Decimal | null = null;
 
     if (input.internalBreakdownVisible && input.patient) {
+      const pricingPatientCountry = input.requestCountryIsoCode
+        ? await this.countryRepository.findByIsoCode(
+            input.requestCountryIsoCode,
+          )
+        : null;
       const commission =
         await this.resolveCommissionRuleService.resolveForSession({
           id: `${input.plan.code}:${input.practitioner.id}:${input.selectedDurationMinutes}:${selectedCurrencyCode}`,
@@ -148,6 +151,7 @@ export class PackageQuoteCalculatorService {
             countryId: input.patient.countryId,
             country: null,
           },
+          pricingPatientCountryId: pricingPatientCountry?.id ?? null,
         });
 
       commissionMode = commission.rule.marketType;

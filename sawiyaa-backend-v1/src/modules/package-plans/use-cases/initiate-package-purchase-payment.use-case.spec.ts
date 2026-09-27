@@ -319,6 +319,37 @@ describe('InitiatePackagePurchasePaymentUseCase', () => {
     expect(result.item.sessionId).toBeNull();
   });
 
+  it('uses the package purchase pricing-country snapshot when the request country later changes', async () => {
+    (
+      packagePurchaseRepository.findByIdForPatient as jest.Mock
+    ).mockResolvedValueOnce({
+      ...basePurchase,
+      metadataJson: { pricingCountryIsoCode: 'EG' },
+    });
+
+    await useCase.execute({
+      userId: 'user-1',
+      purchaseId: 'purchase-1',
+      acceptedRefundPolicyId: 'refund-policy-version-1',
+      returnUrl: 'http://localhost:8081/package-purchases/purchase-1/pay',
+      displayLocale: 'en',
+      requestCountryIsoCode: 'US',
+    });
+
+    expect(paymentGeoContextService.buildCountrySnapshot).toHaveBeenCalledWith(
+      expect.objectContaining({
+        declaredCountryCode: 'EG',
+        resolvedCountryCode: 'EG',
+        checkoutCountryCode: 'EG',
+      }),
+    );
+    expect(providerAdapter.initiateSessionPayment).toHaveBeenCalledWith(
+      expect.objectContaining({
+        checkoutCountryIsoCode: 'EG',
+      }),
+    );
+  });
+
   it('initiates payment for a buy-now package with no prebooked sessions', async () => {
     (
       packagePurchaseRepository.findByIdForPatient as jest.Mock

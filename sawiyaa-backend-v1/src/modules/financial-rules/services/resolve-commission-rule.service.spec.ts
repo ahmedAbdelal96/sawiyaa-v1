@@ -156,4 +156,114 @@ describe('ResolveCommissionRuleService', () => {
     expect(result.platformRatePercent).toBe('50.00');
     expect(result.practitionerRatePercent).toBe('50.00');
   });
+
+  it('uses the effective pricing patient country override instead of the stored profile country', async () => {
+    (commissionRuleRepository.listActiveRules as jest.Mock).mockResolvedValue([
+      {
+        id: 'local-rule',
+        slug: 'configured-local-rule',
+        priority: 100,
+        isDefault: true,
+        marketType: 'LOCAL',
+        practitionerCountryId: null,
+        patientCountryId: null,
+        sessionFlowType: null,
+        sessionMode: null,
+        specialtyId: null,
+        platformRatePercent: '17.00',
+        practitionerRatePercent: '83.00',
+        createdAt: new Date('2026-01-01T00:00:00.000Z'),
+      },
+      {
+        id: 'cross-border-rule',
+        slug: 'configured-cross-border-rule',
+        priority: 100,
+        isDefault: true,
+        marketType: 'CROSS_BORDER',
+        practitionerCountryId: null,
+        patientCountryId: null,
+        sessionFlowType: null,
+        sessionMode: null,
+        specialtyId: null,
+        platformRatePercent: '41.00',
+        practitionerRatePercent: '59.00',
+        createdAt: new Date('2026-01-01T00:00:00.000Z'),
+      },
+    ]);
+
+    const result = await service.resolveForSession({
+      id: 'session-effective-request-country',
+      flowType: SessionFlowType.SCHEDULED,
+      sessionMode: SessionMode.VIDEO,
+      durationMinutes: 30,
+      practitioner: {
+        countryId: 'country-egy',
+        country: { isoCode: 'EGY', currencyCode: 'EGP' },
+        specialties: [],
+      },
+      patient: {
+        countryId: 'country-egy',
+        country: { isoCode: 'EGY', currencyCode: 'EGP' },
+      },
+      pricingPatientCountryId: 'country-us',
+    } as never);
+
+    expect(result.rule.id).toBe('cross-border-rule');
+    expect(result.platformRatePercent).toBe('41.00');
+    expect(result.practitionerRatePercent).toBe('59.00');
+  });
+
+  it('does not fall back to the stored profile country when trusted pricing country is unavailable', async () => {
+    (commissionRuleRepository.listActiveRules as jest.Mock).mockResolvedValue([
+      {
+        id: 'local-rule',
+        slug: 'configured-local-rule',
+        priority: 100,
+        isDefault: true,
+        marketType: 'LOCAL',
+        practitionerCountryId: null,
+        patientCountryId: null,
+        sessionFlowType: null,
+        sessionMode: null,
+        specialtyId: null,
+        platformRatePercent: '20.00',
+        practitionerRatePercent: '80.00',
+        createdAt: new Date('2026-01-01T00:00:00.000Z'),
+      },
+      {
+        id: 'any-rule',
+        slug: 'configured-any-rule',
+        priority: 1,
+        isDefault: true,
+        marketType: 'ANY',
+        practitionerCountryId: null,
+        patientCountryId: null,
+        sessionFlowType: null,
+        sessionMode: null,
+        specialtyId: null,
+        platformRatePercent: '20.00',
+        practitionerRatePercent: '80.00',
+        createdAt: new Date('2026-01-01T00:00:00.000Z'),
+      },
+    ]);
+
+    const result = await service.resolveForSession({
+      id: 'session-no-request-country',
+      flowType: SessionFlowType.SCHEDULED,
+      sessionMode: SessionMode.VIDEO,
+      durationMinutes: 30,
+      practitioner: {
+        countryId: 'country-egy',
+        country: { isoCode: 'EGY', currencyCode: 'EGP' },
+        specialties: [],
+      },
+      patient: {
+        countryId: 'country-egy',
+        country: { isoCode: 'EGY', currencyCode: 'EGP' },
+      },
+      pricingPatientCountryId: null,
+    } as never);
+
+    expect(result.rule.id).toBe('any-rule');
+  });
 });

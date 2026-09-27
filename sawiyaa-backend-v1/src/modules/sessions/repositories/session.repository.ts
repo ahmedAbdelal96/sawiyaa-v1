@@ -158,6 +158,7 @@ export class SessionRepository {
   async createSession(
     data: Omit<Prisma.SessionUncheckedCreateInput, 'sessionCode'> & {
       pricingCurrencyCode?: 'EGP' | 'USD' | null;
+      pricingCountryIsoCode?: string | null;
     },
     tx?: Prisma.TransactionClient,
     creationFlow = 'unknown',
@@ -173,8 +174,12 @@ export class SessionRepository {
     }
 
     const pricingCurrencyCode = data.pricingCurrencyCode ?? null;
-    const { pricingCurrencyCode: _pricingCurrencyCode, ...persistedData } =
-      data;
+    const pricingCountryIsoCode = data.pricingCountryIsoCode ?? null;
+    const {
+      pricingCurrencyCode: _pricingCurrencyCode,
+      pricingCountryIsoCode: _pricingCountryIsoCode,
+      ...persistedData
+    } = data;
     data = persistedData;
 
     const createdAt =
@@ -206,6 +211,7 @@ export class SessionRepository {
           version: 1,
           durationMinutes: data.durationMinutes,
           selectedCurrencyCode: pricingCurrencyCode,
+          pricingCountryIsoCode,
           pricingSnapshot: {
             EGP: {
               '30':

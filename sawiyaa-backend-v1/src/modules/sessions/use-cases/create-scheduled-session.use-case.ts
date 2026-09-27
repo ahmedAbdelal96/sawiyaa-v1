@@ -160,8 +160,7 @@ export class CreateScheduledSessionUseCase {
       Date.now() + this.paymentReservationMinutes * 60 * 1000,
     );
     const pricingCurrencyCode = resolvePaymentRegionalResolution({
-      requestCountryIsoCode:
-        input.requestCountryIsoCode ?? patient.country?.isoCode ?? null,
+      requestCountryIsoCode: input.requestCountryIsoCode ?? null,
     }).currencyCode;
 
     try {
@@ -192,6 +191,7 @@ export class CreateScheduledSessionUseCase {
             expiresAt,
             timezoneSnapshot: availabilityResult.timezone,
             pricingCurrencyCode,
+            pricingCountryIsoCode: input.requestCountryIsoCode ?? null,
           },
           tx,
           'scheduled',

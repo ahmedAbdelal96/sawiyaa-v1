@@ -335,7 +335,7 @@ describe('ListPatientInstantBookingPractitionersUseCase', () => {
     ).toHaveBeenCalledWith(expect.objectContaining({ currencyCode: 'USD' }));
   });
 
-  it('uses the authenticated patient country when request country is unavailable', async () => {
+  it('keeps the USD fallback when request country is unavailable even if the profile country is Egypt', async () => {
     const result = await useCase.execute({
       locale: 'ar',
       currentUserId: 'user-1',
@@ -344,10 +344,10 @@ describe('ListPatientInstantBookingPractitionersUseCase', () => {
       guestCountryIsoCode: null,
     });
 
-    expect(result.currencyCode).toBe('EGP');
+    expect(result.currencyCode).toBe('USD');
     expect(
       instantBookingPractitionerRepository.listEligibleDiscoveryCandidates,
-    ).toHaveBeenCalledWith(expect.objectContaining({ currencyCode: 'EGP' }));
+    ).toHaveBeenCalledWith(expect.objectContaining({ currencyCode: 'USD' }));
   });
 
   it.each(['no published week', 'draft week only', 'archived week only'])(

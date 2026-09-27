@@ -63,12 +63,8 @@ export class ListPatientInstantBookingPractitionersUseCase {
     page: number;
     limit: number;
   }): Promise<InstantBookingEligiblePractitionersListViewModel> {
-    const patientProfile = input.currentUserId && this.patientProfileRepository
-      ? await this.patientProfileRepository.findByUserId(input.currentUserId)
-      : null;
     const regionalResolution = resolvePaymentRegionalResolution({
-      requestCountryIsoCode:
-        input.guestCountryIsoCode ?? patientProfile?.country?.isoCode ?? null,
+      requestCountryIsoCode: input.guestCountryIsoCode ?? null,
     });
     const resolvedCurrency = regionalResolution.currencyCode as CurrencyCode;
     const now = new Date();

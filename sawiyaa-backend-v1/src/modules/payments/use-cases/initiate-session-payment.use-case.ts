@@ -319,14 +319,18 @@ export class InitiateSessionPaymentUseCase {
       : this.paymentRuntimeConfigService.isTestMode(provider)
         ? 'test'
         : 'live';
+    const pricingCountryIsoCode = this.resolvePricingCountryIsoCode(
+      session,
+      input.requestCountryIsoCode,
+    );
     const countrySnapshot = this.paymentGeoContextService.buildCountrySnapshot({
-      declaredCountryCode: session.patient.country?.isoCode ?? null,
-      resolvedCountryCode: pricing.resolvedCountryIsoCode,
-      countrySource: 'ACCOUNT',
+      declaredCountryCode: pricingCountryIsoCode,
+      resolvedCountryCode: pricingCountryIsoCode,
+      countrySource: 'SYSTEM',
       countryMismatch: false,
       phoneCountryCode: null,
       operatingCountryCode: session.practitioner.country?.isoCode ?? null,
-      checkoutCountryCode: session.patient.country?.isoCode ?? null,
+      checkoutCountryCode: pricingCountryIsoCode,
       pricingCurrencyCode: pricing.currencyCode,
       pricingMarketType: pricing.marketType,
       provider,
@@ -680,5 +684,59 @@ export class InitiateSessionPaymentUseCase {
     }
 
     return `${input.appBaseUrl}/${input.locale}/patient/sessions/${input.sessionId}/payment-return`;
+  }
+
+  private resolvePricingCountryIsoCode(
+    session: {
+      pricingPolicySnapshotJson?: unknown;
+      instantBookingRequest?: { metadataJson?: unknown | null } | null;
+    },
+    requestCountryIsoCode?: string | null,
+  ) {
+    const policy = session.pricingPolicySnapshotJson;
+    if (policy && typeof policy === 'object') {
+      const policyRecord = policy as Record<string, unknown>;
+      if (
+        Object.prototype.hasOwnProperty.call(
+          policyRecord,
+          'pricingCountryIsoCode',
+        )
+      ) {
+        const snapshotCountry = policyRecord.pricingCountryIsoCode;
+        return typeof snapshotCountry === 'string' && snapshotCountry.trim()
+          ? snapshotCountry
+          : null;
+      }
+      if (
+        Object.prototype.hasOwnProperty.call(
+          policyRecord,
+          'requestCountryIsoCode',
+        )
+      ) {
+        const snapshotCountry = policyRecord.requestCountryIsoCode;
+        return typeof snapshotCountry === 'string' && snapshotCountry.trim()
+          ? snapshotCountry
+          : null;
+      }
+    }
+
+    const metadata = session.instantBookingRequest?.metadataJson;
+    if (metadata && typeof metadata === 'object') {
+      const metadataRecord = metadata as Record<string, unknown>;
+      if (
+        Object.prototype.hasOwnProperty.call(
+          metadataRecord,
+          'pricingCountryIsoCode',
+        )
+      ) {
+        const instantSnapshotCountry = metadataRecord.pricingCountryIsoCode;
+        return typeof instantSnapshotCountry === 'string' &&
+          instantSnapshotCountry.trim()
+          ? instantSnapshotCountry
+          : null;
+      }
+    }
+
+    return requestCountryIsoCode ?? null;
   }
 }

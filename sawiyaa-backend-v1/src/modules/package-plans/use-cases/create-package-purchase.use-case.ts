@@ -158,8 +158,6 @@ export class CreatePackagePurchaseUseCase {
       sessionMode: input.sessionMode,
       selectedCurrencyCode: null,
       requestCountryIsoCode: input.requestCountryIsoCode,
-      patientCountryIsoCode: patientProfile.country?.isoCode ?? null,
-      operatingCountryIsoCode: practitioner.country?.isoCode ?? null,
       patient: {
         id: patientProfile.id,
         countryId: patientProfile.countryId,
@@ -238,6 +236,7 @@ export class CreatePackagePurchaseUseCase {
             metadataJson: {
               source: 'package-purchase',
               packagePlanCode: packagePlan.code,
+              pricingCountryIsoCode: input.requestCountryIsoCode ?? null,
               practitionerSlug: practitioner.publicSlug,
               selectedSessionSlots: validatedSlots.slots.map((slot) => ({
                 scheduledStartAt: slot.scheduledStartAt.toISOString(),

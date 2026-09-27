@@ -39,6 +39,7 @@ describe('CreateSessionFromInstantBookingService', () => {
         requestedDurationMinutes: 30,
         metadataJson: {
           selectedMoney: { amount: '520.00', currencyCode: 'EGP' },
+          pricingCountryIsoCode: 'EG',
         },
       } as unknown as InstantBookingRequest,
       actorUserId: 'practitioner-user-1',
@@ -54,6 +55,7 @@ describe('CreateSessionFromInstantBookingService', () => {
         status: SessionStatus.PENDING_PAYMENT,
         timezoneSnapshot: 'Africa/Cairo',
         pricingCurrencyCode: 'EGP',
+        pricingCountryIsoCode: 'EG',
       }),
     );
     expect(sessionInput.requestedStartAt).toBeInstanceOf(Date);

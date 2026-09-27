@@ -151,7 +151,13 @@ export class InitiatePackagePurchasePaymentUseCase {
 
     const practitionerCountryIsoCode =
       purchase.practitioner?.country?.isoCode ?? null;
-    const requestCountryIsoCode = input.requestCountryIsoCode ?? null;
+    const snapshottedCountry = this.resolvePurchasePricingCountryIsoCode(
+      purchase.metadataJson,
+    );
+    const requestCountryIsoCode =
+      snapshottedCountry !== undefined
+        ? snapshottedCountry
+        : input.requestCountryIsoCode ?? null;
 
     const provider = this.resolveProvider({
       currencyCode,
@@ -422,6 +428,25 @@ export class InitiatePackagePurchasePaymentUseCase {
         currencyCode: input.currencyCode,
       },
     });
+  }
+
+  private resolvePurchasePricingCountryIsoCode(metadataJson: unknown) {
+    if (!metadataJson || typeof metadataJson !== 'object') {
+      return undefined;
+    }
+
+    const metadataRecord = metadataJson as Record<string, unknown>;
+    if (
+      !Object.prototype.hasOwnProperty.call(
+        metadataRecord,
+        'pricingCountryIsoCode',
+      )
+    ) {
+      return undefined;
+    }
+
+    const value = metadataRecord.pricingCountryIsoCode;
+    return typeof value === 'string' && value.trim() ? value : null;
   }
 
   private resolveProviderRedirectionUrl(input: {

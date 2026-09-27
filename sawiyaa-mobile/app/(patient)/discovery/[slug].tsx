@@ -88,11 +88,11 @@ function formatPackageMoney(
   currency: string | null | undefined,
   locale: string,
 ): string {
-  if (!amount) return "-";
-  const money = parseMoney(String(amount), currency || "EGP");
+  if (!amount || !currency) return "-";
+  const money = parseMoney(String(amount), currency);
   return money
     ? formatCentralMoney(money, locale)
-    : `${amount} ${currency || "EGP"}`;
+    : `${amount} ${currency}`;
 }
 
 function SectionHeader({
@@ -365,7 +365,7 @@ export default function TherapistProfileScreen() {
     fullBio.length > 260 ? `${fullBio.slice(0, 260).trim()}…` : fullBio;
   const bioToShow = bioExpanded ? fullBio : bioPreview;
   const hasLongBio = fullBio.length > 260;
-  const currency = practitioner.currencyCode || "EGP";
+  const currency = practitioner.currencyCode ?? null;
 
   return (
     <Screen

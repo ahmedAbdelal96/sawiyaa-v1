@@ -6,6 +6,7 @@ import {
   SessionMode,
 } from '@prisma/client';
 import { CouponRepository } from '../repositories/coupon.repository';
+import { CountryRepository } from '@modules/patients/repositories/country.repository';
 import { CalculateCouponDiscountService } from './calculate-coupon-discount.service';
 import { CalculateSessionFinancialBreakdownService } from './calculate-session-financial-breakdown.service';
 import { MoneyMathService } from './money-math.service';
@@ -25,16 +26,26 @@ describe('CalculateSessionFinancialBreakdownService', () => {
   const calculateCouponDiscountService = {
     calculate: jest.fn(),
   } as unknown as CalculateCouponDiscountService;
+  const countryRepository = {
+    findByIsoCode: jest.fn(),
+  } as unknown as CountryRepository;
   const service = new CalculateSessionFinancialBreakdownService(
     couponRepository,
     resolveCommissionRuleService,
     validateCouponEligibilityService,
     calculateCouponDiscountService,
     new MoneyMathService(),
+    countryRepository,
   );
 
   beforeEach(() => {
     jest.clearAllMocks();
+    (countryRepository.findByIsoCode as jest.Mock).mockImplementation(
+      async (isoCode: string) =>
+        isoCode === 'EG'
+          ? { id: 'country-egy', isoCode: 'EG' }
+          : { id: 'country-us', isoCode: 'US' },
+    );
     (
       resolveCommissionRuleService.resolveForSession as jest.Mock
     ).mockResolvedValue({
@@ -417,6 +428,87 @@ describe('CalculateSessionFinancialBreakdownService', () => {
       expect(result.amountSubtotal).toBe(expectedAmount);
     },
   );
+
+  it('uses the trusted request country for new pricing when the stored profile country differs', async () => {
+    const result = await service.calculate({
+      requestCountryIsoCode: 'US',
+      requireCommissionRule: true,
+      session: {
+        id: 'session-request-country-wins',
+        flowType: SessionFlowType.SCHEDULED,
+        sessionMode: SessionMode.VIDEO,
+        durationMinutes: 30,
+        pricingPolicySnapshotJson: {
+          pricingSnapshot: {
+            EGP: { 30: '500.00' },
+            USD: { 30: '20.00' },
+          },
+        },
+        practitioner: {
+          id: 'practitioner-1',
+          publicSlug: 'dr-youssef',
+          sessionPrice30Egp: '500.00',
+          sessionPrice30Usd: '20.00',
+          countryId: 'country-egy',
+          country: { isoCode: 'EG', currencyCode: 'EGP' },
+          specialties: [],
+        },
+        patient: {
+          id: 'patient-1',
+          countryId: 'country-egy',
+          country: { isoCode: 'EG' },
+        },
+      },
+    });
+
+    expect(result).toMatchObject({
+      currencyCode: 'USD',
+      amountTotal: '20.00',
+    });
+    expect(
+      resolveCommissionRuleService.resolveForSession,
+    ).toHaveBeenCalledWith(
+      expect.objectContaining({ pricingPatientCountryId: 'country-us' }),
+    );
+  });
+
+  it('keeps the snapshotted pricing country for commission after the request country changes', async () => {
+    await service.calculate({
+      requestCountryIsoCode: 'US',
+      requireCommissionRule: true,
+      session: {
+        id: 'session-snapshotted-country',
+        flowType: SessionFlowType.SCHEDULED,
+        sessionMode: SessionMode.VIDEO,
+        durationMinutes: 30,
+        pricingPolicySnapshotJson: {
+          selectedCurrencyCode: 'EGP',
+          pricingCountryIsoCode: 'EG',
+          pricingSnapshot: { EGP: { 30: '500.00' }, USD: { 30: '20.00' } },
+        },
+        practitioner: {
+          id: 'practitioner-1',
+          publicSlug: 'dr-youssef',
+          sessionPrice30Egp: '500.00',
+          sessionPrice30Usd: '20.00',
+          countryId: 'country-egy',
+          country: { isoCode: 'EG', currencyCode: 'EGP' },
+          specialties: [],
+        },
+        patient: {
+          id: 'patient-1',
+          countryId: 'country-us',
+          country: { isoCode: 'US' },
+        },
+      },
+    });
+
+    expect(
+      resolveCommissionRuleService.resolveForSession,
+    ).toHaveBeenCalledWith(
+      expect.objectContaining({ pricingPatientCountryId: 'country-egy' }),
+    );
+  });
 
   it('uses the session selected currency snapshot before participant-country re-resolution', async () => {
     const session = buildSessionWithPayment({

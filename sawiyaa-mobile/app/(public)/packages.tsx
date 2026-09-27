@@ -60,11 +60,11 @@ function formatPackageMoney(
   currency: string | null | undefined,
   locale: string,
 ): string {
-  if (!amount) return "-";
-  const money = parseMoney(String(amount), currency || "EGP");
+  if (!amount || !currency) return "-";
+  const money = parseMoney(String(amount), currency);
   return money
     ? formatCentralMoney(money, locale)
-    : `${amount} ${currency || "EGP"}`;
+    : `${amount} ${currency}`;
 }
 
 // ---------------------------------------------------------------------------
@@ -112,7 +112,7 @@ function CompactPractitionerPackageCard({
   const averageRating = practitioner.ratingSummary.averageRating;
   const totalReviews = practitioner.ratingSummary.totalReviews;
   const hasRating = hasPublicPractitionerRating(averageRating, totalReviews);
-  const currency = practitioner.currencyCode || "EGP";
+  const currency = practitioner.currencyCode ?? null;
 
   // Build package pricing list
   const plansToDisplay = useMemo(() => {

@@ -58,6 +58,9 @@ export class CreateSessionFromInstantBookingService {
           expiresAt,
           timezoneSnapshot: input.timezone,
           pricingCurrencyCode: selectedCurrencyCode,
+          pricingCountryIsoCode: this.resolvePricingCountryIsoCode(
+            input.request.metadataJson,
+          ),
         },
         tx,
         'instant_booking',
@@ -112,5 +115,12 @@ export class CreateSessionFromInstantBookingService {
     return currencyCode === 'EGP' || currencyCode === 'USD'
       ? currencyCode
       : null;
+  }
+
+  private resolvePricingCountryIsoCode(metadataJson: unknown): string | null {
+    if (!metadataJson || typeof metadataJson !== 'object') return null;
+    const value = (metadataJson as Record<string, unknown>)
+      .pricingCountryIsoCode;
+    return typeof value === 'string' && value.trim() ? value : null;
   }
 }

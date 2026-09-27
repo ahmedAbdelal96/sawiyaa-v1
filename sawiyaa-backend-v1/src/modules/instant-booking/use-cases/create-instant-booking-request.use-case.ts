@@ -108,8 +108,7 @@ export class CreateInstantBookingRequestUseCase {
       }
 
       const currencyCode = resolvePaymentRegionalResolution({
-        requestCountryIsoCode:
-          input.countryIsoCode ?? patient.country?.isoCode ?? null,
+        requestCountryIsoCode: input.countryIsoCode ?? null,
       }).currencyCode;
 
       await this.validateInstantBookingEligibilityService.assertPractitionerCanReceiveInstantBooking(
@@ -151,6 +150,7 @@ export class CreateInstantBookingRequestUseCase {
             source: 'instant-booking-request',
             capturedAt: nowUtc.toISOString(),
             requestedDurationMinutes: input.durationMinutes,
+            pricingCountryIsoCode: input.countryIsoCode ?? null,
             pricingSnapshot,
             selectedMoney: { amount: this.toNullableString(selectedAmount), currencyCode },
             requestTtlMinutes,

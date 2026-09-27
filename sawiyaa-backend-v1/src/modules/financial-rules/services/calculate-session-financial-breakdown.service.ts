@@ -1,6 +1,7 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { MarketType, PaymentProvider, PaymentPurpose } from '@prisma/client';
 import { CouponRepository } from '../repositories/coupon.repository';
+import { CountryRepository } from '@modules/patients/repositories/country.repository';
 import { resolvePaymentRegionalResolution } from '@common/payments/payment-region.resolver';
 import {
   PaymentFinancialResolution,
@@ -25,6 +26,7 @@ export class CalculateSessionFinancialBreakdownService {
     private readonly validateCouponEligibilityService: ValidateCouponEligibilityService,
     private readonly calculateCouponDiscountService: CalculateCouponDiscountService,
     private readonly moneyMathService: MoneyMathService,
+    private readonly countryRepository: CountryRepository,
   ) {}
 
   async calculate(input: {
@@ -146,19 +148,18 @@ export class CalculateSessionFinancialBreakdownService {
     const selectedCurrencyCode = this.resolveSelectedCurrencyCode(
       input.session,
     );
+    const pricingCountryIsoCode = this.resolvePricingCountryIsoCode(
+      input.session,
+      input.requestCountryIsoCode,
+    );
     const regionalResolution = selectedCurrencyCode
       ? resolvePaymentRegionalResolution({
           requestCountryIsoCode:
-            selectedCurrencyCode === 'EGP' ? 'EG' : 'US',
+            pricingCountryIsoCode ??
+            (selectedCurrencyCode === 'EGP' ? 'EG' : 'US'),
         })
       : resolvePaymentRegionalResolution({
-          requestCountryIsoCode:
-            input.requestCountryIsoCode ??
-            input.session.requestCountryIsoCode ??
-            null,
-          patientCountryIsoCode: input.session.patient.country?.isoCode ?? null,
-          practitionerCountryIsoCode:
-            input.session.practitioner.country?.isoCode ?? null,
+          requestCountryIsoCode: pricingCountryIsoCode,
         });
     const currencyCode = selectedCurrencyCode ?? regionalResolution.currencyCode;
     const grossAmount = this.resolveGrossAmount(input.session, currencyCode);
@@ -166,11 +167,17 @@ export class CalculateSessionFinancialBreakdownService {
     // Instant booking prices are customer-facing quotes. Commission is an
     // internal allocation and must not prevent the patient from seeing or
     // paying the immutable quote when an admin rule is not configured yet.
+    const pricingPatientCountryId =
+      await this.resolvePricingPatientCountryId(pricingCountryIsoCode);
+    const commissionSession = {
+      ...input.session,
+      pricingPatientCountryId,
+    };
     const commission =
       input.session.flowType === 'INSTANT' && !input.requireCommissionRule
         ? null
         : await this.resolveCommissionRuleService.resolveForSession(
-            input.session,
+            commissionSession,
           );
 
     const couponCode =
@@ -326,6 +333,70 @@ export class CalculateSessionFinancialBreakdownService {
     return selectedFromInstant === 'EGP' || selectedFromInstant === 'USD'
       ? selectedFromInstant
       : null;
+  }
+
+  private resolvePricingCountryIsoCode(
+    session: SessionFinancialContext,
+    requestCountryIsoCode?: string | null,
+  ) {
+    const policy = session.pricingPolicySnapshotJson;
+    if (policy && typeof policy === 'object') {
+      const policyRecord = policy as Record<string, unknown>;
+      if (
+        Object.prototype.hasOwnProperty.call(
+          policyRecord,
+          'pricingCountryIsoCode',
+        )
+      ) {
+        const snapshotCountry = policyRecord.pricingCountryIsoCode;
+        return typeof snapshotCountry === 'string' && snapshotCountry.trim()
+          ? snapshotCountry
+          : null;
+      }
+      if (
+        Object.prototype.hasOwnProperty.call(
+          policyRecord,
+          'requestCountryIsoCode',
+        )
+      ) {
+        const snapshotCountry = policyRecord.requestCountryIsoCode;
+        return typeof snapshotCountry === 'string' && snapshotCountry.trim()
+          ? snapshotCountry
+          : null;
+      }
+    }
+
+    const metadata = session.instantBookingRequest?.metadataJson;
+    if (metadata && typeof metadata === 'object') {
+      const metadataRecord = metadata as Record<string, unknown>;
+      if (
+        Object.prototype.hasOwnProperty.call(
+          metadataRecord,
+          'pricingCountryIsoCode',
+        )
+      ) {
+        const instantSnapshotCountry = metadataRecord.pricingCountryIsoCode;
+        return typeof instantSnapshotCountry === 'string' &&
+          instantSnapshotCountry.trim()
+          ? instantSnapshotCountry
+          : null;
+      }
+    }
+
+    return requestCountryIsoCode ?? session.requestCountryIsoCode ?? null;
+  }
+
+  private async resolvePricingPatientCountryId(
+    pricingCountryIsoCode: string | null,
+  ) {
+    if (!pricingCountryIsoCode) {
+      return null;
+    }
+
+    const country = await this.countryRepository.findByIsoCode(
+      pricingCountryIsoCode,
+    );
+    return country?.id ?? null;
   }
 
   private resolvePaymentSnapshot(session: SessionFinancialContext): {

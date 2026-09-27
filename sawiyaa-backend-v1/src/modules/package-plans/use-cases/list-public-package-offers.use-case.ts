@@ -246,7 +246,6 @@ export class ListPublicPackageOffersUseCase {
               sessionMode,
               selectedCurrencyCode: null,
               requestCountryIsoCode: input.guestCountryIsoCode ?? null,
-              operatingCountryIsoCode: practitioner.country?.isoCode ?? null,
               patient: null,
               internalBreakdownVisible: false,
             });

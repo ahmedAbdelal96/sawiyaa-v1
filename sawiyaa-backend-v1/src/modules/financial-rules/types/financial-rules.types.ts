@@ -17,6 +17,8 @@ import type {
 
 export type SessionFinancialContext = {
   requestCountryIsoCode?: string | null;
+  /** Effective patient pricing country resolved from the trusted request context. */
+  pricingPatientCountryId?: string | null;
   id: string;
   flowType: SessionFlowType;
   sessionMode: SessionMode;

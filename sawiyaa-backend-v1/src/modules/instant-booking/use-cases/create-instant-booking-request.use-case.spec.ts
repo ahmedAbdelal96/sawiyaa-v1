@@ -130,7 +130,7 @@ describe('CreateInstantBookingRequestUseCase', () => {
     });
   });
 
-  it('uses the patient country when the request country is unavailable', async () => {
+  it('keeps the USD fallback when request country is unavailable even if the profile country is Egypt', async () => {
     (patientRepository.findByUserId as jest.Mock).mockResolvedValueOnce({
       id: 'patient-1',
       country: { isoCode: 'EG' },
@@ -148,7 +148,7 @@ describe('CreateInstantBookingRequestUseCase', () => {
     expect(requestRepository.createRequest).toHaveBeenCalledWith(
       expect.objectContaining({
         metadataJson: expect.objectContaining({
-          selectedMoney: { amount: '410.00', currencyCode: 'EGP' },
+          selectedMoney: { amount: '24.00', currencyCode: 'USD' },
         }),
       }),
       expect.anything(),
