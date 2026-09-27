@@ -12,6 +12,13 @@ import { AccountingReconciliationOperationsService } from './accounting-reconcil
 import { AccountingReconciliationSchedulerState } from '../types/accounting-reconciliation-operations.types';
 import { ModuleRef } from '@nestjs/core';
 import { PaymentProviderRecoveryService } from '@modules/payments/services/payment-provider-recovery.service';
+import {
+  PostgresAdvisoryLockService,
+  PostgresAdvisoryLockLease,
+} from '@common/coordination/postgres-advisory-lock.service';
+
+export const ACCOUNTING_RECONCILIATION_SCHEDULER_LOCK_KEY =
+  'sawiyaa:accounting-reconciliation:scheduler';
 
 @Injectable()
 export class AccountingReconciliationSchedulerService
@@ -33,6 +40,7 @@ export class AccountingReconciliationSchedulerService
     private readonly configService: ConfigService,
     private readonly prisma: PrismaService,
     private readonly operationsService: AccountingReconciliationOperationsService,
+    private readonly advisoryLockService: PostgresAdvisoryLockService,
     private readonly moduleRef?: ModuleRef,
   ) {}
 
@@ -70,28 +78,57 @@ export class AccountingReconciliationSchedulerService
     }
   }
 
-  onModuleDestroy() {
-    void this.job?.stop();
+  async onModuleDestroy() {
+    await this.job?.stop();
     this.job = null;
   }
 
-  async runScheduledReconciliation(_triggeredBy: 'cron' | 'manual' = 'manual') {
-    void _triggeredBy;
+  async runScheduledReconciliation(triggeredBy: 'cron' | 'manual' = 'manual') {
     if (!this.isEnabled()) {
       return null;
     }
 
     if (this.running) {
-      this.logger.warn(
-        `Skipping accounting reconciliation because a run is already in progress`,
+      this.logger.log(
+        `accounting_reconciliation_scheduler_skipped_local_overlap trigger=${triggeredBy}`,
       );
       return null;
     }
 
     this.running = true;
     const startedAt = new Date();
+    let lease: PostgresAdvisoryLockLease | null = null;
+
+    this.logger.log(
+      `accounting_reconciliation_scheduler_triggered trigger=${triggeredBy}`,
+    );
 
     try {
+      try {
+        lease = await this.advisoryLockService.tryAcquire(
+          ACCOUNTING_RECONCILIATION_SCHEDULER_LOCK_KEY,
+        );
+      } catch (error) {
+        this.logger.error(
+          `accounting_reconciliation_scheduler_lock_acquisition_failed durationMs=${Date.now() - startedAt.getTime()} error=${this.errorMessage(error)}`,
+        );
+        return null;
+      }
+
+      if (!lease) {
+        this.logger.log(
+          `RECONCILIATION_SKIPPED_ALREADY_RUNNING trigger=${triggeredBy} durationMs=${Date.now() - startedAt.getTime()}`,
+        );
+        return null;
+      }
+
+      this.logger.log(
+        `accounting_reconciliation_scheduler_lock_acquired trigger=${triggeredBy}`,
+      );
+      this.logger.log(
+        `accounting_reconciliation_scheduler_execution_started trigger=${triggeredBy}`,
+      );
+
       const providerRecovery = this.moduleRef?.get(
         PaymentProviderRecoveryService,
         { strict: false },
@@ -112,18 +149,34 @@ export class AccountingReconciliationSchedulerService
       this.lastScheduledCriticalCount = result.summary.totalCritical;
 
       this.logger.log(
-        `Accounting reconciliation scheduled run completed runId=${result.run.id} status=${result.run.status} checked=${result.summary.totalChecked} failed=${result.summary.totalFailed} critical=${result.summary.totalCritical} warnings=${result.summary.totalWarnings}`,
+        `accounting_reconciliation_scheduler_execution_completed trigger=${triggeredBy} runId=${result.run.id} status=${result.run.status} checked=${result.summary.totalChecked} failed=${result.summary.totalFailed} critical=${result.summary.totalCritical} warnings=${result.summary.totalWarnings} durationMs=${Date.now() - startedAt.getTime()}`,
       );
 
       return result;
     } catch (error) {
       this.logger.error(
-        `Accounting reconciliation scheduled run failed: ${(error as Error).message}`,
+        `accounting_reconciliation_scheduler_execution_failed trigger=${triggeredBy} durationMs=${Date.now() - startedAt.getTime()} error=${this.errorMessage(error)}`,
       );
       return null;
     } finally {
+      if (lease) {
+        try {
+          await lease.release();
+          this.logger.log(
+            `accounting_reconciliation_scheduler_guard_released trigger=${triggeredBy} durationMs=${Date.now() - startedAt.getTime()}`,
+          );
+        } catch (error) {
+          this.logger.error(
+            `accounting_reconciliation_scheduler_guard_release_failed trigger=${triggeredBy} error=${this.errorMessage(error)}`,
+          );
+        }
+      }
       this.running = false;
     }
+  }
+
+  private errorMessage(error: unknown): string {
+    return error instanceof Error ? error.message : String(error);
   }
 
   async getStatusSnapshot(): Promise<AccountingReconciliationSchedulerState> {

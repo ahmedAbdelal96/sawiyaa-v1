@@ -1,5 +1,6 @@
 import { forwardRef, Module } from '@nestjs/common';
 import { ConfigModule } from '../config/config.module';
+import { PostgresAdvisoryLockService } from '@common/coordination/postgres-advisory-lock.service';
 import { JwtAccessAuthGuard } from '@common/guards/authentication/jwt-access-auth.guard';
 import { PermissionResolverService } from '@common/guards/authorization/permission-resolver.service';
 import { PermissionsGuard } from '@common/guards/authorization/permissions.guard';
@@ -116,7 +117,11 @@ import { PaymentsModule } from '@modules/payments/payments.module';
  * Payments stays the collection layer and only hands off successful payments here.
  */
 @Module({
-  imports: [ConfigModule, forwardRef(() => NotificationsModule), forwardRef(() => PaymentsModule)],
+  imports: [
+    ConfigModule,
+    forwardRef(() => NotificationsModule),
+    forwardRef(() => PaymentsModule),
+  ],
   controllers: [
     PractitionerFinancialOperationsController,
     AdminPractitionerManualPayoutsController,
@@ -165,6 +170,7 @@ import { PaymentsModule } from '@modules/payments/payments.module';
     AccountingReconciliationAlertService,
     AccountingReconciliationOperationsService,
     AccountingReconciliationSchedulerService,
+    PostgresAdvisoryLockService,
     AccountingReconciliationService,
     AccountingJournalPostingService,
     RecordSettlementPayoutService,
