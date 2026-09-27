@@ -120,6 +120,30 @@ const baseEnvSchema = z.object({
     .max(60_000)
     .default(10_000),
 
+  // Daily attendance operations queue. Disabled keeps the existing inline
+  // attendance sweeper as the reversible rollback path.
+  DAILY_ATTENDANCE_QUEUE_ENABLED: z.enum(['true', 'false']).default('false'),
+  OPERATIONS_QUEUE_REDIS_URL: z.string().url().optional(),
+  OPERATIONS_QUEUE_PREFIX: z.string().default('sawiyaa:operations'),
+  OPERATIONS_QUEUE_CONNECTION_TIMEOUT_MS: z.coerce
+    .number()
+    .int()
+    .min(100)
+    .max(60_000)
+    .default(10_000),
+  DAILY_ATTENDANCE_WORKER_CONCURRENCY: z.coerce
+    .number()
+    .int()
+    .min(1)
+    .max(4)
+    .default(1),
+  OPERATIONS_WORKER_HEARTBEAT_INTERVAL_MS: z.coerce
+    .number()
+    .int()
+    .min(1_000)
+    .max(60_000)
+    .default(10_000),
+
   // Database
   DATABASE_URL: z.string().url(),
 
@@ -352,6 +376,20 @@ export const envSchema = baseEnvSchema.superRefine((env, ctx) => {
       path: ['NOTIFICATION_QUEUE_REDIS_URL'],
       message:
         'NOTIFICATION_QUEUE_REDIS_URL or REDIS_URL is required when NOTIFICATION_QUEUE_ENABLED=true',
+    });
+  }
+
+  if (
+    env.DAILY_ATTENDANCE_QUEUE_ENABLED === 'true' &&
+    !env.OPERATIONS_QUEUE_REDIS_URL?.trim() &&
+    !env.NOTIFICATION_QUEUE_REDIS_URL?.trim() &&
+    !env.REDIS_URL?.trim()
+  ) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['OPERATIONS_QUEUE_REDIS_URL'],
+      message:
+        'OPERATIONS_QUEUE_REDIS_URL, NOTIFICATION_QUEUE_REDIS_URL, or REDIS_URL is required when DAILY_ATTENDANCE_QUEUE_ENABLED=true',
     });
   }
 

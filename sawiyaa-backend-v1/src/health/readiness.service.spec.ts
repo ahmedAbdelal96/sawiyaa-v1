@@ -87,4 +87,38 @@ describe('ReadinessService', () => {
       expect.arrayContaining([expect.stringContaining('DB runner fallback')]),
     );
   });
+
+  it('keeps a degraded Daily attendance queue separate from API availability', async () => {
+    const operationsQueue = {
+      getHealthSnapshot: jest.fn().mockResolvedValue({
+        enabled: true,
+        status: 'DEGRADED',
+        redis: 'UNAVAILABLE',
+        worker: 'UNKNOWN',
+        queueName: 'operations',
+        counts: { waiting: 1, active: 0, completed: 0, failed: 1, delayed: 0 },
+        oldestWaitingJobAgeMs: 5000,
+        lastEnqueuedAt: null,
+        lastEnqueueFailureAt: new Date().toISOString(),
+        lastWorkerHeartbeatAt: null,
+        lastError: 'redis unavailable',
+      }),
+    };
+    const degradedService = new ReadinessService(
+      paymentRuntime as never,
+      undefined,
+      operationsQueue as never,
+    );
+
+    const snapshot = await degradedService.getSnapshot();
+
+    expect(snapshot.components.operationsQueue.status).toBe('DEGRADED');
+    expect(snapshot.status).toBe('DEGRADED');
+    expect(snapshot.status).not.toBe('NOT_READY');
+    expect(snapshot.warnings).toEqual(
+      expect.arrayContaining([
+        expect.stringContaining('Daily attendance operations queue is degraded'),
+      ]),
+    );
+  });
 });

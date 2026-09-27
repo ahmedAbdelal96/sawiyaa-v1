@@ -1253,7 +1253,32 @@ export class SessionRepository {
       },
       orderBy: [{ scheduledEndAt: 'asc' }, { id: 'asc' }],
       take: input.take,
-      select: { id: true },
+      select: {
+        id: true,
+        attendanceReconciliations: {
+          orderBy: [{ observationVersion: 'desc' }, { createdAt: 'desc' }],
+          take: 1,
+          select: { observationVersion: true },
+        },
+      },
+    });
+  }
+
+  findAttendanceReconciliationState(sessionId: string) {
+    return this.prisma.session.findUnique({
+      where: { id: sessionId },
+      select: {
+        id: true,
+        status: true,
+        provider: true,
+        scheduledStartAt: true,
+        scheduledEndAt: true,
+        attendanceReconciliations: {
+          orderBy: [{ observationVersion: 'desc' }, { createdAt: 'desc' }],
+          take: 1,
+          select: { observationVersion: true },
+        },
+      },
     });
   }
 

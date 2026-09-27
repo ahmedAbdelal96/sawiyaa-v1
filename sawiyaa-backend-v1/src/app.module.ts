@@ -72,6 +72,8 @@ import { NotificationsModule } from './modules/notifications/notifications.modul
 import { NotificationsGateway } from './modules/notifications/gateways/notifications.gateway';
 import notificationQueueConfig from './config/notification-queue.config';
 import { NotificationQueueModule } from './common/queue/notification-queue.module';
+import operationsQueueConfig from './config/operations-queue.config';
+import { OperationsQueueModule } from './common/queue/operations-queue.module';
 
 @Module({
   imports: [
@@ -94,6 +96,7 @@ import { NotificationQueueModule } from './common/queue/notification-queue.modul
         geoipConfig,
         availabilityConfig,
         notificationQueueConfig,
+        operationsQueueConfig,
       ],
     }),
     LoggingModule,
@@ -139,6 +142,7 @@ import { NotificationQueueModule } from './common/queue/notification-queue.modul
     MessagingModule,
     NotificationsModule,
     NotificationQueueModule,
+    OperationsQueueModule,
   ],
   providers: [
     NotificationsGateway,

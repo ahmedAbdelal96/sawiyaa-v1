@@ -2,6 +2,8 @@ import { Injectable, Optional } from '@nestjs/common';
 import { PaymentRuntimeConfigService } from '@modules/payments/services/payment-runtime-config.service';
 import { NotificationQueueService } from '@common/queue/notification-queue.service';
 import type { NotificationQueueHealthSnapshot } from '@common/queue/notification-queue.service';
+import { OperationsQueueService } from '@common/queue/operations-queue.service';
+import type { OperationsQueueHealthSnapshot } from '@common/queue/operations-queue.service';
 
 export type ReadinessState = 'READY' | 'DEGRADED' | 'NOT_READY';
 
@@ -23,6 +25,15 @@ export type ReadinessSnapshot = {
       counts: NotificationQueueHealthSnapshot['counts'];
       oldestWaitingJobAgeMs: number | null;
     };
+    operationsQueue: {
+      status: ReadinessState;
+      detail: string;
+      enabled: boolean;
+      redis: OperationsQueueHealthSnapshot['redis'];
+      worker: OperationsQueueHealthSnapshot['worker'];
+      counts: OperationsQueueHealthSnapshot['counts'];
+      oldestWaitingJobAgeMs: number | null;
+    };
   };
   warnings: string[];
 };
@@ -32,6 +43,7 @@ export class ReadinessService {
   constructor(
     private readonly paymentRuntime: PaymentRuntimeConfigService,
     @Optional() private readonly notificationQueue?: NotificationQueueService,
+    @Optional() private readonly operationsQueue?: OperationsQueueService,
   ) {}
 
   async getSnapshot(): Promise<ReadinessSnapshot> {
@@ -82,6 +94,28 @@ export class ReadinessService {
         `Notification queue is degraded; PostgreSQL DB runner fallback remains active${notificationQueue.lastError ? ` (${notificationQueue.lastError})` : ''}.`,
       );
     }
+    const operationsQueue = this.operationsQueue
+      ? await this.operationsQueue.getHealthSnapshot()
+      : {
+          enabled: false,
+          status: 'DISABLED' as const,
+          redis: 'NOT_REQUIRED' as const,
+          worker: 'NOT_REQUIRED' as const,
+          queueName: 'operations',
+          counts: { waiting: 0, active: 0, completed: 0, failed: 0, delayed: 0 },
+          oldestWaitingJobAgeMs: null,
+          lastEnqueuedAt: null,
+          lastEnqueueFailureAt: null,
+          lastWorkerHeartbeatAt: null,
+          lastError: null,
+        } satisfies OperationsQueueHealthSnapshot;
+    const operationsQueueStatus: ReadinessState =
+      operationsQueue.status === 'DEGRADED' ? 'DEGRADED' : 'READY';
+    if (operationsQueue.status === 'DEGRADED') {
+      warnings.push(
+        `Daily attendance operations queue is degraded; eligible sessions remain recoverable by the next sweep${operationsQueue.lastError ? ` (${operationsQueue.lastError})` : ''}.`,
+      );
+    }
     const attendanceStatus: ReadinessState = attendanceEnabled ? 'READY' : 'DEGRADED';
     if (!attendanceEnabled) {
       warnings.push(
@@ -125,6 +159,7 @@ export class ReadinessService {
       paymentStatus,
       reconciliationStatus,
       notificationQueueStatus,
+      operationsQueueStatus,
     ];
     const status: ReadinessState = statuses.includes('NOT_READY')
       ? 'NOT_READY'
@@ -166,6 +201,20 @@ export class ReadinessService {
           worker: notificationQueue.worker,
           counts: notificationQueue.counts,
           oldestWaitingJobAgeMs: notificationQueue.oldestWaitingJobAgeMs,
+        },
+        operationsQueue: {
+          status: operationsQueueStatus,
+          detail:
+            operationsQueue.status === 'DISABLED'
+              ? 'Daily attendance queue is disabled; the existing synchronous sweeper remains the rollback path.'
+              : operationsQueue.status === 'READY'
+                ? 'Daily attendance operations queue is available; provider work runs in the worker process.'
+                : 'Daily attendance operations queue is degraded; eligible sessions remain recoverable by scheduled discovery.',
+          enabled: operationsQueue.enabled,
+          redis: operationsQueue.redis,
+          worker: operationsQueue.worker,
+          counts: operationsQueue.counts,
+          oldestWaitingJobAgeMs: operationsQueue.oldestWaitingJobAgeMs,
         },
       },
       warnings,
