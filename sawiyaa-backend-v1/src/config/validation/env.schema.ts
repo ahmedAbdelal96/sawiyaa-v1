@@ -94,6 +94,32 @@ const baseEnvSchema = z.object({
   THROTTLE_KEY_PREFIX: z.string().default('sawiyaa:throttle'),
   THROTTLE_KEY_HASH_SECRET: z.string().optional(),
 
+  // Notification delivery queue. Disabled keeps the existing DB runner as
+  // the only executor and does not require queue Redis configuration.
+  NOTIFICATION_QUEUE_ENABLED: z.enum(['true', 'false']).default('false'),
+  NOTIFICATION_QUEUE_REDIS_URL: z.string().url().optional(),
+  NOTIFICATION_QUEUE_PREFIX: z
+    .string()
+    .default('sawiyaa:notifications'),
+  NOTIFICATION_QUEUE_CONNECTION_TIMEOUT_MS: z.coerce
+    .number()
+    .int()
+    .min(100)
+    .max(60_000)
+    .default(10_000),
+  NOTIFICATION_WORKER_CONCURRENCY: z.coerce
+    .number()
+    .int()
+    .min(1)
+    .max(20)
+    .default(2),
+  NOTIFICATION_WORKER_HEARTBEAT_INTERVAL_MS: z.coerce
+    .number()
+    .int()
+    .min(1_000)
+    .max(60_000)
+    .default(10_000),
+
   // Database
   DATABASE_URL: z.string().url(),
 
@@ -314,6 +340,19 @@ export const envSchema = baseEnvSchema.superRefine((env, ctx) => {
           'REDIS_URL is required when THROTTLE_STORE=redis in production',
       });
     }
+  }
+
+  if (
+    env.NOTIFICATION_QUEUE_ENABLED === 'true' &&
+    !env.NOTIFICATION_QUEUE_REDIS_URL?.trim() &&
+    !env.REDIS_URL?.trim()
+  ) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['NOTIFICATION_QUEUE_REDIS_URL'],
+      message:
+        'NOTIFICATION_QUEUE_REDIS_URL or REDIS_URL is required when NOTIFICATION_QUEUE_ENABLED=true',
+    });
   }
 
   if (env.GEOIP_ENABLED === 'true' && !env.GEOIP_DATABASE_PATH?.trim()) {

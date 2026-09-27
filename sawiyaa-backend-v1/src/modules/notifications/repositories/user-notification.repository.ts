@@ -1,10 +1,11 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Optional } from '@nestjs/common';
 import {
   NotificationChannel,
   NotificationStatus,
   Prisma,
 } from '@prisma/client';
 import { PrismaService } from '@common/prisma/prisma.service';
+import { NotificationQueueService } from '@common/queue/notification-queue.service';
 import {
   userNotificationFeedSelect,
   type UserNotificationFeedRow,
@@ -12,7 +13,10 @@ import {
 
 @Injectable()
 export class UserNotificationRepository {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    @Optional() private readonly notificationQueue?: NotificationQueueService,
+  ) {}
 
   findTypeBySlug(slug: string) {
     return this.prisma.notificationType.findUnique({
@@ -298,7 +302,30 @@ export class UserNotificationRepository {
 
         throw error;
       }
+    }).then((notification) => {
+      this.publishIfEligible(notification?.id, input);
+      return notification;
     });
+  }
+
+  private publishIfEligible(
+    notificationId: string | undefined,
+    input: {
+      status: NotificationStatus;
+      relatedEntityType?: string | null;
+    },
+  ): void {
+    if (
+      !notificationId ||
+      input.status !== NotificationStatus.PENDING ||
+      input.relatedEntityType === 'OTP_CHALLENGE'
+    ) {
+      return;
+    }
+
+    void this.notificationQueue
+      ?.enqueueNotification(notificationId)
+      .catch(() => undefined);
   }
 
   createInAppNotification(input: {

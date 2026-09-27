@@ -30,21 +30,21 @@ describe('ReadinessService', () => {
     delete process.env.ACCOUNTING_RECONCILIATION_ALERTS_ENABLED;
   });
 
-  it('keeps completion ready and reports attendance degraded when disabled', () => {
+  it('keeps completion ready and reports attendance degraded when disabled', async () => {
     process.env.SESSION_ATTENDANCE_RECONCILIATION_SWEEPER_ENABLED = 'false';
-    const snapshot = service.getSnapshot();
+    const snapshot = await service.getSnapshot();
     expect(snapshot.components.sessionCompletionWorker.status).toBe('READY');
     expect(snapshot.components.attendanceReconciliation.status).toBe('DEGRADED');
     expect(snapshot.status).toBe('DEGRADED');
   });
 
-  it('reports production Daily configuration as not ready when incomplete', () => {
+  it('reports production Daily configuration as not ready when incomplete', async () => {
     delete process.env.DAILY_WEBHOOK_SECRET;
-    expect(service.getSnapshot().components.dailyWebhook.status).toBe('NOT_READY');
+    expect((await service.getSnapshot()).components.dailyWebhook.status).toBe('NOT_READY');
   });
 
-  it('makes disabled reconciliation explicit in readiness', () => {
-    const snapshot = service.getSnapshot();
+  it('makes disabled reconciliation explicit in readiness', async () => {
+    const snapshot = await service.getSnapshot();
 
     expect(snapshot.components.accountingReconciliation).toEqual({
       status: 'DEGRADED',
@@ -54,6 +54,37 @@ describe('ReadinessService', () => {
       expect.arrayContaining([
         expect.stringContaining('ACCOUNTING_RECONCILIATION_ENABLED'),
       ]),
+    );
+  });
+
+  it('degrades notification readiness without taking the API not ready when Redis is unavailable', async () => {
+    const notificationQueue = {
+      getHealthSnapshot: jest.fn().mockResolvedValue({
+        enabled: true,
+        status: 'DEGRADED',
+        redis: 'UNAVAILABLE',
+        worker: 'UNKNOWN',
+        queueName: 'notifications',
+        counts: { waiting: 2, active: 0, completed: 0, failed: 0, delayed: 0 },
+        oldestWaitingJobAgeMs: 12_000,
+        lastEnqueuedAt: null,
+        lastEnqueueFailureAt: new Date().toISOString(),
+        lastWorkerHeartbeatAt: null,
+        lastError: 'redis unavailable',
+      }),
+    };
+    const degradedService = new ReadinessService(
+      paymentRuntime as never,
+      notificationQueue as never,
+    );
+
+    const snapshot = await degradedService.getSnapshot();
+
+    expect(snapshot.components.notificationQueue.status).toBe('DEGRADED');
+    expect(snapshot.status).toBe('DEGRADED');
+    expect(snapshot.status).not.toBe('NOT_READY');
+    expect(snapshot.warnings).toEqual(
+      expect.arrayContaining([expect.stringContaining('DB runner fallback')]),
     );
   });
 });

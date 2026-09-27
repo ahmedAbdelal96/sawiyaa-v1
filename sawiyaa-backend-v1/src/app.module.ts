@@ -70,6 +70,8 @@ import { TrustedCountryResolutionService } from './common/country-resolution/tru
 import { FilesModule } from './modules/files/files.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { NotificationsGateway } from './modules/notifications/gateways/notifications.gateway';
+import notificationQueueConfig from './config/notification-queue.config';
+import { NotificationQueueModule } from './common/queue/notification-queue.module';
 
 @Module({
   imports: [
@@ -91,6 +93,7 @@ import { NotificationsGateway } from './modules/notifications/gateways/notificat
         throttleConfig,
         geoipConfig,
         availabilityConfig,
+        notificationQueueConfig,
       ],
     }),
     LoggingModule,
@@ -135,6 +138,7 @@ import { NotificationsGateway } from './modules/notifications/gateways/notificat
     CorporateSponsorshipModule,
     MessagingModule,
     NotificationsModule,
+    NotificationQueueModule,
   ],
   providers: [
     NotificationsGateway,

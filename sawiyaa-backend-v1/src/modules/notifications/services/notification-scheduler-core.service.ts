@@ -12,6 +12,22 @@ export class NotificationSchedulerCoreService {
     private readonly notificationLifecycleService: NotificationLifecycleService,
   ) {}
 
+  async claimNotificationById(input: {
+    notificationId: string;
+    now?: Date;
+  }): Promise<boolean> {
+    const now = input.now ?? new Date();
+    this.notificationLifecycleService.assertCanBeClaimedForExecution(
+      NotificationStatus.PENDING,
+    );
+
+    const claimed = await this.repository.claimNotificationForExecution({
+      notificationId: input.notificationId,
+      now,
+    });
+    return claimed.count > 0;
+  }
+
   async claimDueNotifications(input: { now?: Date; limit?: number }): Promise<{
     scannedCount: number;
     claimedCount: number;
@@ -32,11 +48,11 @@ export class NotificationSchedulerCoreService {
         NotificationStatus.PENDING,
       );
 
-      const claimed = await this.repository.claimNotificationForExecution({
+      const claimed = await this.claimNotificationById({
         notificationId: row.id,
         now,
       });
-      if (claimed.count > 0) {
+      if (claimed) {
         claimedNotificationIds.push(row.id);
       }
     }

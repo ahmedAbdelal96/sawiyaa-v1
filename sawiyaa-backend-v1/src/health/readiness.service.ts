@@ -1,5 +1,7 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Optional } from '@nestjs/common';
 import { PaymentRuntimeConfigService } from '@modules/payments/services/payment-runtime-config.service';
+import { NotificationQueueService } from '@common/queue/notification-queue.service';
+import type { NotificationQueueHealthSnapshot } from '@common/queue/notification-queue.service';
 
 export type ReadinessState = 'READY' | 'DEGRADED' | 'NOT_READY';
 
@@ -12,15 +14,27 @@ export type ReadinessSnapshot = {
     dailyWebhook: { status: ReadinessState; detail: string };
     paymentRouting: { status: ReadinessState; detail: string };
     accountingReconciliation: { status: ReadinessState; detail: string };
+    notificationQueue: {
+      status: ReadinessState;
+      detail: string;
+      enabled: boolean;
+      redis: NotificationQueueHealthSnapshot['redis'];
+      worker: NotificationQueueHealthSnapshot['worker'];
+      counts: NotificationQueueHealthSnapshot['counts'];
+      oldestWaitingJobAgeMs: number | null;
+    };
   };
   warnings: string[];
 };
 
 @Injectable()
 export class ReadinessService {
-  constructor(private readonly paymentRuntime: PaymentRuntimeConfigService) {}
+  constructor(
+    private readonly paymentRuntime: PaymentRuntimeConfigService,
+    @Optional() private readonly notificationQueue?: NotificationQueueService,
+  ) {}
 
-  getSnapshot(): ReadinessSnapshot {
+  async getSnapshot(): Promise<ReadinessSnapshot> {
     const production =
       process.env.APP_ENV === 'production' || process.env.NODE_ENV === 'production';
     const attendanceEnabled =
@@ -46,6 +60,28 @@ export class ReadinessService {
     }
 
     const warnings: string[] = [];
+    const notificationQueue = this.notificationQueue
+      ? await this.notificationQueue.getHealthSnapshot()
+      : {
+          enabled: false,
+          status: 'DISABLED' as const,
+          redis: 'NOT_REQUIRED' as const,
+          worker: 'NOT_REQUIRED' as const,
+          queueName: 'notifications',
+          counts: { waiting: 0, active: 0, completed: 0, failed: 0, delayed: 0 },
+          oldestWaitingJobAgeMs: null,
+          lastEnqueuedAt: null,
+          lastEnqueueFailureAt: null,
+          lastWorkerHeartbeatAt: null,
+          lastError: null,
+        } satisfies NotificationQueueHealthSnapshot;
+    const notificationQueueStatus: ReadinessState =
+      notificationQueue.status === 'DEGRADED' ? 'DEGRADED' : 'READY';
+    if (notificationQueue.status === 'DEGRADED') {
+      warnings.push(
+        `Notification queue is degraded; PostgreSQL DB runner fallback remains active${notificationQueue.lastError ? ` (${notificationQueue.lastError})` : ''}.`,
+      );
+    }
     const attendanceStatus: ReadinessState = attendanceEnabled ? 'READY' : 'DEGRADED';
     if (!attendanceEnabled) {
       warnings.push(
@@ -88,6 +124,7 @@ export class ReadinessService {
       dailyStatus,
       paymentStatus,
       reconciliationStatus,
+      notificationQueueStatus,
     ];
     const status: ReadinessState = statuses.includes('NOT_READY')
       ? 'NOT_READY'
@@ -115,6 +152,20 @@ export class ReadinessService {
         accountingReconciliation: {
           status: reconciliationStatus,
           detail: reconciliationDetail,
+        },
+        notificationQueue: {
+          status: notificationQueueStatus,
+          detail:
+            notificationQueue.status === 'DISABLED'
+              ? 'BullMQ notification queue is disabled; the PostgreSQL DB runner is authoritative and active.'
+              : notificationQueue.status === 'READY'
+                ? 'Redis notification queue is available; the PostgreSQL DB runner remains a recovery fallback.'
+                : 'Redis notification queue is unavailable or degraded; the PostgreSQL DB runner remains active.',
+          enabled: notificationQueue.enabled,
+          redis: notificationQueue.redis,
+          worker: notificationQueue.worker,
+          counts: notificationQueue.counts,
+          oldestWaitingJobAgeMs: notificationQueue.oldestWaitingJobAgeMs,
         },
       },
       warnings,

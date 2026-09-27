@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Optional } from '@nestjs/common';
 import {
   AuditEventSource,
   NotificationCategory,
@@ -9,6 +9,7 @@ import {
   UserRoleType,
 } from '@prisma/client';
 import { PrismaService } from '@common/prisma/prisma.service';
+import { NotificationQueueService } from '@common/queue/notification-queue.service';
 import {
   AdminAuditSeverity,
   AdminAuditSource,
@@ -40,7 +41,10 @@ type AdminAuditTimelineRow = {
 
 @Injectable()
 export class OperationalNotificationRepository {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    @Optional() private readonly notificationQueue?: NotificationQueueService,
+  ) {}
 
   findTypeBySlug(slug: string) {
     return this.prisma.notificationType.findUnique({
@@ -182,7 +186,27 @@ export class OperationalNotificationRepository {
 
         throw error;
       }
+    }).then((notification) => {
+      this.publishIfEligible(notification?.id, data);
+      return notification;
     });
+  }
+
+  private publishIfEligible(
+    notificationId: string | undefined,
+    data: Prisma.NotificationUncheckedCreateInput,
+  ): void {
+    if (
+      !notificationId ||
+      data.status !== NotificationStatus.PENDING ||
+      data.relatedEntityType === 'OTP_CHALLENGE'
+    ) {
+      return;
+    }
+
+    void this.notificationQueue
+      ?.enqueueNotification(notificationId)
+      .catch(() => undefined);
   }
 
   updateNotificationStatus(

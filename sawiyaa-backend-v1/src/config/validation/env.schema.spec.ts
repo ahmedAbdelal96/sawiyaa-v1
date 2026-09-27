@@ -26,6 +26,41 @@ describe('env.schema payment validation', () => {
     expect(() => validate(buildValidEnv())).not.toThrow();
   });
 
+  it('keeps the notification queue optional when disabled', () => {
+    const env = validate(
+      buildValidEnv({
+        NOTIFICATION_QUEUE_ENABLED: 'false',
+        NOTIFICATION_QUEUE_REDIS_URL: undefined,
+        REDIS_URL: undefined,
+      }),
+    );
+
+    expect(env.NOTIFICATION_QUEUE_ENABLED).toBe('false');
+  });
+
+  it('requires Redis configuration when the notification queue is enabled', () => {
+    expect(() =>
+      validate(
+        buildValidEnv({
+          NOTIFICATION_QUEUE_ENABLED: 'true',
+          NOTIFICATION_QUEUE_REDIS_URL: undefined,
+          REDIS_URL: undefined,
+        }),
+      ),
+    ).toThrow(/NOTIFICATION_QUEUE_REDIS_URL or REDIS_URL/);
+  });
+
+  it('accepts a dedicated Redis URL when the notification queue is enabled', () => {
+    expect(() =>
+      validate(
+        buildValidEnv({
+          NOTIFICATION_QUEUE_ENABLED: 'true',
+          NOTIFICATION_QUEUE_REDIS_URL: 'redis://localhost:6379',
+        }),
+      ),
+    ).not.toThrow();
+  });
+
   it('accepts the secure default when practitioner OTP configuration is missing', () => {
     expect(() => validate(buildValidEnv())).not.toThrow();
   });

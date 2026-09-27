@@ -44,14 +44,20 @@ import { EMAIL_PROVIDER } from './providers/email-provider.token';
 import { EmailProviderAdapter } from './providers/email-provider.adapter';
 import { SmtpEmailProvider } from './providers/smtp-email.provider';
 import { BrevoEmailProvider } from './providers/brevo-email.provider';
+import { createNotificationEmailProvider } from './providers/email-provider.factory';
 import { ConfigModule } from '@modules/config/config.module';
 import { PractitionersModule } from '@modules/practitioners/practitioners.module';
+import { NotificationQueueModule } from '@common/queue/notification-queue.module';
 
 /**
  * Notifications module provides the operational notification stack and the authenticated in-app feed.
  */
 @Module({
-  imports: [ConfigModule, forwardRef(() => PractitionersModule)],
+  imports: [
+    ConfigModule,
+    NotificationQueueModule,
+    forwardRef(() => PractitionersModule),
+  ],
   controllers: [
     AdminNotificationOpsController,
     AdminAuditLogController,
@@ -68,29 +74,7 @@ import { PractitionersModule } from '@modules/practitioners/practitioners.module
     // Fails fast at startup if provider=brevo but BREVO_API_KEY is missing.
     {
       provide: EMAIL_PROVIDER,
-      useFactory: (configService: ConfigService): EmailProviderAdapter => {
-        const provider =
-          configService
-            .get<string>('notification.mail.provider')
-            ?.toLowerCase()
-            .trim() ?? 'smtp';
-
-        if (provider === 'brevo') {
-          const apiKey = configService
-            .get<string>('notification.brevo.apiKey')
-            ?.trim();
-          if (!apiKey) {
-            throw new Error(
-              '[NotificationsModule] MAIL_PROVIDER=brevo requires BREVO_API_KEY to be set',
-            );
-          }
-          // BrevoEmailProvider is stateless — construct directly without DI
-          return new BrevoEmailProvider(configService);
-        }
-
-        // Default to SMTP
-        return new SmtpEmailProvider(configService);
-      },
+      useFactory: createNotificationEmailProvider,
       inject: [ConfigService],
     },
 
