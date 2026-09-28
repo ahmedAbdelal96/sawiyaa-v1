@@ -60,13 +60,14 @@ import { PractitionerProfessionalContentResolver } from '@modules/practitioners/
 import { AdminPractitionerProfessionalContentReadinessService } from './services/admin-practitioner-professional-content-readiness.service';
 import { ManagePractitionerRequirementUseCase } from './use-cases/manage-practitioner-requirement.use-case';
 import { DeleteIncompletePractitionerAccountUseCase } from './use-cases/delete-incomplete-practitioner-account.use-case';
+import { PresenceModule } from '@modules/presence/presence.module';
 
 /**
  * This sub-module isolates admin-only practitioner review/application-management concerns.
  * It intentionally does not expose practitioner self-service profile/update flows.
  */
 @Module({
-  imports: [ReviewsModule, AuthModule, FinancialOperationsModule],
+  imports: [ReviewsModule, AuthModule, FinancialOperationsModule, PresenceModule],
   controllers: [
     PractitionerApplicationsAdminController,
     AdminPractitionersController,

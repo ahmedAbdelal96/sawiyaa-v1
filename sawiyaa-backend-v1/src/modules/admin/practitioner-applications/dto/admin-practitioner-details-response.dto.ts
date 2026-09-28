@@ -25,6 +25,12 @@ export class AdminPractitionerPricingResponseDto {
 
   @ApiProperty({ type: AdminPricingQuoteResponseDto })
   session60!: AdminPricingQuoteResponseDto;
+
+  @ApiProperty({ type: AdminPricingQuoteResponseDto })
+  instantBooking30!: AdminPricingQuoteResponseDto;
+
+  @ApiProperty({ type: AdminPricingQuoteResponseDto })
+  instantBooking60!: AdminPricingQuoteResponseDto;
 }
 
 export class AdminPractitionerSpecialtyResponseDto {

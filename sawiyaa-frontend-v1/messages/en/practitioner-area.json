@@ -281,6 +281,7 @@
       "requestDescription": "Identity and professional-information changes require Administration review before patients see the new values.",
       "prices": "Prices",
       "instantBooking": "Instant Booking prices",
+      "instantBookingSettings": "Instant Booking settings",
       "settlement": "Bank account",
       "availability": "Schedule",
       "presence": "Availability status",

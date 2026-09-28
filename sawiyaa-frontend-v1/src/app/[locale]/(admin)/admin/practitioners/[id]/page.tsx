@@ -126,8 +126,12 @@ export default function AdminPractitionerDetailPage({ params }: PageProps) {
         experience: "سنوات الخبرة",
         pricing30: "سعر جلسة 30 دقيقة",
         pricing60: "سعر جلسة 60 دقيقة",
+        instantPricing30: "سعر الحجز الفوري 30 دقيقة",
+        instantPricing60: "سعر الحجز الفوري 60 دقيقة",
         acceptsPackages: "يقبل الباقات",
         instantBooking: "الحجز الفوري",
+        enabled: "مفعّل",
+        disabled: "غير مفعّل",
         languages: "اللغات",
         specialties: "التخصصات",
         appStatus: "حالة الطلب",
@@ -189,8 +193,12 @@ export default function AdminPractitionerDetailPage({ params }: PageProps) {
         experience: "Years of Experience",
         pricing30: "Session Price 30m",
         pricing60: "Session Price 60m",
+        instantPricing30: "Instant Booking Price 30m",
+        instantPricing60: "Instant Booking Price 60m",
         acceptsPackages: "Accepts Packages",
         instantBooking: "Instant Booking",
+        enabled: "Enabled",
+        disabled: "Disabled",
         languages: "Languages",
         specialties: "Specialties",
         appStatus: "Application Status",
@@ -528,7 +536,7 @@ export default function AdminPractitionerDetailPage({ params }: PageProps) {
       <SurfaceCard variant="section" className="flex flex-col md:flex-row items-center gap-6 p-6">
         <Avatar
           src={details.avatarUrl}
-          name={details.displayName}
+          name={details.displayName ?? undefined}
           size="xxlarge"
           className="h-20 w-20 rounded-2xl border border-border-light bg-surface shadow-xs"
         />
@@ -704,9 +712,27 @@ export default function AdminPractitionerDetailPage({ params }: PageProps) {
                 </p>
               </div>
               <div>
+                <p className="text-xs text-text-muted">{t("instantPricing30")}</p>
+                <p className="text-sm font-bold mt-1 text-primary">
+                  {details.pricing.instantBooking30.egp ? `${details.pricing.instantBooking30.egp} EGP` : "-"} / {details.pricing.instantBooking30.usd ? `${details.pricing.instantBooking30.usd} USD` : "-"}
+                </p>
+              </div>
+              <div>
+                <p className="text-xs text-text-muted">{t("instantPricing60")}</p>
+                <p className="text-sm font-bold mt-1 text-primary">
+                  {details.pricing.instantBooking60.egp ? `${details.pricing.instantBooking60.egp} EGP` : "-"} / {details.pricing.instantBooking60.usd ? `${details.pricing.instantBooking60.usd} USD` : "-"}
+                </p>
+              </div>
+              <div>
                 <p className="text-xs text-text-muted">{t("acceptsPackages")}</p>
                 <Badge variant="solid" color={details.acceptsPackages ? "success" : "light"}>
                   {details.acceptsPackages ? (isRtl ? "نعم" : "Yes") : (isRtl ? "لا" : "No")}
+                </Badge>
+              </div>
+              <div>
+                <p className="text-xs text-text-muted">{t("instantBooking")}</p>
+                <Badge variant="solid" color={details.isInstantBookingEnabled ? "success" : "light"}>
+                  {details.isInstantBookingEnabled ? t("enabled") : t("disabled")}
                 </Badge>
               </div>
             </div>

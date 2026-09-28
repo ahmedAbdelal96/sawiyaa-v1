@@ -3,6 +3,7 @@ import { PrismaService } from '@common/prisma/prisma.service';
 import { I18nService } from '@common/i18n/services/i18n.service';
 import { SupportedLocale } from '@common/i18n/types/locale.types';
 import { AdminPractitionerProfessionalContentReadinessService } from '../services/admin-practitioner-professional-content-readiness.service';
+import { PractitionerPresenceRepository } from '@modules/presence/repositories/practitioner-presence.repository';
 
 @Injectable()
 export class GetAdminPractitionerDetailsUseCase {
@@ -10,6 +11,7 @@ export class GetAdminPractitionerDetailsUseCase {
     private readonly prisma: PrismaService,
     private readonly i18nService: I18nService,
     private readonly professionalContentReadiness: AdminPractitionerProfessionalContentReadinessService,
+    private readonly practitionerPresenceRepository: PractitionerPresenceRepository,
   ) {}
 
   async execute(input: { id: string; locale: SupportedLocale }) {
@@ -113,6 +115,9 @@ export class GetAdminPractitionerDetailsUseCase {
     const latestApplication = profile.applications[0] ?? null;
     const professionalContent =
       this.professionalContentReadiness.fromLive(profile);
+    const presence = await this.practitionerPresenceRepository.getByPractitionerProfileId(
+      profile.id,
+    );
 
     return {
       message: this.i18nService.t(
@@ -143,7 +148,7 @@ export class GetAdminPractitionerDetailsUseCase {
         yearsOfExperience: profile.yearsOfExperience,
         languages: profile.languages.map((l) => l.language.code),
         acceptsPackages: profile.acceptsPackages,
-        isInstantBookingEnabled: profile.isInstantBookingEnabled,
+        isInstantBookingEnabled: presence?.isInstantBookingEnabled ?? false,
         pricing: {
           session30: {
             egp: profile.sessionPrice30Egp ? Number(profile.sessionPrice30Egp) : null,
@@ -152,6 +157,22 @@ export class GetAdminPractitionerDetailsUseCase {
           session60: {
             egp: profile.sessionPrice60Egp ? Number(profile.sessionPrice60Egp) : null,
             usd: profile.sessionPrice60Usd ? Number(profile.sessionPrice60Usd) : null,
+          },
+          instantBooking30: {
+            egp: profile.instantBookingPrice30Egp
+              ? Number(profile.instantBookingPrice30Egp)
+              : null,
+            usd: profile.instantBookingPrice30Usd
+              ? Number(profile.instantBookingPrice30Usd)
+              : null,
+          },
+          instantBooking60: {
+            egp: profile.instantBookingPrice60Egp
+              ? Number(profile.instantBookingPrice60Egp)
+              : null,
+            usd: profile.instantBookingPrice60Usd
+              ? Number(profile.instantBookingPrice60Usd)
+              : null,
           },
         },
         specialties: profile.specialties.map((s) => {

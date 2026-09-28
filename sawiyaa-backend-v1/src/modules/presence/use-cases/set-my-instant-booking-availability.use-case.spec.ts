@@ -37,4 +37,20 @@ describe('SetMyInstantBookingAvailabilityUseCase', () => {
     await useCase.execute({ userId: 'user-1', locale: 'en', isInstantBookingEnabled: true });
     expect(presenceRepository.updateInstantBookingEnabled).toHaveBeenCalledWith('practitioner-1', true);
   });
+
+  it('disables without changing the configured instant-booking prices', async () => {
+    (practitionerRepository.findByUserId as jest.Mock).mockResolvedValue({
+      id: 'practitioner-1',
+      instantBookingPrice30Egp: 300,
+      instantBookingPrice30Usd: 10,
+      instantBookingPrice60Egp: 500,
+      instantBookingPrice60Usd: 16,
+    });
+    (presenceRepository.updateInstantBookingEnabled as jest.Mock).mockResolvedValue({});
+
+    await useCase.execute({ userId: 'user-1', locale: 'en', isInstantBookingEnabled: false });
+
+    expect(presenceRepository.updateInstantBookingEnabled).toHaveBeenCalledWith('practitioner-1', false);
+    expect(practitionerRepository.findByUserId).toHaveBeenCalledWith('user-1');
+  });
 });

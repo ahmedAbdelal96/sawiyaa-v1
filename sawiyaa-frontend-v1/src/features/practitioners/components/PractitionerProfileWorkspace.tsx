@@ -1026,7 +1026,7 @@ export default function PractitionerProfileWorkspace() {
             <div className="mt-4 flex flex-wrap gap-2">
               {[
                 ["profile.editingSplit.prices", `/${locale}/practitioner/application`],
-                ["profile.editingSplit.instantBooking", `/${locale}/practitioner/instant-booking`],
+                ["profile.editingSplit.instantBookingSettings", `/${locale}/practitioner/availability`],
                 ["profile.editingSplit.settlement", `/${locale}/practitioner/settlements`],
                 ["profile.editingSplit.availability", `/${locale}/practitioner/availability`],
                 ["profile.editingSplit.presence", `/${locale}/practitioner/dashboard`],

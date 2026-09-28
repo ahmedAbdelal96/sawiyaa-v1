@@ -5,9 +5,9 @@ import { useLocale, useTranslations } from "next-intl";
 import { toast } from "sonner";
 import {
   Sparkles,
+  Zap,
   Coins,
   Wallet,
-  Zap,
   CheckCircle2,
   AlertCircle,
   Loader2,
@@ -54,7 +54,6 @@ export default function PractitionerAccountSetupHub() {
   const [isSavingPricing, setIsSavingPricing] = useState(false);
 
   // Instant Booking State
-  const [enableInstantBooking, setEnableInstantBooking] = useState(false);
   const [instantPrice30Egp, setInstantPrice30Egp] = useState("");
   const [instantPrice30Usd, setInstantPrice30Usd] = useState("");
   const [instantPrice60Egp, setInstantPrice60Egp] = useState("");
@@ -83,17 +82,10 @@ export default function PractitionerAccountSetupHub() {
     if (profile.pricing?.session60?.egp) setSessionPrice60Egp(String(profile.pricing.session60.egp));
     if (profile.pricing?.session60?.usd) setSessionPrice60Usd(String(profile.pricing.session60.usd));
 
-    const hasInstant = Boolean(
-      profile.instantBookingPrice30Egp ||
-        profile.instantBookingPrice30Usd ||
-        profile.instantBookingPrice60Egp ||
-        profile.instantBookingPrice60Usd
-    );
-    setEnableInstantBooking(hasInstant);
-    if (profile.instantBookingPrice30Egp) setInstantPrice30Egp(String(profile.instantBookingPrice30Egp));
-    if (profile.instantBookingPrice30Usd) setInstantPrice30Usd(String(profile.instantBookingPrice30Usd));
-    if (profile.instantBookingPrice60Egp) setInstantPrice60Egp(String(profile.instantBookingPrice60Egp));
-    if (profile.instantBookingPrice60Usd) setInstantPrice60Usd(String(profile.instantBookingPrice60Usd));
+    setInstantPrice30Egp(profile.instantBookingPrice30Egp == null ? "" : String(profile.instantBookingPrice30Egp));
+    setInstantPrice30Usd(profile.instantBookingPrice30Usd == null ? "" : String(profile.instantBookingPrice30Usd));
+    setInstantPrice60Egp(profile.instantBookingPrice60Egp == null ? "" : String(profile.instantBookingPrice60Egp));
+    setInstantPrice60Usd(profile.instantBookingPrice60Usd == null ? "" : String(profile.instantBookingPrice60Usd));
 
     if (profile.payoutDestination?.methodType) {
       setSelectedPayoutMethod(profile.payoutDestination.methodType);
@@ -130,10 +122,10 @@ export default function PractitionerAccountSetupHub() {
     setIsSavingInstant(true);
     try {
       await updateProfileMutation.mutateAsync({
-        instantBookingPrice30Egp: enableInstantBooking && instantPrice30Egp ? Number(instantPrice30Egp) : null,
-        instantBookingPrice30Usd: enableInstantBooking && instantPrice30Usd ? Number(instantPrice30Usd) : null,
-        instantBookingPrice60Egp: enableInstantBooking && instantPrice60Egp ? Number(instantPrice60Egp) : null,
-        instantBookingPrice60Usd: enableInstantBooking && instantPrice60Usd ? Number(instantPrice60Usd) : null,
+        instantBookingPrice30Egp: instantPrice30Egp ? Number(instantPrice30Egp) : null,
+        instantBookingPrice30Usd: instantPrice30Usd ? Number(instantPrice30Usd) : null,
+        instantBookingPrice60Egp: instantPrice60Egp ? Number(instantPrice60Egp) : null,
+        instantBookingPrice60Usd: instantPrice60Usd ? Number(instantPrice60Usd) : null,
       });
       await refetchReadiness();
       toast.success(
@@ -378,33 +370,17 @@ export default function PractitionerAccountSetupHub() {
 
       {/* SEPARATED SECTION: Instant Booking Pricing */}
       <SurfaceCard variant="section" className="space-y-5 p-6">
-        <div className="flex items-center justify-between">
-          <SurfaceHeader
-            eyebrow={isRtl ? "اختياري منفصل" : "Optional & Separate"}
-            title={isRtl ? "تسعير الحجز الفوري" : "Instant Booking Pricing"}
-            description={
-              isRtl
-                ? "إذا رغبت في استقبال الجلسات الفورية السريعة، حدد أسعاراً خاصة بها بشكل منفصل."
-                : "Configure independent rates if you wish to accept on-demand Instant Bookings."
-            }
-          />
-          <button
-            type="button"
-            onClick={() => setEnableInstantBooking(!enableInstantBooking)}
-            className={`flex h-7 w-12 shrink-0 items-center rounded-full p-1 transition-colors ${
-              enableInstantBooking ? "bg-primary" : "bg-border-strong"
-            }`}
-          >
-            <div
-              className={`h-5 w-5 rounded-full bg-white transition-transform ${
-                enableInstantBooking ? (isRtl ? "-translate-x-5" : "translate-x-5") : "translate-x-0"
-              }`}
-            />
-          </button>
-        </div>
+        <SurfaceHeader
+          eyebrow={isRtl ? "اختياري منفصل" : "Optional & Separate"}
+          title={isRtl ? "تسعير الحجز الفوري" : "Instant Booking Pricing"}
+          description={
+            isRtl
+              ? "يمكنك إعداد الأسعار أثناء بقاء الحجز الفوري متوقفاً. فعّل الحجز الفوري لاحقاً من شاشة التوفر بعد استكمال الأسعار الأربعة."
+              : "Configure the four independent rates while Instant Booking remains disabled. Enable it later from Availability after all prices are complete."
+          }
+        />
 
-        {enableInstantBooking && (
-          <div className="grid gap-4 sm:grid-cols-2 pt-2 border-t border-border-light">
+        <div className="grid gap-4 sm:grid-cols-2 pt-2 border-t border-border-light">
             <div className="space-y-1.5">
               <Label htmlFor="instantPrice30Egp">{isRtl ? "حجز فوري 30 دقيقة (EGP)" : "Instant 30m (EGP)"}</Label>
               <InputField
@@ -446,7 +422,6 @@ export default function PractitionerAccountSetupHub() {
               />
             </div>
           </div>
-        )}
 
         <div className="flex justify-end pt-2">
           <Button
