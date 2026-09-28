@@ -735,12 +735,15 @@ export default function AdminApplicationDetails({ applicationId }: Props) {
   ].filter((item) => normalizeForDiff(item.current) !== normalizeForDiff(item.requested));
 
   const payoutCountryCode =
+    payoutDestination?.countryCode?.trim().toUpperCase() ??
+    livePayoutDestination?.countryCode?.trim().toUpperCase() ??
     getCatalogItemCountryCodes(payoutDestination?.bankName ?? "").at(0) ??
     getCatalogItemCountryCodes(payoutDestination?.walletProvider ?? "").at(0) ??
     getCatalogItemCountryCodes(livePayoutDestination?.bankName ?? "").at(0) ??
     getCatalogItemCountryCodes(livePayoutDestination?.walletProvider ?? "").at(0) ??
     "";
   const payoutCountryLabel = payoutCountryCode ? getLocalizedCountryLabel(locale, payoutCountryCode) : "-";
+  const displayedPayoutDestination = payoutDestination ?? livePayoutDestination;
 
   const normalizedRequestChangeReasons = requestChangeReasons
     .map((item) => item.value.trim())
@@ -1110,13 +1113,13 @@ export default function AdminApplicationDetails({ applicationId }: Props) {
             payoutTitle={t("applicationDetails.sections.payout")}
             payoutRows={[
               { label: t("applicationDetails.payout.country"), value: payoutCountryLabel },
-              { label: t("applicationDetails.payout.method"), value: formatPayoutMethodLabel(t, livePayoutDestination?.methodType ?? null) },
-              { label: t("applicationDetails.payout.accountHolderName"), value: getReadableValue(livePayoutDestination?.accountHolderName) },
-              { label: t("applicationDetails.payout.bankName"), value: getReadableValue(resolveBankLabel(locale, livePayoutDestination?.bankName)) },
-              { label: t("applicationDetails.payout.walletProvider"), value: getReadableValue(resolveWalletProviderLabel(locale, livePayoutDestination?.walletProvider)) },
-              { label: t("applicationDetails.payout.walletIdentifier"), value: maskSensitiveValue(livePayoutDestination?.walletIdentifier) },
-              { label: "IBAN", value: maskSensitiveValue(livePayoutDestination?.iban) },
-              { label: t("applicationDetails.payout.bankAccountNumber"), value: maskSensitiveValue(livePayoutDestination?.bankAccountNumber) },
+              { label: t("applicationDetails.payout.method"), value: formatPayoutMethodLabel(t, displayedPayoutDestination?.methodType ?? null) },
+              { label: t("applicationDetails.payout.accountHolderName"), value: getReadableValue(displayedPayoutDestination?.accountHolderName) },
+              { label: t("applicationDetails.payout.bankName"), value: getReadableValue(resolveBankLabel(locale, displayedPayoutDestination?.bankName)) },
+              { label: t("applicationDetails.payout.walletProvider"), value: getReadableValue(resolveWalletProviderLabel(locale, displayedPayoutDestination?.walletProvider)) },
+              { label: t("applicationDetails.payout.walletIdentifier"), value: maskSensitiveValue(displayedPayoutDestination?.walletIdentifier) },
+              { label: "IBAN", value: maskSensitiveValue(displayedPayoutDestination?.iban) },
+              { label: t("applicationDetails.payout.bankAccountNumber"), value: maskSensitiveValue(displayedPayoutDestination?.bankAccountNumber) },
             ]}
             payoutMissing={!readinessSnapshot.hasPayoutDestination}
             payoutProvidedLabel={t("applicationDetails.review.payoutDetailsProvided")}

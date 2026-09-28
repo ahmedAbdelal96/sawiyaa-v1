@@ -23,19 +23,35 @@ describe('ApprovePractitionerApplicationUseCase', () => {
       userId: 'user-id',
       status: PractitionerApplicationStatus.SUBMITTED,
       practitioner: null,
-      submissionSnapshot: { applicant: { displayName: 'Applicant' } },
+      submissionSnapshot: {
+        applicant: { displayName: 'Applicant', locale: 'en', timezone: 'UTC' },
+      languageCodes: ['ar', 'ar'],
+        payoutDestination: {
+          methodType: 'BANK',
+          accountHolderName: 'Applicant',
+          bankName: 'CIB',
+          bankAccountNumber: '12345678',
+          iban: 'EG123456789012345678',
+        },
+      },
     };
     const latest = options?.latest ?? existing;
     let applicationStatus = existing.status;
     const tx = {
-      country: { findFirst: jest.fn().mockResolvedValue(null) },
+      country: {
+        findFirst: jest.fn().mockResolvedValue(null),
+        findUnique: jest.fn().mockResolvedValue({ id: 'country-eg' }),
+      },
+      language: { findMany: jest.fn().mockResolvedValue([{ id: 'language-ar', code: 'ar' }]) },
       practitionerProfile: {
         create: jest.fn().mockImplementation(async () => {
           if (options?.failProfileCreate) throw new Error('profile create failed');
           return { id: 'practitioner-id' };
         }),
       },
-      practitionerSpecialty: { createMany: jest.fn() },
+      practitionerProfileLanguage: { createMany: jest.fn().mockResolvedValue({ count: 1 }) },
+      practitionerSpecialty: { createMany: jest.fn(), deleteMany: jest.fn() },
+      practitionerPayoutDestination: { create: jest.fn().mockResolvedValue({ id: 'payout-1' }) },
       practitionerCredential: { updateMany: jest.fn().mockResolvedValue({ count: 0 }) },
       practitionerReviewCase: {
         findFirst: jest.fn().mockResolvedValue(null),
@@ -85,28 +101,81 @@ describe('ApprovePractitionerApplicationUseCase', () => {
         }
       }),
     };
+    const profileRepository = {
+      findById: jest.fn().mockResolvedValue({
+        id: 'practitioner-id',
+        userId: 'user-id',
+        status: 'APPROVED',
+        professionalTitle: 'Existing title',
+        bio: 'Existing bio',
+        yearsOfExperience: 5,
+        practitionerType: 'PSYCHOLOGIST',
+        practitionerGender: 'FEMALE',
+        country: { isoCode: 'EG' },
+        languages: [],
+        payoutDestination: null,
+      }),
+      updateProfileDetails: jest.fn().mockResolvedValue({}),
+      updateAvatar: jest.fn().mockResolvedValue({}),
+      upsertPayoutDestination: jest.fn().mockResolvedValue({}),
+      updateStatusAndPublish: jest.fn().mockResolvedValue({}),
+    };
+    const specialtyRepository = {
+      listByPractitionerId: jest.fn().mockResolvedValue([]),
+      replaceAll: jest.fn().mockResolvedValue({}),
+    };
+    const credentialRepository = { listByPractitionerId: jest.fn().mockResolvedValue([]) };
+    const userRepository = {
+      findApplicantSummary: jest.fn().mockResolvedValue({
+        id: 'user-id',
+        displayName: 'Applicant',
+        status: 'ACTIVE',
+        defaultLocale: 'en',
+        timezone: 'UTC',
+        emails: [],
+        phones: [],
+      }),
+      updateProfilePreferences: jest.fn().mockResolvedValue({}),
+    };
     const useCase = new ApprovePractitionerApplicationUseCase(
       prisma as never,
       { t: jest.fn().mockReturnValue('approved') } as never,
       mapper as never,
-      { evaluateReadiness: jest.fn() } as never,
+      { evaluateReadiness: jest.fn().mockReturnValue({
+        isProfileCompleted: true,
+        hasRequiredSpecialties: true,
+        hasRequiredCredentials: true,
+        hasPayoutDestination: true,
+        canBeReviewed: true,
+        canBeApproved: true,
+        canRequestChanges: true,
+      }) } as never,
       transitionPolicy as never,
       applicationRepository as never,
-      {} as never,
-      {} as never,
-      {} as never,
-      {} as never,
+      profileRepository as never,
+      specialtyRepository as never,
+      credentialRepository as never,
+      userRepository as never,
       notificationService as never,
       securityAuditService as never,
       {} as never,
-      {} as never,
-      {} as never,
+      { ensureForCountryChange: jest.fn().mockResolvedValue(undefined) } as never,
+      { assertCanChange: jest.fn().mockResolvedValue(undefined) } as never,
     );
-    return { useCase, applicationRepository, notificationService, prisma, getApplicationStatus: () => applicationStatus };
+    return {
+      useCase,
+      applicationRepository,
+      notificationService,
+      prisma,
+      tx,
+      userRepository,
+      profileRepository,
+      getApplicationStatus: () => applicationStatus,
+    };
   };
 
   it('links the created practitioner in the same transaction as approval', async () => {
-    const { useCase, applicationRepository, notificationService } = buildUseCase();
+    const { useCase, applicationRepository, notificationService, tx, userRepository } = buildUseCase();
 
     await useCase.execute(input);
 
@@ -119,6 +188,29 @@ describe('ApprovePractitionerApplicationUseCase', () => {
       expect.anything(),
     );
     expect(notificationService.sendApproved).toHaveBeenCalledTimes(1);
+    expect(userRepository.updateProfilePreferences).toHaveBeenCalledWith(
+      'user-id',
+      expect.objectContaining({ displayName: 'Applicant', defaultLocale: 'en', timezone: 'UTC' }),
+      tx,
+    );
+    expect(tx.practitionerProfileLanguage.createMany).toHaveBeenCalledWith({
+      data: [{ practitionerId: 'practitioner-id', languageId: 'language-ar', isPrimary: true }],
+    });
+    expect(tx.practitionerProfile.create).toHaveBeenCalledWith({
+      data: expect.not.objectContaining({
+        sessionPrice30Egp: expect.anything(),
+        sessionPrice30Usd: expect.anything(),
+        sessionPrice60Egp: expect.anything(),
+        sessionPrice60Usd: expect.anything(),
+        instantBookingPrice30Egp: expect.anything(),
+        instantBookingPrice30Usd: expect.anything(),
+        instantBookingPrice60Egp: expect.anything(),
+        instantBookingPrice60Usd: expect.anything(),
+      }),
+    });
+    expect(tx.practitionerPayoutDestination.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({ practitionerId: 'practitioner-id', methodType: 'BANK' }),
+    });
   });
 
   it('does not commit approval or notify when practitioner creation fails', async () => {
@@ -164,5 +256,39 @@ describe('ApprovePractitionerApplicationUseCase', () => {
     await expect(useCase.execute(input)).rejects.toMatchObject({
       response: { error: 'PRACTITIONER_APPLICATION_ALREADY_APPROVED' },
     });
+  });
+
+  it('keeps existing-profile approval on the current requested/live path', async () => {
+    const { useCase, profileRepository, userRepository } = buildUseCase({
+      existing: {
+        id: input.id,
+        userId: 'user-id',
+        status: PractitionerApplicationStatus.SUBMITTED,
+        practitioner: { id: 'practitioner-id', userId: 'user-id' },
+        submissionSnapshot: {
+          applicant: { displayName: 'Updated applicant', locale: 'en', timezone: 'UTC' },
+          profile: {
+            practitionerType: 'PSYCHOLOGIST',
+            practitionerTypeExplicit: true,
+            professionalTitle: 'Updated title',
+            bio: 'Updated bio',
+            countryCode: 'EG',
+            yearsOfExperience: 6,
+          },
+          languageCodes: [],
+          specialtySelection: { specialties: [] },
+          credentials: [],
+        },
+      },
+    });
+
+    await useCase.execute(input);
+
+    expect(userRepository.updateProfilePreferences).toHaveBeenCalled();
+    expect(profileRepository.updateProfileDetails).toHaveBeenCalledWith(
+      'practitioner-id',
+      expect.objectContaining({ professionalTitle: 'Updated title', bio: 'Updated bio' }),
+      expect.anything(),
+    );
   });
 });

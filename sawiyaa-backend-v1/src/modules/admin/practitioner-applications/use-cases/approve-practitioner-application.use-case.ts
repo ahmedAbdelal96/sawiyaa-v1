@@ -132,19 +132,37 @@ export class ApprovePractitionerApplicationUseCase {
       if (reviewCase?.requirements.some((requirement) => requirement.status === 'OPEN' && requirement.severity === 'BLOCKING')) {
         throw new BadRequestException({ error: 'PRACTITIONER_REVIEW_REQUIREMENTS_OPEN' });
       }
+      const applicant = snapshot.applicant;
       const profileSnapshot = snapshot.profile ?? {};
       const specialtySelection = snapshot.specialtySelection ?? {};
+      if (applicant) {
+        await this.practitionerTimezoneChangeGuardService.assertCanChange({
+          userId: latest.userId,
+          requestedTimezone: applicant.timezone,
+          tx,
+        });
+        await this.userRepository.updateProfilePreferences(
+          latest.userId,
+          {
+            displayName: applicant.displayName !== undefined ? applicant.displayName : undefined,
+            defaultLocale: applicant.locale !== undefined ? applicant.locale : undefined,
+            timezone: applicant.timezone !== undefined ? applicant.timezone : undefined,
+          },
+          tx,
+        );
+      }
       const country = profileSnapshot.countryCode
         ? await tx.country.findFirst({ where: { isoCode: String(profileSnapshot.countryCode).toUpperCase(), isActive: true }, select: { id: true } })
         : null;
       const profile = await tx.practitionerProfile.create({
         data: {
           userId: latest.userId,
-          publicSlug: buildDraftPractitionerSlug(latest.user?.displayName ?? latest.userId),
+          publicSlug: buildDraftPractitionerSlug(applicant.displayName ?? latest.user?.displayName ?? latest.userId),
           practitionerType: profileSnapshot.practitionerType ?? PractitionerType.OTHER,
           practitionerGender: profileSnapshot.practitionerGender ?? null,
           professionalTitle: profileSnapshot.professionalTitle ?? null,
           bio: profileSnapshot.bio ?? null,
+          primaryContentLocale: profileSnapshot.primaryContentLocale ?? null,
           yearsOfExperience: profileSnapshot.yearsOfExperience ?? null,
           countryId: country?.id ?? null,
           primarySpecialtyCategoryId: specialtySelection.primarySpecialtyCategoryId ?? null,
@@ -161,6 +179,56 @@ export class ApprovePractitionerApplicationUseCase {
           data: activeSpecialties.map((item) => ({ practitionerId: profile.id, specialtyId: item.id, isPrimary: item.id === specialtySelection.specialties?.[0]?.specialtyId })),
           skipDuplicates: true,
         });
+      }
+      const languageCodes: string[] = Array.from(
+        new Set<string>(
+          (Array.isArray(snapshot.languageCodes) ? snapshot.languageCodes : [])
+            .filter((code: unknown): code is string => typeof code === 'string')
+            .map((code: string) => code.trim().toLowerCase())
+            .filter(Boolean),
+        ),
+      );
+      if (languageCodes.length > 0) {
+        const activeLanguages = await tx.language.findMany({
+          where: { code: { in: languageCodes }, isActive: true },
+          select: { id: true, code: true },
+        });
+        if (activeLanguages.length !== languageCodes.length) {
+          throw new BadRequestException({ error: 'PRACTITIONER_LANGUAGE_NOT_FOUND' });
+        }
+        await tx.practitionerProfileLanguage.createMany({
+          data: languageCodes.map((code, index) => ({
+            practitionerId: profile.id,
+            languageId: activeLanguages.find((item) => item.code === code)!.id,
+            isPrimary: index === 0,
+          })),
+        });
+      }
+      if (snapshot.payoutDestination) {
+        await tx.practitionerPayoutDestination.create({
+          data: {
+            practitionerId: profile.id,
+            methodType: snapshot.payoutDestination.methodType as PractitionerPayoutMethodType,
+            countryCode: snapshot.payoutDestination.countryCode ?? null,
+            accountHolderName: snapshot.payoutDestination.accountHolderName ?? null,
+            bankName: snapshot.payoutDestination.bankName ?? null,
+            bankAccountNumber: snapshot.payoutDestination.bankAccountNumber ?? null,
+            iban: snapshot.payoutDestination.iban ?? null,
+            walletProvider: snapshot.payoutDestination.walletProvider ?? null,
+            walletIdentifier: snapshot.payoutDestination.walletIdentifier ?? null,
+            otherDetails: snapshot.payoutDestination.otherDetails ?? null,
+          },
+        });
+      }
+      if (this.professionalContentAuthoringService) {
+        await this.professionalContentAuthoringService.applySnapshot(
+          tx,
+          profile.id,
+          { profile: profileSnapshot },
+        );
+      }
+      if (profileSnapshot.avatarUrl !== undefined) {
+        await this.profileRepository.updateAvatar(profile.id, profileSnapshot.avatarUrl, tx);
       }
       await tx.practitionerCredential.updateMany({ where: { applicationId: latest.id }, data: { applicationId: null, practitionerId: profile.id } });
       await tx.practitionerReviewCase.updateMany({ where: { applicationId: latest.id }, data: { applicationId: null, practitionerId: profile.id, userId: latest.userId } });

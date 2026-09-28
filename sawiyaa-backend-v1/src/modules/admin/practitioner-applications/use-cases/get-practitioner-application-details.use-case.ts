@@ -60,37 +60,164 @@ export class GetPractitionerApplicationDetailsUseCase {
     if (!application.practitioner) {
       const snapshot = (application.submissionSnapshot ?? {}) as any;
       const applicant = snapshot.applicant ?? {};
-      const profile = snapshot.profile ?? {};
-      const reviewCase = await this.prisma.practitionerReviewCase.findFirst({ where: { applicationId: application.id }, orderBy: { updatedAt: 'desc' }, include: { sections: true, requirements: { orderBy: { createdAt: 'asc' } } } });
-      const credentials = await this.prisma.practitionerCredential.findMany({ where: { applicationId: application.id }, orderBy: { createdAt: 'desc' } });
-      const user = application.user;
+      const profileSnapshot = snapshot.profile ?? {};
+      const languageCodes = Array.isArray(snapshot.languageCodes)
+        ? snapshot.languageCodes
+            .filter((code: unknown): code is string => typeof code === 'string')
+            .map((code: string) => code.trim().toLowerCase())
+            .filter(Boolean)
+        : [];
+      const rawSpecialties = Array.isArray(snapshot.specialtySelection?.specialties)
+        ? snapshot.specialtySelection.specialties
+        : [];
+      const specialtyIds = rawSpecialties
+        .map((item: any) => item?.specialtyId)
+        .filter((id: unknown): id is string => typeof id === 'string');
+      const [reviewCase, credentials, user] = await Promise.all([
+        this.prisma.practitionerReviewCase.findFirst({ where: { applicationId: application.id }, orderBy: { updatedAt: 'desc' }, include: { sections: true, requirements: { orderBy: { createdAt: 'asc' } } } }),
+        this.prisma.practitionerCredential.findMany({ where: { applicationId: application.id }, orderBy: { createdAt: 'desc' } }),
+        this.userRepository.findApplicantSummary(application.userId),
+      ]);
+      const accountUser = user ?? application.user;
+      const catalogSpecialties = await this.specialtyRepository.listByIds(
+        specialtyIds,
+        input.locale,
+      );
+      const specialtyMap = new Map(catalogSpecialties.map((item) => [item.id, item] as const));
+      const toCategory = (category: (typeof catalogSpecialties)[number]['category'] | null) =>
+        category
+          ? { id: category.id, slug: category.slug, name: category.name, nameAr: null, nameEn: null }
+          : null;
+      const requestedSpecialties = rawSpecialties.map((item: any) => {
+        const catalogSpecialty = specialtyMap.get(item?.specialtyId);
+        return {
+          specialtyId: item?.specialtyId ?? '',
+          slug: catalogSpecialty?.slug ?? item?.slug ?? '',
+          title: catalogSpecialty
+            ? this.mapper.pickLocalizedTitle(catalogSpecialty.translations, input.locale)
+            : item?.title ?? null,
+          name: null,
+          nameAr: null,
+          nameEn: null,
+          category: toCategory(catalogSpecialty?.category ?? null),
+          isPrimary: item?.isPrimary === true,
+        };
+      });
+      const primaryCategoryId = snapshot.specialtySelection?.primarySpecialtyCategoryId ?? null;
+      const primaryCategory =
+        catalogSpecialties.find((item) => item.category?.id === primaryCategoryId)?.category ??
+        null;
+      const payoutDestination = snapshot.payoutDestination ?? null;
+      const requestedCredentials = credentials.map((credential) => ({
+        credentialId: credential.id,
+        credentialType: credential.credentialType,
+        reviewStatus: credential.reviewStatus,
+        expiresAt: credential.expiresAt,
+        uploadedAt: credential.createdAt,
+        reviewedAt: credential.reviewedAt,
+        reviewedByUserId: credential.reviewedByUserId,
+        reviewNotes: credential.reviewNotes,
+      }));
+      const readiness = this.reviewPolicy.evaluateReadiness({
+        hasDisplayName: Boolean((applicant.displayName ?? accountUser?.displayName)?.trim()),
+        hasProfessionalTitle: Boolean(profileSnapshot.professionalTitle?.trim()),
+        hasBio: Boolean(profileSnapshot.bio?.trim()),
+        hasCountry: Boolean(profileSnapshot.countryCode),
+        hasYearsOfExperience: typeof profileSnapshot.yearsOfExperience === 'number' && profileSnapshot.yearsOfExperience > 0,
+        hasPractitionerType: profileSnapshot.practitionerTypeExplicit === true,
+        hasLanguage: languageCodes.length > 0,
+        hasRequiredSpecialties: requestedSpecialties.length > 0,
+        hasRequiredCredentials: credentials.length > 0,
+        hasPayoutDestination: Boolean(payoutDestination),
+        status: application.status,
+      });
+      const reviewCaseResponse = reviewCase
+        ? { id: reviewCase.id, type: reviewCase.caseType, status: reviewCase.status, submittedAt: reviewCase.submittedAt, dueAt: reviewCase.dueAt, proposedSnapshot: sanitizeReviewSnapshot(reviewCase.proposedSnapshot), sections: reviewCase.sections, requirements: reviewCase.requirements }
+        : null;
+      const email = accountUser?.emails?.[0];
+      const phone = accountUser?.phones?.[0];
+      const liveApplicant = {
+        userId: application.userId,
+        practitionerProfileId: null,
+        displayName: accountUser?.displayName ?? null,
+        avatarUrl: null,
+        accountStatus: accountUser?.status ?? 'ACTIVE',
+        email: { address: email?.email ?? null, isVerified: email?.isVerified ?? false },
+        phone: { number: phone?.phone ?? null, isVerified: phone?.isVerified ?? false },
+        locale: accountUser?.defaultLocale ?? null,
+        timezone: accountUser?.timezone ?? null,
+        countryCode: null,
+      };
+      const requestedApplicant = {
+        ...liveApplicant,
+        displayName: applicant.displayName ?? liveApplicant.displayName,
+        locale: applicant.locale ?? liveApplicant.locale,
+        timezone: applicant.timezone ?? liveApplicant.timezone,
+        countryCode: profileSnapshot.countryCode ?? null,
+      };
+      const requestedProfile = {
+        practitionerType: profileSnapshot.practitionerType ?? 'OTHER',
+        practitionerGender: profileSnapshot.practitionerGender ?? null,
+        profileStatus: 'DRAFT',
+        avatarUrl: null,
+        professionalTitle: profileSnapshot.professionalTitle ?? null,
+        bio: profileSnapshot.bio ?? null,
+        yearsOfExperience: profileSnapshot.yearsOfExperience ?? null,
+        primarySpecialtyCategoryId: primaryCategoryId,
+        primarySpecialtyCategory: toCategory(primaryCategory),
+        pricing: { session30: { egp: null, usd: null }, session60: { egp: null, usd: null } },
+        instantBookingPrice30Egp: null,
+        instantBookingPrice30Usd: null,
+        instantBookingPrice60Egp: null,
+        instantBookingPrice60Usd: null,
+        languages: languageCodes,
+        specialties: requestedSpecialties,
+      };
+      const completion = this.completionService.build({
+        displayName: requestedApplicant.displayName,
+        countryCode: requestedApplicant.countryCode,
+        practitionerType: requestedProfile.practitionerType,
+        practitionerTypeExplicit: profileSnapshot.practitionerTypeExplicit === true,
+        practitionerGender: requestedProfile.practitionerGender,
+        professionalTitle: requestedProfile.professionalTitle,
+        bio: requestedProfile.bio,
+        yearsOfExperience: requestedProfile.yearsOfExperience,
+        languageCount: languageCodes.length,
+        specialtyCount: requestedSpecialties.length,
+        primarySpecialtyCategoryId: primaryCategoryId,
+        credentialSummary: {
+          totalCredentials: requestedCredentials.length,
+          approvedCount: requestedCredentials.filter((item) => item.reviewStatus === 'APPROVED').length,
+          pendingCount: requestedCredentials.filter((item) => item.reviewStatus === 'PENDING').length,
+          rejectedCount: requestedCredentials.filter((item) => item.reviewStatus === 'REJECTED').length,
+          expiredCount: requestedCredentials.filter((item) => item.reviewStatus === 'EXPIRED').length,
+        },
+        credentialTypes: requestedCredentials.map((item) => String(item.credentialType)),
+        payoutDestination,
+        isAccountActive: accountUser?.status === 'ACTIVE',
+        isPractitionerOtpVerified: null,
+        applicationStatus: application.status,
+        pricing: requestedProfile.pricing,
+      });
       return {
         message: this.i18nService.t('admin.practitionerApplications.success.applicationFetched', input.locale),
         details: {
-          applicant: { userId: application.userId, practitionerProfileId: null, displayName: applicant.displayName ?? user?.displayName ?? null, avatarUrl: null, accountStatus: 'ACTIVE', email: { address: null, isVerified: false }, phone: { number: null, isVerified: false }, locale: applicant.locale ?? null, timezone: applicant.timezone ?? null, countryCode: profile.countryCode ?? null },
-          liveApplicant: { userId: application.userId, practitionerProfileId: null, displayName: user?.displayName ?? null, avatarUrl: null, accountStatus: 'ACTIVE', email: { address: null, isVerified: false }, phone: { number: null, isVerified: false }, locale: null, timezone: null, countryCode: null },
-          profile: {
-            ...profile,
-            primarySpecialtyCategoryId: snapshot.specialtySelection?.primarySpecialtyCategoryId ?? null,
-            pricing: { session30: { egp: null, usd: null }, session60: { egp: null, usd: null } },
-            languages: Array.isArray(profile.languages) ? profile.languages : [],
-            specialties: Array.isArray(snapshot.specialtySelection?.specialties)
-              ? snapshot.specialtySelection.specialties
-              : [],
-          },
+          applicant: requestedApplicant,
+          liveApplicant,
+          profile: requestedProfile,
           liveProfile: null,
-          specialties: snapshot.specialtySelection?.specialties ?? [],
+          specialties: requestedSpecialties,
           liveSpecialties: [],
-          credentials: credentials.map((credential) => ({ credentialId: credential.id, credentialType: credential.credentialType, reviewStatus: credential.reviewStatus, expiresAt: credential.expiresAt, uploadedAt: credential.createdAt, reviewedAt: credential.reviewedAt, reviewedByUserId: credential.reviewedByUserId, reviewNotes: credential.reviewNotes })),
-          payoutDestination: null,
+          credentials: requestedCredentials,
+          payoutDestination,
           livePayoutDestination: null,
           application: { applicationId: application.id, status: application.status, submittedAt: application.submittedAt, reviewedAt: application.reviewedAt, reviewedByUserId: application.reviewedByUserId, reviewDecisionReason: application.reviewDecisionReason, reviewNotes: application.reviewNotes },
-          readinessSnapshot: { isProfileCompleted: false, hasRequiredSpecialties: Array.isArray(snapshot.specialtySelection?.specialties) && snapshot.specialtySelection.specialties.length > 0, hasRequiredCredentials: credentials.length > 0, hasPayoutDestination: false, canBeReviewed: true, canBeApproved: application.status === 'SUBMITTED' || application.status === 'UNDER_REVIEW' },
-          completion: { overallPercent: 0, canSubmit: false, blockers: [], warnings: [], steps: [] },
+          readinessSnapshot: readiness,
+          completion,
           professionalContentReadiness: null,
           professionalContentReview: null,
         },
-        reviewCase: reviewCase ? { id: reviewCase.id, type: reviewCase.caseType, status: reviewCase.status, submittedAt: reviewCase.submittedAt, dueAt: reviewCase.dueAt, proposedSnapshot: sanitizeReviewSnapshot(reviewCase.proposedSnapshot), sections: reviewCase.sections, requirements: reviewCase.requirements } : null,
+        reviewCase: reviewCaseResponse,
       };
     }
 

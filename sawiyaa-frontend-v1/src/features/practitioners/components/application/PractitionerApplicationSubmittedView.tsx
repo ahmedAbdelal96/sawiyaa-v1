@@ -10,6 +10,7 @@ import {
 import { SurfaceCard, SurfaceHeader } from "@/components/shared/SurfaceShell";
 import { usePractitionerApplicationStatus } from "../../hooks/use-practitioners";
 import PractitionerDocumentsSection from "./PractitionerDocumentsSection";
+import { normalizePractitionerApplicationSnapshot } from "../../utils/practitioner-application-snapshot";
 
 export default function PractitionerApplicationSubmittedView() {
   const t = useTranslations("practitioner-area.application");
@@ -19,6 +20,7 @@ export default function PractitionerApplicationSubmittedView() {
   const { data: statusData } = usePractitionerApplicationStatus();
   const application = statusData?.application;
   const snapshot = application?.submissionSnapshot as Record<string, any> | null;
+  const normalizedSnapshot = normalizePractitionerApplicationSnapshot(snapshot);
 
   const submittedAt = application?.submittedAt
     ? new Date(application.submittedAt).toLocaleDateString(
@@ -103,31 +105,31 @@ export default function PractitionerApplicationSubmittedView() {
             <div>
               <p className="text-xs text-text-muted">{isRtl ? "الاسم" : "Name"}</p>
               <p className="text-sm font-semibold text-text-primary dark:text-white mt-0.5">
-                {snapshot.displayName || "-"}
+                {normalizedSnapshot.displayName || "-"}
               </p>
             </div>
             <div>
               <p className="text-xs text-text-muted">{isRtl ? "نوع التخصص" : "Type"}</p>
               <p className="text-sm font-semibold text-text-primary dark:text-white mt-0.5">
-                {snapshot.practitionerType || "-"}
+                {normalizedSnapshot.practitionerType || "-"}
               </p>
             </div>
             <div>
               <p className="text-xs text-text-muted">{isRtl ? "المسمى المهني" : "Title"}</p>
               <p className="text-sm font-semibold text-text-primary dark:text-white mt-0.5">
-                {snapshot.professionalTitle || "-"}
+                {normalizedSnapshot.professionalTitle || "-"}
               </p>
             </div>
             <div>
               <p className="text-xs text-text-muted">{isRtl ? "سنوات الخبرة" : "Experience"}</p>
               <p className="text-sm font-semibold text-text-primary dark:text-white mt-0.5">
-                {snapshot.yearsOfExperience} {isRtl ? "سنوات" : "years"}
+                {normalizedSnapshot.yearsOfExperience ?? "-"} {isRtl ? "سنوات" : "years"}
               </p>
             </div>
             <div>
               <p className="text-xs text-text-muted">{isRtl ? "الدولة" : "Country"}</p>
               <p className="text-sm font-semibold text-text-primary dark:text-white mt-0.5">
-                {snapshot.countryCode || "-"}
+                {normalizedSnapshot.countryCode || "-"}
               </p>
             </div>
           </div>
@@ -140,7 +142,7 @@ export default function PractitionerApplicationSubmittedView() {
           eyebrow={isRtl ? "المستندات المرفقة" : "Documents"}
           title={isRtl ? "المستندات المرفوعة للمراجعة" : "Submitted Documents"}
         />
-        <PractitionerDocumentsSection countryCode={snapshot?.countryCode} isLocked={true} />
+        <PractitionerDocumentsSection countryCode={normalizedSnapshot.countryCode ?? undefined} isLocked={true} />
       </SurfaceCard>
     </div>
   );

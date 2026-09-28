@@ -48,6 +48,7 @@ import {
   filterSpecialtiesByPrimaryCategory,
   retainValidSpecialtyIds,
 } from "./specialty-selection";
+import { normalizePractitionerApplicationSnapshot } from "../../utils/practitioner-application-snapshot";
 
 const PRACTITIONER_TYPES: Array<{ value: PractitionerType; labelAr: string; labelEn: string }> = [
   { value: "PSYCHOLOGIST", labelAr: "أخصائي نفسي", labelEn: "Psychologist" },
@@ -89,6 +90,10 @@ export default function PractitionerApplicationHub() {
   const application = statusData?.application;
   const readiness = readinessData?.readiness;
   const snapshot = application?.submissionSnapshot as Record<string, any> | null;
+  const normalizedSnapshot = useMemo(
+    () => normalizePractitionerApplicationSnapshot(snapshot),
+    [snapshot],
+  );
 
   // Local Form State
   const [displayName, setDisplayName] = useState("");
@@ -113,36 +118,30 @@ export default function PractitionerApplicationHub() {
     if (isInitialHydrated.current || !application) return;
 
     if (snapshot) {
-      if (snapshot.displayName) setDisplayName(snapshot.displayName);
-      if (snapshot.practitionerGender) setPractitionerGender(snapshot.practitionerGender);
-      if (snapshot.countryCode) setCountryCode(snapshot.countryCode);
-      if (Array.isArray(snapshot.languageCodes) && snapshot.languageCodes.length > 0) {
-        setLanguageCodes(snapshot.languageCodes);
+      if (normalizedSnapshot.displayName) setDisplayName(normalizedSnapshot.displayName);
+      if (normalizedSnapshot.practitionerGender) setPractitionerGender(normalizedSnapshot.practitionerGender as PractitionerGender);
+      if (normalizedSnapshot.countryCode) setCountryCode(normalizedSnapshot.countryCode);
+      if (normalizedSnapshot.languageCodes.length > 0) {
+        setLanguageCodes(normalizedSnapshot.languageCodes);
       }
-      if (snapshot.practitionerType && snapshot.practitionerTypeExplicit === true) {
-        setPractitionerType(snapshot.practitionerType);
+      if (normalizedSnapshot.practitionerType && normalizedSnapshot.practitionerTypeExplicit) {
+        setPractitionerType(normalizedSnapshot.practitionerType as PractitionerType);
       }
-      if (snapshot.professionalTitle) setProfessionalTitle(snapshot.professionalTitle);
-      if (snapshot.yearsOfExperience !== undefined && snapshot.yearsOfExperience !== null) {
-        setYearsOfExperience(String(snapshot.yearsOfExperience));
+      if (normalizedSnapshot.professionalTitle) setProfessionalTitle(normalizedSnapshot.professionalTitle);
+      if (normalizedSnapshot.yearsOfExperience !== null) {
+        setYearsOfExperience(String(normalizedSnapshot.yearsOfExperience));
       }
-      if (snapshot.bio) setBio(snapshot.bio);
-      if (snapshot.specialtySelection?.primarySpecialtyCategoryId) {
-        setPrimaryCategoryId(snapshot.specialtySelection.primarySpecialtyCategoryId);
+      if (normalizedSnapshot.bio) setBio(normalizedSnapshot.bio);
+      if (normalizedSnapshot.primarySpecialtyCategoryId) {
+        setPrimaryCategoryId(normalizedSnapshot.primarySpecialtyCategoryId);
       }
-      const persistedSpecialtyIds = Array.isArray(snapshot.specialtySelection?.specialtyIds)
-        ? snapshot.specialtySelection.specialtyIds
-        : Array.isArray(snapshot.specialtySelection?.specialties)
-          ? snapshot.specialtySelection.specialties
-              .map((item: { specialtyId?: unknown }) => item?.specialtyId)
-              .filter((id: unknown): id is string => typeof id === "string")
-          : [];
+      const persistedSpecialtyIds = normalizedSnapshot.specialtyIds;
       if (persistedSpecialtyIds.length > 0) {
         setSelectedSpecialtyIds(persistedSpecialtyIds);
       }
     }
     isInitialHydrated.current = true;
-  }, [application, snapshot]);
+  }, [application, snapshot, normalizedSnapshot]);
   /* eslint-enable react-hooks/set-state-in-effect */
 
   // Debounced Autosave Trigger
