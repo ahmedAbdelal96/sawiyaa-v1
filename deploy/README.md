@@ -56,10 +56,12 @@ preparation or preflight write test stops deployment before containers start.
 
 ## Environment files
 
-The only permanent production/runtime environment files are:
+The only permanent runtime environment files are:
 
-- `sawiyaa-backend-v1/.env`
-- `sawiyaa-frontend-v1/.env`
+- `sawiyaa-backend-v1/.env` (local/development)
+- `sawiyaa-backend-v1/.env.production` (production)
+- `sawiyaa-frontend-v1/.env` (local/development)
+- `sawiyaa-frontend-v1/.env.production` (production)
 
 Create them from the tracked contracts:
 
@@ -69,16 +71,15 @@ cp sawiyaa-frontend-v1/.env.example sawiyaa-frontend-v1/.env
 ```
 
 The real files are ignored, persistent, and are never replaced by Git
-deployment. Frontend `NEXT_PUBLIC_*` values are read from
-`sawiyaa-frontend-v1/.env` for Compose interpolation, Docker build arguments,
-and frontend runtime configuration. The backend `.env` is also the source for
-the backend, Prisma, worker, and PostgreSQL bootstrap variables. PostgreSQL
-receives only explicit `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD`,
-and `PGDATA` mappings; it never receives backend application secrets.
+deployment. Local Compose validation selects the `.env` pair explicitly;
+production Compose/API/Prisma/worker use the `.env.production` pair.
+Frontend `NEXT_PUBLIC_*` values are build-time inputs. PostgreSQL receives
+only explicit `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD`, and `PGDATA`
+mappings; it never receives backend application secrets.
 
-There is no root runtime `.env` requirement. The older root
-`.env.production.*` files and the old backend `.env.postgres` file are legacy
-migration inputs only and are not required for normal deployment.
+There is no root runtime `.env` requirement. Legacy production snapshots,
+`.env.production.*` templates, `.env.local`, upload env files, and the old
+backend `.env.postgres` file are not runtime sources.
 
 Production backend configuration must include `LOG_LEVEL` (`error`, `warn`,
 `info`, `debug`, or `verbose`), `WEB_APP_URL` as the public HTTPS web origin,
@@ -444,7 +445,7 @@ SAWIYAA_PROJECT_DIR=/opt/sawiyaa bash /opt/sawiyaa/deploy/scripts/deploy-product
 ## First deploy checklist
 
 1. Clone the repo to `/opt/sawiyaa` on the server.
-2. Create `sawiyaa-backend-v1/.env` and `sawiyaa-frontend-v1/.env` on the server.
+2. Upload/create `sawiyaa-backend-v1/.env.production` and `sawiyaa-frontend-v1/.env.production` on the server.
 3. Fill all secrets on the server only.
 4. Obtain TLS certificates for `sawiyaa.com`.
 5. Start `postgres`, `backend`, and `frontend`.
@@ -503,7 +504,7 @@ Also back up `backend_storage` and `backend_uploads` if the release touches uplo
 ## Safe release flow
 
 1. Confirm the two canonical env files remain present; deployment never replaces them.
-2. Build images with `docker compose --env-file sawiyaa-backend-v1/.env --env-file sawiyaa-frontend-v1/.env -f docker-compose.prod.yml build`.
+2. Build images with `docker compose --env-file sawiyaa-backend-v1/.env.production --env-file sawiyaa-frontend-v1/.env.production -f docker-compose.prod.yml build`.
 3. Start only the database and app containers.
 4. Run Prisma migrations manually.
 5. Verify backend health.

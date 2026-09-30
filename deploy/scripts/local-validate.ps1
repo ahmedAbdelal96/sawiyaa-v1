@@ -98,6 +98,11 @@ try {
   }
 
   Write-Info "Validating Docker Compose configuration..."
+  $previousBackendRuntimeEnvFile = $env:SAWIYAA_BACKEND_RUNTIME_ENV_FILE
+  $previousFrontendRuntimeEnvFile = $env:SAWIYAA_FRONTEND_RUNTIME_ENV_FILE
+  $env:SAWIYAA_BACKEND_RUNTIME_ENV_FILE = $backendEnv
+  $env:SAWIYAA_FRONTEND_RUNTIME_ENV_FILE = $frontendEnv
+  try {
   Invoke-Checked 'docker compose --env-file sawiyaa-backend-v1/.env --env-file sawiyaa-frontend-v1/.env -f docker-compose.prod.yml config' {
     docker compose --env-file $backendEnv --env-file $frontendEnv -f docker-compose.prod.yml config | Out-Null
   }
@@ -107,6 +112,11 @@ try {
     Invoke-Checked 'docker compose --env-file sawiyaa-backend-v1/.env --env-file sawiyaa-frontend-v1/.env -f docker-compose.prod.yml build' {
       docker compose --env-file $backendEnv --env-file $frontendEnv -f docker-compose.prod.yml build
     }
+  }
+  }
+  finally {
+    $env:SAWIYAA_BACKEND_RUNTIME_ENV_FILE = $previousBackendRuntimeEnvFile
+    $env:SAWIYAA_FRONTEND_RUNTIME_ENV_FILE = $previousFrontendRuntimeEnvFile
   }
 
   Write-Info "Local validation completed successfully."

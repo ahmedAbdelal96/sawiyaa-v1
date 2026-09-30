@@ -132,14 +132,14 @@ jobs:
 
       - name: Prepare temporary two-source compose env files
         run: |
-          cp sawiyaa-backend-v1/.env.example sawiyaa-backend-v1/.env
-          cp sawiyaa-frontend-v1/.env.example sawiyaa-frontend-v1/.env
-          ls -1 sawiyaa-backend-v1/.env sawiyaa-frontend-v1/.env
+          cp sawiyaa-backend-v1/.env.example sawiyaa-backend-v1/.env.production
+          cp sawiyaa-frontend-v1/.env.example sawiyaa-frontend-v1/.env.production
+          ls -1 sawiyaa-backend-v1/.env.production sawiyaa-frontend-v1/.env.production
 
       - name: Validate Docker Compose configuration
         run: |
           if command -v docker >/dev/null 2>&1; then
-            docker compose --env-file sawiyaa-backend-v1/.env --env-file sawiyaa-frontend-v1/.env -f docker-compose.prod.yml config >/dev/null
+            docker compose --env-file sawiyaa-backend-v1/.env.production --env-file sawiyaa-frontend-v1/.env.production -f docker-compose.prod.yml config >/dev/null
           else
             echo "Docker CLI not available in this runner; skipping compose config validation."
           fi

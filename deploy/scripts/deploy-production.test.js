@@ -48,8 +48,8 @@ test('deployment uses status-only contract/preflight diagnostics', () => {
 });
 
 test('deployment defaults to canonical application env files', () => {
-  assert.match(script, /sawiyaa-backend-v1\/\.env/);
-  assert.match(script, /sawiyaa-frontend-v1\/\.env/);
+  assert.match(script, /sawiyaa-backend-v1\/\.env\.production/);
+  assert.match(script, /sawiyaa-frontend-v1\/\.env\.production/);
   assert.doesNotMatch(script, /\.env\.production\.(backend|frontend|db)/);
   assert.doesNotMatch(script, /\.env\.postgres/);
 });
@@ -84,8 +84,8 @@ test('detached target receives canonical env files before preflight', () => {
 
 test('deployment stages canonical env files into the detached target and avoids Compose env overrides', () => {
   assert.match(script, /stage-release-env\.sh/);
-  assert.match(script, /TARGET_BACKEND_ENV_FILE="\$VALIDATION_WORKTREE\/sawiyaa-backend-v1\/\.env"/);
-  assert.match(script, /TARGET_FRONTEND_ENV_FILE="\$VALIDATION_WORKTREE\/sawiyaa-frontend-v1\/\.env"/);
+  assert.match(script, /TARGET_BACKEND_ENV_FILE="\$VALIDATION_WORKTREE\/sawiyaa-backend-v1\/\.env\.production"/);
+  assert.match(script, /TARGET_FRONTEND_ENV_FILE="\$VALIDATION_WORKTREE\/sawiyaa-frontend-v1\/\.env\.production"/);
   assert.match(script, /--backend-env "\$TARGET_BACKEND_ENV_FILE"/);
   assert.match(script, /--frontend-env "\$TARGET_FRONTEND_ENV_FILE"/);
   const preflight = fs.readFileSync(
@@ -169,8 +169,8 @@ test('deployment writes a successful release marker after public health checks',
 
 test('Compose frontend build args come from interpolation, not duplicated production literals', () => {
   const compose = fs.readFileSync(path.resolve(__dirname, '../../docker-compose.prod.yml'), 'utf8');
-  assert.match(compose, /env_file:\n\s+- \.\/sawiyaa-backend-v1\/\.env/);
-  assert.match(compose, /env_file:\n\s+- \.\/sawiyaa-frontend-v1\/\.env/);
+  assert.match(compose, /env_file:\n\s+- \$\{SAWIYAA_BACKEND_RUNTIME_ENV_FILE:-\.\/sawiyaa-backend-v1\/\.env\.production\}/);
+  assert.match(compose, /env_file:\n\s+- \$\{SAWIYAA_FRONTEND_RUNTIME_ENV_FILE:-\.\/sawiyaa-frontend-v1\/\.env\.production\}/);
   assert.match(compose, /POSTGRES_DB: \$\{POSTGRES_DB\}/);
   assert.match(compose, /POSTGRES_USER: \$\{POSTGRES_USER\}/);
   assert.match(compose, /POSTGRES_PASSWORD: \$\{POSTGRES_PASSWORD\}/);
@@ -186,7 +186,7 @@ test('Compose frontend build args come from interpolation, not duplicated produc
 
 test('release gate cannot report READY without the exact backend/frontend Docker build', () => {
   assert.match(releaseGate, /git status --porcelain/);
-  const dockerBuild = releaseGate.indexOf('docker compose --env-file $backendDir/.env --env-file $frontendDir/.env -f docker-compose.prod.yml build backend frontend');
+  const dockerBuild = releaseGate.indexOf('docker compose --env-file $backendDir/.env.production --env-file $frontendDir/.env.production -f docker-compose.prod.yml build backend frontend');
   const ready = releaseGate.indexOf('RELEASE_CANDIDATE: READY');
   assert.ok(dockerBuild >= 0);
   assert.ok(dockerBuild < ready);

@@ -30,7 +30,7 @@ function writeEnv(root, relative, values) {
 
 function canonicalFiles(root) {
   return {
-    backend: writeEnv(root, 'sawiyaa-backend-v1/.env', {
+    backend: writeEnv(root, 'sawiyaa-backend-v1/.env.production', {
       APP_ENV: 'production',
       NODE_ENV: 'production',
       APP_URL: 'https://sawiyaa.test',
@@ -54,7 +54,7 @@ function canonicalFiles(root) {
       POSTGRES_PASSWORD: 'postgres-password',
       PGDATA: '/var/lib/postgresql/data/pgdata',
     }),
-    frontend: writeEnv(root, 'sawiyaa-frontend-v1/.env', {
+    frontend: writeEnv(root, 'sawiyaa-frontend-v1/.env.production', {
       NEXT_PUBLIC_API_URL: '/api/v1',
       NEXT_PUBLIC_APP_URL: 'https://sawiyaa.test',
       API_PROXY_TARGET: 'http://backend:7000',
@@ -108,16 +108,16 @@ test('detached release stages canonical env files and cleanup removes only the t
       Object.entries(files).map(([name, file]) => [name, fs.readFileSync(file)]),
     );
 
-    assert.equal(fs.existsSync(path.join(releaseRoot, 'sawiyaa-backend-v1/.env')), false);
-    assert.equal(fs.existsSync(path.join(releaseRoot, 'sawiyaa-frontend-v1/.env')), false);
+    assert.equal(fs.existsSync(path.join(releaseRoot, 'sawiyaa-backend-v1/.env.production')), false);
+    assert.equal(fs.existsSync(path.join(releaseRoot, 'sawiyaa-frontend-v1/.env.production')), false);
 
     const staged = runBash(helper, [sourceRoot, releaseRoot]);
     assert.equal(staged.status, 0, `${staged.stdout}\n${staged.stderr}`);
 
     for (const [name, source] of Object.entries(files)) {
       const relative = name === 'backend'
-        ? 'sawiyaa-backend-v1/.env'
-        : 'sawiyaa-frontend-v1/.env';
+        ? 'sawiyaa-backend-v1/.env.production'
+        : 'sawiyaa-frontend-v1/.env.production';
       const target = path.join(releaseRoot, relative);
       assert.deepEqual(fs.readFileSync(target), before[name]);
       if (process.platform !== 'win32')
@@ -147,12 +147,12 @@ test('Docker Compose config succeeds after detached env staging when Docker Comp
     assert.equal(staged.status, 0, `${staged.stdout}\n${staged.stderr}`);
     const config = childProcess.spawnSync(
       'docker',
-      ['compose', '-p', 'sawiyaa', '--env-file', path.join(releaseRoot, 'sawiyaa-backend-v1/.env'), '--env-file', path.join(releaseRoot, 'sawiyaa-frontend-v1/.env'), '-f', path.join(releaseRoot, 'docker-compose.prod.yml'), 'config'],
+      ['compose', '-p', 'sawiyaa', '--env-file', path.join(releaseRoot, 'sawiyaa-backend-v1/.env.production'), '--env-file', path.join(releaseRoot, 'sawiyaa-frontend-v1/.env.production'), '-f', path.join(releaseRoot, 'docker-compose.prod.yml'), 'config'],
       { encoding: 'utf8' },
     );
     assert.equal(config.status, 0, `${config.stdout}\n${config.stderr}`);
     assert.match(config.stdout, /name:\s*sawiyaa/);
-    assert.deepEqual(fs.readFileSync(files.backend), fs.readFileSync(path.join(sourceRoot, 'sawiyaa-backend-v1/.env')));
+    assert.deepEqual(fs.readFileSync(files.backend), fs.readFileSync(path.join(sourceRoot, 'sawiyaa-backend-v1/.env.production')));
   } finally {
     fs.rmSync(sourceRoot, { recursive: true, force: true });
     fs.rmSync(releaseRoot, { recursive: true, force: true });

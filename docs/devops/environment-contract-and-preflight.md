@@ -21,7 +21,7 @@ Required means production cannot proceed without a non-empty valid value. Option
 
 ## Build-time, runtime, and secrets
 
-`NEXT_PUBLIC_*` values are public build-time inputs and require a frontend rebuild when changed. Backend/database values are runtime inputs and generally require restart only. Secrets are never printed, partially displayed, length-counted, or included in Compose diagnostics. Production secret files are passed by explicit path; the validator never assumes they live in Git.
+`NEXT_PUBLIC_*` values are public build-time inputs and require a frontend rebuild when changed. Backend/database values are runtime inputs and generally require restart only. Secrets are never printed, partially displayed, length-counted, or included in Compose diagnostics. Local development uses `sawiyaa-backend-v1/.env` and `sawiyaa-frontend-v1/.env`; production uses `sawiyaa-backend-v1/.env.production` and `sawiyaa-frontend-v1/.env.production`. Production secret files are passed by explicit path; the validator never assumes they live in Git.
 
 ## Local validation
 

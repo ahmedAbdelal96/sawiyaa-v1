@@ -31,7 +31,7 @@ services:
       dockerfile: Dockerfile
     restart: unless-stopped
     env_file:
-      - ./sawiyaa-backend-v1/.env
+      - ${SAWIYAA_BACKEND_RUNTIME_ENV_FILE:-./sawiyaa-backend-v1/.env.production}
     environment:
       SAWIYAA_RELEASE_SHA: ${SAWIYAA_RELEASE_SHA:-}
     volumes:
@@ -105,7 +105,7 @@ services:
         NEXT_PUBLIC_DEBUG_PRACTITIONER_WIZARD: ${NEXT_PUBLIC_DEBUG_PRACTITIONER_WIZARD}
     restart: unless-stopped
     env_file:
-      - ./sawiyaa-frontend-v1/.env
+      - ${SAWIYAA_FRONTEND_RUNTIME_ENV_FILE:-./sawiyaa-frontend-v1/.env.production}
     expose:
       - "3000"
     depends_on:

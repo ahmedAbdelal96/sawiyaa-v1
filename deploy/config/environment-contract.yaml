@@ -384,6 +384,94 @@ variables:
     rebuildRequired: false
     validationOwner: database-authoritative payment routing policy
     description: Optional USD card integration; empty is allowed when USD route is disabled.
+  - name: SAWIYAA_DEV_COUNTRY_CODE
+    service: backend
+    required: false
+    secret: false
+    phase: runtime
+    environments: [local, staging, production]
+    safeDefault: null
+    restartRequired: true
+    rebuildRequired: false
+    validationOwner: backend country-resolution configuration
+    description: Development-only country hint; must remain empty in production.
+  - name: PRACTITIONER_REVIEW_SLA_WEEKEND_DAYS
+    service: backend
+    required: false
+    secret: false
+    phase: runtime
+    environments: [local, staging, production]
+    safeDefault: 5,6
+    restartRequired: true
+    rebuildRequired: false
+    validationOwner: practitioner operations calendar
+    description: Weekend day numbers used by the review SLA calendar.
+  - name: PRACTITIONER_REVIEW_SLA_TIMEZONE
+    service: backend
+    required: false
+    secret: false
+    phase: runtime
+    environments: [local, staging, production]
+    safeDefault: Africa/Cairo
+    restartRequired: true
+    rebuildRequired: false
+    validationOwner: practitioner operations calendar
+    description: Timezone used by the review SLA calendar.
+  - name: SESSION_COMPLETION_CONFIRMATION_SWEEPER_GRACE_MINUTES
+    service: backend
+    required: false
+    secret: false
+    phase: runtime
+    environments: [local, staging, production]
+    safeDefault: 15
+    restartRequired: true
+    rebuildRequired: false
+    validationOwner: session reconciliation configuration
+    description: Grace interval for completion confirmation reconciliation.
+  - name: FINANCIAL_OVERVIEW_SLOW_MS
+    service: backend
+    required: false
+    secret: false
+    phase: runtime
+    environments: [local, staging, production]
+    safeDefault: 500
+    restartRequired: true
+    rebuildRequired: false
+    validationOwner: financial operations diagnostics
+    description: Slow-query diagnostic threshold for financial overview reads.
+  - name: PAYMENT_WEBHOOK_RECEIPT_ROLLOUT_AT
+    service: backend
+    required: false
+    secret: false
+    phase: runtime
+    environments: [local, staging, production]
+    safeDefault: null
+    restartRequired: true
+    rebuildRequired: false
+    validationOwner: accounting reconciliation diagnostics
+    description: Optional rollout timestamp for webhook receipt diagnostics.
+  - name: ALLOW_PAYMOB_CONTROL_BOOTSTRAP
+    service: deployment
+    required: false
+    secret: false
+    phase: deployment
+    environments: [production]
+    safeDefault: null
+    restartRequired: false
+    rebuildRequired: false
+    validationOwner: deployment operator
+    description: One-shot operator approval flag; not enabled by runtime env defaults.
+  - name: ALLOW_DISPOSABLE_PRODUCTION_BOOTSTRAP
+    service: deployment
+    required: false
+    secret: false
+    phase: deployment
+    environments: [staging, production]
+    safeDefault: null
+    restartRequired: false
+    rebuildRequired: false
+    validationOwner: deployment operator
+    description: One-shot disposable bootstrap approval flag.
   - name: NEXT_PUBLIC_API_URL
     service: frontend
     required: true

@@ -6,8 +6,8 @@ PROJECT_DIR="${SAWIYAA_PROJECT_DIR:-/opt/sawiyaa}"
 RUNTIME_UID="${SAWIYAA_RUNTIME_UID:-10001}"
 RUNTIME_GID="${SAWIYAA_RUNTIME_GID:-10001}"
 COMPOSE_FILE="docker-compose.prod.yml"
-BACKEND_ENV_FILE="${SAWIYAA_BACKEND_ENV_FILE:-$PROJECT_DIR/sawiyaa-backend-v1/.env}"
-FRONTEND_ENV_FILE="${SAWIYAA_FRONTEND_ENV_FILE:-$PROJECT_DIR/sawiyaa-frontend-v1/.env}"
+BACKEND_ENV_FILE="${SAWIYAA_BACKEND_ENV_FILE:-$PROJECT_DIR/sawiyaa-backend-v1/.env.production}"
+FRONTEND_ENV_FILE="${SAWIYAA_FRONTEND_ENV_FILE:-$PROJECT_DIR/sawiyaa-frontend-v1/.env.production}"
 LOCK_PATH="${SAWIYAA_DEPLOY_LOCK:-/tmp/sawiyaa-production-deploy.lock}"
 TARGET_SHA="${SAWIYAA_TARGET_SHA:-}"
 APPROVE_BLOCKING="${SAWIYAA_APPROVE_BLOCKING_MIGRATIONS:-false}"
@@ -202,8 +202,8 @@ git worktree add --detach "$VALIDATION_WORKTREE" "$TARGET_SHA" >/dev/null
 WORKTREE_CREATED=1
 bash "$VALIDATION_WORKTREE/deploy/scripts/stage-release-env.sh" \
   "$PROJECT_DIR" "$VALIDATION_WORKTREE"
-TARGET_BACKEND_ENV_FILE="$VALIDATION_WORKTREE/sawiyaa-backend-v1/.env"
-TARGET_FRONTEND_ENV_FILE="$VALIDATION_WORKTREE/sawiyaa-frontend-v1/.env"
+TARGET_BACKEND_ENV_FILE="$VALIDATION_WORKTREE/sawiyaa-backend-v1/.env.production"
+TARGET_FRONTEND_ENV_FILE="$VALIDATION_WORKTREE/sawiyaa-frontend-v1/.env.production"
 
 echo "Validating target-release environment contract and Compose model..."
 if ! bash "$VALIDATION_WORKTREE/deploy/scripts/validate-production-preflight.sh" \

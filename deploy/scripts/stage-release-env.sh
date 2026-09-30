@@ -23,5 +23,5 @@ stage_env_file() {
   install -m 600 -- "$source" "$target"
 }
 
-stage_env_file "sawiyaa-backend-v1/.env"
-stage_env_file "sawiyaa-frontend-v1/.env"
+stage_env_file "sawiyaa-backend-v1/.env.production"
+stage_env_file "sawiyaa-frontend-v1/.env.production"

@@ -528,7 +528,7 @@ function entryAppliesToEnvironment(entry, environment) {
 function canonicalExamplePath(filePath) {
   if (!filePath) return "";
   const directory = path.dirname(filePath);
-  if (path.basename(filePath) === ".env")
+  if ([".env", ".env.production"].includes(path.basename(filePath)))
     return path.join(directory, ".env.example");
   return "";
 }

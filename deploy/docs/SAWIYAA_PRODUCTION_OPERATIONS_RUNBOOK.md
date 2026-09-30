@@ -315,9 +315,11 @@ Write release marker
 Canonical required files:
 
 ```
-sawiyaa-backend-v1/.env
-sawiyaa-frontend-v1/.env
+sawiyaa-backend-v1/.env.production
+sawiyaa-frontend-v1/.env.production
 ```
+
+Local development uses the parallel `.env` files in each service directory.
 
 Rules:
 
@@ -333,18 +335,19 @@ Therefore:
 
 Docker build arguments must match the validated frontend environment.
 
-The backend `.env` is also the source for API, worker, Prisma, Redis, and
-PostgreSQL bootstrap configuration. Compose maps only the required
+The backend `.env.production` is also the source for API, worker, Prisma, Redis,
+and PostgreSQL bootstrap configuration. Compose maps only the required
 `POSTGRES_*`/`PGDATA` values to PostgreSQL; it never injects the full backend
 environment into that container. The production deployment command supplies
 both canonical files explicitly, with backend interpolation first and
 frontend interpolation second. There is no root `.env` dependency.
 
 The older `.env.production.backend`, `.env.production.frontend`,
-`.env.production.db`, and backend `.env.postgres` files are legacy migration
-inputs only. Git updates code; deployment does not replace the canonical
-`.env` files. The worker remains separately orchestrated and must receive the
-same backend `.env`; Redis provisioning remains an external dependency.
+`.env.production.db`, `.env.local`, and backend `.env.postgres` files are
+retired migration inputs or local clutter, not runtime sources. Git updates
+code; deployment does not replace the canonical `.env.production` files. The
+worker remains separately orchestrated and must receive the same backend
+`.env.production`; Redis provisioning remains an external dependency.
 
 ---
 
