@@ -24,5 +24,4 @@ stage_env_file() {
 }
 
 stage_env_file "sawiyaa-backend-v1/.env"
-stage_env_file "sawiyaa-backend-v1/.env.postgres"
 stage_env_file "sawiyaa-frontend-v1/.env"

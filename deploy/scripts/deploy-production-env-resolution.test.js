@@ -49,11 +49,10 @@ function canonicalFiles(root) {
       DAILY_API_BASE_URL: 'https://api.daily.co/v1',
       DAILY_WEBHOOK_SECRET: 'daily-webhook-secret',
       CORPORATE_CODE_PEPPER: 'c'.repeat(32),
-    }),
-    postgres: writeEnv(root, 'sawiyaa-backend-v1/.env.postgres', {
       POSTGRES_DB: 'app',
       POSTGRES_USER: 'user',
       POSTGRES_PASSWORD: 'postgres-password',
+      PGDATA: '/var/lib/postgresql/data/pgdata',
     }),
     frontend: writeEnv(root, 'sawiyaa-frontend-v1/.env', {
       NEXT_PUBLIC_API_URL: '/api/v1',
@@ -110,7 +109,6 @@ test('detached release stages canonical env files and cleanup removes only the t
     );
 
     assert.equal(fs.existsSync(path.join(releaseRoot, 'sawiyaa-backend-v1/.env')), false);
-    assert.equal(fs.existsSync(path.join(releaseRoot, 'sawiyaa-backend-v1/.env.postgres')), false);
     assert.equal(fs.existsSync(path.join(releaseRoot, 'sawiyaa-frontend-v1/.env')), false);
 
     const staged = runBash(helper, [sourceRoot, releaseRoot]);
@@ -119,9 +117,7 @@ test('detached release stages canonical env files and cleanup removes only the t
     for (const [name, source] of Object.entries(files)) {
       const relative = name === 'backend'
         ? 'sawiyaa-backend-v1/.env'
-        : name === 'postgres'
-          ? 'sawiyaa-backend-v1/.env.postgres'
-          : 'sawiyaa-frontend-v1/.env';
+        : 'sawiyaa-frontend-v1/.env';
       const target = path.join(releaseRoot, relative);
       assert.deepEqual(fs.readFileSync(target), before[name]);
       if (process.platform !== 'win32')
@@ -151,7 +147,7 @@ test('Docker Compose config succeeds after detached env staging when Docker Comp
     assert.equal(staged.status, 0, `${staged.stdout}\n${staged.stderr}`);
     const config = childProcess.spawnSync(
       'docker',
-      ['compose', '-p', 'sawiyaa', '--env-file', path.join(releaseRoot, 'sawiyaa-frontend-v1/.env'), '-f', path.join(releaseRoot, 'docker-compose.prod.yml'), 'config'],
+      ['compose', '-p', 'sawiyaa', '--env-file', path.join(releaseRoot, 'sawiyaa-backend-v1/.env'), '--env-file', path.join(releaseRoot, 'sawiyaa-frontend-v1/.env'), '-f', path.join(releaseRoot, 'docker-compose.prod.yml'), 'config'],
       { encoding: 'utf8' },
     );
     assert.equal(config.status, 0, `${config.stdout}\n${config.stderr}`);
@@ -195,7 +191,7 @@ if [[ "$1" == "info" ]]; then exit 0; fi
 if [[ "$1" == "compose" && "$2" == "version" ]]; then exit 0; fi
 if [[ "$1" == "compose" && "$*" == *" config "* ]]; then echo 'env file ZOOM_CLIENT_SECRET=super-secret must exist' >&2; exit 1; fi
 if [[ "$1" == "run" ]]; then
-  workspace=""; backend_env=""; frontend_env=""; db_env=""
+  workspace=""; backend_env=""; frontend_env=""
   while [[ $# -gt 0 ]]; do
     if [[ "$1" == "-v" ]]; then
       mount="$2"
@@ -203,14 +199,13 @@ if [[ "$1" == "run" ]]; then
         *:/workspace:ro) workspace="\${mount%:/workspace:ro}" ;;
         *:/inputs/backend.env:ro) backend_env="\${mount%:/inputs/backend.env:ro}" ;;
         *:/inputs/frontend.env:ro) frontend_env="\${mount%:/inputs/frontend.env:ro}" ;;
-        *:/inputs/db.env:ro) db_env="\${mount%:/inputs/db.env:ro}" ;;
       esac
       shift 2
     else
       shift
     fi
   done
-  "$node_executable" "$workspace/deploy/scripts/validate-environment-contract.js" --backend-env "$backend_env" --frontend-env "$frontend_env" --db-env "$db_env" --environment production
+  "$node_executable" "$workspace/deploy/scripts/validate-environment-contract.js" --backend-env "$backend_env" --frontend-env "$frontend_env" --environment production
   exit $?
 fi
 echo 'unexpected docker readiness call' >&2; exit 99
@@ -221,7 +216,7 @@ echo 'unexpected docker readiness call' >&2; exit 99
       : process.env.PATH;
     const run = runBash(
       path.join(root, 'deploy/scripts/validate-production-preflight.sh'),
-      ['--project-dir', root, '--backend-env', files.backend, '--frontend-env', files.frontend, '--db-env', files.postgres, '--target-only', '--skip-lock', '--min-free-mb', '1'],
+      ['--project-dir', root, '--backend-env', files.backend, '--frontend-env', files.frontend, '--target-only', '--skip-lock', '--min-free-mb', '1'],
       {
         PATH: `${bin}:${shellPath}`,
         SAWIYAA_DAILY_WEBHOOK_VALIDATOR_PATH: path.join(root, 'deploy/scripts/validate-daily-webhook.js').replaceAll('\\', '/'),
@@ -259,7 +254,7 @@ if [[ "\$1" == "compose" && "\$*" == *" ps --status running --services"* ]]; the
 if [[ "\$1" == "compose" && "\$*" == *" exec -T postgres pg_isready"* ]]; then echo "sawiyaa-postgres-1" | tee -a "${calls.replaceAll('\\\\', '/')}"; exit 0; fi
 if [[ "\$1" == "run" ]]; then
   if [[ "\$*" == *"validate-daily-webhook.js"* ]]; then echo "PASS DAILY_WEBHOOK_READY"; exit 0; fi
-  workspace=""; backend_env=""; frontend_env=""; db_env=""
+  workspace=""; backend_env=""; frontend_env=""
   while [[ \$# -gt 0 ]]; do
     if [[ "\$1" == "-v" ]]; then
       mount="\$2"
@@ -267,14 +262,13 @@ if [[ "\$1" == "run" ]]; then
         *:/workspace:ro) workspace="\${mount%:/workspace:ro}" ;;
         *:/inputs/backend.env:ro) backend_env="\${mount%:/inputs/backend.env:ro}" ;;
         *:/inputs/frontend.env:ro) frontend_env="\${mount%:/inputs/frontend.env:ro}" ;;
-        *:/inputs/db.env:ro) db_env="\${mount%:/inputs/db.env:ro}" ;;
       esac
       shift 2
     else
       shift
     fi
   done
-  "\$node_executable" "\$workspace/deploy/scripts/validate-environment-contract.js" --backend-env "\$backend_env" --frontend-env "\$frontend_env" --db-env "\$db_env" --environment production
+  "\$node_executable" "\$workspace/deploy/scripts/validate-environment-contract.js" --backend-env "\$backend_env" --frontend-env "\$frontend_env" --environment production
   exit \$?
 fi
 echo 'unexpected docker call' >&2; exit 99
@@ -283,7 +277,7 @@ echo 'unexpected docker call' >&2; exit 99
     const shellPath = process.platform === 'win32' ? process.env.PATH.replaceAll(';', ':') : process.env.PATH;
     const run = runBash(
       path.join(root, 'deploy/scripts/validate-production-preflight.sh'),
-      ['--project-dir', root, '--backend-env', files.backend, '--frontend-env', files.frontend, '--db-env', files.postgres, '--target-only', '--skip-lock', '--min-free-mb', '1'],
+      ['--project-dir', root, '--backend-env', files.backend, '--frontend-env', files.frontend, '--target-only', '--skip-lock', '--min-free-mb', '1'],
       {
         PATH: `${bin}:${shellPath}`,
         SAWIYAA_DAILY_WEBHOOK_VALIDATOR_PATH: path.join(root, 'deploy/scripts/validate-daily-webhook.js').replaceAll('\\', '/'),

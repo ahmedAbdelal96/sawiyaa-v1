@@ -28,13 +28,13 @@ Required means production cannot proceed without a non-empty valid value. Option
 With safe local/fixture env files:
 
 ```text
-node deploy/scripts/validate-environment-contract.js --backend-env <backend-env> --frontend-env <frontend-env> --db-env <db-env> --environment production
+node deploy/scripts/validate-environment-contract.js --backend-env <backend-env> --frontend-env <frontend-env> --environment production
 ```
 
 On Linux/WSL with a disposable Compose environment:
 
 ```text
-bash deploy/scripts/validate-production-preflight.sh --project-dir "$PWD" --backend-env <backend-env> --frontend-env <frontend-env> --db-env <db-env>
+bash deploy/scripts/validate-production-preflight.sh --project-dir "$PWD" --backend-env <backend-env> --frontend-env <frontend-env>
 ```
 
 For deterministic tests without Docker:

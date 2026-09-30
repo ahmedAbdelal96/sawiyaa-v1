@@ -18,7 +18,6 @@ $frontendDir = Join-Path $repoRoot 'sawiyaa-frontend-v1'
 $generatedPrismaDir = Join-Path $backendDir 'src\generated\prisma'
 $temporaryEnvFiles = @(
   (Join-Path $backendDir '.env'),
-  (Join-Path $backendDir '.env.postgres'),
   (Join-Path $frontendDir '.env')
 )
 $createdEnvFiles = @()
@@ -34,7 +33,6 @@ try {
 
   foreach ($pair in @(
     @((Join-Path $backendDir '.env.example'), (Join-Path $backendDir '.env')),
-    @((Join-Path $backendDir '.env.postgres.example'), (Join-Path $backendDir '.env.postgres')),
     @((Join-Path $frontendDir '.env.example'), (Join-Path $frontendDir '.env'))
   )) {
     Copy-Item -LiteralPath $pair[0] -Destination $pair[1]
@@ -67,11 +65,11 @@ try {
 
   Invoke-Required 'deployment tests' { node --test deploy/scripts/*.test.js }
   Invoke-Required 'Compose model validation' {
-    docker compose --env-file $frontendDir/.env -f docker-compose.prod.yml config | Out-Null
+    docker compose --env-file $backendDir/.env --env-file $frontendDir/.env -f docker-compose.prod.yml config | Out-Null
   }
   Invoke-Required 'Docker daemon availability' { docker info | Out-Null }
   Invoke-Required 'exact production backend/frontend Docker build' {
-    docker compose --env-file $frontendDir/.env -f docker-compose.prod.yml build backend frontend
+    docker compose --env-file $backendDir/.env --env-file $frontendDir/.env -f docker-compose.prod.yml build backend frontend
   }
 
   Write-Host 'RELEASE_CANDIDATE: READY'

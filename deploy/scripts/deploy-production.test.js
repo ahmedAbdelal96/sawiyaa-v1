@@ -21,8 +21,8 @@ test('target validation precedes active checkout, build, migration, and restart'
   assert.ok(position('flock -n 9') < position('--bootstrap-only'));
   assert.ok(position('git fetch --no-tags origin') < position('git worktree add --detach'));
   assert.ok(position('--target-only --skip-lock') < position('git checkout -f main'));
-  assert.ok(position('git checkout -f main') < position('docker compose --env-file "$FRONTEND_ENV_FILE" -f "$COMPOSE_FILE" build'));
-  assert.ok(position('docker compose --env-file "$FRONTEND_ENV_FILE" -f "$COMPOSE_FILE" build') < position('db:bootstrap:production'));
+  assert.ok(position('git checkout -f main') < position('docker compose --env-file "$BACKEND_ENV_FILE" --env-file "$FRONTEND_ENV_FILE" -f "$COMPOSE_FILE" build'));
+  assert.ok(position('docker compose --env-file "$BACKEND_ENV_FILE" --env-file "$FRONTEND_ENV_FILE" -f "$COMPOSE_FILE" build') < position('db:bootstrap:production'));
   assert.ok(position('config:validate:production') < position('db:bootstrap:production'));
   assert.ok(position('db:bootstrap:production') < position('up -d backend frontend nginx'));
 });
@@ -49,9 +49,9 @@ test('deployment uses status-only contract/preflight diagnostics', () => {
 
 test('deployment defaults to canonical application env files', () => {
   assert.match(script, /sawiyaa-backend-v1\/\.env/);
-  assert.match(script, /sawiyaa-backend-v1\/\.env\.postgres/);
   assert.match(script, /sawiyaa-frontend-v1\/\.env/);
   assert.doesNotMatch(script, /\.env\.production\.(backend|frontend|db)/);
+  assert.doesNotMatch(script, /\.env\.postgres/);
 });
 
 test('production Compose identity is fixed across deployment phases', () => {
@@ -84,6 +84,10 @@ test('detached target receives canonical env files before preflight', () => {
 
 test('deployment stages canonical env files into the detached target and avoids Compose env overrides', () => {
   assert.match(script, /stage-release-env\.sh/);
+  assert.match(script, /TARGET_BACKEND_ENV_FILE="\$VALIDATION_WORKTREE\/sawiyaa-backend-v1\/\.env"/);
+  assert.match(script, /TARGET_FRONTEND_ENV_FILE="\$VALIDATION_WORKTREE\/sawiyaa-frontend-v1\/\.env"/);
+  assert.match(script, /--backend-env "\$TARGET_BACKEND_ENV_FILE"/);
+  assert.match(script, /--frontend-env "\$TARGET_FRONTEND_ENV_FILE"/);
   const preflight = fs.readFileSync(
     path.join(__dirname, 'validate-production-preflight.sh'),
     'utf8',
@@ -165,9 +169,13 @@ test('deployment writes a successful release marker after public health checks',
 
 test('Compose frontend build args come from interpolation, not duplicated production literals', () => {
   const compose = fs.readFileSync(path.resolve(__dirname, '../../docker-compose.prod.yml'), 'utf8');
-  assert.match(compose, /env_file:\n\s+- \.\/sawiyaa-backend-v1\/\.env\.postgres/);
   assert.match(compose, /env_file:\n\s+- \.\/sawiyaa-backend-v1\/\.env/);
   assert.match(compose, /env_file:\n\s+- \.\/sawiyaa-frontend-v1\/\.env/);
+  assert.match(compose, /POSTGRES_DB: \$\{POSTGRES_DB\}/);
+  assert.match(compose, /POSTGRES_USER: \$\{POSTGRES_USER\}/);
+  assert.match(compose, /POSTGRES_PASSWORD: \$\{POSTGRES_PASSWORD\}/);
+  assert.match(compose, /PGDATA: \$\{PGDATA:-\/var\/lib\/postgresql\/data\/pgdata\}/);
+  assert.doesNotMatch(compose, /\.env\.postgres/);
   assert.doesNotMatch(compose, /\.env\.production\.(backend|frontend|db)/);
   assert.match(compose, /NEXT_PUBLIC_API_URL: \$\{NEXT_PUBLIC_API_URL\}/);
   assert.match(compose, /NEXT_PUBLIC_APP_URL: \$\{NEXT_PUBLIC_APP_URL\}/);
@@ -178,7 +186,7 @@ test('Compose frontend build args come from interpolation, not duplicated produc
 
 test('release gate cannot report READY without the exact backend/frontend Docker build', () => {
   assert.match(releaseGate, /git status --porcelain/);
-  const dockerBuild = releaseGate.indexOf('docker compose --env-file $frontendDir/.env -f docker-compose.prod.yml build backend frontend');
+  const dockerBuild = releaseGate.indexOf('docker compose --env-file $backendDir/.env --env-file $frontendDir/.env -f docker-compose.prod.yml build backend frontend');
   const ready = releaseGate.indexOf('RELEASE_CANDIDATE: READY');
   assert.ok(dockerBuild >= 0);
   assert.ok(dockerBuild < ready);

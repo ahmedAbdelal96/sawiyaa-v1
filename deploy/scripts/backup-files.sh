@@ -6,7 +6,8 @@ export COMPOSE_PROJECT_NAME=sawiyaa
 PROJECT_DIR="${SAWIYAA_PROJECT_DIR:-/opt/sawiyaa}"
 BACKUP_DIR="${SAWIYAA_BACKUP_DIR:-/opt/sawiyaa-backups}"
 COMPOSE_FILE="${SAWIYAA_COMPOSE_FILE:-$PROJECT_DIR/docker-compose.prod.yml}"
-COMPOSE_ENV_FILE="${SAWIYAA_COMPOSE_ENV_FILE:-$PROJECT_DIR/sawiyaa-frontend-v1/.env}"
+BACKEND_ENV_FILE="${SAWIYAA_BACKEND_ENV_FILE:-$PROJECT_DIR/sawiyaa-backend-v1/.env}"
+FRONTEND_ENV_FILE="${SAWIYAA_FRONTEND_ENV_FILE:-$PROJECT_DIR/sawiyaa-frontend-v1/.env}"
 BACKEND_SERVICE="${SAWIYAA_BACKEND_SERVICE:-backend}"
 TARGET_SHA="${SAWIYAA_TARGET_SHA:-unknown}"
 RETENTION_COUNT="${SAWIYAA_BACKUP_RETENTION_COUNT:-20}"
@@ -21,11 +22,8 @@ mkdir -p -- "$BACKUP_DIR" || fail "Backup directory is unavailable"
 [[ -w "$BACKUP_DIR" ]] || fail "Backup directory is not writable"
 
 cd "$PROJECT_DIR"
-compose_args=(-f "$COMPOSE_FILE")
-if [[ -n "$COMPOSE_ENV_FILE" ]]; then
-  [[ -r "$COMPOSE_ENV_FILE" ]] || fail "Compose environment file is not readable"
-  compose_args+=(--env-file "$COMPOSE_ENV_FILE")
-fi
+compose_args=(--env-file "$BACKEND_ENV_FILE" --env-file "$FRONTEND_ENV_FILE" -f "$COMPOSE_FILE")
+[[ -r "$BACKEND_ENV_FILE" && -r "$FRONTEND_ENV_FILE" ]] || fail "Canonical Compose environment files are not readable"
 docker compose "${compose_args[@]}" ps --status running --services | grep -Fxq "$BACKEND_SERVICE" || fail "Backend service is not running"
 
 short_sha="${TARGET_SHA:0:12}"

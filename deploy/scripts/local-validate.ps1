@@ -59,8 +59,6 @@ $backendEnv = Join-Path $backendDir '.env'
 $backendEnvExample = Join-Path $backendDir '.env.example'
 $frontendEnv = Join-Path $frontendDir '.env'
 $frontendEnvExample = Join-Path $frontendDir '.env.example'
-$dbEnv = Join-Path $backendDir '.env.postgres'
-$dbEnvExample = Join-Path $backendDir '.env.postgres.example'
 
 try {
   Write-Info "Repo root: $repoRoot"
@@ -77,7 +75,6 @@ try {
 
   Ensure-FileFromExample -TargetPath $backendEnv -ExamplePath $backendEnvExample
   Ensure-FileFromExample -TargetPath $frontendEnv -ExamplePath $frontendEnvExample
-  Ensure-FileFromExample -TargetPath $dbEnv -ExamplePath $dbEnvExample
 
   Write-Info "Running backend checks..."
   Push-Location $backendDir
@@ -101,14 +98,14 @@ try {
   }
 
   Write-Info "Validating Docker Compose configuration..."
-  Invoke-Checked 'docker compose --env-file sawiyaa-frontend-v1/.env -f docker-compose.prod.yml config' {
-    docker compose --env-file $frontendEnv -f docker-compose.prod.yml config | Out-Null
+  Invoke-Checked 'docker compose --env-file sawiyaa-backend-v1/.env --env-file sawiyaa-frontend-v1/.env -f docker-compose.prod.yml config' {
+    docker compose --env-file $backendEnv --env-file $frontendEnv -f docker-compose.prod.yml config | Out-Null
   }
 
   if ($BuildDocker) {
     Write-Info "Building Docker images for local validation..."
-    Invoke-Checked 'docker compose --env-file sawiyaa-frontend-v1/.env -f docker-compose.prod.yml build' {
-      docker compose --env-file $frontendEnv -f docker-compose.prod.yml build
+    Invoke-Checked 'docker compose --env-file sawiyaa-backend-v1/.env --env-file sawiyaa-frontend-v1/.env -f docker-compose.prod.yml build' {
+      docker compose --env-file $backendEnv --env-file $frontendEnv -f docker-compose.prod.yml build
     }
   }
 

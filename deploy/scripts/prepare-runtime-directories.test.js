@@ -30,7 +30,7 @@ test('runtime preparation creates and owns only the backend log bind mount', () 
 
 test('deployment prepares runtime directories before image build', () => {
   const prepare = deploy.indexOf('prepare-runtime-directories.sh');
-  const build = deploy.indexOf('docker compose --env-file "$FRONTEND_ENV_FILE" -f "$COMPOSE_FILE" build');
+  const build = deploy.indexOf('docker compose --env-file "$BACKEND_ENV_FILE" --env-file "$FRONTEND_ENV_FILE" -f "$COMPOSE_FILE" build');
   assert.ok(prepare >= 0);
   assert.ok(build > prepare);
 });

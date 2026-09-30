@@ -7,7 +7,6 @@ RUNTIME_UID="${SAWIYAA_RUNTIME_UID:-10001}"
 RUNTIME_GID="${SAWIYAA_RUNTIME_GID:-10001}"
 COMPOSE_FILE="docker-compose.prod.yml"
 BACKEND_ENV_FILE="${SAWIYAA_BACKEND_ENV_FILE:-$PROJECT_DIR/sawiyaa-backend-v1/.env}"
-POSTGRES_ENV_FILE="${SAWIYAA_POSTGRES_ENV_FILE:-$PROJECT_DIR/sawiyaa-backend-v1/.env.postgres}"
 FRONTEND_ENV_FILE="${SAWIYAA_FRONTEND_ENV_FILE:-$PROJECT_DIR/sawiyaa-frontend-v1/.env}"
 LOCK_PATH="${SAWIYAA_DEPLOY_LOCK:-/tmp/sawiyaa-production-deploy.lock}"
 TARGET_SHA="${SAWIYAA_TARGET_SHA:-}"
@@ -98,8 +97,8 @@ trap 'cleanup_phase_0b; cleanup_validation_worktree' EXIT INT TERM
 print_logs() {
   local exit_code=$?
   echo "Deployment failed. Service status and redacted recent logs follow:" >&2
-  docker compose --env-file "$FRONTEND_ENV_FILE" -f "$COMPOSE_FILE" ps >&2 || true
-  docker compose --env-file "$FRONTEND_ENV_FILE" -f "$COMPOSE_FILE" logs --tail=80 postgres backend frontend nginx 2>&1 |
+  docker compose --env-file "$BACKEND_ENV_FILE" --env-file "$FRONTEND_ENV_FILE" -f "$COMPOSE_FILE" ps >&2 || true
+  docker compose --env-file "$BACKEND_ENV_FILE" --env-file "$FRONTEND_ENV_FILE" -f "$COMPOSE_FILE" logs --tail=80 postgres backend frontend nginx 2>&1 |
     sed -E 's/([A-Za-z_]*(password|secret|token|api[_-]?key|authorization|database[_-]?url)[A-Za-z_]*[=:][[:space:]]*)[^[:space:],;]+/\1[REDACTED]/Ig' >&2 || true
   exit "$exit_code"
 }
@@ -108,7 +107,7 @@ trap print_logs ERR
 read_provider_state() {
   local require_config_catalog="${1:-false}"
   local catalog_exists
-  catalog_exists="$(docker compose --env-file "$FRONTEND_ENV_FILE" -f "$COMPOSE_FILE" exec -T postgres sh -lc \
+  catalog_exists="$(docker compose --env-file "$BACKEND_ENV_FILE" --env-file "$FRONTEND_ENV_FILE" -f "$COMPOSE_FILE" exec -T postgres sh -lc \
     'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Atqc "SELECT to_regclass('"'"'public.\"ConfigKeyCatalog\"'"'"') IS NOT NULL"' 2>/dev/null)" || {
       echo "Unable to check database payment provider schema; deployment stopped." >&2
       return 1
@@ -122,7 +121,7 @@ read_provider_state() {
     return 0
   fi
 
-  docker compose --env-file "$FRONTEND_ENV_FILE" -f "$COMPOSE_FILE" exec -T postgres sh -lc \
+  docker compose --env-file "$BACKEND_ENV_FILE" --env-file "$FRONTEND_ENV_FILE" -f "$COMPOSE_FILE" exec -T postgres sh -lc \
     'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -AtF "=" -c "SELECT c.key, COALESCE((SELECT v.\"valueBoolean\"::text FROM \"ConfigValue\" v WHERE v.\"configKeyId\" = c.id AND v.\"scopeType\" = '\''GLOBAL'\'' AND v.\"scopeRefId\" IS NULL AND v.\"isActive\" = true ORDER BY v.priority DESC LIMIT 1), '\''false'\'') FROM \"ConfigKeyCatalog\" c WHERE c.key IN ('\''payment.provider.stripe.enabled'\'', '\''payment.provider.paymob.enabled'\'') ORDER BY c.key"' \
     | sed -n -E 's/^payment\.provider\.stripe\.enabled=(true|false)$/stripe=\1/p; s/^payment\.provider\.paymob\.enabled=(true|false)$/paymob=\1/p' \
     > "$PROVIDER_STATE_FILE" || {
@@ -163,8 +162,7 @@ bash "$PROJECT_DIR/deploy/scripts/validate-production-preflight.sh" \
   --project-dir "$PROJECT_DIR" \
   --environment production \
   --backend-env "$BACKEND_ENV_FILE" \
-  --frontend-env "$FRONTEND_ENV_FILE" \
-  --db-env "$POSTGRES_ENV_FILE"
+  --frontend-env "$FRONTEND_ENV_FILE"
 
 echo "Fetching the approved target commit without changing the active checkout..."
 if [[ -n "$TARGET_SHA" ]]; then
@@ -204,15 +202,16 @@ git worktree add --detach "$VALIDATION_WORKTREE" "$TARGET_SHA" >/dev/null
 WORKTREE_CREATED=1
 bash "$VALIDATION_WORKTREE/deploy/scripts/stage-release-env.sh" \
   "$PROJECT_DIR" "$VALIDATION_WORKTREE"
+TARGET_BACKEND_ENV_FILE="$VALIDATION_WORKTREE/sawiyaa-backend-v1/.env"
+TARGET_FRONTEND_ENV_FILE="$VALIDATION_WORKTREE/sawiyaa-frontend-v1/.env"
 
 echo "Validating target-release environment contract and Compose model..."
 if ! bash "$VALIDATION_WORKTREE/deploy/scripts/validate-production-preflight.sh" \
   --target-only --skip-lock \
   --project-dir "$VALIDATION_WORKTREE" \
   --environment production \
-  --backend-env "$BACKEND_ENV_FILE" \
-  --frontend-env "$FRONTEND_ENV_FILE" \
-  --db-env "$POSTGRES_ENV_FILE"; then
+  --backend-env "$TARGET_BACKEND_ENV_FILE" \
+  --frontend-env "$TARGET_FRONTEND_ENV_FILE"; then
   cleanup_validation_worktree
   [[ "$(git rev-parse HEAD)" == "$ACTIVE_HEAD" ]] || { echo "BLOCKING ACTIVE_RELEASE_CHANGED_ON_TARGET_FAILURE" >&2; exit 2; }
   echo "Target-release validation failed; active release was not changed." >&2
@@ -229,10 +228,10 @@ git checkout -f main
 git reset --hard "$TARGET_SHA"
 
 echo "Validating compose configuration..."
-docker compose --env-file "$FRONTEND_ENV_FILE" -f "$COMPOSE_FILE" config >/dev/null
+docker compose --env-file "$BACKEND_ENV_FILE" --env-file "$FRONTEND_ENV_FILE" -f "$COMPOSE_FILE" config >/dev/null
 
 echo "Starting PostgreSQL for database-backed environment checks..."
-docker compose --env-file "$FRONTEND_ENV_FILE" -f "$COMPOSE_FILE" up -d postgres
+docker compose --env-file "$BACKEND_ENV_FILE" --env-file "$FRONTEND_ENV_FILE" -f "$COMPOSE_FILE" up -d postgres
 PROVIDER_STATE_FILE="$(mktemp "${TMPDIR:-/tmp}/sawiyaa-provider-state.XXXXXX")"
 read_provider_state false || exit 1
 if ! bash "$PROJECT_DIR/deploy/scripts/validate-production-preflight.sh" \
@@ -241,31 +240,30 @@ if ! bash "$PROJECT_DIR/deploy/scripts/validate-production-preflight.sh" \
   --environment production \
   --backend-env "$BACKEND_ENV_FILE" \
   --frontend-env "$FRONTEND_ENV_FILE" \
-  --db-env "$POSTGRES_ENV_FILE" \
   --provider-state-file "$PROVIDER_STATE_FILE"; then
   echo "Database-backed environment validation failed; deployment stopped before build." >&2
   exit 1
 fi
 
 echo "Building backend and frontend images..."
-docker compose --env-file "$FRONTEND_ENV_FILE" -f "$COMPOSE_FILE" build backend frontend
+docker compose --env-file "$BACKEND_ENV_FILE" --env-file "$FRONTEND_ENV_FILE" -f "$COMPOSE_FILE" build backend frontend
 
 echo "Validating backend runtime configuration before backup and migrations..."
-docker compose --env-file "$FRONTEND_ENV_FILE" -f "$COMPOSE_FILE" run --rm --no-deps backend \
+docker compose --env-file "$BACKEND_ENV_FILE" --env-file "$FRONTEND_ENV_FILE" -f "$COMPOSE_FILE" run --rm --no-deps backend \
   npm run config:validate:production || {
     echo "Backend runtime environment validation failed; backup and migrations were not run." >&2
     exit 1
   }
 
 echo "Checking backend log bind-mount write access..."
-docker compose --env-file "$FRONTEND_ENV_FILE" -f "$COMPOSE_FILE" run --rm --no-deps backend \
+docker compose --env-file "$BACKEND_ENV_FILE" --env-file "$FRONTEND_ENV_FILE" -f "$COMPOSE_FILE" run --rm --no-deps backend \
   sh -c 'touch /app/logs/.write-test && rm /app/logs/.write-test' || {
     echo "Backend container user cannot write to /app/logs (host path: $PROJECT_DIR/logs/backend)" >&2
     exit 1
   }
 
 APPLIED_MIGRATIONS_FILE="$(mktemp "${TMPDIR:-/tmp}/sawiyaa-applied-migrations.XXXXXX")"
-docker compose --env-file "$FRONTEND_ENV_FILE" -f "$COMPOSE_FILE" exec -T postgres sh -lc \
+docker compose --env-file "$BACKEND_ENV_FILE" --env-file "$FRONTEND_ENV_FILE" -f "$COMPOSE_FILE" exec -T postgres sh -lc \
   'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Atqc "SELECT migration_name FROM _prisma_migrations WHERE finished_at IS NOT NULL ORDER BY migration_name"' > "$APPLIED_MIGRATIONS_FILE" || {
     echo "Unable to read applied Prisma migrations; migration was not run." >&2
     exit 1
@@ -316,7 +314,8 @@ echo "Creating and verifying database backup before migrations..."
 BACKUP_TIMESTAMP="$(date -u +%Y%m%d-%H%M%S)"
 SAWIYAA_PROJECT_DIR="$PROJECT_DIR" \
 SAWIYAA_COMPOSE_FILE="$PROJECT_DIR/$COMPOSE_FILE" \
-SAWIYAA_COMPOSE_ENV_FILE="$FRONTEND_ENV_FILE" \
+SAWIYAA_BACKEND_ENV_FILE="$BACKEND_ENV_FILE" \
+SAWIYAA_FRONTEND_ENV_FILE="$FRONTEND_ENV_FILE" \
 SAWIYAA_TARGET_SHA="$TARGET_SHA" \
 SAWIYAA_BACKUP_TIMESTAMP="$BACKUP_TIMESTAMP" \
   bash "$PROJECT_DIR/deploy/scripts/backup-db.sh"
@@ -327,7 +326,8 @@ DB_BACKUP_FILE="$DB_BACKUP_DIR/sawiyaa-${BACKUP_TIMESTAMP}-${SHORT_TARGET_SHA}.d
 echo "Creating and verifying unified file-volume backup matched to the database backup..."
 SAWIYAA_PROJECT_DIR="$PROJECT_DIR" \
 SAWIYAA_COMPOSE_FILE="$PROJECT_DIR/$COMPOSE_FILE" \
-SAWIYAA_COMPOSE_ENV_FILE="$FRONTEND_ENV_FILE" \
+SAWIYAA_BACKEND_ENV_FILE="$BACKEND_ENV_FILE" \
+SAWIYAA_FRONTEND_ENV_FILE="$FRONTEND_ENV_FILE" \
 SAWIYAA_TARGET_SHA="$TARGET_SHA" \
 SAWIYAA_BACKUP_TIMESTAMP="$BACKUP_TIMESTAMP" \
 SAWIYAA_DB_BACKUP_FILE="$DB_BACKUP_FILE" \
@@ -342,7 +342,7 @@ fi
 if [[ "$ALLOW_PAYMOB_CONTROL_BOOTSTRAP" == "true" ]]; then
   bootstrap_env_args+=(-e ALLOW_PAYMOB_CONTROL_BOOTSTRAP=true)
 fi
-docker compose --env-file "$FRONTEND_ENV_FILE" -f "$COMPOSE_FILE" run --rm \
+docker compose --env-file "$BACKEND_ENV_FILE" --env-file "$FRONTEND_ENV_FILE" -f "$COMPOSE_FILE" run --rm \
   "${bootstrap_env_args[@]}" backend npm run db:bootstrap:production
 echo "PRODUCTION_BOOTSTRAP: SUCCESS"
 read_provider_state true || exit 1
@@ -352,16 +352,15 @@ if ! bash "$PROJECT_DIR/deploy/scripts/validate-production-preflight.sh" \
   --environment production \
   --backend-env "$BACKEND_ENV_FILE" \
   --frontend-env "$FRONTEND_ENV_FILE" \
-  --db-env "$POSTGRES_ENV_FILE" \
   --provider-state-file "$PROVIDER_STATE_FILE"; then
   echo "Database-backed environment validation failed after bootstrap; deployment stopped before service start." >&2
   exit 1
 fi
 
 echo "Starting backend, frontend, and nginx..."
-docker compose --env-file "$FRONTEND_ENV_FILE" -f "$COMPOSE_FILE" up -d backend frontend nginx
+docker compose --env-file "$BACKEND_ENV_FILE" --env-file "$FRONTEND_ENV_FILE" -f "$COMPOSE_FILE" up -d backend frontend nginx
 
-compose_running_services="$(docker compose --env-file "$FRONTEND_ENV_FILE" -f "$COMPOSE_FILE" ps --status running --services)"
+compose_running_services="$(docker compose --env-file "$BACKEND_ENV_FILE" --env-file "$FRONTEND_ENV_FILE" -f "$COMPOSE_FILE" ps --status running --services)"
 for required_service in postgres backend frontend nginx; do
   grep -Fxq "$required_service" <<<"$compose_running_services" || {
     echo "Required production service is not running: $required_service" >&2
@@ -370,7 +369,7 @@ for required_service in postgres backend frontend nginx; do
 done
 
 for healthy_service in postgres backend frontend; do
-  container_id="$(docker compose --env-file "$FRONTEND_ENV_FILE" -f "$COMPOSE_FILE" ps -q "$healthy_service")"
+  container_id="$(docker compose --env-file "$BACKEND_ENV_FILE" --env-file "$FRONTEND_ENV_FILE" -f "$COMPOSE_FILE" ps -q "$healthy_service")"
   health_status="$(docker inspect --format '{{if .State.Health}}{{.State.Health.Status}}{{else}}no-healthcheck{{end}}' "$container_id" 2>/dev/null || true)"
   [[ "$health_status" == "healthy" ]] || {
     echo "Required production service is not healthy: $healthy_service ($health_status)" >&2

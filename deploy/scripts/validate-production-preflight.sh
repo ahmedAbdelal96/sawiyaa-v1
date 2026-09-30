@@ -6,7 +6,7 @@ export COMPOSE_PROJECT_NAME=sawiyaa
 # recreates, migrates, seeds, backs up, or modifies environment files.
 PROJECT_DIR="${SAWIYAA_PROJECT_DIR:-$(pwd)}"
 ENVIRONMENT=production
-BACKEND_ENV=""; FRONTEND_ENV=""; DB_ENV=""; COMPOSE_FILE=""
+BACKEND_ENV=""; FRONTEND_ENV=""; COMPOSE_FILE=""
 MIN_FREE_MB="${SAWIYAA_MIN_FREE_MB:-2048}"
 LOCK_PATH="${SAWIYAA_DEPLOY_LOCK:-/tmp/sawiyaa-production-deploy.lock}"
 MOCK=0; CHECK_LOCK_ONLY=0; SKIP_LOCK=0; BOOTSTRAP_ONLY=0; TARGET_ONLY=0; BLOCKERS=0; WARNINGS=0; TEMP_DIR=""; COMPOSE_MODEL_OK=0
@@ -21,7 +21,6 @@ while [[ $# -gt 0 ]]; do
     --environment) ENVIRONMENT="$2"; shift 2;;
     --backend-env) BACKEND_ENV="$2"; shift 2;;
     --frontend-env) FRONTEND_ENV="$2"; shift 2;;
-    --db-env) DB_ENV="$2"; shift 2;;
     --compose-file) COMPOSE_FILE="$2"; shift 2;;
     --min-free-mb) MIN_FREE_MB="$2"; shift 2;;
     --lock-path) LOCK_PATH="$2"; shift 2;;
@@ -129,8 +128,7 @@ fi
 # 9-10. Environment files and status-only validator.
 BACKEND_ENV="${BACKEND_ENV:-$PROJECT_DIR/sawiyaa-backend-v1/.env}"
 FRONTEND_ENV="${FRONTEND_ENV:-$PROJECT_DIR/sawiyaa-frontend-v1/.env}"
-DB_ENV="${DB_ENV:-$PROJECT_DIR/sawiyaa-backend-v1/.env.postgres}"
-for file in "$BACKEND_ENV" "$FRONTEND_ENV" "$DB_ENV"; do
+for file in "$BACKEND_ENV" "$FRONTEND_ENV"; do
   [[ -r "$file" ]] && pass "ENV_FILE_PRESENT $(basename -- "$file")" || block "ENV_FILE_MISSING $(basename -- "$file")"
 done
 
@@ -154,7 +152,6 @@ run_environment_validator() {
   local project_root="$2"
   local backend_env="$3"
   local frontend_env="$4"
-  local db_env="$5"
   local image="${SAWIYAA_VALIDATOR_NODE_IMAGE:-node:20-bookworm-slim}"
   local provider_args=()
   if [[ -n "$PROVIDER_STATE_FILE" ]]; then
@@ -167,7 +164,6 @@ run_environment_validator() {
     node "$validator" \
       --backend-env "$backend_env" \
       --frontend-env "$frontend_env" \
-      --db-env "$db_env" \
       --environment "$ENVIRONMENT" \
       "${provider_args[@]}"
     return $?
@@ -191,12 +187,10 @@ run_environment_validator() {
     -v "$project_root:/workspace:ro" \
     -v "$backend_env:/inputs/backend.env:ro" \
     -v "$frontend_env:/inputs/frontend.env:ro" \
-    -v "$db_env:/inputs/db.env:ro" \
     "${docker_mount_args[@]}" \
     "$image" node /workspace/deploy/scripts/validate-environment-contract.js \
     --backend-env /inputs/backend.env \
     --frontend-env /inputs/frontend.env \
-    --db-env /inputs/db.env \
     --environment "$ENVIRONMENT" \
     "${docker_provider_args[@]}"
 }
@@ -204,7 +198,7 @@ run_environment_validator() {
 if [[ -f "$VALIDATOR" ]]; then
   TEMP_DIR="$(mktemp -d "${TMPDIR:-/tmp}/sawiyaa-preflight.XXXXXX")"
   set +e
-  run_environment_validator "$VALIDATOR" "$PROJECT_DIR" "$BACKEND_ENV" "$FRONTEND_ENV" "$DB_ENV" >"$TEMP_DIR/contract.txt"
+  run_environment_validator "$VALIDATOR" "$PROJECT_DIR" "$BACKEND_ENV" "$FRONTEND_ENV" >"$TEMP_DIR/contract.txt"
   contract_exit=$?
   set -e
   cat "$TEMP_DIR/contract.txt"
@@ -267,12 +261,12 @@ if [[ ! -f "$COMPOSE_FILE" ]]; then
   block COMPOSE_FILE_MISSING
 elif (( MOCK )); then
   warn COMPOSE_VALIDATION_MOCKED
-elif (( contract_exit != 0 )) || [[ ! -r "$BACKEND_ENV" || ! -r "$FRONTEND_ENV" || ! -r "$DB_ENV" ]]; then
+elif (( contract_exit != 0 )) || [[ ! -r "$BACKEND_ENV" || ! -r "$FRONTEND_ENV" ]]; then
   skip COMPOSE_VALIDATION_DEPENDENCY_ENVIRONMENT_CONTRACT
 else
   if [[ -z "$TEMP_DIR" ]]; then TEMP_DIR="$(mktemp -d "${TMPDIR:-/tmp}/sawiyaa-preflight.XXXXXX")"; fi
   compose_error="$TEMP_DIR/compose-config.err"
-  if docker compose --env-file "$FRONTEND_ENV" -f "$COMPOSE_FILE" config --quiet > /dev/null 2>"$compose_error"; then
+  if docker compose --env-file "$BACKEND_ENV" --env-file "$FRONTEND_ENV" -f "$COMPOSE_FILE" config --quiet > /dev/null 2>"$compose_error"; then
     COMPOSE_MODEL_OK=1
     pass COMPOSE_MODEL
   else
@@ -289,8 +283,8 @@ if (( MOCK )); then
 elif (( COMPOSE_MODEL_OK == 0 )); then
   skip POSTGRES_CHECK_COMPOSE_MODEL_INVALID
 elif (( contract_exit == 0 )) && [[ -f "$COMPOSE_FILE" ]]; then
-  docker compose --env-file "$FRONTEND_ENV" -f "$COMPOSE_FILE" ps --status running --services 2>/dev/null | grep -Fxq postgres && pass POSTGRES_CONTAINER_RUNNING || block POSTGRES_CONTAINER_UNAVAILABLE
-  docker compose --env-file "$FRONTEND_ENV" -f "$COMPOSE_FILE" exec -T postgres pg_isready >/dev/null 2>&1 && pass POSTGRES_CONNECTIVITY || block POSTGRES_UNHEALTHY
+  docker compose --env-file "$BACKEND_ENV" --env-file "$FRONTEND_ENV" -f "$COMPOSE_FILE" ps --status running --services 2>/dev/null | grep -Fxq postgres && pass POSTGRES_CONTAINER_RUNNING || block POSTGRES_CONTAINER_UNAVAILABLE
+  docker compose --env-file "$BACKEND_ENV" --env-file "$FRONTEND_ENV" -f "$COMPOSE_FILE" exec -T postgres pg_isready >/dev/null 2>&1 && pass POSTGRES_CONNECTIVITY || block POSTGRES_UNHEALTHY
 else
   skip POSTGRES_CHECK_DEPENDENCY_ENVIRONMENT_CONTRACT
 fi

@@ -316,7 +316,6 @@ Canonical required files:
 
 ```
 sawiyaa-backend-v1/.env
-sawiyaa-backend-v1/.env.postgres
 sawiyaa-frontend-v1/.env
 ```
 
@@ -334,9 +333,18 @@ Therefore:
 
 Docker build arguments must match the validated frontend environment.
 
-The older `.env.production.backend`, `.env.production.frontend`, and
-`.env.production.db` files are legacy migration inputs only. Git updates code;
-deployment does not replace the canonical `.env` files.
+The backend `.env` is also the source for API, worker, Prisma, Redis, and
+PostgreSQL bootstrap configuration. Compose maps only the required
+`POSTGRES_*`/`PGDATA` values to PostgreSQL; it never injects the full backend
+environment into that container. The production deployment command supplies
+both canonical files explicitly, with backend interpolation first and
+frontend interpolation second. There is no root `.env` dependency.
+
+The older `.env.production.backend`, `.env.production.frontend`,
+`.env.production.db`, and backend `.env.postgres` files are legacy migration
+inputs only. Git updates code; deployment does not replace the canonical
+`.env` files. The worker remains separately orchestrated and must receive the
+same backend `.env`; Redis provisioning remains an external dependency.
 
 ---
 

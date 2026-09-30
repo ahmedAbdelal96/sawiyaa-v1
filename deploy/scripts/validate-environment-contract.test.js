@@ -59,6 +59,10 @@ function completeFixture(directory, overrides = {}) {
     DAILY_API_BASE_URL: "https://api.daily.co/v1",
     DAILY_WEBHOOK_SECRET: "daily-webhook-secret",
     CORPORATE_CODE_PEPPER: "c".repeat(32),
+    POSTGRES_DB: "sawiyaa",
+    POSTGRES_USER: "sawiyaa",
+    POSTGRES_PASSWORD: "safe-local-fixture",
+    PGDATA: "/var/lib/postgresql/data/pgdata",
     ...overrides.backend,
   });
   const frontend = writeEnv(directory, "frontend.env", {
@@ -67,19 +71,11 @@ function completeFixture(directory, overrides = {}) {
     API_PROXY_TARGET: "http://backend:7000",
     ...overrides.frontend,
   });
-  const db = writeEnv(directory, "db.env", {
-    POSTGRES_DB: "sawiyaa",
-    POSTGRES_USER: "sawiyaa",
-    POSTGRES_PASSWORD: "safe-local-fixture",
-    ...overrides.db,
-  });
   return {
     backend,
     frontend,
-    db,
     backendEnv: backend,
     frontendEnv: frontend,
-    dbEnv: db,
   };
 }
 
@@ -570,8 +566,6 @@ test(
           inputFiles.backend,
           "--frontend-env",
           inputFiles.frontend,
-          "--db-env",
-          inputFiles.db,
           "--mock",
           "--skip-lock",
           "--min-free-mb",
@@ -598,7 +592,6 @@ node_executable="${nodeExecutable}"
 workspace=""
 backend_env=""
 frontend_env=""
-db_env=""
 while [[ $# -gt 0 ]]; do
   if [[ "$1" == "-v" ]]; then
     mount="$2"
@@ -606,7 +599,6 @@ while [[ $# -gt 0 ]]; do
       *:/workspace:ro) workspace="\${mount%:/workspace:ro}" ;;
       *:/inputs/backend.env:ro) backend_env="\${mount%:/inputs/backend.env:ro}" ;;
       *:/inputs/frontend.env:ro) frontend_env="\${mount%:/inputs/frontend.env:ro}" ;;
-      *:/inputs/db.env:ro) db_env="\${mount%:/inputs/db.env:ro}" ;;
     esac
     shift 2
   else
@@ -614,7 +606,7 @@ while [[ $# -gt 0 ]]; do
   fi
 done
 "$node_executable" "$workspace/deploy/scripts/validate-environment-contract.js" \
-  --backend-env "$backend_env" --frontend-env "$frontend_env" --db-env "$db_env" --environment production
+  --backend-env "$backend_env" --frontend-env "$frontend_env" --environment production
 `,
     );
     fs.chmodSync(path.join(bin, "docker"), 0o755);

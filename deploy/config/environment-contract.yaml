@@ -418,7 +418,7 @@ variables:
     validationOwner: Next config + Compose
     description: Server-side Next proxy target.
   - name: POSTGRES_DB
-    service: database
+    service: backend
     required: true
     secret: false
     phase: runtime
@@ -426,10 +426,10 @@ variables:
     safeDefault: null
     restartRequired: true
     rebuildRequired: false
-    validationOwner: Compose/PostgreSQL
-    description: Database name.
+    validationOwner: backend contract + Compose/PostgreSQL mapping
+    description: Backend-owned PostgreSQL database name for the Compose bootstrap mapping.
   - name: POSTGRES_USER
-    service: database
+    service: backend
     required: true
     secret: false
     phase: runtime
@@ -437,10 +437,10 @@ variables:
     safeDefault: null
     restartRequired: true
     rebuildRequired: false
-    validationOwner: Compose/PostgreSQL
-    description: Database user.
+    validationOwner: backend contract + Compose/PostgreSQL mapping
+    description: Backend-owned PostgreSQL user for the Compose bootstrap mapping.
   - name: POSTGRES_PASSWORD
-    service: database
+    service: backend
     required: true
     secret: true
     phase: runtime
@@ -448,8 +448,19 @@ variables:
     safeDefault: null
     restartRequired: true
     rebuildRequired: false
-    validationOwner: Compose/PostgreSQL
-    description: Database password; never print or interpolate into diagnostics.
+    validationOwner: backend contract + Compose/PostgreSQL mapping
+    description: Backend-owned PostgreSQL password; never print or interpolate into diagnostics.
+  - name: PGDATA
+    service: backend
+    required: false
+    secret: false
+    phase: runtime
+    environments: [local, staging, production]
+    safeDefault: /var/lib/postgresql/data/pgdata
+    restartRequired: true
+    rebuildRequired: false
+    validationOwner: backend contract + Compose/PostgreSQL mapping
+    description: Optional PostgreSQL data subdirectory; Compose supplies the safe default when omitted.
   - name: PERMISSION_SYNC_ADMIN_PASSWORD
     service: deployment
     required: false

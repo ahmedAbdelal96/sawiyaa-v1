@@ -528,8 +528,6 @@ function entryAppliesToEnvironment(entry, environment) {
 function canonicalExamplePath(filePath) {
   if (!filePath) return "";
   const directory = path.dirname(filePath);
-  if (path.basename(filePath) === ".env.postgres")
-    return path.join(directory, ".env.postgres.example");
   if (path.basename(filePath) === ".env")
     return path.join(directory, ".env.example");
   return "";
@@ -594,7 +592,6 @@ function validateEnvironment(options = {}) {
   const files = [
     ["backend", options.backendEnv],
     ["frontend", options.frontendEnv],
-    ["database", options.dbEnv],
   ].filter(([, file]) => file);
   const parsed = new Map();
   const metadata = new Map(
@@ -662,7 +659,6 @@ function validateEnvironment(options = {}) {
 
   const backend = parsed.get("backend")?.values || new Map();
   const frontend = parsed.get("frontend")?.values || new Map();
-  const db = parsed.get("database")?.values || new Map();
   validateExampleParity({
     service: "backend/.env",
     actualPath: options.backendEnv,
@@ -693,24 +689,13 @@ function validateEnvironment(options = {}) {
     environment,
     issues,
   });
-  validateExampleParity({
-    service: "backend/.env.postgres",
-    actualPath: options.dbEnv,
-    examplePath: options.dbExample || canonicalExamplePath(options.dbEnv),
-    values: db,
-    contract,
-    environment,
-    issues,
-  });
-  validateDatabaseConsistency(backend, db, issues, environment);
+  validateDatabaseConsistency(backend, backend, issues, environment);
   for (const entry of contract.entries) {
     if (entry.name === "PAYMENT_PROVIDER_ROUTES_JSON") continue;
     const target =
       entry.service === "frontend"
         ? frontend
-        : entry.service === "database"
-          ? db
-          : backend;
+        : backend;
     if (
       entryAppliesToEnvironment(entry, environment) &&
       requirementEnabled(entry.required, target) &&
@@ -833,7 +818,7 @@ function diskSpaceIsSufficient(freeMb, minimumMb) {
 
 function main() {
   const args = parseArgs(process.argv.slice(2));
-  if (!args.backendEnv && !args.frontendEnv && !args.dbEnv) {
+  if (!args.backendEnv && !args.frontendEnv) {
     console.error("MISSING ENVIRONMENT_INPUT");
     process.exitCode = 2;
     return;
@@ -841,7 +826,6 @@ function main() {
   const result = validateEnvironment({
     backendEnv: args.backendEnv,
     frontendEnv: args.frontendEnv,
-    dbEnv: args.dbEnv,
     providerStates: parseProviderStateFile(args.providerStateFile),
     environment: args.environment || "production",
   });
