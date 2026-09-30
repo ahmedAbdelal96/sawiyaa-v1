@@ -342,6 +342,11 @@ fi
 if [[ "$ALLOW_PAYMOB_CONTROL_BOOTSTRAP" == "true" ]]; then
   bootstrap_env_args+=(-e ALLOW_PAYMOB_CONTROL_BOOTSTRAP=true)
 fi
+for initial_admin_var in PRODUCTION_INITIAL_ADMIN_EMAIL PRODUCTION_INITIAL_ADMIN_NAME PRODUCTION_INITIAL_ADMIN_PASSWORD; do
+  if [[ -n "${!initial_admin_var:-}" ]]; then
+    bootstrap_env_args+=(-e "$initial_admin_var=${!initial_admin_var}")
+  fi
+done
 docker compose --env-file "$BACKEND_ENV_FILE" --env-file "$FRONTEND_ENV_FILE" -f "$COMPOSE_FILE" run --rm \
   "${bootstrap_env_args[@]}" backend npm run db:bootstrap:production
 echo "PRODUCTION_BOOTSTRAP: SUCCESS"
@@ -358,7 +363,18 @@ if ! bash "$PROJECT_DIR/deploy/scripts/validate-production-preflight.sh" \
 fi
 
 echo "Starting backend, frontend, and nginx..."
+notification_queue_enabled="$(awk -F= '$1 == "NOTIFICATION_QUEUE_ENABLED" {gsub(/^[ \t]+|[ \t]+$/, "", $2); print $2; exit}' "$BACKEND_ENV_FILE" 2>/dev/null || true)"
+daily_queue_enabled="$(awk -F= '$1 == "DAILY_ATTENDANCE_QUEUE_ENABLED" {gsub(/^[ \t]+|[ \t]+$/, "", $2); print $2; exit}' "$BACKEND_ENV_FILE" 2>/dev/null || true)"
+queue_worker_enabled=false
+if [[ "$notification_queue_enabled" == "true" || "$daily_queue_enabled" == "true" ]]; then
+  queue_worker_enabled=true
+fi
 docker compose --env-file "$BACKEND_ENV_FILE" --env-file "$FRONTEND_ENV_FILE" -f "$COMPOSE_FILE" up -d backend frontend nginx
+if [[ "$queue_worker_enabled" == "true" ]]; then
+  docker compose --env-file "$BACKEND_ENV_FILE" --env-file "$FRONTEND_ENV_FILE" -f "$COMPOSE_FILE" up -d worker
+else
+  docker compose --env-file "$BACKEND_ENV_FILE" --env-file "$FRONTEND_ENV_FILE" -f "$COMPOSE_FILE" stop worker >/dev/null 2>&1 || true
+fi
 
 compose_running_services="$(docker compose --env-file "$BACKEND_ENV_FILE" --env-file "$FRONTEND_ENV_FILE" -f "$COMPOSE_FILE" ps --status running --services)"
 for required_service in postgres backend frontend nginx; do
@@ -367,6 +383,12 @@ for required_service in postgres backend frontend nginx; do
     exit 1
   }
 done
+if [[ "$queue_worker_enabled" == "true" ]]; then
+  grep -Fxq worker <<<"$compose_running_services" || {
+    echo "Configured queue worker is not running: worker" >&2
+    exit 1
+  }
+fi
 
 for healthy_service in postgres backend frontend; do
   container_id="$(docker compose --env-file "$BACKEND_ENV_FILE" --env-file "$FRONTEND_ENV_FILE" -f "$COMPOSE_FILE" ps -q "$healthy_service")"
@@ -391,6 +413,32 @@ for attempt in {1..30}; do
   sleep 5
 done
 curl -fsS https://sawiyaa.com >/dev/null
+
+payment_status="DISABLED"
+if [[ -s "$PROVIDER_STATE_FILE" ]] && grep -Eq '^(stripe|paymob)=true$' "$PROVIDER_STATE_FILE"; then
+  payment_status="READY"
+fi
+notification_queue_enabled="$(awk -F= '$1 == "NOTIFICATION_QUEUE_ENABLED" {gsub(/^[ \t]+|[ \t]+$/, "", $2); print $2; exit}' "$BACKEND_ENV_FILE" 2>/dev/null || true)"
+daily_queue_enabled="$(awk -F= '$1 == "DAILY_ATTENDANCE_QUEUE_ENABLED" {gsub(/^[ \t]+|[ \t]+$/, "", $2); print $2; exit}' "$BACKEND_ENV_FILE" 2>/dev/null || true)"
+redis_status="DISABLED"
+if [[ "$queue_worker_enabled" == "true" ]]; then
+  redis_status="READY"
+fi
+
+echo "Sawiyaa Production Deployment"
+echo "Preflight: PASSED"
+echo "PostgreSQL: HEALTHY"
+echo "Migrations: PASSED"
+echo "Production baseline: PASSED"
+echo "Session policies: READY"
+echo "Initial Super Admin: READY"
+echo "Payment configuration: $payment_status"
+echo "Redis queues: $redis_status"
+echo "Production verification: PASSED"
+echo "Backend: HEALTHY"
+echo "Frontend: HEALTHY"
+echo "Nginx: HEALTHY"
+echo "DEPLOYMENT SUCCESSFUL"
 
 mkdir -p -- "$(dirname -- "$RELEASE_MARKER")"
 marker_tmp="$(mktemp "${RELEASE_MARKER}.XXXXXX")"

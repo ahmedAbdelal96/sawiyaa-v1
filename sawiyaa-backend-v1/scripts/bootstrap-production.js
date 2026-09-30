@@ -43,6 +43,10 @@ function runProductionBootstrap(env, runScript = runNpmScript) {
   runScript('config:validate:production', env);
   runScript('prisma:migrate:deploy', env);
   runScript('db:seed:production', env);
+  // The command remains one-shot: the child bootstrap prompts securely when
+  // no automation variables are supplied, and exits without a password prompt
+  // when the intended Super Admin is already configured.
+  runScript('db:bootstrap:initial-admin', env);
   if (env.ALLOW_PAYMENT_ROUTE_BOOTSTRAP === 'true') {
     runScript('db:bootstrap:payment-routes', env);
   }

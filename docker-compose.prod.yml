@@ -61,6 +61,23 @@ services:
     networks:
       - sawiyaa_internal
 
+  worker:
+    image: sawiyaa-backend-v1:production
+    build:
+      context: ./sawiyaa-backend-v1
+      dockerfile: Dockerfile
+    command: ["npm", "run", "start:worker"]
+    restart: unless-stopped
+    env_file:
+      - ${SAWIYAA_BACKEND_RUNTIME_ENV_FILE:-./sawiyaa-backend-v1/.env.production}
+    environment:
+      SAWIYAA_RELEASE_SHA: ${SAWIYAA_RELEASE_SHA:-}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - sawiyaa_internal
+
   # Existing named volumes are not re-owned when mounted into a new
   # container. Preserve their contents while ensuring the non-root backend
   # user can write them before the backend starts.

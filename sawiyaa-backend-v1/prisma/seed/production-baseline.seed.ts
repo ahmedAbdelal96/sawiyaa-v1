@@ -14,6 +14,10 @@ import { assessmentsSeedModule } from './modules/assessments.seed';
 import { notificationsSeedModule } from './modules/notifications.seed';
 import { refundPoliciesSeedModule } from './modules/refund-policies.seed';
 import { PRODUCTION_COUNTRY_CATALOG } from './modules/country-catalog';
+import {
+  ensureProductionSessionCancellationPolicies,
+  type ProductionCancellationPolicySummary,
+} from './modules/session-cancellation-policies.seed';
 
 export const PRODUCTION_BASELINE_SPECIALTIES = [
   { category: 'mental-health', specialty: 'anxiety-therapy', name: 'Anxiety Therapy' },
@@ -27,6 +31,16 @@ export const PRODUCTION_BASELINE_SPECIALTIES = [
   { category: 'sports-therapy', specialty: 'athletic-performance-improvement', name: 'Athletic Performance Improvement' },
 ] as const;
 
+export const PRODUCTION_BASELINE_LANGUAGES = [
+  { code: 'ar', slug: 'arabic', name: 'Arabic', nativeName: 'Arabic' },
+  { code: 'en', slug: 'english', name: 'English', nativeName: 'English' },
+  { code: 'fr', slug: 'french', name: 'French', nativeName: 'French' },
+  { code: 'de', slug: 'german', name: 'German', nativeName: 'German' },
+  { code: 'es', slug: 'spanish', name: 'Spanish', nativeName: 'Spanish' },
+  { code: 'tr', slug: 'turkish', name: 'Turkish', nativeName: 'Turkish' },
+  { code: 'ru', slug: 'russian', name: 'Russian', nativeName: 'Russian' },
+] as const;
+
 type ProductionBaselineSummary = {
   permissions: { created: number; preserved: number };
   rolePermissions: { created: number; preserved: number };
@@ -35,6 +49,7 @@ type ProductionBaselineSummary = {
   specialties: { created: number; preserved: number };
   packagePlans: { created: number; preserved: number };
   financialRules: { created: number; preserved: number };
+  sessionCancellationPolicies: ProductionCancellationPolicySummary;
   config: Awaited<ReturnType<typeof seedConfigData>>;
 };
 
@@ -104,18 +119,9 @@ export async function ensureProductionCountryCatalog(prisma: PrismaClient) {
 
 async function ensureReferenceBaseline(prisma: PrismaClient) {
   const countries = await ensureProductionCountryCatalog(prisma);
-  const languages = [
-    { code: 'ar', slug: 'arabic', name: 'Arabic', nativeName: 'Arabic' },
-    { code: 'en', slug: 'english', name: 'English', nativeName: 'English' },
-    { code: 'fr', slug: 'french', name: 'French', nativeName: 'French' },
-    { code: 'de', slug: 'german', name: 'German', nativeName: 'German' },
-    { code: 'es', slug: 'spanish', name: 'Spanish', nativeName: 'Spanish' },
-    { code: 'tr', slug: 'turkish', name: 'Turkish', nativeName: 'Turkish' },
-    { code: 'ru', slug: 'russian', name: 'Russian', nativeName: 'Russian' },
-  ];
   let languagesCreated = 0;
   let languagesPreserved = 0;
-  for (const language of languages) {
+  for (const language of PRODUCTION_BASELINE_LANGUAGES) {
     const existing = await prisma.language.findUnique({
       where: { code: language.code },
       select: { id: true },
@@ -226,7 +232,7 @@ export async function seedProductionBaseline(
   prisma: PrismaClient,
 ): Promise<ProductionBaselineSummary> {
   const config = await seedConfigData(prisma);
-  const { access, reference, specialties, packagePlans, financialRules } =
+  const { access, reference, specialties, packagePlans, financialRules, sessionCancellationPolicies } =
     await prisma.$transaction(
       async (tx) => {
         const db = tx as unknown as PrismaClient;
@@ -236,10 +242,11 @@ export async function seedProductionBaseline(
         const packagePlans = await ensurePackagePlanBaseline(db);
         const financialRules = await ensureProductionFinancialRules(db);
         await deactivateLegacyProductionFinancialRules(db);
+        const sessionCancellationPolicies = await ensureProductionSessionCancellationPolicies(db);
         await assessmentsSeedModule.run(db);
         await notificationsSeedModule.run(db);
         await refundPoliciesSeedModule.run(db);
-        return { access, reference, specialties, packagePlans, financialRules };
+        return { access, reference, specialties, packagePlans, financialRules, sessionCancellationPolicies };
       },
       { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
     );
@@ -250,6 +257,7 @@ export async function seedProductionBaseline(
     specialties,
     packagePlans,
     financialRules,
+    sessionCancellationPolicies,
     config,
   };
 }

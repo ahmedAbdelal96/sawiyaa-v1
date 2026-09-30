@@ -1,24 +1,71 @@
 import 'dotenv/config';
-import { ConfigDataType, PrismaClient, RefundPolicyType } from '@prisma/client';
+import { AuthProvider, ConfigDataType, PrismaClient, RefundPolicyType, UserRoleType, UserStatus } from '@prisma/client';
 import { CONFIG_KEYS } from '../../src/modules/config/registry/config-key.constants';
 import { STANDARD_PACKAGE_PLANS } from '../../src/modules/package-plans/package-plan.catalog';
-import { permissionDefinitions } from '../seed/modules/auth.permissions';
+import { permissionDefinitions, rolePermissionBundles } from '../seed/modules/auth.permissions';
 import { PRODUCTION_FINANCIAL_RULES } from '../seed/modules/financial-rules.seed';
 import { REQUIRED_DATABASE_CONFIG_DEFAULT_KEYS } from '../../src/modules/config/registry/platform-defaults';
-import { PRODUCTION_BASELINE_SPECIALTIES, productionBaselineOperatorConfigKeys } from '../seed/production-baseline.seed';
+import { PRODUCTION_BASELINE_LANGUAGES, PRODUCTION_BASELINE_SPECIALTIES, productionBaselineOperatorConfigKeys } from '../seed/production-baseline.seed';
 import { assessPaymobControlBootstrap } from '../../src/modules/payment-gateway-control/bootstrap/paymob-provider-control-bootstrap.policy';
 import { PRODUCTION_COUNTRY_CATALOG, REQUIRED_ARAB_COUNTRY_CODES, REQUIRED_MIDDLE_EAST_COUNTRY_CODES } from '../seed/modules/country-catalog';
 import { PRODUCTION_NOTIFICATION_TEMPLATE_SLUGS, PRODUCTION_NOTIFICATION_TYPE_SLUGS, templatePlaceholders } from '../seed/modules/notification-baseline.contract';
 import { REFUND_POLICY_KEYS } from '../../src/modules/refund-policies/refund-policy.catalog';
+import { seedCredentials, seedIds } from '../seed/shared/seed.constants';
+import { PRODUCTION_SESSION_CANCELLATION_POLICIES } from '../seed/modules/session-cancellation-policies.seed';
 
 const prisma = new PrismaClient();
+
+const KNOWN_DEVELOPMENT_FIXTURE_USER_IDS = [
+  ...Object.values(seedIds.users),
+  ...Object.values(seedIds.professionalContentFixtures.users),
+];
+const KNOWN_DEVELOPMENT_FIXTURE_EMAILS = [
+  ...Object.values(seedCredentials).map((account) => account.email),
+  'qa.admin@hesba.local',
+  'finance@hesba.local',
+  'practitioner.reviewer@hesba.local',
+  'patient.ops@hesba.local',
+  'marketing@hesba.local',
+];
+
+const EXPECTED_ROLE_PERMISSION_KEYS = rolePermissionBundles.flatMap((bundle) =>
+  bundle.permissions.map((permission) => `${bundle.role}:${permission}`),
+);
+
+export function collectSessionCancellationPolicyBlockers(
+  cancellationPolicies: Array<{ bookingType: string; rules: Array<{ code: string }> }>,
+): string[] {
+  const blockers: string[] = [];
+  for (const expectedPolicy of PRODUCTION_SESSION_CANCELLATION_POLICIES) {
+    const policy = cancellationPolicies.find((item) => item.bookingType === expectedPolicy.bookingType);
+    if (!policy) {
+      blockers.push(`MISSING_SESSION_CANCELLATION_POLICY:${expectedPolicy.bookingType}`);
+      continue;
+    }
+    const activeRuleCodes = new Set(policy.rules.map((rule) => rule.code));
+    for (const expectedRule of expectedPolicy.rules) {
+      if (!activeRuleCodes.has(expectedRule.code)) {
+        blockers.push(`MISSING_SESSION_CANCELLATION_RULE:${expectedPolicy.bookingType}/${expectedRule.code}`);
+      }
+    }
+  }
+  return blockers;
+}
 
 async function main(): Promise<void> {
   const blockers: string[] = [];
   const warnings: string[] = [];
-  const [permissions, countries, specialties, plans, rules, allRules, catalogs, assessments, notificationTypes, activeConfigValues, requiredConfigValues] = await Promise.all([
+  const [permissions, rolePermissions, countries, languages, specialties, plans, rules, allRules, catalogs, assessments, notificationTypes, activeConfigValues, requiredConfigValues, initialAdminMatches, fixtureUsers, cancellationPolicies] = await Promise.all([
     prisma.permission.count({ where: { key: { in: permissionDefinitions.map((item) => item.key) } } }),
+    prisma.rolePermission.findMany({
+      where: { role: { in: rolePermissionBundles.map((bundle) => bundle.role) } },
+      select: { role: true, permission: { select: { key: true } } },
+    }),
     prisma.country.count({ where: { isoCode: { in: PRODUCTION_COUNTRY_CATALOG.map((item) => item.isoCode) }, isActive: true } }),
+    prisma.language.findMany({
+      where: { code: { in: PRODUCTION_BASELINE_LANGUAGES.map((item) => item.code) }, isActive: true },
+      select: { code: true },
+    }),
     prisma.specialty.findMany({ where: { slug: { in: PRODUCTION_BASELINE_SPECIALTIES.map((item) => item.specialty) }, isActive: true }, select: { slug: true } }),
     prisma.packagePlan.findMany({ where: { code: { in: STANDARD_PACKAGE_PLANS.map((item) => item.code) }, isActive: true }, select: { code: true } }),
     prisma.commissionRule.findMany({ where: { slug: { in: PRODUCTION_FINANCIAL_RULES.map((item) => item.slug) }, isActive: true } }),
@@ -47,12 +94,139 @@ async function main(): Promise<void> {
       },
       include: { configKey: { select: { key: true } } },
     }),
+    process.env.PRODUCTION_INITIAL_ADMIN_EMAIL
+      ? prisma.user.findMany({
+          where: {
+            emails: {
+              some: {
+                email: {
+                  equals: process.env.PRODUCTION_INITIAL_ADMIN_EMAIL.trim().toLowerCase(),
+                  mode: 'insensitive',
+                },
+              },
+            },
+          },
+          select: {
+            id: true,
+            status: true,
+            roles: { select: { role: true } },
+            authIdentities: {
+              where: { provider: AuthProvider.PASSWORD },
+              select: { passwordHash: true, isEnabled: true },
+            },
+          },
+        })
+      : prisma.user.findMany({
+          where: {
+            status: UserStatus.ACTIVE,
+            roles: { some: { role: UserRoleType.SUPER_ADMIN } },
+            authIdentities: {
+              some: { provider: AuthProvider.PASSWORD, isEnabled: true, passwordHash: { not: null } },
+            },
+          },
+          select: {
+            id: true,
+            status: true,
+            roles: { select: { role: true } },
+            authIdentities: {
+              where: { provider: AuthProvider.PASSWORD },
+              select: { passwordHash: true, isEnabled: true },
+            },
+          },
+        }),
+    prisma.user.findMany({
+      where: {
+        OR: [
+          { id: { in: KNOWN_DEVELOPMENT_FIXTURE_USER_IDS } },
+          { emails: { some: { email: { in: KNOWN_DEVELOPMENT_FIXTURE_EMAILS } } } },
+        ],
+      },
+      select: { id: true },
+    }),
+    prisma.sessionCancellationPolicy.findMany({
+      where: { bookingType: { in: ['STANDARD', 'INSTANT'] }, isActive: true },
+      select: { bookingType: true, rules: { where: { isActive: true }, select: { code: true } } },
+    }),
   ]);
 
   const requiredConfigSet = new Set(requiredConfigValues.map((item) => item.configKey.key));
   for (const key of REQUIRED_DATABASE_CONFIG_DEFAULT_KEYS) {
     if (!requiredConfigSet.has(key)) blockers.push(`MISSING_REQUIRED_CONFIG:${key}`);
     else console.log(`OK:CONFIG:${key}`);
+  }
+
+  if (permissions !== permissionDefinitions.length) blockers.push('MISSING_PERMISSION_CATALOG');
+  const rolePermissionSet = new Set(
+    rolePermissions.map((row) => `${row.role}:${row.permission.key}`),
+  );
+  for (const key of EXPECTED_ROLE_PERMISSION_KEYS) {
+    if (!rolePermissionSet.has(key)) blockers.push(`MISSING_ROLE_PERMISSION:${key}`);
+  }
+  const languageSet = new Set(languages.map((language) => language.code));
+  for (const language of PRODUCTION_BASELINE_LANGUAGES) {
+    if (!languageSet.has(language.code)) blockers.push(`MISSING_LANGUAGE:${language.code}`);
+  }
+
+  if (!process.env.PRODUCTION_INITIAL_ADMIN_EMAIL?.trim()) {
+    if (initialAdminMatches.length === 0) blockers.push('INITIAL_ADMIN_SUPER_ADMIN_NOT_VERIFIED');
+  } else if (initialAdminMatches.length !== 1) {
+    blockers.push('INITIAL_ADMIN_IDENTITY_NOT_UNIQUE');
+  } else {
+    const initialAdmin = initialAdminMatches[0];
+    if (initialAdmin.status !== UserStatus.ACTIVE) blockers.push('INITIAL_ADMIN_NOT_ACTIVE');
+    if (!initialAdmin.roles.some((role) => role.role === UserRoleType.SUPER_ADMIN)) {
+      blockers.push('INITIAL_ADMIN_SUPER_ADMIN_ROLE_MISSING');
+    }
+    if (
+      initialAdmin.authIdentities.length !== 1 ||
+      !initialAdmin.authIdentities[0].isEnabled ||
+      !initialAdmin.authIdentities[0].passwordHash
+    ) {
+      blockers.push('INITIAL_ADMIN_PASSWORD_IDENTITY_NOT_USABLE');
+    }
+  }
+
+  if (fixtureUsers.length > 0) blockers.push('KNOWN_DEVELOPMENT_FIXTURE_IDENTITY_PRESENT');
+  blockers.push(...collectSessionCancellationPolicyBlockers(cancellationPolicies));
+
+  const fixtureUserIds = fixtureUsers.map((user) => user.id);
+  if (fixtureUserIds.length > 0) {
+    const [patientProfiles, practitionerProfiles, sessions, payments, refunds, wallets, ledgerEntries, notifications] = await Promise.all([
+      prisma.patientProfile.count({ where: { userId: { in: fixtureUserIds } } }),
+      prisma.practitionerProfile.count({ where: { userId: { in: fixtureUserIds } } }),
+      prisma.session.count({
+        where: {
+          OR: [
+            { patient: { userId: { in: fixtureUserIds } } },
+            { practitioner: { userId: { in: fixtureUserIds } } },
+          ],
+        },
+      }),
+      prisma.payment.count({
+        where: {
+          OR: [
+            { patient: { userId: { in: fixtureUserIds } } },
+            { practitioner: { userId: { in: fixtureUserIds } } },
+          ],
+        },
+      }),
+      prisma.refund.count({
+        where: {
+          payment: {
+            OR: [
+              { patient: { userId: { in: fixtureUserIds } } },
+              { practitioner: { userId: { in: fixtureUserIds } } },
+            ],
+          },
+        },
+      }),
+      prisma.customerWallet.count({ where: { patient: { userId: { in: fixtureUserIds } } } }),
+      prisma.ledgerEntry.count({ where: { practitioner: { userId: { in: fixtureUserIds } } } }),
+      prisma.notification.count({ where: { userId: { in: fixtureUserIds } } }),
+    ]);
+    if (patientProfiles || practitionerProfiles || sessions || payments || refunds || wallets || ledgerEntries || notifications) {
+      blockers.push('KNOWN_DEVELOPMENT_FIXTURE_BUSINESS_DATA_PRESENT');
+    }
   }
 
   const [arabCountries, middleEastCountries, notificationTemplates] = await Promise.all([
@@ -196,9 +370,11 @@ async function main(): Promise<void> {
   console.log('PRODUCTION_SEED_VALID');
 }
 
-void main()
-  .catch((error: unknown) => {
-    console.error(error instanceof Error ? error.message : 'Production baseline verification failed.');
-    process.exitCode = 1;
-  })
-  .finally(() => prisma.$disconnect());
+if (require.main === module) {
+  void main()
+    .catch((error: unknown) => {
+      console.error(error instanceof Error ? error.message : 'Production baseline verification failed.');
+      process.exitCode = 1;
+    })
+    .finally(() => prisma.$disconnect());
+}

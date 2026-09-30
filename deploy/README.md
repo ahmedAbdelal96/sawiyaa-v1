@@ -87,18 +87,13 @@ and the Daily settings `DAILY_API_KEY`, `DAILY_API_BASE_URL`, and
 `DAILY_WEBHOOK_SECRET`. The webhook secret must exactly match the secret
 configured in the Daily dashboard; webhook signatures remain mandatory.
 
-## First deploy SSL bootstrap
+## First deploy prerequisites
 
 `deploy/nginx/sawiyaa.conf` references the final certificate paths directly, so Nginx will not start successfully until the certificate files already exist.
 
-Use this safe first-deploy order:
-
-1. Confirm the two canonical env files exist in the backend and frontend directories.
-2. Build the backend and frontend images.
-3. Start `postgres`, `backend`, and `frontend` only.
-4. Run the Prisma migration release step.
-5. Obtain the TLS certificate with Certbot or your ACME tool so the files appear under `deploy/certs/live/sawiyaa.com/`.
-6. Start or restart `nginx`.
+Confirm the two canonical env files, approved TLS certificates, and the
+GeoIP database (when enabled) exist. Then run the canonical one-command
+deployment below; it performs the remaining safe first-run flow.
 
 Before running the server scripts, make them executable and ensure they use LF line endings:
 
@@ -197,19 +192,26 @@ docker compose -f docker-compose.prod.yml down
 Do not use `docker compose down -v`. That would remove the persistent volumes.
 Never delete `postgres_data`.
 
-## One-off Prisma migrations
+## One-command production deployment
 
 The normal production release command is:
 
 ```bash
-SAWIYAA_PROJECT_DIR=/opt/sawiyaa bash /opt/sawiyaa/deploy/scripts/deploy-production.sh
+cd /opt/sawiyaa
+bash deploy/scripts/deploy-production.sh
 ```
 
-It creates a lightweight Git rollback marker, fetches `origin/main`, validates
-the target release in a temporary worktree against the server env files, then
-builds `backend` and `frontend`, runs migrations, runs the idempotent Config
-bootstrap, recreates the app services, and checks backend/frontend health.
-Payment-route bootstrap remains manual and is never run by this command.
+It loads both production env files, runs preflight and Compose checks, prepares
+runtime directories, starts and waits for PostgreSQL, applies migrations, runs
+the guarded idempotent production baseline including STANDARD and INSTANT
+session cancellation policies, securely handles the Initial Super Admin,
+performs readiness verification, builds/recreates required services, and checks
+health. It never runs the development `prisma:seed` command or removes
+production volumes.
+
+The backend worker service is started only when notification or Daily
+attendance queue mode is enabled in the backend production env; when both are
+disabled, Redis and the worker remain outside the core startup path.
 
 ## Production baseline bootstrap
 
@@ -225,6 +227,23 @@ This creates missing required financial rules, catalogs, and Config defaults,
 preserves existing Admin values, and deactivates only the legacy seeded
 commission defaults so scheduled and instant sessions share the Platform
 Settings rules.
+
+## Initial production administrator
+
+The canonical deployment command runs the Initial Super Admin phase inside
+the unified bootstrap. On a clean database it asks for email, display name,
+and a hidden one-time password; the password is passed only to the bootstrap
+process and is never written to `.env.production`, disk, or logs. On a rerun,
+it asks only for the email and skips the password when that active Super Admin
+already has a usable password identity. The optional
+`PRODUCTION_INITIAL_ADMIN_EMAIL`, `PRODUCTION_INITIAL_ADMIN_NAME`, and
+`PRODUCTION_INITIAL_ADMIN_PASSWORD` variables remain available for secure
+non-interactive automation and must be supplied together.
+
+The command normalizes the email, creates or reuses only the intended active
+administrator, assigns `SUPER_ADMIN`, and never resets an existing password or
+removes another administrator's role. Duplicate, incompatible, or ambiguous
+identity state fails closed. Do not run `npm run prisma:seed` in production.
 
 ## Production Config bootstrap
 
@@ -256,8 +275,11 @@ The one-command release order is:
 6. Build only `backend` and `frontend`.
 7. Run migration safety checks, create a verified database backup, then apply migrations.
 8. Run the idempotent production baseline bootstrap with
-   `ALLOW_PRODUCTION_BASELINE_SEED=true`.
-9. Recreate backend, frontend, and nginx, then verify health.
+   `ALLOW_PRODUCTION_BASELINE_SEED=true`, including required session policies.
+9. Complete or reuse the secure Initial Super Admin bootstrap.
+10. Apply approved payment route/Paymob control configuration, if enabled.
+11. Run production verification.
+12. Recreate backend, frontend, and nginx, then verify health.
 
 After successful health checks, the script writes `.sawiyaa-release` with the
 target SHA, UTC deployment time, and `status=success`. It is a host runtime
@@ -442,16 +464,13 @@ SAWIYAA_PROJECT_DIR=/opt/sawiyaa bash /opt/sawiyaa/deploy/scripts/deploy-product
 6. Keep production deploys manual from GitHub Actions for now.
 7. Do not enable automatic deploys from `main` until several successful manual deploys have completed.
 
-## First deploy checklist
+## First deploy workflow
 
-1. Clone the repo to `/opt/sawiyaa` on the server.
-2. Upload/create `sawiyaa-backend-v1/.env.production` and `sawiyaa-frontend-v1/.env.production` on the server.
-3. Fill all secrets on the server only.
-4. Obtain TLS certificates for `sawiyaa.com`.
-5. Start `postgres`, `backend`, and `frontend`.
-6. Run the Prisma migration command once.
-7. Start Nginx only after the certificate files exist.
-8. Verify `/api/v1/health` and the public homepage.
+1. Clone the repository to `/opt/sawiyaa`.
+2. Upload/create the two canonical `.env.production` files and approved TLS/GeoIP host assets.
+3. Run `bash deploy/scripts/deploy-production.sh`.
+4. Answer the secure Initial Super Admin prompt if requested.
+5. Wait for the final deployment result and health checks.
 
 ## GeoIP and payment routing
 

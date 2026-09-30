@@ -51,6 +51,7 @@ test('bootstrap invokes validation, migrations, seed, and verification in order'
     'config:validate:production',
     'prisma:migrate:deploy',
     'db:seed:production',
+    'db:bootstrap:initial-admin',
     'db:verify:production-ready',
   ]);
 });
@@ -66,6 +67,29 @@ test('explicit payment opt-ins run before readiness verification', () => {
     'config:validate:production',
     'prisma:migrate:deploy',
     'db:seed:production',
+    'db:bootstrap:initial-admin',
+    'db:bootstrap:payment-routes',
+    'db:bootstrap:paymob-provider-control',
+    'db:verify:production-ready',
+  ]);
+});
+
+test('explicit initial-admin input runs after the baseline and before optional payment configuration', () => {
+  const calls = [];
+  runProductionBootstrap({
+    ...valid,
+    PRODUCTION_INITIAL_ADMIN_EMAIL: 'first.admin@example.com',
+    PRODUCTION_INITIAL_ADMIN_NAME: 'First Production Admin',
+    PRODUCTION_INITIAL_ADMIN_PASSWORD: 'one-time-password-not-real',
+    ALLOW_PAYMENT_ROUTE_BOOTSTRAP: 'true',
+    ALLOW_PAYMOB_CONTROL_BOOTSTRAP: 'true',
+  }, (script) => calls.push(script));
+
+  assert.deepEqual(calls, [
+    'config:validate:production',
+    'prisma:migrate:deploy',
+    'db:seed:production',
+    'db:bootstrap:initial-admin',
     'db:bootstrap:payment-routes',
     'db:bootstrap:paymob-provider-control',
     'db:verify:production-ready',
