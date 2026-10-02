@@ -300,6 +300,31 @@ function validateProductionConfiguration(backend, issues) {
     addIssue(issues, STATUS.INVALID, "CORPORATE_CODE_PEPPER");
 }
 
+function validateServerPublicUrls(backend, frontend, issues) {
+  const browserFacing = [
+    ["backend", "APP_URL"], ["backend", "WEB_APP_URL"], ["backend", "APP_BASE_URL"],
+    ["frontend", "NEXT_PUBLIC_APP_URL"], ["frontend", "NEXT_PUBLIC_SITE_URL"],
+    ["frontend", "NEXT_PUBLIC_CHAT_SOCKET_URL"],
+  ];
+  for (const [service, name] of browserFacing) {
+    const value = (service === "backend" ? backend : frontend).get(name);
+    if (!value) { addIssue(issues, STATUS.MISSING, name); continue; }
+    try {
+      const url = new URL(value);
+      if (!/^https?:$/.test(url.protocol) || /^(localhost|127\.0\.0\.1|0\.0\.0\.0|SERVER_HOST)$/i.test(url.hostname))
+        addIssue(issues, STATUS.INVALID, name);
+    } catch { addIssue(issues, STATUS.INVALID, name); }
+  }
+  const cors = backend.get("CORS_ORIGINS");
+  if (!cors) addIssue(issues, STATUS.MISSING, "CORS_ORIGINS");
+  else for (const origin of cors.split(",").map((item) => item.trim()).filter(Boolean)) {
+    try {
+      const url = new URL(origin);
+      if (/^(localhost|127\.0\.0\.1|0\.0\.0\.0|SERVER_HOST)$/i.test(url.hostname)) addIssue(issues, STATUS.INVALID, "CORS_ORIGINS");
+    } catch { addIssue(issues, STATUS.INVALID, "CORS_ORIGINS"); }
+  }
+}
+
 function requirementEnabled(requirement, values) {
   if (requirement === true) return true;
   if (requirement === false || requirement == null) return false;
@@ -370,25 +395,26 @@ function validateEnvironment(options = {}) {
       const appliesToEnvironment =
         !entry || entryAppliesToEnvironment(entry, environment);
       if (!knownNames.has(name) && !metadata.has(name) && !aliasEntry)
-        addIssue(issues, STATUS.UNKNOWN, name);
+        addIssue(issues, STATUS.UNKNOWN, name, environment === "production");
       if (
         !knownNames.has(name) &&
         entry &&
         !entry.deprecated &&
         !["deployment", "database"].includes(entry.service)
       )
-        addIssue(issues, STATUS.UNKNOWN, name);
+        addIssue(issues, STATUS.UNKNOWN, name, environment === "production");
       const required =
-        (appliesToEnvironment &&
-          Boolean(entry && requirementEnabled(entry.required, env.values))) ||
         name === "DATABASE_URL" ||
-        name.endsWith("_SECRET") ||
-        name.endsWith("_PASSWORD");
+        Boolean(
+          entry &&
+            appliesToEnvironment &&
+            requirementEnabled(entry.required, env.values),
+        );
       if (value === "") addIssue(issues, STATUS.EMPTY, name, required);
       else if (isPlaceholder(name, value, entry))
-        addIssue(issues, STATUS.PLACEHOLDER, name);
+        addIssue(issues, STATUS.PLACEHOLDER, name, required);
       else if (!isValidBasic(name, value))
-        addIssue(issues, STATUS.INVALID, name);
+        addIssue(issues, STATUS.INVALID, name, required);
       else if (aliasEntry) addIssue(issues, STATUS.DEPRECATED, name, false);
       else if (entry?.deprecated)
         addIssue(issues, STATUS.DEPRECATED, name, false);
@@ -423,7 +449,7 @@ function validateEnvironment(options = {}) {
       !["deployment", "database"].includes(entry.service) &&
       !entry.deprecated
     ) {
-      addIssue(issues, STATUS.UNKNOWN, entry.name);
+      addIssue(issues, STATUS.UNKNOWN, entry.name, environment === "production");
     }
   }
   if (
@@ -441,6 +467,7 @@ function validateEnvironment(options = {}) {
     addIssue(issues, STATUS.INVALID, "PAYMOB_MODE");
   if (environment === "production")
     validateProductionConfiguration(backend, issues);
+  if (options.requirePublicUrl) validateServerPublicUrls(backend, frontend, issues);
   return {
     issues,
     blocking: issues.some(
@@ -458,11 +485,30 @@ function validateEnvironment(options = {}) {
 function formatReport(result) {
   const seen = new Set();
   const lines = [];
+  const blockers = [];
+  const warnings = [];
   for (const issue of result.issues) {
     const key = `${issue.status}:${issue.name}`;
     if (seen.has(key)) continue;
     seen.add(key);
     lines.push(`${issue.status} ${issue.name}`);
+    if (
+      issue.blocking &&
+      ![STATUS.PRESENT, STATUS.NOT_REQUIRED, STATUS.DEPRECATED].includes(
+        issue.status,
+      )
+    )
+      blockers.push(issue);
+    else if (![STATUS.PRESENT, STATUS.NOT_REQUIRED].includes(issue.status))
+      warnings.push(issue);
+  }
+  lines.push(
+    `ENVIRONMENT_CONTRACT_SUMMARY blockers=${blockers.length} warnings=${warnings.length}`,
+  );
+  if (blockers.length) {
+    lines.push("BLOCKERS:");
+    for (const issue of blockers)
+      lines.push(`- ${issue.name} reason="${issue.status.toLowerCase()}"`);
   }
   return lines.join("\n");
 }
@@ -528,6 +574,7 @@ function main() {
     frontendEnv: args.frontendEnv,
     dbEnv: args.dbEnv,
     environment: args.environment || "production",
+    requirePublicUrl: Boolean(args.requirePublicUrl),
   });
   process.stdout.write(`${formatReport(result)}\n`);
   process.exitCode = result.blocking ? 1 : 0;

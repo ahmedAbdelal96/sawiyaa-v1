@@ -51,7 +51,7 @@ services:
     volumes:
       - sawiyaa_dev_backend_storage:/app/storage
       - sawiyaa_dev_backend_uploads:/app/uploads
-      - ./logs/dev-backend:/app/logs
+      - ./logs/backend:/app/logs
       - ./geoip/GeoLite2-Country.mmdb:/opt/sawiyaa/geoip/GeoLite2-Country.mmdb:ro
     depends_on:
       backend_volume_init:
@@ -159,5 +159,4 @@ volumes:
 
 networks:
   sawiyaa_dev_internal:
-    name: sawiyaa-dev-internal
     driver: bridge

@@ -138,6 +138,55 @@ test("empty required secret is blocking and redacted", () => {
   assert.doesNotMatch(report, /a{10,}|valid-pass/);
 });
 
+test("empty optional secret and password do not block disabled features", () => {
+  const { result } = validate({
+    backend: {
+      VIDEO_PROVIDER_DEFAULT: "DAILY",
+      ZOOM_CLIENT_SECRET: "",
+      PERMISSION_SYNC_ADMIN_PASSWORD: "",
+    },
+  });
+  assert.equal(result.blocking, false);
+  assert.match(formatReport(result), /ENVIRONMENT_CONTRACT_SUMMARY blockers=0/);
+});
+
+test("enabled production feature requirements remain blocking", () => {
+  const { result } = validate({
+    backend: {
+      DAILY_API_KEY: "",
+      DAILY_WEBHOOK_SECRET: "",
+    },
+  });
+  assert.equal(result.blocking, true);
+  const report = formatReport(result);
+  assert.match(report, /BLOCKERS:/);
+  assert.match(report, /- DAILY_API_KEY reason="empty"/);
+});
+
+test("development fixture validates without production-only requirements", () => {
+  const directory = fixtureDirectory();
+  const files = completeFixture(directory);
+  const backendText = fs.readFileSync(files.backend, "utf8")
+    .replace(/^APP_ENV=production$/m, "APP_ENV=development")
+    .replace(/^NODE_ENV=production$/m, "NODE_ENV=development");
+  fs.writeFileSync(files.backend, backendText);
+  const result = validateEnvironment({ ...files, environment: "development" });
+  assert.equal(result.blocking, false, formatReport(result));
+  assert.match(formatReport(result), /ENVIRONMENT_CONTRACT_SUMMARY blockers=0/);
+});
+
+test("server development deployment rejects localhost browser URLs", () => {
+  const directory = fixtureDirectory();
+  const files = completeFixture(directory);
+  const backendText = fs.readFileSync(files.backend, "utf8")
+    .replace(/^APP_URL=.*$/m, "APP_URL=http://localhost:8080");
+  fs.writeFileSync(files.backend, backendText);
+  const result = validateEnvironment({ ...files, environment: "development", requirePublicUrl: true });
+  assert.equal(result.blocking, true);
+  assert.ok(result.issues.some((issue) => issue.name === "APP_URL" && issue.status === STATUS.INVALID));
+  fs.rmSync(directory, { recursive: true, force: true });
+});
+
 test("placeholder values are detected without printing values", () => {
   const { result } = validate({
     backend: { JWT_ACCESS_SECRET: "<change-me>" },

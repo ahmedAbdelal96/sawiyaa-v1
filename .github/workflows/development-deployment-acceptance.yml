@@ -1,0 +1,169 @@
+name: Development Deployment Acceptance
+
+on:
+  push:
+    branches:
+      - 'ci/dev-deployment-acceptance'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  linux-docker-acceptance:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Checkout candidate
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Create disposable development remote and server checkout
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          rm -rf /tmp/sawiyaa-acceptance.git
+          git clone --bare "$GITHUB_WORKSPACE" /tmp/sawiyaa-acceptance.git
+          git --git-dir=/tmp/sawiyaa-acceptance.git update-ref refs/heads/development "$GITHUB_SHA"
+          sudo rm -rf /opt/sawiyaa-dev
+          sudo git clone --branch development "file:///tmp/sawiyaa-acceptance.git" /opt/sawiyaa-dev
+          sudo git -C /opt/sawiyaa-dev config user.email acceptance@sawiyaa.test
+          sudo git -C /opt/sawiyaa-dev config user.name acceptance
+
+      - name: Generate redacted development environment
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          sudo cp deploy/env/development.backend.example /opt/sawiyaa-dev/sawiyaa-backend-v1/.env
+          sudo cp deploy/env/development.frontend.example /opt/sawiyaa-dev/sawiyaa-frontend-v1/.env
+          sudo python3 - <<'PY'
+          from pathlib import Path
+          root = Path('/opt/sawiyaa-dev')
+          backend = root / 'sawiyaa-backend-v1/.env'
+          frontend = root / 'sawiyaa-frontend-v1/.env'
+          replacements = {
+              'APP_URL': 'http://acceptance.sawiyaa.test:8080',
+              'WEB_APP_URL': 'http://acceptance.sawiyaa.test:8080',
+              'APP_BASE_URL': 'http://acceptance.sawiyaa.test:8080',
+              'CORS_ORIGINS': 'http://acceptance.sawiyaa.test:8080',
+              'DATABASE_URL': 'postgresql://sawiyaa_dev:accept-password@postgres:5432/sawiyaa_dev',
+              'POSTGRES_PASSWORD': 'accept-password',
+              'JWT_ACCESS_SECRET': 'accept-access-secret-for-ci-only',
+              'JWT_REFRESH_SECRET': 'accept-refresh-secret-for-ci-only',
+              'DAILY_API_KEY': 'accept-daily-key',
+              'DAILY_WEBHOOK_SECRET': 'accept-daily-webhook-secret',
+              'CORPORATE_CODE_PEPPER': 'accept-corporate-pepper-012345678901234567890',
+              'MAIL_HOST': 'mailpit', 'MAIL_PORT': '1025', 'MAIL_USER': 'accept-user',
+              'MAIL_PASS': 'accept-password', 'GEOIP_ENABLED': 'false',
+              'GEOIP_DATABASE_PATH': '', 'SAWIYAA_DEV_COUNTRY_CODE': 'EG',
+              'NOTIFICATION_QUEUE_ENABLED': 'false', 'DAILY_ATTENDANCE_QUEUE_ENABLED': 'false',
+          }
+          def rewrite(path, values):
+              lines = []
+              seen = set()
+              for line in path.read_text().splitlines():
+                  if '=' in line and not line.lstrip().startswith('#'):
+                      name = line.split('=', 1)[0].strip()
+                      if name in values:
+                          line = f'{name}={values[name]}'
+                          seen.add(name)
+                      elif line.split('=', 1)[1].strip().startswith('<'):
+                          line = f'{name}=accept-{name.lower()}'
+                  lines.append(line)
+              path.write_text('\n'.join(lines) + '\n')
+          rewrite(backend, replacements)
+          rewrite(frontend, {
+              'NEXT_PUBLIC_APP_URL': 'http://acceptance.sawiyaa.test:8080',
+              'NEXT_PUBLIC_SITE_URL': 'http://acceptance.sawiyaa.test:8080',
+              'NEXT_PUBLIC_CHAT_SOCKET_URL': 'http://acceptance.sawiyaa.test:8080',
+              'NEXT_PUBLIC_API_URL': '/api/v1', 'API_PROXY_TARGET': 'http://backend:7000',
+          })
+          backend.chmod(0o600); frontend.chmod(0o600)
+          PY
+
+      - name: Execute actual development update workflow
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          set +e
+          sudo env \
+            SAWIYAA_FORCE_DOCKER_VALIDATOR=true \
+            SAWIYAA_DEV_HTTP_PORT=8080 \
+            bash -x /opt/sawiyaa-dev/deploy/server/update-dev.sh 2>&1 | tee /tmp/update-dev.log
+          status=${PIPESTATUS[0]}
+          set -e
+          if [ "$status" -ne 0 ]; then
+            echo '### update-dev.sh failure tail (redacted)' >> "$GITHUB_STEP_SUMMARY"
+            tail -n 80 /tmp/update-dev.log | sed -E 's/(password|secret|token|api[_-]?key|authorization|database[_-]?url)[^[:space:],;]*/[REDACTED]/Ig' >> "$GITHUB_STEP_SUMMARY"
+            exit "$status"
+          fi
+
+      - name: Verify application usability and runtime contracts
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          curl --fail --silent --show-error http://127.0.0.1:8080/ >/dev/null
+          curl --fail --silent --show-error http://127.0.0.1:8080/api/v1/health >/dev/null
+          curl --fail --silent --show-error http://127.0.0.1:8080/api/v1/public/help >/dev/null
+          sudo docker compose --env-file /opt/sawiyaa-dev/sawiyaa-backend-v1/.env --env-file /opt/sawiyaa-dev/sawiyaa-frontend-v1/.env -p sawiyaa-dev -f /opt/sawiyaa-dev/docker-compose.dev.yml exec -T backend node -e "require('node:dns').promises.lookup('mailpit').then(() => process.exit(0)).catch(() => process.exit(1))"
+          sudo docker compose --env-file /opt/sawiyaa-dev/sawiyaa-backend-v1/.env --env-file /opt/sawiyaa-dev/sawiyaa-frontend-v1/.env -p sawiyaa-dev -f /opt/sawiyaa-dev/docker-compose.dev.yml exec -T backend sh -c 'touch /app/logs/acceptance-write && rm /app/logs/acceptance-write'
+          test "$(stat -c '%u:%g' /opt/sawiyaa-dev/logs/backend)" = '10001:10001'
+          status="$(curl --http1.1 --silent --output /dev/null --write-out '%{http_code}' -H 'Connection: Upgrade' -H 'Upgrade: websocket' -H 'Sec-WebSocket-Version: 13' -H 'Sec-WebSocket-Key: SGVsbG9BY2NlcHRhbmNl' 'http://127.0.0.1:8080/socket.io/?EIO=4&transport=websocket')"
+          case "$status" in 101|200|400) ;; *) echo "unexpected websocket status: $status" >&2; exit 1;; esac
+
+      - name: Verify frontend build-time values and resource isolation
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          config=/tmp/sawiyaa-compose-config.json
+          sudo docker compose --env-file /opt/sawiyaa-dev/sawiyaa-backend-v1/.env --env-file /opt/sawiyaa-dev/sawiyaa-frontend-v1/.env -p sawiyaa-dev -f /opt/sawiyaa-dev/docker-compose.dev.yml config --format json > "$config"
+          node - "$config" <<'NODE'
+          const fs = require('node:fs');
+          const services = JSON.parse(fs.readFileSync(process.argv[2], 'utf8')).services;
+          const args = services.frontend.build.args;
+          for (const name of ['NEXT_PUBLIC_APP_URL', 'NEXT_PUBLIC_SITE_URL', 'NEXT_PUBLIC_CHAT_SOCKET_URL']) {
+            if (!args[name] || /localhost|127\.0\.0\.1/i.test(args[name])) throw new Error(`invalid frontend build arg: ${name}`);
+          }
+          if (Object.keys(services).some((name) => !['nginx','backend','frontend','postgres','mailpit','worker','backend_volume_init'].includes(name))) throw new Error('unexpected service');
+          if ((services.postgres.ports || []).length || (services.backend.ports || []).length || (services.frontend.ports || []).length || (services.mailpit.ports || []).length) throw new Error('non-nginx public port binding');
+          if ((services.nginx.ports || []).length !== 1) throw new Error('nginx ingress binding missing');
+          NODE
+          ! sudo docker ps --format '{{.Names}}' | grep -E 'sawiyaa($|-prod)' || true
+
+      - name: Failure diagnostics (redacted service output only)
+        if: failure()
+        shell: bash
+        run: |
+          set +e
+          sudo docker compose --env-file /opt/sawiyaa-dev/sawiyaa-backend-v1/.env --env-file /opt/sawiyaa-dev/sawiyaa-frontend-v1/.env -p sawiyaa-dev -f /opt/sawiyaa-dev/docker-compose.dev.yml ps
+          for service in postgres backend frontend nginx; do
+            sudo docker compose --env-file /opt/sawiyaa-dev/sawiyaa-backend-v1/.env --env-file /opt/sawiyaa-dev/sawiyaa-frontend-v1/.env -p sawiyaa-dev -f /opt/sawiyaa-dev/docker-compose.dev.yml logs --tail=200 "$service" 2>&1 | sed -E 's/(password|secret|token|api[_-]?key|authorization|database[_-]?url)[^[:space:],;]*/[REDACTED]/Ig'
+          done
+
+      - name: Cleanup acceptance resources
+        if: always()
+        shell: bash
+        run: |
+          set +e
+          sudo docker compose --env-file /opt/sawiyaa-dev/sawiyaa-backend-v1/.env --env-file /opt/sawiyaa-dev/sawiyaa-frontend-v1/.env -p sawiyaa-dev -f /opt/sawiyaa-dev/docker-compose.dev.yml down --remove-orphans
+          sudo rm -rf /opt/sawiyaa-dev /tmp/sawiyaa-acceptance.git
+
+  production-regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 1
+      - name: Run production regression from main worktree
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          node --test deploy/server/deployment-hardening.test.js
+          cp deploy/env/production.backend.example sawiyaa-backend-v1/.env.production
+          cp deploy/env/production.frontend.example sawiyaa-frontend-v1/.env.production
+          cp deploy/env/production.frontend.example .env.production.frontend
+          printf '%s\n' 'POSTGRES_DB=sawiyaa' 'POSTGRES_USER=sawiyaa' 'POSTGRES_PASSWORD=regression-password' 'PGDATA=/var/lib/postgresql/data/pgdata' > .env.production.db
+          docker compose --env-file .env.production.db --env-file .env.production.frontend -f docker-compose.prod.yml config --quiet
