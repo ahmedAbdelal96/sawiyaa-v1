@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import AdminSpecialtiesCatalogScreen from "@/features/admin/specialties/components/AdminSpecialtiesCatalogScreen";
+import AdminPermissionGate from "@/components/admin/AdminPermissionGate";
+import { PermissionKey } from "@/lib/auth/permissions";
 
 type Props = {
   params: Promise<{ locale: string }>;
@@ -19,5 +21,9 @@ export default async function AdminSpecialtiesPage({ params }: Props) {
   const { locale } = await params;
   setRequestLocale(locale);
 
-  return <AdminSpecialtiesCatalogScreen />;
+  return (
+    <AdminPermissionGate requiredPermissions={[PermissionKey.SPECIALTIES_READ]}>
+      <AdminSpecialtiesCatalogScreen />
+    </AdminPermissionGate>
+  );
 }

@@ -186,6 +186,7 @@ export class CareChatRequestRepository {
         select: {
           id: true,
           userId: true,
+          displayName: true,
           user: {
             select: {
               displayName: true,

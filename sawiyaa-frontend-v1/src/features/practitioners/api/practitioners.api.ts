@@ -16,6 +16,8 @@ import type {
   UpdatePractitionerAvatarRequest,
   UploadPractitionerCredentialFileRequest,
   UploadPractitionerCredentialMetadataRequest,
+  UpdatePractitionerApplicationDraftRequest,
+  PractitionerRequirementsSuccessResponse,
 } from "../types/practitioners.types";
 
 /**
@@ -204,4 +206,26 @@ export async function viewPractitionerCredential(credentialId: string) {
     { responseType: "blob" },
   );
   return response.data;
+}
+
+/**
+ * Saves practitioner application draft without submitting.
+ */
+export async function saveApplicationDraft(
+  data: UpdatePractitionerApplicationDraftRequest
+) {
+  const response = await httpClient.patch<
+    ApiPayload<PractitionerApplicationStatusSuccessResponse>
+  >("/practitioners/me/application", data);
+  return extractData(response.data);
+}
+
+/**
+ * Reads persistent actionable requirements for the practitioner.
+ */
+export async function getPractitionerRequirements() {
+  const response = await httpClient.get<
+    ApiPayload<PractitionerRequirementsSuccessResponse>
+  >("/practitioners/me/requirements");
+  return extractData(response.data).requirements;
 }

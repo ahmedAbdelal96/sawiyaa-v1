@@ -36,10 +36,25 @@ describe('ResolvePatientSessionActionsService', () => {
     const evaluateCancellationPolicy = {
       evaluate: jest.fn().mockResolvedValue({ cancellationAllowed }),
     };
+    const joinPolicy = {
+      resolve: jest.fn(({ status }: { status: SessionStatus }) => ({
+        canPrepareRuntime: ![
+          SessionStatus.COMPLETED,
+          SessionStatus.CANCELLED,
+          SessionStatus.PATIENT_NO_SHOW,
+          SessionStatus.PRACTITIONER_NO_SHOW,
+          SessionStatus.BOTH_NO_SHOW,
+          SessionStatus.EXPIRED,
+          SessionStatus.AWAITING_COMPLETION_CONFIRMATION,
+        ].includes(status),
+        canJoin: status === SessionStatus.READY_TO_JOIN || status === SessionStatus.IN_PROGRESS,
+      })),
+    };
     return {
       service: new ResolvePatientSessionActionsService(
         evaluateCancellationPolicy as never,
         reviewEligibility as never,
+        joinPolicy as never,
       ),
       evaluateCancellationPolicy,
     };

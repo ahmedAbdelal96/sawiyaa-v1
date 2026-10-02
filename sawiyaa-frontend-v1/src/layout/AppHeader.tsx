@@ -16,9 +16,10 @@ import { cn } from "@/lib/utils";
 
 type AppHeaderProps = {
   messagingRole?: "admin" | "practitioner" | "patient";
+  shellVariant?: "admin" | "practitioner";
 };
 
-const AppHeader: React.FC<AppHeaderProps> = ({ messagingRole }) => {
+const AppHeader: React.FC<AppHeaderProps> = ({ messagingRole, shellVariant = "admin" }) => {
   const { isExpanded, isHovered, isMobileOpen, toggleSidebar, toggleMobileSidebar } = useSidebar();
   const locale = useLocale();
   const isRTL = locale === "ar";
@@ -76,7 +77,13 @@ const AppHeader: React.FC<AppHeaderProps> = ({ messagingRole }) => {
                 Sawiyaa
               </p>
               <p className="text-sm font-medium text-text-primary">
-                {locale === "ar" ? "لوحة الإدارة" : "Admin shell"}
+                {shellVariant === "practitioner"
+                  ? locale === "ar"
+                    ? "مساحة عمل المختص"
+                    : "Practitioner workspace"
+                  : locale === "ar"
+                    ? "لوحة الإدارة"
+                    : "Admin shell"}
               </p>
             </div>
           </div>

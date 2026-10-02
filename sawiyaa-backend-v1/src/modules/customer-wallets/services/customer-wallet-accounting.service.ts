@@ -70,6 +70,7 @@ export class CustomerWalletAccountingService {
     if (amount.lte(0)) return null;
 
     const run = async (tx: Prisma.TransactionClient) => {
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`wallet-reservation:${input.paymentId}`})::bigint)`;
       const existing =
         await this.customerWalletReservationRepository.findByPaymentId(
           input.paymentId,
@@ -149,6 +150,7 @@ export class CustomerWalletAccountingService {
     tx?: Prisma.TransactionClient;
   }) {
     const run = async (tx: Prisma.TransactionClient) => {
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`wallet-reservation:${input.paymentId}`})::bigint)`;
       const reservation =
         await this.customerWalletReservationRepository.findByPaymentId(
           input.paymentId,
@@ -156,8 +158,15 @@ export class CustomerWalletAccountingService {
         );
 
       if (!reservation) {
-        return null;
+        throw new BadRequestException({
+          error: 'CUSTOMER_WALLET_RESERVATION_NOT_FOUND',
+        });
       }
+
+      this.assertReservationCurrency(
+        reservation.currencyCode,
+        input.currencyCode,
+      );
 
       if (reservation.status === CustomerWalletReservationStatus.CAPTURED) {
         return reservation;
@@ -225,6 +234,7 @@ export class CustomerWalletAccountingService {
     tx?: Prisma.TransactionClient;
   }) {
     const run = async (tx: Prisma.TransactionClient) => {
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`wallet-reservation:${input.paymentId}`})::bigint)`;
       const reservation =
         await this.customerWalletReservationRepository.findByPaymentId(
           input.paymentId,
@@ -234,6 +244,11 @@ export class CustomerWalletAccountingService {
       if (!reservation) {
         return null;
       }
+
+      this.assertReservationCurrency(
+        reservation.currencyCode,
+        input.currencyCode,
+      );
 
       if (reservation.status === CustomerWalletReservationStatus.RELEASED) {
         return reservation;
@@ -378,6 +393,14 @@ export class CustomerWalletAccountingService {
       input.patientId,
     );
     return wallets[0] ?? null;
+  }
+
+  private assertReservationCurrency(actual: string, requested: string) {
+    if (actual !== requested) {
+      throw new BadRequestException({
+        error: 'CUSTOMER_WALLET_CURRENCY_MISMATCH',
+      });
+    }
   }
 
   async listWalletEntries(input: {

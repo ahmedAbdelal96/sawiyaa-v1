@@ -36,7 +36,12 @@ export class ValidatePackagePurchaseSlotsService {
   }> {
     this.validateSessionDurationService.validate(input.durationMinutes);
 
-    if (input.selectedSessionSlots.length !== input.expectedSlotCount) {
+    const selectedCount = input.selectedSessionSlots.length;
+    if (
+      selectedCount !== 0 &&
+      selectedCount !== 1 &&
+      selectedCount !== input.expectedSlotCount
+    ) {
       throw new BadRequestException({
         messageKey: 'packagePurchases.errors.invalidSlotCount',
         error: 'PACKAGE_PURCHASE_INVALID_SLOT_COUNT',
@@ -94,6 +99,16 @@ export class ValidatePackagePurchaseSlotsService {
         }
       }
     });
+
+    // A package can be purchased before any appointment is chosen. There is
+    // no slot to validate in that case; the practitioner timezone remains a
+    // snapshot used by the later canonical booking operation.
+    if (normalizedSlots.length === 0) {
+      return {
+        timezone: input.practitionerTimezone?.trim() || 'UTC',
+        slots: [],
+      };
+    }
 
     let timezone = '';
 

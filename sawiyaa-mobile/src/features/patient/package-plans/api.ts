@@ -1,6 +1,7 @@
 import { apiClient, extractApiData } from "../../../lib/api";
 import type {
   CreatePatientPackagePurchaseRequest,
+  BookPatientPackageSessionRequest,
   InitiatePatientPackagePurchasePaymentInput,
   ListMyPackagePurchasesParams,
   PackagePlanQuotedItem,
@@ -12,10 +13,15 @@ import type {
   PackagePurchasePaymentResponseData,
   PublicPackagePlansResponseData,
 } from "./types";
-import type { RefundPoliciesResponseData, RefundPolicyResponseData, RefundPolicyType } from "../refund-policies/types";
+import type {
+  RefundPoliciesResponseData,
+  RefundPolicyResponseData,
+  RefundPolicyType,
+} from "../refund-policies/types";
 
 export const PACKAGE_PLANS_ROUTES = {
-  publicByPractitionerSlug: (slug: string) => `/public/practitioners/${slug}/package-plans`,
+  publicByPractitionerSlug: (slug: string) =>
+    `/public/practitioners/${slug}/package-plans`,
   patientQuote: "/patients/me/package-purchases/quote",
 } as const;
 
@@ -25,6 +31,8 @@ export const PACKAGE_PURCHASES_ROUTES = {
   byId: (purchaseId: string) => `/patients/me/package-purchases/${purchaseId}`,
   initiatePayment: (purchaseId: string) =>
     `/patients/me/package-purchases/${purchaseId}/payments/initiate`,
+  bookSession: (purchaseId: string) =>
+    `/patients/me/package-purchases/${purchaseId}/sessions`,
 } as const;
 
 export const REFUND_POLICY_ROUTES = {
@@ -97,7 +105,20 @@ export async function initiatePatientPackagePurchasePayment(
   return extractApiData<PackagePurchasePaymentResponseData>(response);
 }
 
-export async function fetchRefundPolicy(policyType: RefundPolicyType): Promise<RefundPolicyResponseData> {
+export async function bookPatientPackageSession(
+  purchaseId: string,
+  input: BookPatientPackageSessionRequest,
+): Promise<unknown> {
+  const response = await apiClient.post<{ success: boolean; data: unknown }>(
+    PACKAGE_PURCHASES_ROUTES.bookSession(purchaseId),
+    input,
+  );
+  return extractApiData<unknown>(response);
+}
+
+export async function fetchRefundPolicy(
+  policyType: RefundPolicyType,
+): Promise<RefundPolicyResponseData> {
   const route =
     policyType === "SESSION"
       ? REFUND_POLICY_ROUTES.session
@@ -107,7 +128,9 @@ export async function fetchRefundPolicy(policyType: RefundPolicyType): Promise<R
     success: boolean;
     data: RefundPolicyResponseData["item"] | RefundPolicyResponseData;
   }>(route);
-  const data = extractApiData<RefundPolicyResponseData["item"] | RefundPolicyResponseData>(response);
+  const data = extractApiData<
+    RefundPolicyResponseData["item"] | RefundPolicyResponseData
+  >(response);
   return { item: "item" in data ? data.item : data };
 }
 
@@ -116,6 +139,8 @@ export async function fetchCurrentRefundPolicies(): Promise<RefundPoliciesRespon
     success: boolean;
     data: { items: RefundPoliciesResponseData["items"] };
   }>(REFUND_POLICY_ROUTES.current);
-  const data = extractApiData<{ items: RefundPoliciesResponseData["items"] }>(response);
+  const data = extractApiData<{ items: RefundPoliciesResponseData["items"] }>(
+    response,
+  );
   return { items: data.items };
 }

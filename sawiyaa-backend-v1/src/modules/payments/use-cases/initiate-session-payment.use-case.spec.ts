@@ -30,7 +30,17 @@ import { RefundPolicyService } from '@modules/refund-policies/services/refund-po
 describe('InitiateSessionPaymentUseCase', () => {
   const prisma = {
     $transaction: jest.fn((callback: (tx: never) => Promise<unknown>) =>
-      callback({} as never),
+      callback({
+        $executeRaw: jest.fn().mockResolvedValue(1),
+        session: {
+          findUniqueOrThrow: jest
+            .fn()
+            .mockResolvedValue({
+              id: 'session-1',
+              status: SessionStatus.PENDING_PAYMENT,
+            }),
+        },
+      } as never),
     ),
   } as never;
   const paymentPatientRepository = {
@@ -45,6 +55,7 @@ describe('InitiateSessionPaymentUseCase', () => {
     updateStatus: jest.fn(),
     findSuccessfulBySessionId: jest.fn(),
     findLatestActiveBySessionId: jest.fn(),
+    findById: jest.fn(),
   } as unknown as PaymentRepository;
   const paymentProviderRegistryService = {
     get: jest.fn(),
@@ -145,6 +156,9 @@ describe('InitiateSessionPaymentUseCase', () => {
   const providerAdapter = {
     initiateSessionPayment: jest.fn(),
   };
+  const paymentProviderRecoveryService = {
+    reconcilePayment: jest.fn(),
+  };
 
   const useCase = new InitiateSessionPaymentUseCase(
     prisma,
@@ -162,6 +176,7 @@ describe('InitiateSessionPaymentUseCase', () => {
     paymentMapper,
     refundPolicyService,
     corporateSponsorshipPaymentService as any,
+    paymentProviderRecoveryService as never,
   );
 
   // All production callers must provide trusted request country. Keep the
@@ -202,6 +217,12 @@ describe('InitiateSessionPaymentUseCase', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    paymentProviderRecoveryService.reconcilePayment.mockResolvedValue({});
+    (paymentRepository.findById as jest.Mock).mockResolvedValue({
+      id: 'payment-1',
+      status: PaymentStatus.CREATED,
+      metadataJson: {},
+    });
     (
       refundPolicyService.ensureAcceptedRefundPolicyForPayment as jest.Mock
     ).mockImplementation(() =>
@@ -327,8 +348,58 @@ describe('InitiateSessionPaymentUseCase', () => {
       expect.anything(),
     );
     expect(providerAdapter.initiateSessionPayment).toHaveBeenCalledTimes(1);
+    expect(providerAdapter.initiateSessionPayment).toHaveBeenCalledWith(
+      expect.objectContaining({
+        amountMinor: 12000,
+        currency: 'EGP',
+      }),
+    );
     expect(result.item.status).toBe(PaymentStatus.PENDING);
     expect(result.item.sessionId).toBe('session-1');
+  });
+
+  it('blocks payment initiation when financial allocation is unavailable', async () => {
+    (
+      resolveSessionPaymentPricingService.resolve as jest.Mock
+    ).mockResolvedValueOnce({
+      amountSubtotal: '120.00',
+      amountDiscount: '0.00',
+      amountTotal: '120.00',
+      currencyCode: 'EGP',
+      marketType: MarketType.LOCAL,
+      paymentPurpose: PaymentPurpose.SESSION_INSTANT_BOOKING,
+      commissionRuleId: null,
+      commissionPlatformRatePercent: null,
+      commissionPractitionerRatePercent: null,
+      couponId: null,
+      couponCodeSnapshot: null,
+      couponDiscountSnapshot: null,
+      couponPlatformSharePercent: null,
+      couponPractitionerSharePercent: null,
+      breakdown: {
+        grossAmount: '120.00',
+        discountAmount: '0.00',
+        netPaidAmount: '120.00',
+        platformCommissionAmount: null,
+        practitionerShareAmount: null,
+      },
+    });
+
+    await expect(
+      useCase.execute({
+        userId: 'user-1',
+        locale: 'en',
+        sessionId: 'session-1',
+        acceptedRefundPolicyId: 'refund-policy-version-1',
+        displayLocale: 'en',
+      }),
+    ).rejects.toMatchObject({
+      response: expect.objectContaining({
+        error: 'PAYMENT_FINANCIAL_CONFIGURATION_UNAVAILABLE',
+      }),
+    });
+    expect(paymentRepository.createPayment).not.toHaveBeenCalled();
+    expect(providerAdapter.initiateSessionPayment).not.toHaveBeenCalled();
   });
 
   it.each([
@@ -371,7 +442,7 @@ describe('InitiateSessionPaymentUseCase', () => {
     expect(providerAdapter.initiateSessionPayment).not.toHaveBeenCalled();
   });
 
-  it('refreshes an active payment checkout instead of reusing a stale URL', async () => {
+  it('reuses the persisted payment intent without a second provider initiation', async () => {
     (
       paymentRepository.findLatestActiveBySessionId as jest.Mock
     ).mockResolvedValue({
@@ -400,6 +471,11 @@ describe('InitiateSessionPaymentUseCase', () => {
         checkoutUrl: 'https://checkout-refreshed',
       },
     });
+    (paymentRepository.findById as jest.Mock).mockResolvedValueOnce({
+      id: 'payment-existing',
+      status: PaymentStatus.PENDING,
+      metadataJson: { checkoutUrl: 'https://checkout-existing' },
+    });
 
     const result = await useCase.execute({
       userId: 'user-1',
@@ -410,27 +486,16 @@ describe('InitiateSessionPaymentUseCase', () => {
     });
 
     expect(paymentRepository.createPayment).not.toHaveBeenCalled();
-    expect(providerAdapter.initiateSessionPayment).toHaveBeenCalledTimes(1);
-    expect(providerAdapter.initiateSessionPayment).toHaveBeenCalledWith(
-      expect.objectContaining({
-        paymentId: 'payment-existing',
-      }),
-    );
+    expect(
+      paymentProviderRecoveryService.reconcilePayment,
+    ).toHaveBeenCalledWith('payment-existing', true);
+    expect(providerAdapter.initiateSessionPayment).not.toHaveBeenCalled();
+    expect(paymentRepository.updateStatus).not.toHaveBeenCalled();
     expect(
       refundPolicyService.ensureAcceptedRefundPolicyForPayment,
     ).toHaveBeenCalledTimes(1);
-    expect(paymentRepository.updateStatus).toHaveBeenCalledWith(
-      'payment-existing',
-      expect.objectContaining({
-        status: PaymentStatus.PENDING,
-        metadataJson: expect.objectContaining({
-          checkoutUrl: 'https://checkout-refreshed',
-        }),
-      }),
-      expect.anything(),
-    );
     expect(result.item.id).toBe('payment-existing');
-    expect(result.item.checkoutUrl).toBe('https://checkout-refreshed');
+    expect(result.item.checkoutUrl).toBe('https://checkout-existing');
   });
 
   it('rejects missing accepted refund policy ids through the refund policy gate', async () => {

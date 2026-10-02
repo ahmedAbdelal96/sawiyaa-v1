@@ -6,7 +6,6 @@ import type {
 const KNOWN_COMPLETION_STEP_KEYS = new Set<PractitionerApplicationCompletionStepKey>([
   "basicProfile",
   "professionalDetails",
-  "pricing",
   "qualifications",
   "documents",
   "payoutDetails",

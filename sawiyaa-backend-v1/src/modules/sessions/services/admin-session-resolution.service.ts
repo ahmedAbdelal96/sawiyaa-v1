@@ -10,8 +10,9 @@ import { ValidateSessionConflictsService } from './validate-session-conflicts.se
 import { ValidateSessionScheduleCompatibilityService } from './validate-session-schedule-compatibility.service';
 import { SecurityAuditActorType, SecurityAuditSource } from '@common/security-audit/security-audit.types';
 import { OperationalNotificationService } from '@modules/notifications/services/operational-notification.service';
-
-const NO_SHOW_STATUSES = [SessionStatus.PATIENT_NO_SHOW, SessionStatus.PRACTITIONER_NO_SHOW, SessionStatus.BOTH_NO_SHOW] as const;
+import { AdminSessionResolutionPolicyService } from './admin-session-resolution-policy.service';
+import type { AdminResolutionFinding } from '../dto/admin-session-resolution.dto';
+import { CompleteSessionTransactionService } from './complete-session-transaction.service';
 
 @Injectable()
 export class AdminSessionResolutionService {
@@ -25,6 +26,8 @@ export class AdminSessionResolutionService {
     private readonly conflicts: ValidateSessionConflictsService,
     private readonly schedule: ValidateSessionScheduleCompatibilityService,
     private readonly operationalNotifications: OperationalNotificationService,
+    private readonly policy: AdminSessionResolutionPolicyService,
+    private readonly completeSession: CompleteSessionTransactionService,
   ) {}
 
   async list(input: { status?: string; suggestedOutcome?: SessionStatus; practitionerId?: string; patientId?: string; from?: string; to?: string }) {
@@ -45,8 +48,7 @@ export class AdminSessionResolutionService {
     return item;
   }
 
-  async execute(input: { sessionId: string; adminId: string; actorRoles?: string[]; requestId?: string | null; command: { attendanceOutcome: SessionStatus; patientRemedy: SessionResolutionPatientRemedy; practitionerRemedy: SessionResolutionPractitionerRemedy; reasonCode: string; adminNotes: string; idempotencyKey: string; replacementStartAt?: string } }) {
-    if (!NO_SHOW_STATUSES.includes(input.command.attendanceOutcome as (typeof NO_SHOW_STATUSES)[number])) throw new ConflictException({ error: 'SESSION_RESOLUTION_OUTCOME_INVALID' });
+  async execute(input: { sessionId: string; adminId: string; actorRoles?: string[]; requestId?: string | null; command: { attendanceOutcome?: SessionStatus; findingCode?: string; patientRemedy: SessionResolutionPatientRemedy; practitionerRemedy: SessionResolutionPractitionerRemedy; reasonCode: string; customReasonNote?: string; adminNotes: string; idempotencyKey: string; previewHash?: string; replacementStartAt?: string } }) {
     const requestId = input.command.idempotencyKey;
     const resolution = await this.prisma.$transaction(async (tx) => {
       await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`session-resolution:${input.sessionId}`})::bigint)`;
@@ -61,25 +63,56 @@ export class AdminSessionResolutionService {
       const resolutionCase = await tx.sessionResolutionCase.findUnique({ where: { sessionId: input.sessionId } });
       if (!session || !resolutionCase) throw new NotFoundException({ error: 'SESSION_RESOLUTION_CASE_NOT_FOUND' });
       if (resolutionCase.status !== 'OPEN' || session.status !== SessionStatus.AWAITING_ADMIN_RESOLUTION) throw new ConflictException({ error: 'SESSION_RESOLUTION_CASE_NOT_OPEN' });
-      if (input.command.patientRemedy === SessionResolutionPatientRemedy.RESTORE_PACKAGE && (!session.packagePurchaseId || session.paymentCoverageType !== 'PACKAGE')) throw new ConflictException({ error: 'SESSION_RESOLUTION_RESTORE_REQUIRES_PACKAGE' });
-      if (input.command.patientRemedy === SessionResolutionPatientRemedy.CREDIT_WALLET && !(await tx.payment.findFirst({ where: { sessionId: session.id, amountTotal: { gt: 0 } } }))) throw new ConflictException({ error: 'SESSION_RESOLUTION_WALLET_CREDIT_REQUIRES_VALUE' });
-      if (input.command.patientRemedy === SessionResolutionPatientRemedy.CREATE_REPLACEMENT_SESSION && !input.command.replacementStartAt) throw new ConflictException({ error: 'SESSION_RESOLUTION_REPLACEMENT_TIME_REQUIRED' });
+      const plan = await this.policy.buildPlan({ sessionId: input.sessionId, tx, decision: { ...input.command, findingCode: input.command.findingCode as AdminResolutionFinding | undefined } });
+      if (input.command.previewHash && input.command.previewHash !== plan.planHash) {
+        throw new ConflictException({ error: 'SESSION_RESOLUTION_PREVIEW_STALE', messageKey: 'sessions.errors.resolutionPreviewStale' });
+      }
       // The patient remedy is exactly one enum value, so replacement cannot be combined with another primary remedy.
 
       const evidence = resolutionCase.evidenceSnapshotJson;
       const at = new Date();
       let effects: Record<string, unknown> = { wallet: 'NONE', package: 'NONE', earningReview: 'NONE' };
+      let explicitEarningReviewId: string | null = null;
+      const findingCode = plan.findingCode;
+      const lifecycleOutcome = plan.resultingStatus;
       const financialOutcome = input.command.patientRemedy === SessionResolutionPatientRemedy.CREDIT_WALLET || input.command.patientRemedy === SessionResolutionPatientRemedy.RESTORE_PACKAGE
         ? 'PRACTITIONER_NO_SHOW'
-        : input.command.attendanceOutcome === SessionStatus.PATIENT_NO_SHOW && input.command.practitionerRemedy === SessionResolutionPractitionerRemedy.CREATE_EARNING_REVIEW ? 'PATIENT_NO_SHOW' : null;
-      let lifecycleSession = await this.lifecycle.transition({ session, to: input.command.attendanceOutcome, tx, actorUserId: input.adminId, actorType: SecurityAuditActorType.USER, actorRoles: input.actorRoles, source: SecurityAuditSource.HTTP_REQUEST, requestId, reason: input.command.reasonCode, metadata: { source: 'admin-session-resolution' } });
-      if (financialOutcome) {
-        const result = await this.noShowFinancials.apply({ tx, session: lifecycleSession as typeof session, outcome: financialOutcome, adminUserId: input.adminId, actorRoles: input.actorRoles, requestId, correlationId: input.requestId ?? null, reasonCode: input.command.reasonCode, decidedAt: at });
+        : findingCode === 'PATIENT_NO_SHOW' && input.command.practitionerRemedy === SessionResolutionPractitionerRemedy.CREATE_EARNING_REVIEW ? 'PATIENT_NO_SHOW' : null;
+      if (input.command.practitionerRemedy === SessionResolutionPractitionerRemedy.CREATE_EARNING_REVIEW && input.command.patientRemedy === SessionResolutionPatientRemedy.CREDIT_WALLET) {
+        const review = await this.earningReviews.syncForAdminResolution({ sessionId: session.id, tx, allowPendingResolution: true });
+        explicitEarningReviewId = review?.reviewId ?? null;
+      }
+      let lifecycleSession = session;
+      if (findingCode === 'SESSION_COMPLETED_AFTER_REVIEW') {
+        lifecycleSession = await this.completeSession.execute({ session, tx, at, actorUserId: input.adminId, actorType: SecurityAuditActorType.USER, actorRoles: input.actorRoles, source: SecurityAuditSource.HTTP_REQUEST, requestId, reason: input.command.reasonCode, metadata: { source: 'admin-session-resolution', findingCode } });
+      } else {
+        lifecycleSession = await this.lifecycle.transition({ session, to: lifecycleOutcome, tx, actorUserId: input.adminId, actorType: SecurityAuditActorType.USER, actorRoles: input.actorRoles, source: SecurityAuditSource.HTTP_REQUEST, requestId, reason: input.command.reasonCode, metadata: { source: 'admin-session-resolution', findingCode } });
+      }
+      if (financialOutcome && !(input.command.patientRemedy === SessionResolutionPatientRemedy.CREDIT_WALLET && session.paymentCoverageType === 'PACKAGE')) {
+        const result = await this.noShowFinancials.apply({ tx, session: lifecycleSession as typeof session, outcome: financialOutcome, adminUserId: input.adminId, actorRoles: input.actorRoles, requestId, correlationId: input.requestId ?? null, reasonCode: input.command.reasonCode, decidedAt: at, preservePendingEarningReview: Boolean(explicitEarningReviewId) });
         effects = { ...effects, package: result.packageDecision, wallet: result.walletEffect, earningReview: result.earningEffect, refundId: result.refundId, refundAmount: result.refundAmount };
       }
+      if (input.command.patientRemedy === SessionResolutionPatientRemedy.CREDIT_WALLET && session.paymentCoverageType === 'PACKAGE') {
+        const purchase = await tx.patientPackagePurchase.findUnique({ where: { id: session.packagePurchaseId! } });
+        if (!purchase?.paymentId || !plan.patient.walletCredit) throw new ConflictException({ error: 'SESSION_RESOLUTION_PACKAGE_REFUND_VALUE_UNAVAILABLE' });
+        const refund = await this.noShowFinancials.applyPackageWalletCredit({
+          tx,
+          session: lifecycleSession as typeof session,
+          paymentId: purchase.paymentId,
+          amount: plan.patient.walletCredit.amount,
+          currencyCode: plan.patient.walletCredit.currency,
+          adminUserId: input.adminId,
+          reasonCode: input.command.reasonCode,
+        });
+        effects = { ...effects, wallet: 'PATIENT_WALLET_CREDIT', refundId: refund.generatedRefundId, refundAmount: refund.refundAmount, package: 'WALLET_CREDIT' };
+      }
       if (input.command.practitionerRemedy === SessionResolutionPractitionerRemedy.CREATE_EARNING_REVIEW) {
-        const review = await this.earningReviews.syncForAdminResolution({ sessionId: session.id, tx });
-        effects = { ...effects, earningReview: review?.reviewId ?? 'UNAVAILABLE' };
+        if (findingCode === 'SESSION_COMPLETED_AFTER_REVIEW') {
+          effects = { ...effects, earningReview: 'CREATED_BY_COMPLETION' };
+        } else {
+          const review = explicitEarningReviewId ? { reviewId: explicitEarningReviewId } : await this.earningReviews.syncForAdminResolution({ sessionId: session.id, tx, allowPendingResolution: true });
+          effects = { ...effects, earningReview: review?.reviewId ?? 'UNAVAILABLE' };
+        }
       }
 
       let replacementSessionId: string | null = null;
@@ -130,9 +163,9 @@ export class AdminSessionResolutionService {
         effects = { ...effects, replacementSessionId };
         await this.sessions.createEvent({ sessionId: replacement.id, eventType: SessionEventType.SESSION_CREATED, actorType: SecurityAuditActorType.USER, actorUserId: input.adminId, source: SecurityAuditSource.HTTP_REQUEST, reason: 'ADMIN_REPLACEMENT', occurredAt: at, metadataJson: { originalSessionId: session.id, resolutionIdempotencyKey: requestId, fundingSource: SessionFundingSource.ADMIN_REPLACEMENT } }, tx);
       }
-      const resolution = await tx.sessionResolution.create({ data: { caseId: resolutionCase.id, sessionId: session.id, attendanceOutcome: input.command.attendanceOutcome, patientRemedy: input.command.patientRemedy, practitionerRemedy: input.command.practitionerRemedy, reasonCode: input.command.reasonCode, adminNotes: input.command.adminNotes.trim(), actedByAdminId: input.adminId, requestId, evidenceSnapshotJson: evidence as Prisma.InputJsonValue, effectsSnapshotJson: effects as Prisma.InputJsonValue, replacementSessionId } });
+      const resolution = await tx.sessionResolution.create({ data: { caseId: resolutionCase.id, sessionId: session.id, attendanceOutcome: lifecycleOutcome, findingCode, customReasonNote: input.command.customReasonNote?.trim() || null, patientRemedy: input.command.patientRemedy, practitionerRemedy: input.command.practitionerRemedy, reasonCode: input.command.reasonCode, adminNotes: input.command.adminNotes.trim(), actedByAdminId: input.adminId, requestId, evidenceSnapshotJson: evidence as Prisma.InputJsonValue, effectsSnapshotJson: effects as Prisma.InputJsonValue, replacementSessionId } });
       await tx.sessionResolutionCase.update({ where: { id: resolutionCase.id }, data: { status: 'EXECUTED', resolvedAt: at } });
-      await tx.sessionEvent.create({ data: { sessionId: session.id, eventType: SessionEventType.ADMIN_MANUAL_DECISION_CREATED, actorType: SecurityAuditActorType.USER, actorUserId: input.adminId, actorRolesJson: input.actorRoles, source: SecurityAuditSource.HTTP_REQUEST, requestId, correlationId: input.requestId ?? null, reason: input.command.reasonCode, previousStatus: SessionStatus.AWAITING_ADMIN_RESOLUTION, newStatus: input.command.attendanceOutcome, occurredAt: at, metadataJson: { resolutionId: resolution.id, patientRemedy: input.command.patientRemedy, practitionerRemedy: input.command.practitionerRemedy, effects } as Prisma.InputJsonObject } });
+      await tx.sessionEvent.create({ data: { sessionId: session.id, eventType: SessionEventType.ADMIN_MANUAL_DECISION_CREATED, actorType: SecurityAuditActorType.USER, actorUserId: input.adminId, actorRolesJson: input.actorRoles, source: SecurityAuditSource.HTTP_REQUEST, requestId, correlationId: input.requestId ?? null, reason: input.command.reasonCode, previousStatus: SessionStatus.AWAITING_ADMIN_RESOLUTION, newStatus: lifecycleOutcome, occurredAt: at, metadataJson: { resolutionId: resolution.id, findingCode, patientRemedy: input.command.patientRemedy, practitionerRemedy: input.command.practitionerRemedy, effects } as Prisma.InputJsonObject } });
       return resolution;
     });
 

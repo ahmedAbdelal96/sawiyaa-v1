@@ -35,8 +35,18 @@ export class PatientJourneyReadRepository {
       select: {
         id: true,
         status: true,
+        flowType: true,
+        sessionMode: true,
+        provider: true,
+        providerRoomId: true,
+        providerSessionRef: true,
         scheduledStartAt: true,
         scheduledEndAt: true,
+        joinOpenAt: true,
+        joinCloseAt: true,
+        expiresAt: true,
+        videoRoomClosedAt: true,
+        originalSessionId: true,
         practitioner: {
           select: {
             publicSlug: true,
@@ -76,8 +86,18 @@ export class PatientJourneyReadRepository {
       select: {
         id: true,
         status: true,
+        flowType: true,
+        sessionMode: true,
+        provider: true,
+        providerRoomId: true,
+        providerSessionRef: true,
         scheduledStartAt: true,
         scheduledEndAt: true,
+        joinOpenAt: true,
+        joinCloseAt: true,
+        expiresAt: true,
+        videoRoomClosedAt: true,
+        originalSessionId: true,
         practitioner: {
           select: {
             publicSlug: true,

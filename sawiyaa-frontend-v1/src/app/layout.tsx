@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
-import { Cairo, Outfit } from "next/font/google";
 import "./globals.css";
+import "@fontsource-variable/cairo";
+import "@fontsource-variable/outfit";
 import "flatpickr/dist/flatpickr.css";
 import NextTopLoader from "nextjs-toploader";
 import { QueryProvider } from "@/providers/query-provider";
@@ -8,20 +9,6 @@ import { ToastProvider } from "@/providers/toast-provider";
 import { ThemeHydration } from "@/components/providers/ThemeHydration";
 import { buildPublicMetadata } from "@/lib/seo/public-metadata";
 import { AutomaticTimeZoneInitializer } from "@/providers/AutomaticTimeZoneInitializer";
-
-const cairo = Cairo({
-  subsets: ["arabic"],
-  weight: ["300", "400", "500", "600", "700", "800"],
-  variable: "--font-cairo",
-  display: "swap",
-});
-
-const outfit = Outfit({
-  subsets: ["latin"],
-  weight: ["300", "400", "500", "600", "700", "800"],
-  variable: "--font-outfit",
-  display: "swap",
-});
 
 export const metadata: Metadata = {
   ...buildPublicMetadata({
@@ -56,7 +43,6 @@ export default async function RootLayout({ children, params }: Props) {
     <html
       lang={locale}
       dir={dir}
-      className={`${outfit.variable} ${cairo.variable}`}
       suppressHydrationWarning
     >
       <body className="antialiased dark:bg-gray-900">

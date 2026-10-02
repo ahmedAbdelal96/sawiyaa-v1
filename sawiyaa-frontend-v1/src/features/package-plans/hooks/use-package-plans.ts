@@ -39,6 +39,7 @@ export function usePublicPractitionerPackagePlans(
     staleTime: 0,
     gcTime: 0,
     refetchOnMount: "always",
+    refetchOnWindowFocus: true,
   });
 }
 

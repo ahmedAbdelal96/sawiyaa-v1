@@ -10,6 +10,7 @@ export const seedIds = {
     patientA: '11111111-1111-4111-8111-111111111114',
     patientB: '11111111-1111-4111-8111-111111111115',
     patientC: '11111111-1111-4111-8111-111111111126',
+    traineeA: '11111111-1111-4111-8111-111111111127',
     practitionerA: '11111111-1111-4111-8111-111111111116',
     practitionerB: '11111111-1111-4111-8111-111111111117',
     practitionerC: '11111111-1111-4111-8111-111111111118',
@@ -70,6 +71,24 @@ export const seedIds = {
     practitionerI: '66666666-6666-4666-8666-666666666669',
     practitionerJ: '66666666-6666-4666-8666-666666666670',
   },
+  professionalContentFixtures: {
+    users: {
+      s1: '11111111-1111-4111-8111-111111111131',
+      s2: '11111111-1111-4111-8111-111111111132',
+      s3: '11111111-1111-4111-8111-111111111133',
+      s4: '11111111-1111-4111-8111-111111111134',
+      s5: '11111111-1111-4111-8111-111111111135',
+      s6: '11111111-1111-4111-8111-111111111136',
+    },
+    profiles: {
+      s1: '66666666-6666-4666-8666-666666666671',
+      s2: '66666666-6666-4666-8666-666666666672',
+      s3: '66666666-6666-4666-8666-666666666673',
+      s4: '66666666-6666-4666-8666-666666666674',
+      s5: '66666666-6666-4666-8666-666666666675',
+      s6: '66666666-6666-4666-8666-666666666676',
+    },
+  },
   practitionerApplications: {
     practitionerA: '77777777-7777-4777-8777-777777777771',
     practitionerB: '77777777-7777-4777-8777-777777777772',
@@ -102,6 +121,22 @@ export const seedIds = {
     patientBSession: '99999999-9999-4999-8999-999999999994',
     practitionerBSession: '99999999-9999-4999-8999-999999999995',
   },
+  academy: {
+    completedProgram: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1',
+    upcomingProgram: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa2',
+    completedSessionOne: 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbb1',
+    completedSessionTwo: 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbb2',
+    completedSessionThree: 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbb4',
+    upcomingSessionOne: 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbb3',
+    guestLearner: 'cccccccc-cccc-4ccc-8ccc-ccccccccccc1',
+    traineeLearner: 'cccccccc-cccc-4ccc-8ccc-ccccccccccc2',
+    guestEnrollment: 'dddddddd-dddd-4ddd-8ddd-ddddddddddd1',
+    traineeCompletedEnrollment: 'dddddddd-dddd-4ddd-8ddd-ddddddddddd2',
+    traineeUpcomingEnrollment: 'dddddddd-dddd-4ddd-8ddd-ddddddddddd3',
+    guestPendingEnrollment: 'dddddddd-dddd-4ddd-8ddd-ddddddddddd4',
+    completedSessionOneAttendance: 'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeee1',
+    completedSessionTwoAttendance: 'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeee2',
+  },
 } as const;
 
 export const seedCredentials = {
@@ -130,12 +165,16 @@ export const seedCredentials = {
     email: 'omar.patient@hesba.local',
     password: 'Patient3@12345',
   },
+  traineeA: {
+    email: 'trainee@hesba.local',
+    password: 'Trainee@12345',
+  },
   practitionerA: {
     email: 'ahmed.m.abdelal57@gmail.com',
     password: 'Practitioner@12345',
   },
   practitionerB: {
-    email: 'dr.mohamed@hesba.local',
+    email: 'amohamef206@gmail.com',
     password: 'Practitioner2@12345',
   },
   practitionerC: {

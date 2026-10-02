@@ -1,4 +1,8 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import {
   LedgerDirection,
   LedgerEntryType,
@@ -10,10 +14,8 @@ import {
 } from '@prisma/client';
 import { LedgerRepository } from '../repositories/ledger.repository';
 import { WalletRepository } from '../repositories/wallet.repository';
-import {
-  assertWalletCurrencyMatches,
-  normalizeFinancialCurrency,
-} from '../utils/wallet-currency-invariant';
+import { lockPractitionerFinance } from '../utils/lock-practitioner-finance';
+import { assertWalletCurrencyMatches } from '../utils/wallet-currency-invariant';
 
 @Injectable()
 export class ApprovePractitionerSettlementService {
@@ -43,12 +45,28 @@ export class ApprovePractitionerSettlementService {
     description: string;
     metadata?: Record<string, unknown>;
   }) {
-    const originalCurrencyCode = input.originalCurrencyCode.trim().toUpperCase();
-    const requestedWalletCurrencyCode = input.walletCurrencyCode.trim().toUpperCase();
-    if (!originalCurrencyCode || originalCurrencyCode.length !== 3 || !requestedWalletCurrencyCode || requestedWalletCurrencyCode.length !== 3) {
-      throw new BadRequestException('Explicit source and Wallet currencies are required');
+    await lockPractitionerFinance(input.db, input.practitionerId);
+    const originalCurrencyCode = input.originalCurrencyCode
+      .trim()
+      .toUpperCase();
+    const requestedWalletCurrencyCode = input.walletCurrencyCode
+      .trim()
+      .toUpperCase();
+    if (
+      !originalCurrencyCode ||
+      originalCurrencyCode.length !== 3 ||
+      !requestedWalletCurrencyCode ||
+      requestedWalletCurrencyCode.length !== 3
+    ) {
+      throw new BadRequestException(
+        'Explicit source and Wallet currencies are required',
+      );
     }
-    if (input.originalAmount.lt(0) || input.convertedAmount.lt(0) || input.finalWalletCredit.lt(0)) {
+    if (
+      input.originalAmount.lt(0) ||
+      input.convertedAmount.lt(0) ||
+      input.finalWalletCredit.lt(0)
+    ) {
       throw new BadRequestException('Financial amounts cannot be negative');
     }
     if (input.finalWalletCredit.lte(0)) {
@@ -99,10 +117,7 @@ export class ApprovePractitionerSettlementService {
       walletCurrency: currencyCode,
       attemptedCurrency: currencyCode,
     });
-    if (
-      originalCurrencyCode !== currencyCode &&
-      !input.exchangeRate
-    ) {
+    if (originalCurrencyCode !== currencyCode && !input.exchangeRate) {
       throw new BadRequestException({
         messageKey: 'financialOperations.errors.exchangeRateRequired',
         error: 'FINANCIAL_OPERATIONS_EXCHANGE_RATE_REQUIRED',
@@ -131,34 +146,25 @@ export class ApprovePractitionerSettlementService {
     });
 
     const wallet = existingWallet
-      ? await input.db.practitionerWallet.findUniqueOrThrow({ where: { id: existingWallet.id } })
-      : await this.walletRepository.ensureActiveWallet(input.practitionerId, currencyCode, input.db);
-
-    const existingSettlement = await input.db.practitionerSettlement.findUnique({
-      where: {
-        batchId_practitionerId: {
-          batchId: batch.id,
-          practitionerId: input.practitionerId,
-        },
-      },
-      select: { id: true, status: true },
-    });
-    if (
-      existingSettlement &&
-      (existingSettlement.status === PractitionerSettlementStatus.PAID_OUT ||
-        existingSettlement.status === PractitionerSettlementStatus.PAID ||
-        existingSettlement.status === PractitionerSettlementStatus.PROCESSING)
-    ) {
-      throw new BadRequestException({
-        messageKey: 'financialOperations.errors.settlementAlreadyClosed',
-        error: 'FINANCIAL_OPERATIONS_SETTLEMENT_ALREADY_CLOSED',
-      });
-    }
+      ? await input.db.practitionerWallet.findUniqueOrThrow({
+          where: { id: existingWallet.id },
+        })
+      : await this.walletRepository.ensureActiveWallet(
+          input.practitionerId,
+          currencyCode,
+          input.db,
+        );
 
     const sourceSettlement = input.sessionEarningReviewId
       ? await input.db.practitionerSettlement.findUnique({
           where: { sourceReviewId: input.sessionEarningReviewId },
-          select: { id: true, status: true, amountGross: true, amountAdjustments: true, convertedAmount: true },
+          select: {
+            id: true,
+            status: true,
+            amountGross: true,
+            amountAdjustments: true,
+            convertedAmount: true,
+          },
         })
       : null;
     const settlement = sourceSettlement
@@ -173,58 +179,50 @@ export class ApprovePractitionerSettlementService {
             originalCurrencyCode,
             walletCurrencyCode: currencyCode,
             exchangeRate: input.exchangeRate ?? null,
-            exchangeRateSource: input.exchangeRate ? 'ACCOUNTANT_APPROVAL' : null,
+            exchangeRateSource: input.exchangeRate
+              ? 'ACCOUNTANT_APPROVAL'
+              : null,
             exchangeRateAt: input.exchangeRate ? now : null,
             convertedAmount: input.convertedAmount,
-            walletCreditDifferenceAmount: input.walletCreditDifferenceAmount ?? new Prisma.Decimal(0),
-            walletCreditOverrideReason: input.walletCreditOverrideReason ?? null,
+            walletCreditDifferenceAmount:
+              input.walletCreditDifferenceAmount ?? new Prisma.Decimal(0),
+            walletCreditOverrideReason:
+              input.walletCreditOverrideReason ?? null,
             approvedByUserId: input.actorUserId,
             approvedAt: now,
             status: PractitionerSettlementStatus.APPROVED,
           },
         })
-      : await input.db.practitionerSettlement.upsert({
-      where: {
-        batchId_practitionerId: {
-          batchId: batch.id,
-          practitionerId: input.practitionerId,
-        },
-      },
-      create: {
-        batchId: batch.id,
-        practitionerId: input.practitionerId,
-        sourceReviewId: input.sessionEarningReviewId ?? null,
-        walletId: wallet.id,
-        amountGross: input.convertedAmount,
-        amountAdjustments: 0,
-        amountNet: input.finalWalletCredit,
-        currencyCode,
-        originalAmount: input.originalAmount,
-        originalCurrencyCode,
-        walletCurrencyCode: currencyCode,
-        exchangeRate: input.exchangeRate ?? null,
-        exchangeRateSource: input.exchangeRate ? 'ACCOUNTANT_APPROVAL' : null,
-        exchangeRateAt: input.exchangeRate ? now : null,
-        convertedAmount: input.convertedAmount,
-        finalWalletCredit: input.finalWalletCredit,
-        walletCreditDifferenceAmount: input.walletCreditDifferenceAmount ?? new Prisma.Decimal(0),
-        walletCreditOverrideReason: input.walletCreditOverrideReason ?? null,
-        approvedByUserId: input.actorUserId,
-        approvedAt: now,
-        status: PractitionerSettlementStatus.APPROVED,
-        notes: 'Created by approved accounting decision.',
-      },
-      update: {
-        amountGross: { increment: input.convertedAmount },
-        amountNet: { increment: input.finalWalletCredit },
-        convertedAmount: { increment: input.convertedAmount },
-        finalWalletCredit: { increment: input.finalWalletCredit },
-        approvedByUserId: input.actorUserId,
-        approvedAt: now,
-        status: PractitionerSettlementStatus.APPROVED,
-        walletId: wallet.id,
-      },
-    });
+      : await input.db.practitionerSettlement.create({
+          data: {
+            batchId: batch.id,
+            practitionerId: input.practitionerId,
+            sourceReviewId: input.sessionEarningReviewId ?? null,
+            walletId: wallet.id,
+            amountGross: input.convertedAmount,
+            amountAdjustments: 0,
+            amountNet: input.finalWalletCredit,
+            currencyCode,
+            originalAmount: input.originalAmount,
+            originalCurrencyCode,
+            walletCurrencyCode: currencyCode,
+            exchangeRate: input.exchangeRate ?? null,
+            exchangeRateSource: input.exchangeRate
+              ? 'ACCOUNTANT_APPROVAL'
+              : null,
+            exchangeRateAt: input.exchangeRate ? now : null,
+            convertedAmount: input.convertedAmount,
+            finalWalletCredit: input.finalWalletCredit,
+            walletCreditDifferenceAmount:
+              input.walletCreditDifferenceAmount ?? new Prisma.Decimal(0),
+            walletCreditOverrideReason:
+              input.walletCreditOverrideReason ?? null,
+            approvedByUserId: input.actorUserId,
+            approvedAt: now,
+            status: PractitionerSettlementStatus.APPROVED,
+            notes: 'Created by approved accounting decision.',
+          },
+        });
 
     const auditMetadata = {
       source: 'approved-practitioner-settlement',
@@ -269,7 +267,7 @@ export class ApprovePractitionerSettlementService {
                 entryType: LedgerEntryType.PLATFORM_COMMISSION,
                 direction: LedgerDirection.CREDIT,
                 amount: input.platformAmount,
-                currencyCode,
+                currencyCode: originalCurrencyCode,
                 balanceBucket: WalletBalanceBucket.AVAILABLE,
                 referenceType: input.referenceType,
                 referenceId: input.referenceId,

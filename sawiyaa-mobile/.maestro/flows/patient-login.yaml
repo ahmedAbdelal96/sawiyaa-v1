@@ -1,0 +1,16 @@
+appId: com.sawiyaa.mobile
+---
+- launchApp:
+    clearState: true
+- tapOn:
+    text: "Patient|مريض"
+- tapOn:
+    text: "Email|البريد الإلكتروني"
+- inputText: ${PATIENT_EMAIL}
+- tapOn:
+    text: "Password|كلمة المرور"
+- inputText: ${PATIENT_PASSWORD}
+- tapOn:
+    text: "Sign in|تسجيل الدخول"
+- assertVisible:
+    text: "Home|الرئيسية"

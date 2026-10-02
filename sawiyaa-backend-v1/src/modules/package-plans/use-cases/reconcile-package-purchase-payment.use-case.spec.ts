@@ -54,6 +54,25 @@ describe('ReconcilePackagePurchasePaymentUseCase', () => {
     ).not.toHaveBeenCalled();
   });
 
+  it('does not fulfill an authorized payment before capture', async () => {
+    const setup = buildUseCase({
+      paymentStatus: PaymentStatus.AUTHORIZED,
+    });
+
+    await expect(
+      setup.useCase.execute({
+        paymentId: 'payment-1',
+        providerEventRef: 'evt-1',
+        payload: {},
+        payment: undefined,
+      }),
+    ).rejects.toThrow('Conflict Exception');
+
+    expect(
+      setup.handlePackagePurchasePaymentSuccessUseCase.execute,
+    ).not.toHaveBeenCalled();
+  });
+
   it('routes failed package payments to failure repair', async () => {
     const setup = buildUseCase({
       paymentStatus: PaymentStatus.FAILED,

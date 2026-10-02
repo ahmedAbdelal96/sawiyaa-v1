@@ -11,18 +11,20 @@ import {
   View,
 } from "react-native";
 import * as Linking from "expo-linking";
+import {
+  isCanonicallyCapturedPayment,
+  resolveCheckoutFunding,
+} from "../../../../src/features/patient/payments/checkout-funding";
 import * as WebBrowser from "expo-web-browser";
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 import {
   Button,
-  Card,
   Header,
   Input,
   LoadingState,
   Screen,
-  ScreenHeading,
   Text,
 } from "../../../../src/components/ui";
 import { useTheme } from "../../../../src/providers/ThemeProvider";
@@ -40,6 +42,7 @@ import { formatMoney as formatCentralMoney, parseMoney } from "../../../../src/l
 import { normalizeAllowedExternalUrl } from "../../../../src/lib/external-url";
 import { formatViewerDateTime } from "../../../../src/lib/time-formatting";
 import { trackAnalyticsEvent } from "../../../../src/lib/analytics";
+import { getDirectionalIcon } from "../../../../src/i18n/direction";
 import { logPaymentInitiationError } from "../../../../src/features/patient/payments/payment-initiation-errors";
 import type {
   PaymobCheckoutMethod,
@@ -51,14 +54,6 @@ import {
 } from "../../../../src/features/patient/payments/coupon-utils";
 
 WebBrowser.maybeCompleteAuthSession();
-
-const CONFIRMED_SESSION_STATUSES = new Set([
-  "UPCOMING",
-  "UPCOMING",
-  "READY_TO_JOIN",
-  "IN_PROGRESS",
-  "COMPLETED",
-]);
 
 function formatMoney(amount: string, currencyCode: string | null | undefined, locale: string): string {
   const money = parseMoney(amount, currencyCode);
@@ -80,25 +75,17 @@ function toNumber(value: string | null | undefined): number {
   return Number.isFinite(n) ? n : 0;
 }
 
-function isConfirmedSessionStatus(status: string | null | undefined): boolean {
-  return Boolean(status && CONFIRMED_SESSION_STATUSES.has(status));
-}
-
-function resolveBlockedMessageKey(status: string, expiresAt: string | null) {
-  if (status === "EXPIRED" || isSessionExpired(expiresAt)) {
+function resolveBlockedMessageKey(input: {
+  state: string | null | undefined;
+  timelineBucket: string | null | undefined;
+  expiresAt: string | null;
+}) {
+  if (input.state === "EXPIRED" || isSessionExpired(input.expiresAt)) {
     return "patientPaymentsFlow.checkout.sessionExpired";
   }
 
-  if (isConfirmedSessionStatus(status)) {
+  if (input.timelineBucket === "ACTIONABLE" || input.timelineBucket === "COMPLETED") {
     return "patientPaymentsFlow.checkout.sessionAlreadyPaid";
-  }
-
-  if (status === "REFUND_PENDING") {
-    return "patientPaymentsFlow.checkout.sessionRefundPending";
-  }
-
-  if (status === "REFUNDED") {
-    return "patientPaymentsFlow.checkout.sessionRefunded";
   }
 
   return "patientPaymentsFlow.checkout.sessionNotPayable";
@@ -111,13 +98,6 @@ function getRefundPolicyTitle(
   if (!policy) return "";
   const isArabic = locale.startsWith("ar");
   return isArabic ? policy.titleAr ?? policy.titleEn ?? policy.key : policy.titleEn ?? policy.titleAr ?? policy.key;
-}
-
-function getProviderDisplayName(provider: string | null | undefined): string {
-  if (provider === "PAYMOB") return "Paymob";
-  if (provider === "STRIPE") return "Stripe";
-  if (provider === "INTERNAL_WALLET") return "Wallet";
-  return "-";
 }
 
 function normalizeCapabilityMethods(
@@ -162,13 +142,13 @@ function RefundPolicyModal({
     titleEn: string | null;
     key: string;
     clauseCount: number;
-    clauses: Array<{
+    clauses: {
       titleAr: string | null;
       titleEn: string | null;
       bodyAr: string;
       bodyEn: string;
       sortOrder: number;
-    }>;
+    }[];
   } | null;
   locale: string;
   onClose: () => void;
@@ -255,7 +235,7 @@ function RefundPolicyModal({
             </Text>
 
             <View style={styles.modalClausesList}>
-              {policy.clauses
+              {(policy.clauses ?? [])
                 .slice()
                 .sort((left, right) => left.sortOrder - right.sortOrder)
                 .map((clause, index) => (
@@ -397,21 +377,10 @@ export default function SessionPaymentCheckoutScreen() {
   }, [id]);
 
   const split = useMemo(() => {
-    if (!breakdown) {
-      return { walletUsed: 0, gatewayRemaining: 0 };
-    }
+    return resolveCheckoutFunding(breakdown, useWalletBalance);
+  }, [breakdown, useWalletBalance]);
 
-    const total = toNumber(breakdown.netPaidAmount);
-    const walletPart = useWalletBalance
-      ? Math.min(toNumber(walletBalance), total)
-      : 0;
-    const gatewayPart = Math.max(total - walletPart, 0);
-    return { walletUsed: walletPart, gatewayRemaining: gatewayPart };
-  }, [breakdown, useWalletBalance, walletBalance]);
-
-  const payableSession =
-    session?.status === "PENDING_PAYMENT" &&
-    !isSessionExpired(session.expiresAt ?? null);
+  const payableSession = session?.operational?.actions?.canPay === true;
   const gatewayPaymentRequired = split.gatewayRemaining > 0;
   const refundPolicyQuery = useRefundPolicy("SESSION", {
     enabled: Boolean(id),
@@ -470,7 +439,7 @@ export default function SessionPaymentCheckoutScreen() {
     gatewayPaymentRequired && capabilitiesQuery.isLoading;
   const capabilitiesErrorMsg =
     gatewayPaymentRequired && capabilitiesQuery.isError
-      ? extractApiErrorMessage(capabilitiesQuery.error)
+      ? t("patientPaymentsFlow.checkout.paymentMethod.methodUnavailable")
       : null;
 
   const breakdownLoading = breakdownQuery.isLoading && Boolean(id);
@@ -664,9 +633,6 @@ export default function SessionPaymentCheckoutScreen() {
     }
   };
 
-  const providerDisplayName = getProviderDisplayName(
-    capabilities?.provider ?? breakdown?.paymentProvider ?? null,
-  );
   const selectedExternalMethod = supportedGatewayMethods.find(
     (method) => method.key === selectedExternalMethodKey,
   );
@@ -730,7 +696,7 @@ export default function SessionPaymentCheckoutScreen() {
       const paidByWallet = toNumber(payment.amountFromWallet) > 0;
       const paidByGateway = toNumber(payment.amountFromGateway) > 0;
 
-      if (payment.status === "CAPTURED" || payment.status === "AUTHORIZED") {
+      if (isCanonicallyCapturedPayment(payment.status)) {
         setFlowMessage(t("patientPaymentsFlow.checkout.paymentSuccess"));
         navigateToPaymentReturn({
           redirect_status: "succeeded",
@@ -832,7 +798,11 @@ export default function SessionPaymentCheckoutScreen() {
         <Header showBack />
         <View style={styles.centerState}>
           <Text weight="600" style={styles.centerTitle}>
-            {t(resolveBlockedMessageKey(session.status, session.expiresAt))}
+            {t(resolveBlockedMessageKey({
+              state: session.operational?.state,
+              timelineBucket: session.operational?.timelineBucket,
+              expiresAt: session.expiresAt,
+            }))}
           </Text>
           <Button
             title={t("patientPaymentsFlow.checkout.backToSession")}
@@ -1159,12 +1129,16 @@ export default function SessionPaymentCheckoutScreen() {
 
                   let subtitle = t("patientPaymentsFlow.checkout.paymentMethod.gatewayHint");
                   if (isCard) {
-                    subtitle = t("patientPaymentsFlow.checkout.paymentMethod.paymobCardHint", { defaultValue: "ادفع ببطاقتك عبر Paymob" });
+                    subtitle = t("patientPaymentsFlow.checkout.paymentMethod.gatewayHint");
                   } else if (isPaymobWallet) {
-                    subtitle = t("patientPaymentsFlow.checkout.paymentMethod.paymobWalletHint", { defaultValue: "ادفع من محفظتك الإلكترونية عبر Paymob" });
+                    subtitle = t("patientPaymentsFlow.checkout.paymentMethod.onlinePayment");
                   } else if (isStripeHosted) {
-                    subtitle = t("patientPaymentsFlow.checkout.paymentMethod.stripeHostedHint", { defaultValue: "سيتم إكمال الدفع في صفحة آمنة." });
+                    subtitle = t("patientPaymentsFlow.checkout.paymentMethod.gatewayHint");
                   }
+
+                  const methodLabel = isPaymobWallet || isStripeHosted
+                    ? t("patientPaymentsFlow.checkout.paymentMethod.onlinePayment")
+                    : t("patientPaymentsFlow.checkout.paymentMethod.gateway");
 
                   const methodIcon = isPaymobWallet
                     ? "phone-portrait-outline"
@@ -1194,7 +1168,7 @@ export default function SessionPaymentCheckoutScreen() {
                       <View style={styles.methodCardText}>
                         <Text weight="bold" style={styles.methodCardTitle}
                           color={isSelected ? theme.colors.primary : theme.colors.textPrimary}>
-                          {method.label}
+                          {methodLabel}
                         </Text>
                         <Text color={theme.colors.textMuted} style={styles.methodCardSubtitle}>
                           {subtitle}
@@ -1260,7 +1234,7 @@ export default function SessionPaymentCheckoutScreen() {
                   <Text weight="600" color={theme.colors.primary} style={styles.policyViewBtnText}>
                     {t("patientPaymentsFlow.checkout.refundPolicy.viewPolicy", "Review refund policy")}
                   </Text>
-                  <Ionicons name={isRtl ? "chevron-back" : "chevron-forward"} size={16} color={theme.colors.primary} />
+                  <Ionicons name={getDirectionalIcon("disclosure", isRtl)} size={16} color={theme.colors.primary} />
                 </TouchableOpacity>
                 {acceptedRefundPolicy ? (
                   <View style={[styles.acceptedBanner, { backgroundColor: "#f0fdf4", borderColor: "#bbf7d0" }]}>
@@ -1338,7 +1312,17 @@ export default function SessionPaymentCheckoutScreen() {
           title={
             initiateMutation.isPending || isLaunchingCheckout
               ? t("patientPaymentsFlow.checkout.processing")
-              : t("patientPaymentsFlow.checkout.confirmButton")
+              : !breakdown
+                ? t("patientPaymentsFlow.checkout.confirmButton")
+                : !gatewayPaymentRequired
+                  ? (isRtl ? "أكد الحجز من رصيد المحفظة" : "Confirm with wallet balance")
+                  : split.walletUsed > 0 && split.gatewayRemaining > 0
+                    ? (isRtl
+                        ? `ادفع ${formatMoney(split.gatewayRemaining.toFixed(2), paymentCurrency, locale)} وأكد الحجز`
+                        : `Pay ${formatMoney(split.gatewayRemaining.toFixed(2), paymentCurrency, locale)} & Confirm`)
+                    : (isRtl
+                        ? `ادفع ${formatMoney(breakdown.netPaidAmount, paymentCurrency, locale)} وأكد الحجز`
+                        : `Pay ${formatMoney(breakdown.netPaidAmount, paymentCurrency, locale)} & Confirm`)
           }
           loading={initiateMutation.isPending || isLaunchingCheckout}
           onPress={handleInitiatePayment}
@@ -1360,7 +1344,7 @@ export default function SessionPaymentCheckoutScreen() {
           style={styles.footerBtn}
           rightIcon={
             !(initiateMutation.isPending || isLaunchingCheckout) ? (
-              <Ionicons name={isRtl ? "arrow-back" : "arrow-forward"} size={18} color="#fff" />
+              <Ionicons name={getDirectionalIcon("forward", isRtl)} size={18} color="#fff" />
             ) : undefined
           }
         />

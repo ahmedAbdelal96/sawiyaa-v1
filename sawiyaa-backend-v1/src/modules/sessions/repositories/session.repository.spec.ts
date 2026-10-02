@@ -63,10 +63,16 @@ describe('SessionRepository', () => {
     expect(callArg.where.scheduledStartAt).toEqual({
       not: null,
     });
-    expect(callArg.where.scheduledEndAt).toEqual({
-      not: null,
-      gte: new Date('2026-05-01T08:00:00.000Z'),
-    });
+    expect(callArg.where.OR).toEqual([
+      { joinCloseAt: { gte: new Date('2026-05-01T10:00:00.000Z') } },
+      {
+        joinCloseAt: null,
+        scheduledEndAt: {
+          not: null,
+          gte: new Date('2026-05-01T08:00:00.000Z'),
+        },
+      },
+    ]);
     expect(callArg.take).toBe(50);
   });
 

@@ -52,8 +52,8 @@ before writing. A stale candidate is skipped without an event. Pending-payment
 expiry uses one transaction per candidate so one failed candidate does not roll
 back unrelated expirations.
 
-The completion-confirmation sweeper is disabled unless
-`SESSION_COMPLETION_CONFIRMATION_SWEEPER_ENABLED=true`. It processes ordered
+The completion-confirmation sweeper is always started by the production
+backend. It processes ordered
 `UPCOMING` and `READY_TO_JOIN` rows in batches after a configurable grace period
 (default 15 minutes). `SESSION_COMPLETION_CONFIRMATION_SWEEPER_BATCH_SIZE`
 controls the batch size and `SESSION_COMPLETION_CONFIRMATION_SWEEPER_MAX_ROWS`

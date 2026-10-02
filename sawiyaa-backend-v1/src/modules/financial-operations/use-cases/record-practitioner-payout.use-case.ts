@@ -12,6 +12,7 @@ import { SettlementRepository } from '../repositories/settlement.repository';
 import { RecordPractitionerPayoutDto } from '../dto/practitioner-payout.dto';
 import { RecordSettlementPayoutService } from '../services/record-settlement-payout.service';
 import { FINANCIAL_OPS_ERROR_CODES } from '../types/financial-operations.types';
+import { OperationalNotificationService } from '@modules/notifications/services/operational-notification.service';
 
 @Injectable()
 export class RecordPractitionerPayoutUseCase {
@@ -22,6 +23,7 @@ export class RecordPractitionerPayoutUseCase {
     private readonly settlementPayoutRepository: SettlementPayoutRepository,
     private readonly recordSettlementPayoutService: RecordSettlementPayoutService,
     private readonly financialOperationsMapper: FinancialOperationsMapper,
+    private readonly operationalNotificationService?: OperationalNotificationService,
   ) {}
 
   async execute(input: {
@@ -86,6 +88,15 @@ export class RecordPractitionerPayoutUseCase {
 
       return persisted;
     });
+
+    if (this.operationalNotificationService) {
+      await this.operationalNotificationService.notifyPractitionerPayoutCompleted({
+        practitionerProfileId: result.practitionerId,
+        payoutId: result.id,
+        amount: result.amountPaid.toString(),
+        currencyCode: result.currencyCode,
+      });
+    }
 
     return {
       item: this.financialOperationsMapper.toPractitionerPayoutDetail(result),

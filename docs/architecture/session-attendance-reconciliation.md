@@ -92,18 +92,13 @@ cases, exact 30/60-minute threshold cases, real worker concurrency, late-event
 race handling, and rollback injection. Real Daily/provider runtime remains
 unproven by design.
 
-## Phase 3A automatic completion boundary
+## Retired automatic-completion boundary
 
-The automatic path consumes only a fresh, complete, high-confidence
-reconciliation that the canonical evaluator classifies as `AUTO_COMPLETABLE`.
-It re-reads evidence after locking the session and uses the shared completion
-transaction boundary. No patient, practitioner, or both-party no-show result is
-automated; those classifications remain Admin review outcomes.
-
-The Phase 3A PostgreSQL proof is isolated and currently covers a 30-minute
-completion, idempotent replay, and a confirmed both-absent non-terminal result.
-60-minute/below-threshold, concurrency, late-event, provider-runtime, and
-rollback scenarios remain required before enabling the worker.
+The former automatic-completion boundary is historical only. Reconciliation
+and evaluator output remain advisory evidence; they never write a terminal
+session status. Completion is recorded by the Admin manual-decision command
+after the session reaches `AWAITING_COMPLETION_CONFIRMATION`. Problem evidence
+opens an Admin-owned resolution case in `AWAITING_ADMIN_RESOLUTION`.
 
 ## Phase 3B.2 controlled Daily runtime proof
 

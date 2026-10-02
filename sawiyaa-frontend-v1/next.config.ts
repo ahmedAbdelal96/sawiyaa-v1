@@ -6,9 +6,10 @@ const withNextIntl = createNextIntlPlugin('./src/i18n/request.ts');
 // aligned with the icon barrel used throughout the app.
 
 const nextConfig: NextConfig = {
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
+  // Playwright runs the dev server on 127.0.0.1 while Next's dev resources
+  // are requested from the browser origin. Keep this narrowly scoped to the
+  // local hosts used by the test/dev workflow.
+  allowedDevOrigins: ["127.0.0.1", "localhost"],
   /* config options here */
   webpack(config) {
     const assetRule = config.module.rules.find(

@@ -6,6 +6,7 @@ import {
   getAdminSessionManualDecisions,
 } from "../api/admin-session-manual-decisions.api";
 import { adminSessionRuntimeQueryKeys } from "../constants/query-keys";
+import { adminSessionsQueryKeys } from "@/features/admin/sessions/constants/query-keys";
 import type {
   CreateAdminSessionManualDecisionRequest,
   AdminSessionDecisionItem,
@@ -41,6 +42,9 @@ export function useCreateAdminSessionManualDecision() {
       });
       queryClient.invalidateQueries({
         queryKey: adminSessionRuntimeQueryKeys.attendance(sessionId),
+      });
+      queryClient.invalidateQueries({
+        queryKey: adminSessionsQueryKeys.all,
       });
     },
   });

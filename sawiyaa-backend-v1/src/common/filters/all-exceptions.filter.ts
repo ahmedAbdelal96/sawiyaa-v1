@@ -70,6 +70,9 @@ export class AllExceptionsFilter implements ExceptionFilter {
             : typeof res.error === 'string'
               ? res.error
               : null;
+        const validationFields = Array.isArray(res.validationFields)
+          ? res.validationFields
+          : undefined;
         const messageParams =
           typeof res.messageParams === 'object' && res.messageParams !== null
             ? (res.messageParams as Record<string, string | number>)
@@ -101,6 +104,9 @@ export class AllExceptionsFilter implements ExceptionFilter {
         }
         errors = Array.isArray(res.message) ? (res.message as unknown[]) : [];
         safeExceptionFields = this.pickSafeExceptionFields(res);
+        if (validationFields) {
+          errors = validationFields;
+        }
       }
     } else if (exception instanceof Error) {
       messageKey = this.resolveHttpMessageKey(status);

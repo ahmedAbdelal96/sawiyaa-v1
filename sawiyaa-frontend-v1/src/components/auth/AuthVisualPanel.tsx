@@ -3,7 +3,7 @@
 import { useLocale, useTranslations } from "next-intl";
 
 type AuthVisualPanelProps = {
-  mode: "patient" | "practitioner" | "admin" | "forgot";
+  mode: "patient" | "trainee" | "practitioner" | "admin" | "forgot";
   tab?: "signin" | "signup" | "otp" | "forgot";
 };
 

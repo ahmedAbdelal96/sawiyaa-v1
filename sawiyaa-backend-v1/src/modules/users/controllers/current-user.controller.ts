@@ -214,6 +214,7 @@ export class CurrentUserController {
       userId: currentUser.id,
       locale,
       displayName: dto.displayName,
+      roles: currentUser.roles,
     });
   }
 }

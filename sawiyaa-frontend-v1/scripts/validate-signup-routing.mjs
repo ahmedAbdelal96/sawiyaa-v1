@@ -17,7 +17,7 @@ const localeNavigation = read("src/i18n/locale-navigation.ts");
 const authHeader = read("src/app/[locale]/(auth)/_components/AuthAppHeader.tsx");
 const publicLanguageToggle = read("src/components/public/LanguageToggle.tsx");
 
-assert.match(patientPage, /<PatientSignUpForm \/>/);
+assert.match(patientPage, /<PatientSignUpForm(?:\s+callbackUrl=.*)? \/>/);
 assert.match(practitionerPage, /<SignUpForm accountType="practitioner" \/>/);
 
 // Patient flow never requests specialties or categories

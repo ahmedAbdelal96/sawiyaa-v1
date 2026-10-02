@@ -90,7 +90,6 @@ by any use case — future Phase 2 work may emit them from the attendance webhoo
 
 - `GET /api/v1/practitioners/me/sessions`
 - `GET /api/v1/practitioners/me/sessions/:id`
-- `POST /api/v1/practitioners/me/sessions/:id/mark-completed`
 - `POST /api/v1/practitioners/me/sessions/:id/mark-no-show`
 - `POST /api/v1/practitioners/me/sessions/:id/runtime/prepare`
 - `GET /api/v1/practitioners/me/sessions/:id/runtime/join`
@@ -296,7 +295,6 @@ Decision creation, optional status mutation, and audit event writes are wrapped 
 - `GetMyPractitionerSessionsUseCase`
 - `GetAdminSessionAttendanceUseCase`
 - `GetSessionDetailsUseCase`
-- `MarkSessionCompletedByPractitionerUseCase`
 - `MarkSessionNoShowByPractitionerUseCase`
 - `PrepareSessionRuntimeUseCase`
 - `ResolveSessionJoinContractUseCase`

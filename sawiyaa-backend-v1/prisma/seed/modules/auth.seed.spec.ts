@@ -80,6 +80,12 @@ describe('auth.seed: role-permission matrix', () => {
       expect(perms.has('refunds.retry')).toBe(true);
     });
 
+    it('has wallet and package-plan read only access', () => {
+      expect(perms.has('customer-wallets.read')).toBe(true);
+      expect(perms.has('package-plans.read')).toBe(true);
+      expect(perms.has('package-plans.manage')).toBe(false);
+    });
+
     it('does NOT have sensitive patient data permission', () => {
       expect(perms.has('patients.sensitive.read')).toBe(false);
     });
@@ -186,6 +192,43 @@ describe('auth.seed: role-permission matrix', () => {
     });
   });
 
+  describe('PRACTITIONER_REVIEWER', () => {
+    it('has specialty read only', () => {
+      const perms = bundleByRole.get(UserRoleType.PRACTITIONER_REVIEWER)!;
+      expect(perms.has('specialties.read')).toBe(true);
+      expect(perms.has('specialties.manage')).toBe(false);
+      expect(perms.has('articles.manage')).toBe(false);
+      expect(perms.has('customer-wallets.read')).toBe(false);
+    });
+  });
+
+  for (const role of [
+    UserRoleType.PATIENT_OPERATIONS,
+    UserRoleType.MARKETING_STAFF,
+  ]) {
+    it(`${role} receives no new P1 permissions by default`, () => {
+      const perms = bundleByRole.get(role)!;
+      for (const key of [
+        'articles.read',
+        'articles.manage',
+        'help.read',
+        'help.manage',
+        'reviews.read',
+        'reviews.moderate',
+        'specialties.read',
+        'specialties.manage',
+        'package-plans.read',
+        'package-plans.manage',
+        'assessments.authoring.read',
+        'assessments.authoring.manage',
+        'customer-wallets.read',
+        'coupons.manage',
+      ]) {
+        expect(perms.has(key)).toBe(false);
+      }
+    });
+  }
+
   describe('PRACTITIONER', () => {
     it('has no permissions', () => {
       const perms = bundleByRole.get(UserRoleType.PRACTITIONER)!;
@@ -199,8 +242,21 @@ describe('auth.seed: role-permission matrix', () => {
       perms = bundleByRole.get(UserRoleType.CONTENT_REVIEWER)!;
     });
 
-    it('only has audit-log.read', () => {
+    it('has approved editorial/reputation permissions only', () => {
       expect(perms.has('audit-log.read')).toBe(true);
+      for (const key of [
+        'articles.read',
+        'articles.manage',
+        'help.read',
+        'help.manage',
+        'reviews.read',
+        'reviews.moderate',
+        'specialties.read',
+      ]) {
+        expect(perms.has(key)).toBe(true);
+      }
+      expect(perms.has('specialties.manage')).toBe(false);
+      expect(perms.has('package-plans.read')).toBe(false);
       expect(perms.has('patients.read.admin')).toBe(false);
       expect(perms.has('finance.events.read')).toBe(false);
     });

@@ -4,10 +4,35 @@ describe('PackagePurchasePresenter', () => {
   let presenter: PackagePurchasePresenter;
 
   beforeEach(() => {
-    presenter = new PackagePurchasePresenter();
+    presenter = new PackagePurchasePresenter({
+      interpret: jest.fn(async ({ session }) => ({
+        state: session.status,
+        timelineBucket:
+          session.status === 'COMPLETED' ? 'COMPLETED' : 'ACTIONABLE',
+        join: { allowed: false, reasonCode: null, canPrepareRuntime: false },
+        actions: {
+          canJoin: false,
+          canPrepareRuntime: false,
+          canCancel: false,
+          canPay: false,
+          canReview: false,
+          canMarkPatientNoShow: false,
+          noShowReasonCode: null,
+        },
+        attendance: {
+          patientTrustedAttendance: false,
+          practitionerTrustedAttendance: false,
+          reconciliationStatus: 'NOT_AVAILABLE',
+          outcomeRecommendation: null,
+        },
+        room: { state: 'NOT_PREPARED', closedAt: null },
+        resolution: { required: false, finalDecision: null },
+        replacement: { replacesSessionId: null },
+      })),
+    } as any);
   });
 
-  it('calculates canonical progress and remaining sessions correctly', () => {
+  it('calculates canonical progress and remaining sessions correctly', async () => {
     const mockPurchase: any = {
       id: 'purchase-1',
       status: 'ACTIVE',
@@ -77,18 +102,21 @@ describe('PackagePurchasePresenter', () => {
       ],
     };
 
-    const vm = presenter.toViewModel({ purchase: mockPurchase });
+    const vm = await presenter.toViewModel({ purchase: mockPurchase });
 
     expect(vm.title).toBe('6 Sessions Package');
     expect(vm.practitioner?.displayName).toBe('Dr. Ahmed');
     expect(vm.progress.totalSessions).toBe(6);
+    expect(vm.progress.consumedSessions).toBe(2);
     expect(vm.progress.completedSessions).toBe(2);
+    expect(vm.progress.reservedSessions).toBe(1);
+    expect(vm.progress.availableSessions).toBe(3);
     expect(vm.progress.remainingSessions).toBe(4);
     expect(vm.progress.scheduledSessions).toBe(1);
     expect(vm.progress.progressPercent).toBe(33);
   });
 
-  it('clamps remaining sessions to 0 when completed count reaches or exceeds total', () => {
+  it('clamps remaining sessions to 0 when completed count reaches or exceeds total', async () => {
     const mockPurchase: any = {
       id: 'purchase-2',
       status: 'COMPLETED',
@@ -107,25 +135,30 @@ describe('PackagePurchasePresenter', () => {
       paymentExpiresAt: null,
       createdAt: new Date('2026-01-01'),
       updatedAt: new Date('2026-01-01'),
-      sessions: Array(5).fill(null).map((_, i) => ({
-        id: `s-${i}`,
-        sessionCode: `SES-${i}`,
-        status: 'COMPLETED',
-        provider: 'DAILY',
-        providerRoomId: null,
-        providerSessionRef: null,
-        scheduledStartAt: new Date(),
-        scheduledEndAt: new Date(),
-        durationMinutes: 60,
-        sessionMode: 'VIDEO',
-        packageSessionIndex: i + 1,
-      })),
+      sessions: Array(5)
+        .fill(null)
+        .map((_, i) => ({
+          id: `s-${i}`,
+          sessionCode: `SES-${i}`,
+          status: 'COMPLETED',
+          provider: 'DAILY',
+          providerRoomId: null,
+          providerSessionRef: null,
+          scheduledStartAt: new Date(),
+          scheduledEndAt: new Date(),
+          durationMinutes: 60,
+          sessionMode: 'VIDEO',
+          packageSessionIndex: i + 1,
+        })),
     };
 
-    const vm = presenter.toViewModel({ purchase: mockPurchase });
+    const vm = await presenter.toViewModel({ purchase: mockPurchase });
 
     expect(vm.progress.totalSessions).toBe(4);
+    expect(vm.progress.consumedSessions).toBe(4);
     expect(vm.progress.completedSessions).toBe(4);
+    expect(vm.progress.reservedSessions).toBe(0);
+    expect(vm.progress.availableSessions).toBe(0);
     expect(vm.progress.remainingSessions).toBe(0);
     expect(vm.progress.progressPercent).toBe(100);
   });

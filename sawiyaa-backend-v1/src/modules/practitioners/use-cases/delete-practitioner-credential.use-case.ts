@@ -19,11 +19,9 @@ export class DeletePractitionerCredentialUseCase {
 
   async execute(input: { userId: string; credentialId: string; locale: SupportedLocale }) {
     const profile = await this.profileRepository.findByUserId(input.userId);
-    if (!profile) {
-      throw new NotFoundException({ error: 'PRACTITIONER_PROFILE_NOT_FOUND' });
-    }
-
-    const application = await this.applicationRepository.findLatestByPractitionerId(profile.id);
+    const application = profile
+      ? await this.applicationRepository.findLatestByPractitionerId(profile.id)
+      : await this.applicationRepository.findLatestByUserId(input.userId);
     const lockedStatuses: PractitionerApplicationStatus[] = [
       PractitionerApplicationStatus.SUBMITTED,
       PractitionerApplicationStatus.UNDER_REVIEW,
@@ -32,17 +30,18 @@ export class DeletePractitionerCredentialUseCase {
     ];
     const locked = application?.status !== undefined && lockedStatuses.includes(application.status);
     const editableStatuses: PractitionerStatus[] = [PractitionerStatus.DRAFT, PractitionerStatus.REJECTED];
-    if (locked || !editableStatuses.includes(profile.status)) {
+    if (locked || (profile && !editableStatuses.includes(profile.status))) {
       throw new ConflictException({
         error: 'PRACTITIONER_CREDENTIALS_LOCKED_AFTER_SUBMISSION',
         messageKey: 'practitioners.errors.credentialsLocked',
       });
     }
 
-    const credential = await this.credentialRepository.findByIdForPractitioner(
-      input.credentialId,
-      profile.id,
-    );
+    const credential = profile
+      ? await this.credentialRepository.findByIdForPractitioner(input.credentialId, profile.id)
+      : application
+        ? await this.credentialRepository.findByIdForApplication(input.credentialId, application.id)
+        : null;
     if (!credential) {
       throw new NotFoundException({ error: 'PRACTITIONER_CREDENTIAL_NOT_FOUND' });
     }

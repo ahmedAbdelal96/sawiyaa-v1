@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuthenticatedQueryEnabled } from "../../auth/query-auth";
 import { patientJourneyQueryKey } from "../journey/hooks";
 import { patientSessionsQueryKeys } from "../sessions/hooks";
@@ -52,6 +52,26 @@ export function usePatientPayments(params?: ListPaymentsParams) {
     queryFn: () => listPatientPayments(params),
     enabled,
     staleTime: 30_000,
+    refetchOnMount: "always",
+  });
+}
+
+export function useInfinitePatientPayments(
+  params?: Omit<ListPaymentsParams, "page">,
+) {
+  const enabled = useAuthenticatedQueryEnabled("patient");
+  return useInfiniteQuery({
+    queryKey: paymentQueryKeys.list(params),
+    initialPageParam: 1,
+    queryFn: ({ pageParam }) =>
+      listPatientPayments({ ...params, page: Number(pageParam) || 1 }),
+    getNextPageParam: (lastPage) =>
+      lastPage.pagination.page < lastPage.pagination.totalPages
+        ? lastPage.pagination.page + 1
+        : undefined,
+    enabled,
+    staleTime: 30_000,
+    refetchOnMount: "always",
   });
 }
 
@@ -74,6 +94,7 @@ export function usePatientWalletSummary(currencyCode?: string) {
     queryFn: () => getPatientWalletSummary(currencyCode),
     enabled,
     staleTime: 30_000,
+    refetchOnMount: "always",
   });
 }
 
@@ -85,6 +106,26 @@ export function usePatientWalletEntries(params?: ListWalletEntriesParams) {
     queryFn: () => listPatientWalletEntries(params),
     enabled,
     staleTime: 30_000,
+    refetchOnMount: "always",
+  });
+}
+
+export function useInfinitePatientWalletEntries(
+  params?: Omit<ListWalletEntriesParams, "page">,
+) {
+  const enabled = useAuthenticatedQueryEnabled("patient");
+  return useInfiniteQuery({
+    queryKey: paymentQueryKeys.walletEntries(params),
+    initialPageParam: 1,
+    queryFn: ({ pageParam }) =>
+      listPatientWalletEntries({ ...params, page: Number(pageParam) || 1 }),
+    getNextPageParam: (lastPage) =>
+      lastPage.pagination.page < lastPage.pagination.totalPages
+        ? lastPage.pagination.page + 1
+        : undefined,
+    enabled,
+    staleTime: 30_000,
+    refetchOnMount: "always",
   });
 }
 

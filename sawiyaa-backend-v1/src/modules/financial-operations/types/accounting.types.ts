@@ -10,6 +10,10 @@ export const PLATFORM_LEDGER_ACCOUNT_CODES = {
   gatewayFeesExpense: 'EXPENSE_GATEWAY_FEES',
   transferFeesExpense: 'EXPENSE_TRANSFER_FEES',
   refundAdjustments: 'EXPENSE_REFUND_ADJUSTMENTS',
+  deferredSessionFunds: 'LIABILITY_DEFERRED_SESSION_FUNDS',
+  foreignExchangeClearing: 'ASSET_FOREIGN_EXCHANGE_CLEARING',
+  practitionerRecoveryReceivable: 'ASSET_PRACTITIONER_RECOVERY',
+  earningAdjustments: 'EXPENSE_EARNING_ADJUSTMENTS',
 } as const;
 
 export type PlatformLedgerAccountCode =
@@ -23,6 +27,30 @@ export type AccountingAccountSeed = {
 };
 
 export const PLATFORM_LEDGER_ACCOUNT_SEEDS: AccountingAccountSeed[] = [
+  {
+    code: PLATFORM_LEDGER_ACCOUNT_CODES.deferredSessionFunds,
+    name: 'Deferred Session Funds',
+    accountType: LedgerAccountType.LIABILITY,
+    scope: LedgerAccountScope.PLATFORM,
+  },
+  {
+    code: PLATFORM_LEDGER_ACCOUNT_CODES.foreignExchangeClearing,
+    name: 'Foreign Exchange Clearing',
+    accountType: LedgerAccountType.ASSET,
+    scope: LedgerAccountScope.PLATFORM,
+  },
+  {
+    code: PLATFORM_LEDGER_ACCOUNT_CODES.practitionerRecoveryReceivable,
+    name: 'Practitioner Recovery Receivable',
+    accountType: LedgerAccountType.ASSET,
+    scope: LedgerAccountScope.PLATFORM,
+  },
+  {
+    code: PLATFORM_LEDGER_ACCOUNT_CODES.earningAdjustments,
+    name: 'Approved Earning Adjustments',
+    accountType: LedgerAccountType.EXPENSE,
+    scope: LedgerAccountScope.PLATFORM,
+  },
   {
     code: PLATFORM_LEDGER_ACCOUNT_CODES.platformCash,
     name: 'Platform Cash',

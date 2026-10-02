@@ -49,6 +49,17 @@ export type AdminPatientDetailsItem = {
   onboardingCompletedAt: string | null;
   createdAt: string;
   updatedAt: string;
+  packages: Array<{
+    id: string; title: string | null; planCode: string | null; status: string;
+    sessionCount: number; completedSessions: number; reservedSessions: number; availableSessions: number;
+    nextSessionAt: string | null; amount: string; currency: string; paidAt: string | null; refundedAt: string | null;
+    practitioner: { id: string; name: string | null } | null; settlementId: string | null;
+  }>;
+  academy: Array<{
+    id: string; programId: string; programSlug: string; programTitleAr: string; programTitleEn: string;
+    status: string; paymentStatus: string; amount: string; currency: string; registeredAt: string;
+    attendanceCount: number; totalSessions: number; certificateIssued: boolean; paymentId: string | null;
+  }>;
 };
 
 export type AdminPatientDetailsResponseData = {

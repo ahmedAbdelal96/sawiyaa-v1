@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { AuthenticatedUser } from '@common/interfaces/authenticated-user.interface';
+import { SupportedLocale } from '@common/i18n/types/locale.types';
 import { ListMyNotificationsDto } from '../dto/list-my-notifications.dto';
 import { UserNotificationsPresenter } from '../presenters/user-notifications.presenter';
 import { UserNotificationRepository } from '../repositories/user-notification.repository';
@@ -15,6 +16,7 @@ export class ListMyNotificationsUseCase {
 
   async execute(input: {
     authenticatedUser: AuthenticatedUser;
+    locale?: SupportedLocale;
     query: ListMyNotificationsDto;
   }) {
     const page = Math.max(1, input.query.page ?? 1);
@@ -26,7 +28,10 @@ export class ListMyNotificationsUseCase {
       limit,
     });
 
-    const enrichment = await this.enrichmentService.enrichMany(rows);
+    const enrichment = await this.enrichmentService.enrichMany(
+      rows,
+      input.locale,
+    );
 
     return this.presenter.presentList({
       items: rows,

@@ -204,6 +204,13 @@ export class SpecialtyRepository {
     });
   }
 
+  findByIdForAdmin(id: string, tx?: Prisma.TransactionClient) {
+    return this.getDb(tx).specialty.findUnique({
+      where: { id },
+      select: this.buildSelectArgs(),
+    });
+  }
+
   findByCanonicalSlug(slug: string, tx?: Prisma.TransactionClient) {
     return this.getDb(tx).specialty.findUnique({
       where: { slug },

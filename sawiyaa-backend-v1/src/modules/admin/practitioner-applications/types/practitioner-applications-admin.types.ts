@@ -9,6 +9,10 @@ import {
   UserStatus,
 } from '@prisma/client';
 import { PractitionerApplicationCompletionViewModel } from '@modules/practitioners/types/practitioner.types';
+import type {
+  AdminProfessionalContentReadiness,
+  AdminProfessionalContentReview,
+} from '../services/admin-practitioner-professional-content-readiness.service';
 
 /**
  * Shared read-model types for admin practitioner application review.
@@ -27,7 +31,7 @@ export enum AdminPractitionerApplicationListView {
 
 export interface AdminPractitionerApplicationListItemViewModel {
   applicationId: string;
-  practitionerProfileId: string;
+  practitionerProfileId: string | null;
   userId: string;
   displayName: string | null;
   practitionerType: PractitionerType;
@@ -78,7 +82,7 @@ export interface AdminPractitionerApplicationSummaryViewModel {
 export interface AdminPractitionerApplicationDetailsViewModel {
   applicant: {
     userId: string;
-    practitionerProfileId: string;
+    practitionerProfileId: string | null;
     displayName: string | null;
     avatarUrl: string | null;
     accountStatus: UserStatus;
@@ -96,7 +100,7 @@ export interface AdminPractitionerApplicationDetailsViewModel {
   };
   liveApplicant: {
     userId: string;
-    practitionerProfileId: string;
+    practitionerProfileId: string | null;
     displayName: string | null;
     avatarUrl: string | null;
     accountStatus: UserStatus;
@@ -206,11 +210,13 @@ export interface AdminPractitionerApplicationDetailsViewModel {
     canBeApproved: boolean;
   };
   completion: PractitionerApplicationCompletionViewModel;
+  professionalContentReadiness: AdminProfessionalContentReadiness;
+  professionalContentReview: AdminProfessionalContentReview;
 }
 
 export interface AdminPractitionerApplicationDecisionViewModel {
   applicationId: string;
-  practitionerProfileId: string;
+  practitionerProfileId: string | null;
   userId: string;
   status: PractitionerApplicationStatus;
   reviewedAt: Date | null;

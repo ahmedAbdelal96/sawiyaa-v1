@@ -1,10 +1,11 @@
 import React from "react";
-import { I18nManager, Image, StyleSheet, Switch, TouchableOpacity, View } from "react-native";
+import { Image, ScrollView, StyleSheet, TouchableOpacity, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
 import { Button, Card, Text } from "../../../../components/ui";
 import type { PackagePlanQuotedItem } from "../../package-plans/types";
 import { formatLocalizedDateRange, formatLocalizedTime } from "../slot-utils";
+import { getDirectionalIcon } from "../../../../i18n/direction";
 
 const FALLBACK_AVATAR = require("../../../../../assets/user.avif");
 
@@ -44,14 +45,13 @@ type RollingDateScheduleTableProps = {
   onPrevWindow: () => void;
   onNextWindow: () => void;
   selectedSlots: string[];
+  selectedDayKey: string | null;
+  onSelectDay: (dayKey: string) => void;
   onToggleSlot: (slot: string) => void;
   maxSelectedCount: number;
   isLoading: boolean;
   isError: boolean;
   onRetry: () => void;
-  showBooked: boolean;
-  onToggleShowBooked: (value: boolean) => void;
-  canShowBookedSlots: boolean;
   timezone: string;
 };
 
@@ -65,18 +65,21 @@ export function RollingDateScheduleTable({
   onPrevWindow,
   onNextWindow,
   selectedSlots,
+  selectedDayKey,
+  onSelectDay,
   onToggleSlot,
   maxSelectedCount,
   isLoading,
   isError,
   onRetry,
-  showBooked,
-  onToggleShowBooked,
-  canShowBookedSlots,
   timezone,
 }: RollingDateScheduleTableProps) {
   const { t } = useTranslation();
   const renderedColumns = isRtl ? [...dateColumns].reverse() : dateColumns;
+  const selectedDay =
+    dateColumns.find((day) => day.dayKey === selectedDayKey) ??
+    dateColumns.find((day) => day.slots.length > 0) ??
+    dateColumns[0];
 
   return (
     <Card variant="elevated" padding="sm" style={styles.scheduleCard}>
@@ -87,14 +90,14 @@ export function RollingDateScheduleTable({
         <View style={[styles.dateWindowNavRow, { flexDirection: isRtl ? "row-reverse" : "row" }]}>
           <TouchableOpacity onPress={onPrevWindow} style={styles.navButton}>
             <Ionicons
-              name={isRtl ? "chevron-forward" : "chevron-back"}
+              name={getDirectionalIcon("previous", isRtl)}
               size={16}
               color={theme.colors.textSecondary}
             />
           </TouchableOpacity>
           <TouchableOpacity onPress={onNextWindow} style={styles.navButton}>
             <Ionicons
-              name={isRtl ? "chevron-back" : "chevron-forward"}
+              name={getDirectionalIcon("next", isRtl)}
               size={16}
               color={theme.colors.textSecondary}
             />
@@ -112,130 +115,86 @@ export function RollingDateScheduleTable({
           <Button title={t("patientSessionsFlow.common.retry")} onPress={onRetry} style={styles.retryButton} />
         </View>
       ) : (
-        <View style={[styles.dateTableWrap, { borderColor: theme.colors.borderLight, backgroundColor: theme.colors.surface }]}>
-          <View style={[styles.dateHeaderRow, { borderBottomColor: theme.colors.borderLight }]}>
-            {renderedColumns.map((day, idx) => (
-              <View
-                key={day.dayKey}
-                style={[
-                  styles.dateHeaderCell,
-                  idx !== 0
-                    ? { borderLeftWidth: 1, borderLeftColor: theme.colors.borderLight }
-                    : null,
-                ]}
-              >
-                <Text style={styles.dayHeaderText} color={theme.colors.textSecondary}>
-                  {day.dayLabelShort}
-                </Text>
-                <Text weight="600" style={styles.dayHeaderNumber} color={theme.colors.textPrimary}>
-                  {day.dayNumber}
-                </Text>
-              </View>
-            ))}
-          </View>
+        <>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={[styles.dateStrip, { flexDirection: isRtl ? "row-reverse" : "row" }]}
+          >
+            {renderedColumns.map((day) => {
+              const active = day.dayKey === selectedDay?.dayKey;
+              return (
+                <TouchableOpacity
+                  key={day.dayKey}
+                  accessibilityRole="tab"
+                  accessibilityState={{ selected: active }}
+                  onPress={() => onSelectDay(day.dayKey)}
+                  style={[
+                    styles.dateChip,
+                    {
+                      backgroundColor: active ? theme.colors.primary : theme.colors.surface,
+                      borderColor: active ? theme.colors.primary : theme.colors.borderLight,
+                    },
+                  ]}
+                >
+                  <Text weight={active ? "600" : "normal"} color={active ? theme.colors.surface : theme.colors.textSecondary} style={styles.dayHeaderText}>
+                    {day.dayLabelShort}
+                  </Text>
+                  <Text weight="600" color={active ? theme.colors.surface : theme.colors.textPrimary} style={styles.dayHeaderNumber}>
+                    {day.dayNumber}
+                  </Text>
+                  <Text color={active ? theme.colors.surface : theme.colors.textMuted} style={styles.slotCountText}>
+                    {day.slots.length}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
 
-          <View style={styles.dateBodyRow}>
-            {renderedColumns.map((day, idx) => (
-              <View
-                key={day.dayKey}
-                style={[
-                  styles.dateBodyCell,
-                  idx !== 0
-                    ? { borderLeftWidth: 1, borderLeftColor: theme.colors.borderLight }
-                    : null,
-                ]}
-              >
-                {day.slots.length === 0 ? (
-                  <View style={styles.emptyDayState}>
-                    <Text style={styles.noSlotsText} color={theme.colors.textMuted}>
-                      {t("patientSessionsFlow.selectTime.noSlotsThisDay")}
-                    </Text>
-                  </View>
-                ) : (
-                  day.slots.map((slot) => {
-                    const selected = selectedSlots.includes(slot.startsAt);
-                    const isBooked = slot.kind === "BOOKED" || slot.kind === "RESERVED";
-                    const disabled =
-                      isBooked || (!selected && selectedSlots.length >= maxSelectedCount);
-                    return (
-                      <TouchableOpacity
-                        key={slot.startsAt}
-                        onPress={() => {
-                          if (isBooked) return;
-                          onToggleSlot(slot.startsAt);
-                        }}
-                        disabled={disabled}
-                        style={[
-                          styles.timeCell,
-                          {
-                            opacity: disabled ? 0.4 : 1,
-                            backgroundColor: selected
-                              ? theme.colors.primary
-                              : isBooked
-                                ? "#fff5f5"
-                                : theme.colors.surface,
-                            borderColor: selected
-                              ? theme.colors.primary
-                              : isBooked
-                                ? "#f04438"
-                                : theme.colors.borderLight,
-                          },
-                        ]}
-                      >
-                        <Text
-                          style={styles.timeCellText}
-                          weight={selected ? "600" : "normal"}
-                          color={
-                            selected
-                              ? theme.colors.surface
-                              : isBooked
-                                ? "#b42318"
-                                : theme.colors.textPrimary
-                          }
-                        >
-                          {formatLocalizedTime(slot.startsAt, locale)}
-                        </Text>
-                      </TouchableOpacity>
-                    );
-                  })
-                )}
+          <View style={[styles.selectedDayPanel, { borderColor: theme.colors.borderLight, backgroundColor: theme.colors.surface }]}>
+            <View style={[styles.selectedDayHeader, { flexDirection: isRtl ? "row-reverse" : "row" }]}>
+              <Text weight="600" style={styles.selectedDayTitle}>
+                {selectedDay?.dayLabelShort ?? t("patientSessionsFlow.selectTime.noSelectedSlot")}
+              </Text>
+              <View style={[styles.timezoneRow, { flexDirection: isRtl ? "row-reverse" : "row" }]}>
+                <Ionicons name="earth-outline" size={14} color={theme.colors.textSecondary} />
+                <Text style={styles.timezoneCodeText} color={theme.colors.textSecondary}>{timezone}</Text>
               </View>
-            ))}
+            </View>
+            {!selectedDay || selectedDay.slots.length === 0 ? (
+              <View style={styles.emptyDayState}>
+                <Text style={styles.noSlotsText} color={theme.colors.textMuted}>
+                  {t("patientSessionsFlow.selectTime.noSlotsThisDay")}
+                </Text>
+              </View>
+            ) : (
+              <View style={styles.timeGrid}>
+                {selectedDay.slots.map((slot) => {
+                  const selected = selectedSlots.includes(slot.startsAt);
+                  const isBooked = slot.kind === "BOOKED" || slot.kind === "RESERVED";
+                  const disabled = isBooked || (!selected && selectedSlots.length >= maxSelectedCount);
+                  return (
+                    <TouchableOpacity
+                      key={slot.startsAt}
+                      accessibilityRole="button"
+                      accessibilityState={{ selected, disabled }}
+                      accessibilityLabel={formatLocalizedTime(slot.startsAt, locale)}
+                      onPress={() => { if (!isBooked) onToggleSlot(slot.startsAt); }}
+                      disabled={disabled}
+                      style={[styles.timeCell, { opacity: disabled ? 0.4 : 1, backgroundColor: selected ? theme.colors.primary : theme.colors.surface, borderColor: selected ? theme.colors.primary : theme.colors.borderLight }]}
+                    >
+                      <Text style={styles.timeCellText} weight={selected ? "600" : "normal"} color={selected ? theme.colors.surface : theme.colors.textPrimary}>
+                        {formatLocalizedTime(slot.startsAt, locale)}
+                      </Text>
+                      {selected ? <Ionicons name="checkmark" size={15} color={theme.colors.surface} /> : null}
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            )}
           </View>
-        </View>
+        </>
       )}
-
-      <View
-        style={[
-          styles.toggleRow,
-          { borderTopColor: theme.colors.borderLight, flexDirection: isRtl ? "row-reverse" : "row" },
-        ]}
-      >
-        <View style={[styles.timezoneRow, { flexDirection: isRtl ? "row-reverse" : "row" }]}>
-          <Ionicons name="earth-outline" size={14} color={theme.colors.textSecondary} />
-          <Text style={styles.timezoneCodeText} color={theme.colors.textSecondary}>
-            {timezone}
-          </Text>
-        </View>
-
-        <View style={[styles.bookedToggleSide, { flexDirection: isRtl ? "row-reverse" : "row" }]}>
-          <Text style={styles.bookedToggleLabel} color={theme.colors.textPrimary}>
-            {t("patientSessionsFlow.selectTime.showBookedToggle")}
-          </Text>
-          <Switch
-            value={showBooked}
-            onValueChange={onToggleShowBooked}
-            disabled={!canShowBookedSlots}
-            trackColor={{ false: theme.colors.borderLight, true: theme.colors.primaryLight }}
-            thumbColor={showBooked ? theme.colors.primary : theme.colors.surface}
-          />
-        </View>
-      </View>
-      {!canShowBookedSlots ? (
-        <Text style={styles.bookedHint} color={theme.colors.textMuted}>
-          {t("patientSessionsFlow.selectTime.bookedSlotsUnavailable")}
-        </Text>
-      ) : null}
     </Card>
   );
 }
@@ -407,8 +366,7 @@ export function PackagePlanSelector({
   isError,
   onRetry,
 }: PackagePlanSelectorProps) {
-  const { t, i18n } = useTranslation();
-  const locale = i18n.language?.startsWith("ar") ? "ar-SA" : "en-US";
+  const { t } = useTranslation();
   const formatPercent = (value: string) => `${Number(value)}%`;
 
   if (isLoading) {
@@ -446,7 +404,9 @@ export function PackagePlanSelector({
           >
             <View style={[styles.packagePlanTopRow, { flexDirection: isRtl ? "row-reverse" : "row" }]}>
               <Text weight="600" style={styles.packagePlanTitle}>
-                {plan.item.sessionCount} {t("patientSessionsFlow.selectTime.packageSessionsLabel")}
+                {t("patientSessionsFlow.selectTime.packageSessionsLabel", {
+                  count: plan.item.sessionCount,
+                })}
               </Text>
               <Text weight="600" color={theme.colors.primary} style={styles.packagePlanDiscount}>
                 {formatPercent(plan.item.discountPercent)}
@@ -491,6 +451,13 @@ const styles = StyleSheet.create({
   navButton: { width: 24, height: 24, borderRadius: 999, alignItems: "center", justifyContent: "center" },
   inlineState: { paddingVertical: 10 },
   retryButton: { marginTop: 6, borderRadius: 10 },
+  dateStrip: { gap: 8, paddingVertical: 2, paddingHorizontal: 1 },
+  dateChip: { width: 58, minHeight: 66, borderWidth: 1, borderRadius: 12, alignItems: "center", justifyContent: "center", gap: 2 },
+  slotCountText: { fontSize: 10, lineHeight: 13 },
+  selectedDayPanel: { borderWidth: 1, borderRadius: 12, padding: 10, marginTop: 10 },
+  selectedDayHeader: { alignItems: "center", justifyContent: "space-between", gap: 8, marginBottom: 10 },
+  selectedDayTitle: { fontSize: 13, flex: 1 },
+  timeGrid: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
   dateTableWrap: { borderWidth: 1, borderRadius: 10, overflow: "hidden" },
   dateHeaderRow: { flexDirection: "row", borderBottomWidth: 1 },
   dateHeaderCell: {
@@ -508,15 +475,18 @@ const styles = StyleSheet.create({
   emptyDayState: { flex: 1, justifyContent: "center", alignItems: "center", paddingHorizontal: 2 },
   noSlotsText: { fontSize: 10, lineHeight: 14, textAlign: "center" },
   timeCell: {
-    minHeight: 30,
-    borderRadius: 7,
+    minHeight: 44,
+    flexBasis: "47%",
+    flexGrow: 1,
+    borderRadius: 9,
     borderWidth: 1,
-    marginBottom: 4,
-    paddingHorizontal: 2,
+    paddingHorizontal: 8,
+    gap: 4,
+    flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
   },
-  timeCellText: { fontSize: 10, lineHeight: 12, writingDirection: "ltr" },
+  timeCellText: { fontSize: 13, lineHeight: 18, writingDirection: "ltr" },
   toggleRow: { borderTopWidth: 1, marginTop: 8, paddingTop: 8, alignItems: "center", justifyContent: "space-between" },
   timezoneRow: { alignItems: "center", gap: 4 },
   timezoneCodeText: { fontSize: 11 },

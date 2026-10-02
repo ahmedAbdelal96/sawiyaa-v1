@@ -37,6 +37,41 @@ export class ApplyManualNoShowFinancialEffectsService {
     private readonly applyCancellationFinancialEffects: ApplySessionCancellationFinancialEffectsService,
   ) {}
 
+  async applyPackageWalletCredit(input: {
+    tx: Prisma.TransactionClient;
+    session: Session;
+    paymentId: string;
+    amount: string;
+    currencyCode: string;
+    adminUserId: string;
+    reasonCode: string;
+  }) {
+    const result = await this.applyCancellationFinancialEffects.apply({
+      tx: input.tx,
+      session: input.session,
+      paymentIdOverride: input.paymentId,
+      refundAmountOverride: input.amount,
+      refundCurrencyCodeOverride: input.currencyCode,
+      evaluation: {
+        bookingType: SessionCancellationBookingType.STANDARD,
+        policyId: 'admin-resolution-package-wallet',
+        policyVersion: 1,
+        policyDefaultRefundDestination: RefundDestination.CUSTOMER_WALLET,
+        ruleId: 'PACKAGE_SESSION_ALLOCATED_VALUE',
+        ruleCode: 'ADMIN_PACKAGE_WALLET_CREDIT',
+        ruleDisplayName: 'Package session allocated wallet credit',
+        cancellationAllowed: true,
+        refundMode: SessionCancellationRefundMode.PERCENTAGE,
+        refundPercent: '100.00',
+        refundDestination: RefundDestination.CUSTOMER_WALLET,
+        hoursBeforeStart: 0,
+      },
+      cancellationReason: input.reasonCode,
+    });
+    await this.applyCancellationFinancialEffects.postRefundLedgerIfNeeded(result.generatedRefundId, input.tx);
+    return result;
+  }
+
   async apply(input: {
     tx: Prisma.TransactionClient;
     session: Session;
@@ -47,6 +82,7 @@ export class ApplyManualNoShowFinancialEffectsService {
     correlationId?: string | null;
     reasonCode: string;
     decidedAt: Date;
+    preservePendingEarningReview?: boolean;
   }): Promise<ManualNoShowFinancialEffects> {
     const idempotencyKey = `manual-no-show:${input.session.id}:${input.outcome}`;
     const isPackage =
@@ -203,6 +239,7 @@ export class ApplyManualNoShowFinancialEffectsService {
         hoursBeforeStart: 0,
       },
       cancellationReason: 'PRACTITIONER_NO_SHOW_REFUND',
+      preservePendingEarningReview: input.preservePendingEarningReview,
     });
     await this.applyCancellationFinancialEffects.postRefundLedgerIfNeeded(
       result.generatedRefundId,

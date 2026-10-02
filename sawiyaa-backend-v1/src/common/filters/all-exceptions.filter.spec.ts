@@ -216,4 +216,49 @@ describe('AllExceptionsFilter', () => {
       }),
     );
   });
+
+  it('keeps the 400 envelope while exposing only safe validation field summaries', () => {
+    const logger = { error: jest.fn() } as never;
+    const i18nService = { t: jest.fn((key: string) => key) } as never;
+    const filter = new AllExceptionsFilter(i18nService, logger, {
+      stackEnabled: true,
+      nodeEnv: 'development',
+    } as never);
+    const response = { status: jest.fn().mockReturnThis(), json: jest.fn() } as never;
+    const request = {
+      method: 'PATCH',
+      originalUrl: '/api/v1/practitioners/me/availability/weeks/week-1',
+      url: '/api/v1/practitioners/me/availability/weeks/week-1',
+      locale: 'en',
+      requestId: 'req-validation',
+      user: { id: 'user-1', roles: ['PRACTITIONER'] },
+      headers: {},
+    } as never;
+    const host = {
+      switchToHttp: () => ({ getResponse: () => response, getRequest: () => request }),
+    } as never;
+
+    filter.catch(
+      new BadRequestException({
+        messageKey: 'common.errors.validationFailed',
+        errorCode: 'VALIDATION_FAILED',
+        validationFields: [
+          { field: 'slots[0].startMinuteOfDay', constraints: ['isInt'] },
+        ],
+      }),
+      host,
+    );
+
+    expect(response.status).toHaveBeenCalledWith(400);
+    expect(response.json).toHaveBeenCalledWith(
+      expect.objectContaining({
+        success: false,
+        errorCode: 'VALIDATION_FAILED',
+        errors: [{ field: 'slots[0].startMinuteOfDay', constraints: ['isInt'] }],
+        requestId: 'req-validation',
+      }),
+    );
+    expect(JSON.stringify(response.json.mock.calls[0][0])).not.toContain('request body');
+    expect(logger.error).not.toHaveBeenCalled();
+  });
 });

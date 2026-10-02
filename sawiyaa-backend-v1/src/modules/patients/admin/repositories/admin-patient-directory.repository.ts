@@ -191,7 +191,7 @@ export class AdminPatientDirectoryRepository {
   }
 
   async findDetails(patientId: string) {
-    return this.prisma.patientProfile.findUnique({
+    const row = await this.prisma.patientProfile.findUnique({
       where: { id: patientId },
       select: {
         id: true,
@@ -203,6 +203,24 @@ export class AdminPatientDirectoryRepository {
         createdAt: true,
         updatedAt: true,
         country: { select: { isoCode: true } },
+        packagePurchases: {
+          orderBy: [{ createdAt: 'desc' }],
+          select: {
+            id: true,
+            titleSnapshot: true,
+            planCodeSnapshot: true,
+            status: true,
+            sessionCountSnapshot: true,
+            selectedAmountSnapshot: true,
+            selectedCurrencyCode: true,
+            paidAt: true,
+            refundedAt: true,
+            packagePlan: { select: { code: true, title: true } },
+            practitioner: { select: { id: true, user: { select: { displayName: true } }, publicSlug: true } },
+            packageSettlement: { select: { id: true, status: true } },
+            sessions: { select: { id: true, status: true, packageSessionIndex: true, scheduledStartAt: true }, orderBy: [{ scheduledStartAt: 'asc' }] },
+          },
+        },
         user: {
           select: {
             displayName: true,
@@ -222,5 +240,20 @@ export class AdminPatientDirectoryRepository {
         },
       },
     });
+    if (!row) return null;
+    const academyProgramEnrollments = await this.prisma.academyProgramEnrollment.findMany({
+      where: { OR: [{ userId: row.userId }, { academyLearner: { userId: row.userId } }] },
+      orderBy: [{ registeredAt: 'desc' }],
+      select: {
+        id: true, userId: true, status: true, paymentStatus: true, registeredAt: true,
+        selectedAmountSnapshot: true, selectedCurrencyCode: true, confirmedAt: true,
+        certificateIssuedAt: true, certificateFileStoragePath: true,
+        payment: { select: { id: true, status: true, amountTotal: true, currencyCode: true } },
+        academyProgram: { select: { id: true, slug: true, titleAr: true, titleEn: true, sessions: { select: { id: true } } } },
+        academyLearner: { select: { userId: true, fullName: true } },
+        _count: { select: { attendanceRecords: true } },
+      },
+    });
+    return { ...row, academyProgramEnrollments };
   }
 }

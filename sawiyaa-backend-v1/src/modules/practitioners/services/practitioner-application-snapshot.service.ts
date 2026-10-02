@@ -1,19 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
+import { ProfessionalContentSnapshot } from './practitioner-professional-content-authoring.service';
 
 @Injectable()
 export class PractitionerApplicationSnapshotService {
-  private toNullableNumber(
-    value: Prisma.Decimal | number | string | null | undefined,
-  ) {
-    if (value === null || value === undefined) {
-      return null;
-    }
-
-    const numericValue = Number(value);
-    return Number.isFinite(numericValue) ? numericValue : null;
-  }
-
   build(input: {
     user: {
       displayName: string | null;
@@ -25,6 +15,8 @@ export class PractitionerApplicationSnapshotService {
       practitionerGender: string | null;
       professionalTitle: string | null;
       bio: string | null;
+      professionalContent?: ProfessionalContentSnapshot | null;
+      primaryContentLocale?: 'ar' | 'en' | null;
       yearsOfExperience: number | null;
       countryCode: string | null;
       primarySpecialtyCategoryId: string | null;
@@ -79,31 +71,15 @@ export class PractitionerApplicationSnapshotService {
         practitionerGender: input.profile.practitionerGender,
         professionalTitle: input.profile.professionalTitle,
         bio: input.profile.bio,
+        ...(input.profile.professionalContent
+          ? { professionalContent: input.profile.professionalContent }
+          : {}),
+        ...(input.profile.primaryContentLocale !== undefined
+          ? { primaryContentLocale: input.profile.primaryContentLocale }
+          : {}),
         yearsOfExperience: input.profile.yearsOfExperience,
         countryCode: input.profile.countryCode,
         avatarUrl: input.avatarUrl,
-        pricing: {
-          session30: {
-            egp: this.toNullableNumber(input.profile.sessionPrice30Egp),
-            usd: this.toNullableNumber(input.profile.sessionPrice30Usd),
-          },
-          session60: {
-            egp: this.toNullableNumber(input.profile.sessionPrice60Egp),
-            usd: this.toNullableNumber(input.profile.sessionPrice60Usd),
-          },
-        },
-        instantBookingPrice30Egp: this.toNullableNumber(
-          input.profile.instantBookingPrice30Egp,
-        ),
-        instantBookingPrice30Usd: this.toNullableNumber(
-          input.profile.instantBookingPrice30Usd,
-        ),
-        instantBookingPrice60Egp: this.toNullableNumber(
-          input.profile.instantBookingPrice60Egp,
-        ),
-        instantBookingPrice60Usd: this.toNullableNumber(
-          input.profile.instantBookingPrice60Usd,
-        ),
       },
       specialtySelection: {
         primarySpecialtyCategoryId: input.profile.primarySpecialtyCategoryId,

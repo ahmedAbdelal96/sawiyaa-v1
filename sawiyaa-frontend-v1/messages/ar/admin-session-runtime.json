@@ -573,6 +573,7 @@
         "ATTENDANCE_JOINED": "انضم للحضور",
         "ATTENDANCE_LEFT": "غادر الحضور",
         "SESSION_CREATED": "تم إنشاء الجلسة",
+        "RESCHEDULED": "تم تغيير موعد الجلسة",
         "PAYMENT_PENDING": "بانتظار الدفع",
         "PAYMENT_CONFIRMED": "تم تأكيد الدفع",
         "PRACTITIONER_ACCEPTED": "قبل الممارس الجلسة",

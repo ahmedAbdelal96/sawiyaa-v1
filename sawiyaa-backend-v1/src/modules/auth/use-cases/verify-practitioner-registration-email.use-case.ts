@@ -1,5 +1,5 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
-import { OtpPurpose, PractitionerType, CredentialType } from '@prisma/client';
+import { OtpPurpose } from '@prisma/client';
 import { SupportedLocale } from '@common/i18n/types/locale.types';
 import { VerifyOtpChallengeUseCase } from '../../verification/use-cases/verify-otp-challenge.use-case';
 import { RegisterPractitionerAccountUseCase } from './register-practitioner-account.use-case';
@@ -7,18 +7,6 @@ import { RegisterPractitionerAccountUseCase } from './register-practitioner-acco
 type PractitionerRegistrationDraft = {
   passwordHash: string;
   displayName: string | null;
-  practitionerType: PractitionerType;
-  professionalTitle: string | null;
-  bio: string | null;
-  yearsOfExperience: number | null;
-  countryCode: string | null;
-  primarySpecialtyCategoryId: string;
-  specialtyIds: string[];
-  initialCredential: {
-    credentialType: CredentialType;
-    fileUrl: string;
-    expiresAt?: string;
-  } | null;
   phone: { e164: string; countryCode: string } | null;
   phoneStatus: 'NOT_PROVIDED' | 'NOT_SAVED_INVALID' | 'SAVED';
 };
@@ -56,14 +44,6 @@ export class VerifyPractitionerRegistrationEmailUseCase {
       phone: draft.phone?.e164 ?? null,
       phoneCountryCode: draft.phone?.countryCode ?? null,
       displayName: draft.displayName,
-      practitionerType: draft.practitionerType,
-      professionalTitle: draft.professionalTitle ?? undefined,
-      bio: draft.bio ?? undefined,
-      yearsOfExperience: draft.yearsOfExperience ?? undefined,
-      countryCode: draft.countryCode ?? undefined,
-      primarySpecialtyCategoryId: draft.primarySpecialtyCategoryId,
-      specialtyIds: draft.specialtyIds,
-      initialCredential: draft.initialCredential ?? undefined,
     });
     return result;
   }

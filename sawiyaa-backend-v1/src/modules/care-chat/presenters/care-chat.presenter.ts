@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { ConversationParticipantRole, MessageStatus } from '@prisma/client';
 import { ResolveCareChatActivityStateService } from '../services/resolve-care-chat-activity-state.service';
+import { resolvePatientDisplayName } from '@modules/patients/utils/resolve-patient-display-name.util';
 
 @Injectable()
 export class CareChatPresenter {
@@ -22,7 +23,11 @@ export class CareChatPresenter {
       rejectedAt: Date | null;
       expiresAt: Date | null;
       revokedAt: Date | null;
-      patient: { id: string; user: { displayName: string | null } };
+      patient: {
+        id: string;
+        displayName?: string | null;
+        user: { displayName: string | null };
+      };
       practitioner: { id: string; user: { displayName: string | null } };
     },
     unread?: { unreadCount: number; hasUnread: boolean },
@@ -42,7 +47,7 @@ export class CareChatPresenter {
       revokedAt: item.revokedAt?.toISOString() ?? null,
       patient: {
         id: item.patient.id,
-        displayName: item.patient.user.displayName ?? null,
+        displayName: resolvePatientDisplayName(item.patient, item.patient.user),
       },
       practitioner: {
         id: item.practitioner.id,
@@ -66,7 +71,11 @@ export class CareChatPresenter {
     rejectedAt: Date | null;
     expiresAt: Date | null;
     revokedAt: Date | null;
-    patient: { id: string; user: { displayName: string | null } };
+    patient: {
+      id: string;
+      displayName?: string | null;
+      user: { displayName: string | null };
+    };
     practitioner: { id: string; user: { displayName: string | null } };
   }) {
     return {
@@ -107,7 +116,11 @@ export class CareChatPresenter {
       expiresAt: Date | null;
       relatedSessionId: string | null;
     } | null;
-    patient: { id: string; user: { displayName: string | null } } | null;
+    patient: {
+      id: string;
+      displayName?: string | null;
+      user: { displayName: string | null };
+    } | null;
     practitioner: { id: string; user: { displayName: string | null } } | null;
     participants: Array<{
       userId: string;
@@ -149,7 +162,9 @@ export class CareChatPresenter {
       closedAt: item.closedAt?.toISOString() ?? null,
       patient: {
         id: item.patient?.id ?? '',
-        displayName: item.patient?.user.displayName ?? null,
+        displayName: item.patient
+          ? resolvePatientDisplayName(item.patient, item.patient.user)
+          : null,
       },
       practitioner: {
         id: item.practitioner?.id ?? '',

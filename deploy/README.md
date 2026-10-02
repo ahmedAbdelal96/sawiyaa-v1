@@ -1,5 +1,23 @@
 # Sawiyaa Docker Deployment
 
+## Permanent server layout
+
+The canonical two-environment architecture and operator workflow are documented
+in:
+
+- `deploy/docs/SERVER_DEPLOYMENT_ARCHITECTURE.md`
+- `deploy/docs/OPERATIONS_GUIDE.md`
+- `deploy/server/bootstrap-server.sh`
+- `deploy/server/update-prod.sh`
+- `deploy/server/update-dev.sh`
+
+Production runs from `/opt/sawiyaa` on `main` under Compose project `sawiyaa`.
+Development runs from `/opt/sawiyaa-dev` on `development` under Compose project
+`sawiyaa-dev`. Initially only its Nginx ingress is published at port 8080;
+PostgreSQL, backend, frontend, worker, and Mailpit remain internal Docker
+services with separate network and volumes. No `dev.sawiyaa.com` gateway is
+configured here.
+
 This stack is designed for a production VPS with:
 
 - Nginx on ports 80 and 443
@@ -18,12 +36,19 @@ validator image. Database dump structure verification runs inside the
 PostgreSQL container.
 
 The backend runtime image runs as UID/GID `10001:10001` (`sawiyaa`) with no
-shell. Deployment creates `/opt/sawiyaa/logs/backend` with ownership
-`10001:10001` and mode `0750` before startup. The
+shell. Deployment runs `prepare-runtime-directories.sh` before the image
+build. That helper creates `/opt/sawiyaa/logs/backend`, uses a temporary
+Docker helper container to assign ownership `10001:10001`, and applies mode
+`0750` before startup. The
 `backend_volume_init` one-shot Compose service runs as root, preserves all
 existing named-volume data, and initializes `/app/storage` and `/app/uploads`
 for the backend UID/GID before the backend starts. Logs remain the canonical
 host bind mount.
+
+Runtime preparation never deletes existing data and never uses world-writable
+permissions. Do not manually create runtime directories with `deploy` or
+`root` ownership without running the preparation helper afterward. A failed
+preparation or preflight write test stops deployment before containers start.
 
 ## Branch workflow
 
@@ -38,32 +63,41 @@ host bind mount.
 - `docker-compose.prod.yml`
 - `deploy/nginx/sawiyaa.conf`
 - `deploy/scripts/deploy-production.sh`
+- `deploy/scripts/prepare-runtime-directories.sh`
 - `deploy/scripts/backup-db.sh`
 - `.github/workflows/ci-development.yml`
 - `.github/workflows/deploy-production.yml`
 - `sawiyaa-backend-v1/Dockerfile`
 - `sawiyaa-frontend-v1/Dockerfile`
-- `sawiyaa-backend-v1/.env.production.backend.example`
-- `sawiyaa-frontend-v1/.env.production.frontend.example`
-- `.env.production.db.example`
+- `sawiyaa-backend-v1/.env.example`
+- `sawiyaa-frontend-v1/.env.example`
 
 ## Environment files
 
-Copy or populate the example files before deployment:
+The only permanent runtime environment files are:
 
-- `sawiyaa-backend-v1/.env.production.backend.example`
-- `sawiyaa-frontend-v1/.env.production.frontend.example`
-- `.env.production.db.example`
+- `sawiyaa-backend-v1/.env` (local/development)
+- `sawiyaa-backend-v1/.env.production` (production)
+- `sawiyaa-frontend-v1/.env` (local/development)
+- `sawiyaa-frontend-v1/.env.production` (production)
 
-For the live deployment, duplicate them beside `docker-compose.prod.yml` as:
+Create them from the tracked contracts:
 
-- `.env.production.backend`
-- `.env.production.frontend`
-- `.env.production.db`
+```bash
+cp sawiyaa-backend-v1/.env.example sawiyaa-backend-v1/.env
+cp sawiyaa-frontend-v1/.env.example sawiyaa-frontend-v1/.env
+```
 
-Frontend `NEXT_PUBLIC_*` values are build-time inputs. The one-command deployment passes `.env.production.frontend` to Compose as its interpolation source, so the validated frontend environment and the Docker build receive the same values. Do not pass separate ad-hoc build arguments.
+The real files are ignored, persistent, and are never replaced by Git
+deployment. Local Compose validation selects the `.env` pair explicitly;
+production Compose/API/Prisma/worker use the `.env.production` pair.
+Frontend `NEXT_PUBLIC_*` values are build-time inputs. PostgreSQL receives
+only explicit `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD`, and `PGDATA`
+mappings; it never receives backend application secrets.
 
-Real `.env.production.backend`, `.env.production.frontend`, and `.env.production.db` files must stay on the server only. Do not commit them.
+There is no root runtime `.env` requirement. Legacy production snapshots,
+`.env.production.*` templates, `.env.local`, upload env files, and the old
+backend `.env.postgres` file are not runtime sources.
 
 Production backend configuration must include `LOG_LEVEL` (`error`, `warn`,
 `info`, `debug`, or `verbose`), `WEB_APP_URL` as the public HTTPS web origin,
@@ -71,23 +105,19 @@ and the Daily settings `DAILY_API_KEY`, `DAILY_API_BASE_URL`, and
 `DAILY_WEBHOOK_SECRET`. The webhook secret must exactly match the secret
 configured in the Daily dashboard; webhook signatures remain mandatory.
 
-## First deploy SSL bootstrap
+## First deploy prerequisites
 
 `deploy/nginx/sawiyaa.conf` references the final certificate paths directly, so Nginx will not start successfully until the certificate files already exist.
 
-Use this safe first-deploy order:
-
-1. Copy the env files into their live names.
-2. Build the backend and frontend images.
-3. Start `postgres`, `backend`, and `frontend` only.
-4. Run the Prisma migration release step.
-5. Obtain the TLS certificate with Certbot or your ACME tool so the files appear under `deploy/certs/live/sawiyaa.com/`.
-6. Start or restart `nginx`.
+Confirm the two canonical env files, approved TLS certificates, and the
+GeoIP database (when enabled) exist. Then run the canonical one-command
+deployment below; it performs the remaining safe first-run flow.
 
 Before running the server scripts, make them executable and ensure they use LF line endings:
 
 ```bash
-chmod +x deploy/scripts/deploy-production.sh deploy/scripts/backup-db.sh
+chmod +x deploy/scripts/deploy-production.sh deploy/scripts/backup-db.sh \
+  deploy/scripts/prepare-runtime-directories.sh
 ```
 
 If the scripts were transferred from Windows, verify they still have LF endings before execution.
@@ -180,19 +210,58 @@ docker compose -f docker-compose.prod.yml down
 Do not use `docker compose down -v`. That would remove the persistent volumes.
 Never delete `postgres_data`.
 
-## One-off Prisma migrations
+## One-command production deployment
 
 The normal production release command is:
 
 ```bash
-SAWIYAA_PROJECT_DIR=/opt/sawiyaa bash /opt/sawiyaa/deploy/scripts/deploy-production.sh
+cd /opt/sawiyaa
+bash deploy/scripts/deploy-production.sh
 ```
 
-It creates a lightweight Git rollback marker, fetches `origin/main`, validates
-the target release in a temporary worktree against the server env files, then
-builds `backend` and `frontend`, runs migrations, runs the idempotent Config
-bootstrap, recreates the app services, and checks backend/frontend health.
-Payment-route bootstrap remains manual and is never run by this command.
+It loads both production env files, runs preflight and Compose checks, prepares
+runtime directories, starts and waits for PostgreSQL, applies migrations, runs
+the guarded idempotent production baseline including STANDARD and INSTANT
+session cancellation policies, securely handles the Initial Super Admin,
+performs readiness verification, builds/recreates required services, and checks
+health. It never runs the development `prisma:seed` command or removes
+production volumes.
+
+The backend worker service is started only when notification or Daily
+attendance queue mode is enabled in the backend production env; when both are
+disabled, Redis and the worker remain outside the core startup path.
+
+## Production baseline bootstrap
+
+The production release runs the additive baseline bootstrap after migrations:
+
+```bash
+docker compose -f docker-compose.prod.yml run --rm \
+  -e ALLOW_PRODUCTION_BASELINE_SEED=true \
+  backend npm run db:seed:production
+```
+
+This creates missing required financial rules, catalogs, and Config defaults,
+preserves existing Admin values, and deactivates only the legacy seeded
+commission defaults so scheduled and instant sessions share the Platform
+Settings rules.
+
+## Initial production administrator
+
+The canonical deployment command runs the Initial Super Admin phase inside
+the unified bootstrap. On a clean database it asks for email, display name,
+and a hidden one-time password; the password is passed only to the bootstrap
+process and is never written to `.env.production`, disk, or logs. On a rerun,
+it asks only for the email and skips the password when that active Super Admin
+already has a usable password identity. The optional
+`PRODUCTION_INITIAL_ADMIN_EMAIL`, `PRODUCTION_INITIAL_ADMIN_NAME`, and
+`PRODUCTION_INITIAL_ADMIN_PASSWORD` variables remain available for secure
+non-interactive automation and must be supplied together.
+
+The command normalizes the email, creates or reuses only the intended active
+administrator, assigns `SUPER_ADMIN`, and never resets an existing password or
+removes another administrator's role. Duplicate, incompatible, or ambiguous
+identity state fails closed. Do not run `npm run prisma:seed` in production.
 
 ## Production Config bootstrap
 
@@ -223,8 +292,12 @@ The one-command release order is:
 5. Ensure `/opt/sawiyaa/logs/backend` is writable by the backend UID.
 6. Build only `backend` and `frontend`.
 7. Run migration safety checks, create a verified database backup, then apply migrations.
-8. Run the idempotent Config bootstrap with `ALLOW_CONFIG_BOOTSTRAP=true`.
-9. Recreate backend, frontend, and nginx, then verify health.
+8. Run the idempotent production baseline bootstrap with
+   `ALLOW_PRODUCTION_BASELINE_SEED=true`, including required session policies.
+9. Complete or reuse the secure Initial Super Admin bootstrap.
+10. Apply approved payment route/Paymob control configuration, if enabled.
+11. Run production verification.
+12. Recreate backend, frontend, and nginx, then verify health.
 
 After successful health checks, the script writes `.sawiyaa-release` with the
 target SHA, UTC deployment time, and `status=success`. It is a host runtime
@@ -409,16 +482,13 @@ SAWIYAA_PROJECT_DIR=/opt/sawiyaa bash /opt/sawiyaa/deploy/scripts/deploy-product
 6. Keep production deploys manual from GitHub Actions for now.
 7. Do not enable automatic deploys from `main` until several successful manual deploys have completed.
 
-## First deploy checklist
+## First deploy workflow
 
-1. Clone the repo to `/opt/sawiyaa` on the server.
-2. Create `.env.production.backend`, `.env.production.frontend`, and `.env.production.db` on the server.
-3. Fill all secrets on the server only.
-4. Obtain TLS certificates for `sawiyaa.com`.
-5. Start `postgres`, `backend`, and `frontend`.
-6. Run the Prisma migration command once.
-7. Start Nginx only after the certificate files exist.
-8. Verify `/api/v1/health` and the public homepage.
+1. Clone the repository to `/opt/sawiyaa`.
+2. Upload/create the two canonical `.env.production` files and approved TLS/GeoIP host assets.
+3. Run `bash deploy/scripts/deploy-production.sh`.
+4. Answer the secure Initial Super Admin prompt if requested.
+5. Wait for the final deployment result and health checks.
 
 ## GeoIP and payment routing
 
@@ -470,8 +540,8 @@ Also back up `backend_storage` and `backend_uploads` if the release touches uplo
 
 ## Safe release flow
 
-1. Copy the env files into `.env.production.backend`, `.env.production.frontend`, and `.env.production.db`.
-2. Build images.
+1. Confirm the two canonical env files remain present; deployment never replaces them.
+2. Build images with `docker compose --env-file sawiyaa-backend-v1/.env.production --env-file sawiyaa-frontend-v1/.env.production -f docker-compose.prod.yml build`.
 3. Start only the database and app containers.
 4. Run Prisma migrations manually.
 5. Verify backend health.

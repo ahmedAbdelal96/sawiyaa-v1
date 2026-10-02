@@ -8,6 +8,9 @@ describe('AdminPractitionerDirectoryRepository', () => {
   const ratingService = {
     aggregateByPractitionerIds: jest.fn().mockResolvedValue(new Map()),
   };
+  const visibilityPolicy = {
+    getBlockers: jest.fn().mockReturnValue([]),
+  };
 
   const row = (id: string, createdAt: string, yearsOfExperience = 1) => ({
     id,
@@ -21,6 +24,7 @@ describe('AdminPractitionerDirectoryRepository', () => {
     user: { displayName: id, emails: [{ email: `${id}@example.test` }] },
     country: { isoCode: 'EG' },
     presence: { status: 'OFFLINE', lastSeenAtUtc: null },
+    applications: [],
   });
 
   function createRepository(rows: unknown[]) {
@@ -31,7 +35,7 @@ describe('AdminPractitionerDirectoryRepository', () => {
     };
 
     return {
-      repository: new AdminPractitionerDirectoryRepository(prisma as never, ratingService as never),
+      repository: new AdminPractitionerDirectoryRepository(prisma as never, ratingService as never, visibilityPolicy as never),
       findMany: prisma.practitionerProfile.findMany,
     };
   }
@@ -108,5 +112,19 @@ describe('AdminPractitionerDirectoryRepository', () => {
       '00000000-0000-0000-0000-000000000099',
       '00000000-0000-0000-0000-000000000001',
     ]);
+  });
+
+  it('excludes profiles without an application by default and supports explicit no-application filtering', async () => {
+    const { repository, findMany } = createRepository([]);
+
+    await repository.list({ skip: 0, take: 20 });
+    expect(findMany).toHaveBeenLastCalledWith(
+      expect.objectContaining({ where: expect.objectContaining({ applications: { some: {} } }) }),
+    );
+
+    await repository.list({ applicationStatus: 'NO_APPLICATION' as never, skip: 0, take: 20 });
+    expect(findMany).toHaveBeenLastCalledWith(
+      expect.objectContaining({ where: expect.objectContaining({ applications: { none: {} } }) }),
+    );
   });
 });

@@ -9,6 +9,7 @@ import {
   PractitionerType,
   UserStatus,
 } from '@prisma/client';
+import { AdminProfessionalContentReadinessResponseDto } from './admin-professional-content-response.dto';
 
 export class AdminPricingQuoteResponseDto {
   @ApiProperty({ nullable: true })
@@ -24,6 +25,12 @@ export class AdminPractitionerPricingResponseDto {
 
   @ApiProperty({ type: AdminPricingQuoteResponseDto })
   session60!: AdminPricingQuoteResponseDto;
+
+  @ApiProperty({ type: AdminPricingQuoteResponseDto })
+  instantBooking30!: AdminPricingQuoteResponseDto;
+
+  @ApiProperty({ type: AdminPricingQuoteResponseDto })
+  instantBooking60!: AdminPricingQuoteResponseDto;
 }
 
 export class AdminPractitionerSpecialtyResponseDto {
@@ -210,6 +217,9 @@ export class AdminPractitionerDetailsResponseDto {
 
   @ApiProperty({ nullable: true })
   bio!: string | null;
+
+  @ApiProperty({ type: AdminProfessionalContentReadinessResponseDto })
+  professionalContentReadiness!: AdminProfessionalContentReadinessResponseDto;
 
   @ApiProperty({ nullable: true })
   yearsOfExperience!: number | null;

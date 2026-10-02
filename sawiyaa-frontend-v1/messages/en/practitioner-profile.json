@@ -7,7 +7,8 @@
     "backHome": "Back to home"
   },
   "header": {
-    "verified": "Verified",
+    "verified": "Verified on Sawiyaa",
+    "verifiedExplanation": "This practitioner has passed Sawiyaa's approval and publication requirements.",
     "summary": "Review the practitioner's experience, specialties, and availability before you book.",
     "location": "Location",
     "specialtyFocus": "Specialty focus"
@@ -39,7 +40,8 @@
   "cta": {
     "sessionDuration": "50-minute sessions",
     "sessionOnline": "Online session",
-    "messagePractitioner": "Practitioner messages"
+    "messagePractitioner": "Practitioner messages",
+    "bookSession": "Book a session"
   },
   "badges": {
     "verified": "Verified by Sawiyaa",
@@ -74,46 +76,69 @@
     "localTimeLabel": "Your local time",
     "timezoneNote": "Times shown in your local timezone.",
     "browseNextWeek": "Show next week",
-    "browseOtherPractitioners": "Choose another practitioner"
+    "browseOtherPractitioners": "Choose another practitioner",
+    "selectDatePrompt": "Select a date to view available time slots",
+    "noSlotsOnSelectedDay": "No available times on this day.",
+    "jumpToNextAvailable": "Jump to next available day"
   },
   "booking": {
     "panelTitle": "Book a session",
     "panelSubtitle": "Choose the time that suits you and continue when you're ready.",
-    "slotHint": "Sign in as a patient to book a slot.",
+    "slotHint": "Sign in to your account to book a slot.",
     "backToSlots": "Back to slots",
     "selectedSlot": "Selected slot",
     "selectDuration": "Session duration",
+    "durationAll": "All",
     "duration30": "30 min",
     "duration60": "60 min",
+    "selectDayTitle": "Available times for {day}",
     "sessionFees": "Session fees",
     "selectedPrice": "Selected price: {price}",
-    "signInNote": "Sign in to your patient account to book this slot.",
+    "selectedPriceLabel": "Selected price",
+    "signInNote": "Sign in to your account to book this slot easily.",
     "signInToCta": "Sign in to book",
-    "nonPatientNote": "Booking is available for patient accounts only.",
-    "confirming": "Booking...",
-    "confirmCta": "Confirm booking",
+    "nonPatientNote": "Booking is available for registered individual accounts.",
+    "confirming": "Preparing booking...",
+    "confirmCta": "Confirm & Proceed to Pay",
     "createError": "Something went wrong. Please try again.",
     "createErrorConflict": "This time is no longer available. Please choose another available time.",
     "successHeading": "Session request submitted",
     "successStatus": "Status: Awaiting payment",
-    "successNote": "Your session is reserved for 15 minutes. Complete payment in your sessions page to confirm.",
+    "successNote": "Your session is temporarily reserved. Complete payment to confirm right away.",
     "payNow": "Complete payment",
-    "viewSessions": "Go to my sessions",
+    "viewSessions": "Go to your sessions",
     "bookAnother": "Book another slot",
-    "jumpToAvailability": "View available times"
+    "jumpToAvailability": "View available times",
+    "instant": {
+      "availableNow": "Available now for an instant session",
+      "note": "Start a video session in minutes directly after confirmation.",
+      "cta": "Request an instant session",
+      "unavailable": "Instant booking is not available right now",
+      "unavailableNote": "You can choose a suitable time from the available session schedule."
+    }
   },
   "packages": {
-    "eyebrow": "Packages",
-    "title": "Session packages",
-    "subtitle": "Choose a package to preview the full price, savings, and per-session value with the same booking controls you already use.",
-    "selected": "Selected",
+    "eyebrow": "Value Packages",
+    "title": "Therapy Session Packages",
+    "subtitle": "Choose a value package that fits your therapy plan and save on individual session costs.",
+    "selected": "Duration",
     "availablePlans": "Available plans",
     "retry": "Try again",
     "refreshQuote": "Refresh quote",
     "signInToContinue": "Sign in to continue",
-    "startPurchase": "Start purchase",
-    "viewPurchases": "View my package purchases",
+    "startPurchase": "Select Package & Continue",
+    "viewPurchases": "View my purchased packages",
     "empty": "Packages are not available for this practitioner right now.",
+    "popularBadge": "Best Value",
+    "videoSessionsBadge": "Live Video Sessions",
+    "perSession": "per session",
+    "insteadOf": "instead of",
+    "packageTotal": "Package total",
+    "features": {
+      "video": "Fully private & encrypted 1-on-1 video sessions ({duration})",
+      "schedule": "Flexible scheduling based on doctor's calendar",
+      "flexible": "Book slots right away or schedule your first session later"
+    },
     "controls": {
       "duration": "Duration",
       "currency": "Currency",
@@ -127,11 +152,15 @@
       "USD": "USD"
     },
     "plan": {
+      "badge": "Session package",
+      "titleTemplate": "{count}-Session Package",
+      "descriptionTemplate": "{count} video therapy sessions ({duration}) with {discount} discount",
       "sessionCount": "Sessions",
       "session": "session",
       "sessions": "sessions",
       "single": "plan",
       "multiple": "plans",
+      "saveLabel": "Save",
       "save": "Save {amount}"
     },
     "quote": {
@@ -171,6 +200,7 @@
       "chosenSlots": "Chosen times",
       "slotProgress": "{selected} of {total} sessions selected",
       "noSlotsSelected": "Choose the session times you want to include in this package.",
+      "optionalInitialSlot": "Optional: choose one first appointment now, or buy the package and schedule later.",
       "selected": "Selected",
       "continueToTimes": "Choose times",
       "reviewButton": "Review package",

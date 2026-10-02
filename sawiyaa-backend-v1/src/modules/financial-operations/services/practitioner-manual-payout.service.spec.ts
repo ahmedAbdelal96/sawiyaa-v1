@@ -74,6 +74,7 @@ describe('PractitionerManualPayoutService', () => {
     } as unknown as AccountingJournalPostingService;
 
     const prisma = {
+      $transaction: jest.fn().mockImplementation(async (fn) => fn(prisma)),
       $executeRaw: jest.fn().mockResolvedValue(undefined),
       practitionerSettlement: {
         findUnique: jest.fn().mockResolvedValue({
@@ -132,7 +133,7 @@ describe('PractitionerManualPayoutService', () => {
         packageHeldAmountSnapshot: new Prisma.Decimal('80.00'),
         totalPayableSnapshot: new Prisma.Decimal('150.00'),
       }),
-      undefined,
+      setup.prisma,
     );
     expect(setup.ledgerRepository.createLedgerEntry).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -140,21 +141,14 @@ describe('PractitionerManualPayoutService', () => {
         balanceBucket: 'AVAILABLE',
         referenceType: 'practitioner-manual-payout',
       }),
-      undefined,
+      setup.prisma,
     );
     expect(
       setup.practitionerRecoveryService.applyOpenRecoveriesToPayout,
-    ).toHaveBeenCalledWith(
-      expect.objectContaining({
-        payoutId: 'manual-payout-1',
-        payoutAmount: new Prisma.Decimal('120.00'),
-        practitionerId: 'practitioner-1',
-        currencyCode: 'EGP',
-      }),
-    );
+    ).not.toHaveBeenCalled();
     expect(setup.refreshPractitionerWalletService.refresh).toHaveBeenCalledWith(
       'practitioner-1',
-      undefined,
+      setup.prisma,
     );
     expect(
       setup.accountingJournalPostingService.postPractitionerPayout,

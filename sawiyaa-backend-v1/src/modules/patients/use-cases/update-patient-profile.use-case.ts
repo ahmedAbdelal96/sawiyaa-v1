@@ -61,6 +61,13 @@ export class UpdatePatientProfileUseCase {
         tx,
       );
 
+      if (normalizedInput.displayName !== undefined) {
+        await tx.user.update({
+          where: { id: input.userId },
+          data: { displayName: normalizedInput.displayName },
+        });
+      }
+
       await this.patientUserRepository.updatePreferences(
         input.userId,
         {

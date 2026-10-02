@@ -75,10 +75,7 @@ export class ReconcileSessionPaymentReturnUseCase {
       };
     }
 
-    if (
-      payment.status === PaymentStatus.CAPTURED ||
-      payment.status === PaymentStatus.AUTHORIZED
-    ) {
+    if (payment.status === PaymentStatus.CAPTURED) {
       if (session.status === SessionStatus.PENDING_PAYMENT) {
         await this.orchestrateSessionPaymentStatusService.markSessionConfirmedFromPayment(
           {

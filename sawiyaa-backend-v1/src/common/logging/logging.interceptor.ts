@@ -122,6 +122,9 @@ export class LoggingInterceptor implements NestInterceptor {
     const response = error.getResponse();
     if (typeof response !== 'object' || response === null) return {};
     const value = response as Record<string, unknown>;
+    const validationFields = Array.isArray(value.validationFields)
+      ? value.validationFields
+      : undefined;
     return sanitizeForLogging({
       errorCode:
         typeof value.errorCode === 'string'
@@ -131,6 +134,7 @@ export class LoggingInterceptor implements NestInterceptor {
             : undefined,
       messageKey:
         typeof value.messageKey === 'string' ? value.messageKey : undefined,
+      ...(validationFields ? { validationFields } : {}),
     });
   }
 

@@ -6,6 +6,7 @@ import type {
   AdminPatientStatusDto,
 } from '../dto/list-admin-patients.dto';
 import { AppLoggerService } from '@common/logging/app-logger.service';
+import { resolvePatientDisplayName } from '@modules/patients/utils/resolve-patient-display-name.util';
 
 @Injectable()
 export class ListAdminPatientsUseCase {
@@ -55,8 +56,7 @@ export class ListAdminPatientsUseCase {
           ? {
               id: rows[0].id,
               userId: rows[0].userId,
-              displayName:
-                rows[0].user.displayName ?? rows[0].displayName ?? null,
+              displayName: resolvePatientDisplayName(rows[0], rows[0].user),
             }
           : null,
       },
@@ -68,7 +68,7 @@ export class ListAdminPatientsUseCase {
       items: rows.map((row) => ({
         id: row.id,
         userId: row.userId,
-        displayName: row.user.displayName ?? row.displayName ?? null,
+        displayName: resolvePatientDisplayName(row, row.user),
         primaryEmail: row.user.emails[0]?.email ?? null,
         primaryPhone: row.user.phones[0]?.phone ?? null,
         status: row.user.status,

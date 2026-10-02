@@ -1,5 +1,6 @@
-import { Module } from '@nestjs/common';
+import { forwardRef, Module } from '@nestjs/common';
 import { ConfigModule } from '../config/config.module';
+import { PostgresAdvisoryLockService } from '@common/coordination/postgres-advisory-lock.service';
 import { JwtAccessAuthGuard } from '@common/guards/authentication/jwt-access-auth.guard';
 import { PermissionResolverService } from '@common/guards/authorization/permission-resolver.service';
 import { PermissionsGuard } from '@common/guards/authorization/permissions.guard';
@@ -106,6 +107,9 @@ import { AdminSettlementWorkflowUseCase } from './use-cases/admin-settlement-wor
 import { PractitionerCurrencyLifecycleService } from './services/practitioner-currency-lifecycle.service';
 import { AdminPractitionerWalletReadService } from './services/admin-practitioner-wallet-read.service';
 import { CalculatePractitionerPayoutConversionService } from './services/calculate-practitioner-payout-conversion.service';
+import { PackageEntitlementService } from '@modules/package-plans/services/package-entitlement.service';
+import { NotificationsModule } from '@modules/notifications/notifications.module';
+import { PaymentsModule } from '@modules/payments/payments.module';
 
 /**
  * Financial Operations Module owns the internal accounting layer:
@@ -113,7 +117,11 @@ import { CalculatePractitionerPayoutConversionService } from './services/calcula
  * Payments stays the collection layer and only hands off successful payments here.
  */
 @Module({
-  imports: [ConfigModule],
+  imports: [
+    ConfigModule,
+    forwardRef(() => NotificationsModule),
+    forwardRef(() => PaymentsModule),
+  ],
   controllers: [
     PractitionerFinancialOperationsController,
     AdminPractitionerManualPayoutsController,
@@ -135,6 +143,7 @@ import { CalculatePractitionerPayoutConversionService } from './services/calcula
     PermissionsGuard,
     PermissionResolverService,
     FinancialOperationsMapper,
+    PackageEntitlementService,
     AccountingReadRepository,
     AccountingReconciliationRepository,
     FinancialOperationsPaymentRepository,
@@ -161,6 +170,7 @@ import { CalculatePractitionerPayoutConversionService } from './services/calcula
     AccountingReconciliationAlertService,
     AccountingReconciliationOperationsService,
     AccountingReconciliationSchedulerService,
+    PostgresAdvisoryLockService,
     AccountingReconciliationService,
     AccountingJournalPostingService,
     RecordSettlementPayoutService,
@@ -225,6 +235,7 @@ import { CalculatePractitionerPayoutConversionService } from './services/calcula
     CalculatePractitionerPayoutConversionService,
   ],
   exports: [
+    AccountingJournalPostingService,
     PostPaymentLedgerEntriesUseCase,
     PostPackageSessionLedgerEntriesUseCase,
     PostRefundLedgerEntriesUseCase,
@@ -232,6 +243,8 @@ import { CalculatePractitionerPayoutConversionService } from './services/calcula
     SessionEarningReviewService,
     WalletRepository,
     PractitionerCurrencyLifecycleService,
+    CalculatePackageSessionAllocationService,
+    ExtractPaymentLedgerBreakdownService,
   ],
 })
 export class FinancialOperationsModule {}

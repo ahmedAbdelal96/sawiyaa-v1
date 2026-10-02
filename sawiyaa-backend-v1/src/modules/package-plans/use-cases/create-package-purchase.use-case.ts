@@ -87,7 +87,7 @@ export class CreatePackagePurchaseUseCase {
     durationMinutes: 30 | 60;
     sessionMode: SessionMode;
     requestCountryIsoCode?: string | null;
-    selectedSessionSlots: Array<{
+    selectedSessionSlots?: Array<{
       scheduledStartAt: string;
     }>;
   }): Promise<PatientPackagePurchaseResultViewModel> {
@@ -158,8 +158,6 @@ export class CreatePackagePurchaseUseCase {
       sessionMode: input.sessionMode,
       selectedCurrencyCode: null,
       requestCountryIsoCode: input.requestCountryIsoCode,
-      patientCountryIsoCode: patientProfile.country?.isoCode ?? null,
-      operatingCountryIsoCode: practitioner.country?.isoCode ?? null,
       patient: {
         id: patientProfile.id,
         countryId: patientProfile.countryId,
@@ -175,6 +173,7 @@ export class CreatePackagePurchaseUseCase {
 
     try {
       const created = await this.prisma.$transaction(async (tx) => {
+        const selectedSessionSlots = input.selectedSessionSlots ?? [];
         const validatedSlots =
           await this.validatePackagePurchaseSlotsService.validate({
             practitionerId: practitioner.id,
@@ -183,7 +182,7 @@ export class CreatePackagePurchaseUseCase {
             durationMinutes: input.durationMinutes,
             sessionMode: input.sessionMode,
             expectedSlotCount: packagePlan.sessionCount,
-            selectedSessionSlots: input.selectedSessionSlots,
+            selectedSessionSlots,
             tx,
           });
 
@@ -227,7 +226,9 @@ export class CreatePackagePurchaseUseCase {
             sessionDurationMinutesSnapshot: input.durationMinutes,
             sessionModeSnapshot: input.sessionMode,
             schedulePolicySnapshot:
-              PackageSchedulePolicy.REQUIRE_ALL_SESSIONS_AT_PURCHASE,
+              validatedSlots.slots.length === packagePlan.sessionCount
+                ? PackageSchedulePolicy.REQUIRE_ALL_SESSIONS_AT_PURCHASE
+                : PackageSchedulePolicy.ALLOW_SCHEDULE_LATER,
             priceEgpSnapshot: quote.baseSessionPriceEgp ?? null,
             priceUsdSnapshot: quote.baseSessionPriceUsd ?? null,
             selectedCurrencyCode: quote.selectedCurrencyCode,
@@ -235,6 +236,7 @@ export class CreatePackagePurchaseUseCase {
             metadataJson: {
               source: 'package-purchase',
               packagePlanCode: packagePlan.code,
+              pricingCountryIsoCode: input.requestCountryIsoCode ?? null,
               practitionerSlug: practitioner.publicSlug,
               selectedSessionSlots: validatedSlots.slots.map((slot) => ({
                 scheduledStartAt: slot.scheduledStartAt.toISOString(),
@@ -279,7 +281,7 @@ export class CreatePackagePurchaseUseCase {
       });
 
       return {
-        item: this.packagePurchasePresenter.toViewModel({
+        item: await this.packagePurchasePresenter.toViewModel({
           purchase: created.purchase,
           sessions: created.sessions,
         }),

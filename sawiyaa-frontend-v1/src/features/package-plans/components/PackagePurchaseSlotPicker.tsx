@@ -24,6 +24,7 @@ type Props = {
   slug: string;
   durationMinutes: 30 | 60;
   requiredCount: number;
+  maxSelectableCount?: number;
   selectedSlots: SelectableSlot[];
   onChange: (slots: SelectableSlot[]) => void;
 };
@@ -40,6 +41,7 @@ export default function PackagePurchaseSlotPicker({
   slug,
   durationMinutes,
   requiredCount,
+  maxSelectableCount = requiredCount,
   selectedSlots,
   onChange,
 }: Props) {
@@ -51,8 +53,15 @@ export default function PackagePurchaseSlotPicker({
   const [weekOffset, setWeekOffset] = useState(0);
   const [selectedDayKey, setSelectedDayKey] = useState<string | null>(null);
   const { from, to } = useMemo(() => getWeekBounds(weekOffset), [weekOffset]);
-  const weekLabel = useMemo(() => formatWeekLabel(from, to, numLocale), [from, to, numLocale]);
-  const { data, isLoading, isError, refetch } = usePublicAvailabilityWindows(slug, from, to);
+  const weekLabel = useMemo(
+    () => formatWeekLabel(from, to, numLocale),
+    [from, to, numLocale],
+  );
+  const { data, isLoading, isError, refetch } = usePublicAvailabilityWindows(
+    slug,
+    from,
+    to,
+  );
 
   const dayGroups = useMemo(
     () => (data ? groupByLocalDay(data.windows, numLocale) : []),
@@ -65,31 +74,40 @@ export default function PackagePurchaseSlotPicker({
         .map((group) => ({
           ...group,
           slots: group.slots.filter(
-            (slot) => slot.durationMinutes === null || slot.durationMinutes === durationMinutes,
+            (slot) =>
+              slot.durationMinutes === null ||
+              slot.durationMinutes === durationMinutes,
           ),
         }))
         .filter((group) => group.slots.length > 0),
     [dayGroups, durationMinutes],
   );
 
-  const selectedDayKeyResolved = selectedDayKey ?? filteredDayGroups[0]?.sortKey ?? null;
+  const selectedDayKeyResolved =
+    selectedDayKey ?? filteredDayGroups[0]?.sortKey ?? null;
   const selectedDay =
-    filteredDayGroups.find((group) => group.sortKey === selectedDayKeyResolved) ??
+    filteredDayGroups.find(
+      (group) => group.sortKey === selectedDayKeyResolved,
+    ) ??
     filteredDayGroups.find((group) =>
-      group.slots.some((slot) => selectedSlots.some((selected) => isSameSlot(selected, slot))),
+      group.slots.some((slot) =>
+        selectedSlots.some((selected) => isSameSlot(selected, slot)),
+      ),
     ) ??
     filteredDayGroups[0] ??
     null;
 
   const selectedCount = selectedSlots.length;
-  const isFull = selectedCount >= requiredCount;
+  const isFull = selectedCount >= maxSelectableCount;
   const selectedCountLabel = t("packages.flow.slotProgress", {
     selected: selectedCount,
     total: requiredCount,
   });
 
   const toggleSlot = (slot: SelectableSlot) => {
-    const existingIndex = selectedSlots.findIndex((selected) => isSameSlot(selected, slot));
+    const existingIndex = selectedSlots.findIndex((selected) =>
+      isSameSlot(selected, slot),
+    );
     if (existingIndex >= 0) {
       const next = [...selectedSlots];
       next.splice(existingIndex, 1);
@@ -97,7 +115,7 @@ export default function PackagePurchaseSlotPicker({
       return;
     }
 
-    if (selectedSlots.length >= requiredCount) {
+    if (selectedSlots.length >= maxSelectableCount) {
       return;
     }
 
@@ -106,17 +124,17 @@ export default function PackagePurchaseSlotPicker({
 
   return (
     <div className="space-y-4">
-      <div className="rounded-[28px] border border-border-light bg-surface/80 p-4 dark:bg-white/5">
+      <div className="border-border-light bg-surface/80 rounded-[28px] border p-4 dark:bg-white/5">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-text-muted">
+            <p className="text-text-muted text-[11px] font-semibold tracking-[0.18em] uppercase">
               {t("packages.flow.chosenSlots")}
             </p>
-            <p className="mt-1 text-sm font-semibold text-text-primary dark:text-white/90">
+            <p className="text-text-primary mt-1 text-sm font-semibold dark:text-white/90">
               {selectedCountLabel}
             </p>
           </div>
-          <div className="rounded-2xl bg-primary-light px-3 py-2 text-sm font-semibold text-primary dark:bg-primary/15">
+          <div className="bg-primary-light text-primary dark:bg-primary/15 rounded-2xl px-3 py-2 text-sm font-semibold">
             {selectedCount}/{requiredCount}
           </div>
         </div>
@@ -128,7 +146,7 @@ export default function PackagePurchaseSlotPicker({
                 key={slot.startsAt}
                 type="button"
                 onClick={() => toggleSlot(slot)}
-                className="inline-flex items-center gap-2 rounded-full border border-border-light bg-white px-3 py-2 text-xs font-semibold text-text-primary transition hover:border-primary/40 hover:text-primary dark:bg-surface-secondary"
+                className="border-border-light text-text-primary hover:border-primary/40 hover:text-primary dark:bg-surface-secondary inline-flex items-center gap-2 rounded-full border bg-white px-3 py-2 text-xs font-semibold transition"
               >
                 <span>{formatTimeLabel(slot.startsAt, numLocale)}</span>
                 <X size={12} />
@@ -136,7 +154,7 @@ export default function PackagePurchaseSlotPicker({
             ))}
           </div>
         ) : (
-          <p className="mt-3 text-sm text-text-secondary">
+          <p className="text-text-secondary mt-3 text-sm">
             {t("packages.flow.noSlotsSelected")}
           </p>
         )}
@@ -144,10 +162,10 @@ export default function PackagePurchaseSlotPicker({
 
       <div className="flex items-center justify-between gap-3">
         <div>
-          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-text-muted">
+          <p className="text-text-muted text-[11px] font-semibold tracking-[0.16em] uppercase">
             {tAvail("heading")}
           </p>
-          <p className="mt-1 text-sm text-text-secondary">{weekLabel}</p>
+          <p className="text-text-secondary mt-1 text-sm">{weekLabel}</p>
         </div>
 
         <div className="flex items-center gap-1">
@@ -156,7 +174,7 @@ export default function PackagePurchaseSlotPicker({
             aria-label={tAvail("prevWeek")}
             disabled={weekOffset === 0}
             onClick={() => setWeekOffset((value) => value - 1)}
-            className="rounded-xl border border-border-light bg-white p-2 text-text-muted transition hover:border-primary hover:text-primary disabled:cursor-not-allowed disabled:opacity-30 dark:border-border-light dark:bg-surface"
+            className="border-border-light text-text-muted hover:border-primary hover:text-primary dark:border-border-light dark:bg-surface rounded-xl border bg-white p-2 transition disabled:cursor-not-allowed disabled:opacity-30"
           >
             <ChevronLeft className="rtl:rotate-180" size={16} />
           </button>
@@ -164,7 +182,7 @@ export default function PackagePurchaseSlotPicker({
             type="button"
             aria-label={tAvail("nextWeek")}
             onClick={() => setWeekOffset((value) => value + 1)}
-            className="rounded-xl border border-border-light bg-white p-2 text-text-muted transition hover:border-primary hover:text-primary dark:border-border-light dark:bg-surface"
+            className="border-border-light text-text-muted hover:border-primary hover:text-primary dark:border-border-light dark:bg-surface rounded-xl border bg-white p-2 transition"
           >
             <ChevronRight className="rtl:rotate-180" size={16} />
           </button>
@@ -200,28 +218,32 @@ export default function PackagePurchaseSlotPicker({
       {data && !isLoading && (
         <>
           {dayGroups.length === 0 ? (
-            <div className="rounded-2xl bg-surface px-4 py-4 dark:bg-white/5">
-              <p className="text-sm font-medium text-text-primary dark:text-white/90">{tAvail("noSlots")}</p>
-              <p className="mt-1 text-xs leading-5 text-text-muted">{tAvail("noSlotsHint")}</p>
+            <div className="bg-surface rounded-2xl px-4 py-4 dark:bg-white/5">
+              <p className="text-text-primary text-sm font-medium dark:text-white/90">
+                {tAvail("noSlots")}
+              </p>
+              <p className="text-text-muted mt-1 text-xs leading-5">
+                {tAvail("noSlotsHint")}
+              </p>
               <div className="mt-3 flex flex-wrap gap-2">
                 <button
                   type="button"
                   onClick={() => setWeekOffset((value) => value + 1)}
-                  className="inline-flex items-center justify-center rounded-xl border border-border-light px-3 py-2 text-xs font-semibold text-text-primary transition hover:border-primary/40 hover:text-primary dark:hover:bg-white/5"
+                  className="border-border-light text-text-primary hover:border-primary/40 hover:text-primary inline-flex items-center justify-center rounded-xl border px-3 py-2 text-xs font-semibold transition dark:hover:bg-white/5"
                 >
                   {tAvail("browseNextWeek")}
                 </button>
                 <Link
                   href="/patient/practitioners"
-                  className="inline-flex items-center justify-center rounded-xl border border-border-light px-3 py-2 text-xs font-semibold text-text-primary transition hover:border-primary/40 hover:text-primary dark:hover:bg-white/5"
+                  className="border-border-light text-text-primary hover:border-primary/40 hover:text-primary inline-flex items-center justify-center rounded-xl border px-3 py-2 text-xs font-semibold transition dark:hover:bg-white/5"
                 >
                   {tAvail("browseOtherPractitioners")}
                 </Link>
               </div>
             </div>
           ) : filteredDayGroups.length === 0 ? (
-            <div className="rounded-2xl bg-surface px-4 py-4 dark:bg-white/5">
-              <p className="text-sm text-text-muted">
+            <div className="bg-surface rounded-2xl px-4 py-4 dark:bg-white/5">
+              <p className="text-text-muted text-sm">
                 {formatNoDurationSlotsLabel(durationMinutes, locale)}
               </p>
             </div>
@@ -237,14 +259,14 @@ export default function PackagePurchaseSlotPicker({
                       onClick={() => setSelectedDayKey(group.sortKey)}
                       className={`min-h-[64px] w-[124px] flex-none rounded-lg border px-2 py-2 text-start transition sm:w-[132px] ${
                         isSelected
-                          ? "border-primary bg-primary/8 shadow-sm dark:bg-primary/12"
-                          : "border-border-light bg-white hover:border-primary/40 dark:border-border-light dark:bg-surface"
+                          ? "border-primary bg-primary/8 dark:bg-primary/12 shadow-sm"
+                          : "border-border-light hover:border-primary/40 dark:border-border-light dark:bg-surface bg-white"
                       }`}
                     >
-                      <p className="text-[11px] font-semibold leading-5 text-text-primary dark:text-white/90">
+                      <p className="text-text-primary text-[11px] leading-5 font-semibold dark:text-white/90">
                         {group.dayLabel}
                       </p>
-                      <p className="mt-1 text-[10px] text-text-muted">
+                      <p className="text-text-muted mt-1 text-[10px]">
                         {formatSlotCountLabel(group.slots.length, locale)}
                       </p>
                     </button>
@@ -252,14 +274,14 @@ export default function PackagePurchaseSlotPicker({
                 })}
               </div>
 
-              <div className="rounded-[24px] border border-border-light bg-surface p-3.5 dark:border-border-light dark:bg-surface">
+              <div className="border-border-light bg-surface dark:border-border-light dark:bg-surface rounded-[24px] border p-3.5">
                 {selectedDay ? (
                   <div className="mb-4 flex items-center justify-between gap-3">
                     <div>
-                      <p className="text-sm font-semibold text-text-primary dark:text-white/90">
+                      <p className="text-text-primary text-sm font-semibold dark:text-white/90">
                         {selectedDay.dayLabel}
                       </p>
-                      <p className="mt-1 text-xs text-text-muted">
+                      <p className="text-text-muted mt-1 text-xs">
                         {formatSlotCountLabel(selectedDay.slots.length, locale)}
                       </p>
                     </div>
@@ -267,33 +289,38 @@ export default function PackagePurchaseSlotPicker({
                 ) : null}
 
                 <div className="flex flex-wrap gap-2">
-                  {(selectedDay?.slots ?? filteredDayGroups.flatMap((group) => group.slots)).map(
-                    (slot) => {
-                      const selected = selectedSlots.some((value) => isSameSlot(value, slot));
-                      const disabled = !selected && isFull;
-                      return (
-                        <button
-                          key={`${slot.startsAt}-${slot.windowEndsAt}-${slot.durationMinutes ?? "any"}`}
-                          type="button"
-                          onClick={() => toggleSlot(slot)}
-                          className={`w-[82px] flex-none rounded-lg border px-2 py-2 text-center text-[11px] font-semibold transition sm:w-[88px] lg:w-[92px] ${
-                            selected
-                              ? "border-primary bg-primary/10 text-primary dark:bg-primary/15"
-                              : "border-border-light bg-white text-text-primary hover:border-primary hover:bg-primary/6 hover:text-primary dark:border-border-light dark:bg-surface-secondary dark:text-white/85"
-                          } ${disabled ? "cursor-not-allowed opacity-40" : ""}`}
-                          disabled={disabled}
-                        >
-                          <span className="block">{formatTimeLabel(slot.startsAt, numLocale)}</span>
-                          {selected ? (
-                            <span className="mt-1 inline-flex items-center gap-1 text-[10px] font-medium">
-                              <Check size={11} />
-                              {t("packages.flow.selected")}
-                            </span>
-                          ) : null}
-                        </button>
-                      );
-                    },
-                  )}
+                  {(
+                    selectedDay?.slots ??
+                    filteredDayGroups.flatMap((group) => group.slots)
+                  ).map((slot) => {
+                    const selected = selectedSlots.some((value) =>
+                      isSameSlot(value, slot),
+                    );
+                    const disabled = !selected && isFull;
+                    return (
+                      <button
+                        key={`${slot.startsAt}-${slot.windowEndsAt}-${slot.durationMinutes ?? "any"}`}
+                        type="button"
+                        onClick={() => toggleSlot(slot)}
+                        className={`w-[82px] flex-none rounded-lg border px-2 py-2 text-center text-[11px] font-semibold transition sm:w-[88px] lg:w-[92px] ${
+                          selected
+                            ? "border-primary bg-primary/10 text-primary dark:bg-primary/15"
+                            : "border-border-light text-text-primary hover:border-primary hover:bg-primary/6 hover:text-primary dark:border-border-light dark:bg-surface-secondary bg-white dark:text-white/85"
+                        } ${disabled ? "cursor-not-allowed opacity-40" : ""}`}
+                        disabled={disabled}
+                      >
+                        <span className="block">
+                          {formatTimeLabel(slot.startsAt, numLocale)}
+                        </span>
+                        {selected ? (
+                          <span className="mt-1 inline-flex items-center gap-1 text-[10px] font-medium">
+                            <Check size={11} />
+                            {t("packages.flow.selected")}
+                          </span>
+                        ) : null}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
             </>
@@ -301,7 +328,12 @@ export default function PackagePurchaseSlotPicker({
         </>
       )}
 
-      <p className="text-[11px] text-text-muted">{tAvail("timezoneNote")}</p>
+      <p className="text-text-muted text-[11px]">{tAvail("timezoneNote")}</p>
+      {maxSelectableCount === 1 ? (
+        <p className="text-text-muted mt-2 text-xs">
+          {t("packages.flow.optionalInitialSlot")}
+        </p>
+      ) : null}
     </div>
   );
 }

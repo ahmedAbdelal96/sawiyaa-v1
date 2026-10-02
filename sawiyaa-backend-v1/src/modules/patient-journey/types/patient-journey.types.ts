@@ -7,6 +7,7 @@ import {
   SupportTicketStatus,
   SupportTicketType,
 } from '@prisma/client';
+import { SessionOperationalInterpretation } from '@modules/sessions/types/session-operational-interpretation.types';
 
 export const PATIENT_JOURNEY_NEXT_STEP_VALUES = [
   'COMPLETE_PAYMENT',
@@ -57,6 +58,7 @@ export interface PatientJourneyViewModel {
     session: {
       id: string;
       status: SessionStatus;
+      operational: SessionOperationalInterpretation;
       scheduledStartAt: string | null;
       scheduledEndAt: string | null;
       practitioner: {
@@ -90,6 +92,7 @@ export interface PatientJourneyViewModel {
     sessions: Array<{
       id: string;
       status: SessionStatus;
+      operational: SessionOperationalInterpretation;
       scheduledStartAt: string | null;
       scheduledEndAt: string | null;
       practitioner: {

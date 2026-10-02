@@ -16,6 +16,10 @@ describe('PractitionerProfileMapper', () => {
         sessionPrice30Usd: '8.00',
         sessionPrice60Egp: '450.00',
         sessionPrice60Usd: '15.00',
+        instantBookingPrice30Egp: '300.00',
+        instantBookingPrice30Usd: '10.00',
+        instantBookingPrice60Egp: '500.00',
+        instantBookingPrice60Usd: '16.00',
         acceptsPackages: true,
         practitionerType: 'OTHER' as never,
         practitionerGender: null,
@@ -60,5 +64,9 @@ describe('PractitionerProfileMapper', () => {
       session60: { egp: 450, usd: 15 },
     });
     expect(result.acceptsPackage).toBe(true);
+    expect(result.instantBookingPrice30Egp).toBe(300);
+    expect(result.instantBookingPrice30Usd).toBe(10);
+    expect(result.instantBookingPrice60Egp).toBe(500);
+    expect(result.instantBookingPrice60Usd).toBe(16);
   });
 });

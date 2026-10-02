@@ -28,6 +28,7 @@ coverage/
 **/*.env.upload
 !**/.env.example
 !**/.env.*.example
+!**/.env.postgres.example
 !.env.example
 !.env.*.example
 

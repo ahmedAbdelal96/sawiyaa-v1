@@ -1,9 +1,15 @@
 export const arFinancialOperationsCatalog = {
+  notifications: {
+    earningCreditedTitle: 'تم اعتماد الأرباح',
+    earningCreditedBody: 'تم اعتماد مبلغ {{amount}} {{currencyCode}} من أرباح جلستك.',
+    payoutCompletedTitle: 'اكتمل التحويل',
+    payoutCompletedBody: 'تم تحويل مبلغ {{amount}} {{currencyCode}} من مستحقاتك بنجاح.',
+  },
   errors: {
     paymentNotFound: 'لم يتم العثور على عملية الدفع.',
     paymentNotCaptured: 'لا يمكن ترحيل القيود إلا لعمليات الدفع المكتملة.',
     paymentSnapshotsIncomplete:
-      'بيانات الدفع المالية غير مكتملة لترحيل القيود.',
+      'لا يمكن تنفيذ رد المبلغ إلى المحفظة لأن بيانات الدفع المحفوظة لهذه الجلسة غير مكتملة. راجع بيانات الدفع قبل تأكيد القرار.',
     practitionerNotFound: 'لم يتم العثور على ملف المعالج.',
     settlementItemNotFound: 'لم يتم العثور على بند التسوية.',
     settlementPayoutNotFound: 'لم يتم العثور على سجل الصرف.',

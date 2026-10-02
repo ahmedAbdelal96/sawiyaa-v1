@@ -13,12 +13,14 @@ import { packagePlansSeedModule } from './seed/modules/package-plans.seed';
 import { helpSeedModule } from './seed/modules/help.seed';
 import { curatedDevSeedModule } from './seed/modules/curated-dev.seed';
 import { practitionersSeedModule } from './seed/modules/practitioners.seed';
+import { professionalContentFixturesSeedModule } from './seed/modules/professional-content-fixtures.seed';
 import { referenceDataSeedModule } from './seed/modules/reference-data.seed';
 import { regionalBulkSeedModule } from './seed/modules/regional-bulk.seed';
 import { settlementsLabSeedModule } from './seed/modules/settlements-lab.seed';
 import { specialtiesSeedModule } from './seed/modules/specialties.seed';
 import { usersSeedModule } from './seed/modules/users.seed';
 import { sessionAccessSeedModule } from './seed/modules/session-access.seed';
+import { academySeedModule } from './seed/modules/academy.seed';
 import { PrismaClient } from '@prisma/client';
 import { SeedModule } from './seed/shared/seed.types';
 import { assertLegacyFinancialFixtureSeedDisabled } from './seed/shared/financial-fixture-gate';
@@ -37,8 +39,10 @@ const curatedSeedModules: SeedModule[] = [
   specialtiesSeedModule,
   assessmentsSeedModule,
   patientsSeedModule,
+  academySeedModule,
   practitionersSeedModule,
   packagePlansSeedModule,
+  professionalContentFixturesSeedModule,
   helpSeedModule,
   refundPoliciesSeedModule,
   adminSeedModule,

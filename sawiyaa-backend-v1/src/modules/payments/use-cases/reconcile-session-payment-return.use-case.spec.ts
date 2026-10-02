@@ -91,6 +91,27 @@ describe('ReconcileSessionPaymentReturnUseCase', () => {
     });
   });
 
+  it('does not treat an authorized payment as collected', async () => {
+    const setup = buildUseCase({
+      paymentStatus: PaymentStatus.AUTHORIZED,
+    });
+
+    const result = await setup.useCase.execute({
+      userId: 'user_1',
+      sessionId: 'session_1',
+      providerReference: 'order_123',
+      redirectStatus: 'succeeded',
+      success: true,
+      pending: false,
+    });
+
+    expect(
+      setup.orchestrateSessionPaymentStatusService
+        .markSessionConfirmedFromPayment,
+    ).not.toHaveBeenCalled();
+    expect(result.reconciled).toBe(false);
+  });
+
   it('only confirms the session when the payment is already captured', async () => {
     const setup = buildUseCase({
       paymentStatus: PaymentStatus.CAPTURED,

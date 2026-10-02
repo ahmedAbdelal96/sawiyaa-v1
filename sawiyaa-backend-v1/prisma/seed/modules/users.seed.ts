@@ -46,6 +46,13 @@ export const usersSeedModule: SeedModule = {
         timezone: 'Asia/Dubai',
       },
       {
+        id: seedIds.users.traineeA,
+        displayName: 'Academy Trainee',
+        status: UserStatus.ACTIVE,
+        defaultLocale: 'en',
+        timezone: 'Africa/Cairo',
+      },
+      {
         id: seedIds.users.practitionerA,
         displayName: 'د. أحمد محمد',
         status: UserStatus.ACTIVE,
@@ -139,6 +146,7 @@ export const usersSeedModule: SeedModule = {
       },
       { userId: seedIds.users.patientA, role: UserRoleType.PATIENT },
       { userId: seedIds.users.patientB, role: UserRoleType.PATIENT },
+      { userId: seedIds.users.traineeA, role: UserRoleType.TRAINEE },
       { userId: seedIds.users.practitionerA, role: UserRoleType.PRACTITIONER },
       { userId: seedIds.users.practitionerB, role: UserRoleType.PRACTITIONER },
       { userId: seedIds.users.practitionerC, role: UserRoleType.PRACTITIONER },
@@ -192,6 +200,12 @@ export const usersSeedModule: SeedModule = {
       {
         userId: seedIds.users.patientB,
         email: seedCredentials.patientB.email,
+        isPrimary: true,
+        isVerified: true,
+      },
+      {
+        userId: seedIds.users.traineeA,
+        email: seedCredentials.traineeA.email,
         isPrimary: true,
         isVerified: true,
       },

@@ -71,6 +71,21 @@ export class AcademyProgramSessionAttendanceRepository {
     });
   }
 
+  findEnrollmentAttendanceTimeline(enrollmentId: string) {
+    return this.prisma.academyProgramSessionAttendance.findMany({
+      where: { academyProgramEnrollmentId: enrollmentId },
+      select: {
+        academyProgramSessionId: true,
+        attendanceStatus: true,
+        markedAt: true,
+        academyProgramSession: {
+          select: { id: true, titleAr: true, titleEn: true, startsAt: true, endsAt: true },
+        },
+      },
+      orderBy: { academyProgramSession: { startsAt: 'asc' } },
+    });
+  }
+
   upsertAttendance(input: {
     sessionId: string;
     enrollmentId: string;

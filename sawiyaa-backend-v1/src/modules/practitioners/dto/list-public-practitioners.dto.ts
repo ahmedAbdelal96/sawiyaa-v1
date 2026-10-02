@@ -160,6 +160,14 @@ export class ListPublicPractitionersDto {
   onlineNow?: boolean;
 
   @ApiPropertyOptional({
+    description: 'Filter practitioners with instant booking enabled',
+  })
+  @Transform(({ value }) => toBoolean(value))
+  @IsOptional()
+  @IsBoolean()
+  instantBookingEnabled?: boolean;
+
+  @ApiPropertyOptional({
     description: 'Filter practitioners with available slots today',
   })
   @Transform(({ value }) => toBoolean(value))
@@ -222,7 +230,7 @@ export class ListPublicPractitionersDto {
   @ApiPropertyOptional({
     enum: PublicPractitionerSortBy,
     description:
-      'Public listing sort baseline. recommended = rating desc, experience desc, createdAt asc.',
+      'Public listing sort baseline. recommended/rating = rating desc, experience desc, createdAt desc; experience = experience desc, createdAt desc, rating desc.',
   })
   @IsOptional()
   @IsEnum(PublicPractitionerSortBy)

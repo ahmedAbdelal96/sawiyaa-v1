@@ -18,6 +18,7 @@ export class PractitionerApplicationReviewPolicy {
     hasBio: boolean;
     hasCountry: boolean;
     hasYearsOfExperience: boolean;
+    hasPractitionerType: boolean;
     hasLanguage: boolean;
     hasRequiredSpecialties: boolean;
     hasRequiredCredentials: boolean;
@@ -38,6 +39,7 @@ export class PractitionerApplicationReviewPolicy {
       input.hasBio &&
       input.hasCountry &&
       input.hasYearsOfExperience &&
+      input.hasPractitionerType &&
       input.hasLanguage &&
       input.hasRequiredSpecialties &&
       input.hasRequiredCredentials &&

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { usePathname, useRouter } from "@/i18n/navigation";
 import { useSearchParams } from "next/navigation";
@@ -42,10 +42,15 @@ import type {
   InstantBookingDiscoveryDuration,
   InstantBookingEligiblePractitionerItem,
   InstantBookingRequest,
-  SessionMode,
 } from "../types/instant-booking.types";
 import { mapInstantBookingDiscoveryMoney } from "../lib/instant-booking-money";
 import { formatPatientDateTime, formatViewerTime } from "@/lib/time-formatting";
+
+function createInstantBookingIdempotencyKey(): string {
+  return typeof crypto !== "undefined" && crypto.randomUUID
+    ? crypto.randomUUID()
+    : `ib-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+}
 
 function formatTime(isoString: string | null, numLocale: string): string {
   return formatViewerTime(isoString, { locale: numLocale, fallbackText: "" });
@@ -418,6 +423,7 @@ export default function PatientInstantBookingScreen() {
 
   const createMutation = useCreatePatientInstantBookingRequest();
   const cancelMutation = useCancelPatientInstantBookingRequest();
+  const idempotencyKeyRef = useRef(createInstantBookingIdempotencyKey());
   const [pageError, setPageError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -445,9 +451,8 @@ export default function PatientInstantBookingScreen() {
 
     try {
       const request = await createMutation.mutateAsync({
-        practitionerSlug,
-        durationMinutes,
-        sessionMode: "VIDEO" satisfies SessionMode,
+        input: { practitionerSlug, durationMinutes },
+        idempotencyKey: idempotencyKeyRef.current,
       });
       navigateWithRequestId(request.id);
     } catch (error) {
@@ -471,6 +476,7 @@ export default function PatientInstantBookingScreen() {
     setPageError(null);
     try {
       await cancelMutation.mutateAsync({ requestId: activeRequest.id });
+      idempotencyKeyRef.current = createInstantBookingIdempotencyKey();
       navigateWithRequestId(null);
     } catch (error) {
       toAppError(error);
@@ -491,7 +497,14 @@ export default function PatientInstantBookingScreen() {
     <div className="space-y-5 sm:space-y-6">
       <PatientPageHeader
         eyebrow={t("hero.eyebrow")}
-        title={t("hero.title")}
+        title={
+          <span className="inline-flex items-center gap-3">
+            <span className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-primary-light text-primary ring-1 ring-primary/15">
+              <Zap className="h-5 w-5" />
+            </span>
+            <span>{t("hero.title")}</span>
+          </span>
+        }
         description={t("hero.note")}
         meta={
           <div className="flex flex-wrap gap-2">
@@ -547,25 +560,33 @@ export default function PatientInstantBookingScreen() {
           </Link>
         }
       >
-        <div className="grid gap-2 sm:grid-cols-3">
-          <div className="rounded-2xl bg-primary/8 px-4 py-3 ring-1 ring-primary/10">
-            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-primary">
-              {t("hero.chips.onlineNow")}
-            </p>
-            <p className="mt-1 text-sm text-text-secondary">{t("entry.chips.availableNow")}</p>
-          </div>
-          <div className="rounded-2xl bg-surface-tertiary px-4 py-3 ring-1 ring-border-light dark:bg-white/5 dark:ring-white/10">
-            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-text-muted">
-              {t("entry.chips.duration")}
-            </p>
-            <p className="mt-1 text-sm text-text-secondary">{t("entry.chips.durationNote")}</p>
-          </div>
-          <div className="rounded-2xl bg-surface-tertiary px-4 py-3 ring-1 ring-border-light dark:bg-white/5 dark:ring-white/10">
-            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-text-muted">
-              {t("entry.chips.pricing")}
-            </p>
-            <p className="mt-1 text-sm text-text-secondary">{t("entry.chips.pricingNote")}</p>
-          </div>
+        <div className="grid gap-3 sm:grid-cols-3">
+          {[
+            { number: "01", title: t("entry.steps.choose.title"), note: t("entry.steps.choose.note"), active: true },
+            { number: "02", title: t("entry.steps.request.title"), note: t("entry.steps.request.note"), active: false },
+            { number: "03", title: t("entry.steps.confirm.title"), note: t("entry.steps.confirm.note"), active: false },
+          ].map((step) => (
+            <div
+              key={step.number}
+              className={`rounded-2xl px-4 py-4 ring-1 ${
+                step.active
+                  ? "bg-primary/8 ring-primary/15"
+                  : "bg-surface-tertiary ring-border-light dark:bg-white/5 dark:ring-white/10"
+              }`}
+            >
+              <div className="flex items-center gap-3">
+                <span
+                  className={`inline-flex h-8 w-8 items-center justify-center rounded-xl text-xs font-bold ${
+                    step.active ? "bg-primary text-white" : "bg-white text-text-muted dark:bg-white/10"
+                  }`}
+                >
+                  {step.number}
+                </span>
+                <p className="text-sm font-semibold text-text-primary dark:text-white/95">{step.title}</p>
+              </div>
+              <p className="mt-3 text-sm leading-6 text-text-secondary">{step.note}</p>
+            </div>
+          ))}
         </div>
       </PatientSectionCard>
 
@@ -623,7 +644,7 @@ export default function PatientInstantBookingScreen() {
                   onBook={handleBook}
                   pendingBookKey={
                     createMutation.isPending && createMutation.variables
-                      ? `${createMutation.variables.practitionerSlug}:${createMutation.variables.durationMinutes}`
+                      ? `${createMutation.variables.input.practitionerSlug}:${createMutation.variables.input.durationMinutes}`
                       : null
                   }
                   createPending={createMutation.isPending}

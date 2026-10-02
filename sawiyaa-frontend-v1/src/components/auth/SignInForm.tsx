@@ -1,13 +1,13 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { ComponentType } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useLocale, useTranslations } from "next-intl";
 import { useSearchParams } from "next/navigation";
-import { Eye, EyeOff, LayoutGrid, Stethoscope, UserRound, Terminal } from "lucide-react";
+import { Eye, EyeOff, LayoutGrid, Stethoscope, UserRound, Terminal, GraduationCap } from "lucide-react";
 import { Link } from "@/i18n/navigation";
 import Input from "@/components/form/input/InputField";
 import AuthPasswordField from "./AuthPasswordField";
@@ -18,7 +18,9 @@ import PatientGoogleAuthButton from "@/components/auth/PatientGoogleAuthButton";
 import {
   useAdminLogin,
   usePatientLogin,
+  useTraineeLogin,
   usePractitionerLogin,
+  usePractitionerResendLoginOtp,
   usePractitionerVerifyOtp,
 } from "@/features/auth/hooks/use-auth";
 import { getAuthLockoutErrorMessage } from "@/features/auth/lib/auth-lockout-errors";
@@ -31,7 +33,7 @@ import { getDefaultRouteByRole, resolveRole } from "@/config/route-access";
 import { normalizeCallbackPath } from "@/lib/auth/callback-url";
 import AuthSplitCard from "./AuthSplitCard";
 
-export const SIGN_IN_MODES = ["patient", "practitioner", "admin"] as const;
+export const SIGN_IN_MODES = ["patient", "practitioner", "admin", "trainee"] as const;
 export type SignInMode = (typeof SIGN_IN_MODES)[number];
 
 const credentialsSchema = z.object({
@@ -53,6 +55,7 @@ type PractitionerChallengeState = {
   challengeId: string;
   maskedTarget: string;
   expiresAt: string;
+  resendAvailableAt?: string;
 };
 
 type PractitionerLoginResponse =
@@ -67,6 +70,7 @@ const MODE_CONFIG: Record<SignInMode, ModeConfig> = {
   patient: { icon: UserRound },
   practitioner: { icon: Stethoscope },
   admin: { icon: LayoutGrid },
+  trainee: { icon: GraduationCap },
 };
 
 function buildAuthHref(basePath: string, params: Record<string, string | null>) {
@@ -112,6 +116,12 @@ const TEST_CREDENTIALS_BY_MODE: Record<SignInMode, CredentialPreset> = {
     email: "admin@hesba.local",
     password: "Admin@12345",
     note: "SUPER_ADMIN",
+  },
+  trainee: {
+    label: "Trainee account",
+    email: "trainee@hesba.local",
+    password: "Trainee@12345",
+    note: "ACADEMY",
   },
 };
 
@@ -253,20 +263,26 @@ export default function SignInForm({ mode }: SignInFormProps) {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [challenge, setChallenge] = useState<PractitionerChallengeState | null>(null);
+  const [resendNow, setResendNow] = useState(Date.now());
+  const [resendNotice, setResendNotice] = useState<string | null>(null);
   const [showDevPanel, setShowDevPanel] = useState(false);
   const credentialsSubmitLockRef = useRef(false);
   const otpSubmitLockRef = useRef(false);
 
   const patientLogin = usePatientLogin();
+  const traineeLogin = useTraineeLogin();
   const practitionerLogin = usePractitionerLogin();
   const practitionerVerifyOtp = usePractitionerVerifyOtp();
+  const practitionerResendLoginOtp = usePractitionerResendLoginOtp();
   const adminLogin = useAdminLogin();
 
   const isSubmitting =
     patientLogin.isPending ||
     practitionerLogin.isPending ||
     practitionerVerifyOtp.isPending ||
-    adminLogin.isPending;
+    practitionerResendLoginOtp.isPending ||
+    adminLogin.isPending ||
+    traineeLogin.isPending;
 
   const credentialsForm = useForm<CredentialsFormData>({
     resolver: zodResolver(credentialsSchema),
@@ -318,6 +334,36 @@ export default function SignInForm({ mode }: SignInFormProps) {
     otpSubmitLockRef.current = false;
   };
 
+  useEffect(() => {
+    if (!challenge?.resendAvailableAt) return;
+    const id = window.setInterval(() => setResendNow(Date.now()), 1000);
+    return () => window.clearInterval(id);
+  }, [challenge?.resendAvailableAt]);
+
+  const resendSeconds = challenge?.resendAvailableAt
+    ? Math.max(0, Math.ceil((new Date(challenge.resendAvailableAt).getTime() - resendNow) / 1000))
+    : 0;
+
+  const onResendOtp = async () => {
+    if (!challenge || resendSeconds > 0 || practitionerResendLoginOtp.isPending) return;
+    setError(null);
+    setResendNotice(null);
+    try {
+      const next = await practitionerResendLoginOtp.mutateAsync({ challengeId: challenge.challengeId });
+      setChallenge({
+        challengeId: next.challengeId,
+        maskedTarget: next.maskedTarget,
+        expiresAt: next.expiresAt,
+        resendAvailableAt: next.resendAvailableAt,
+      });
+      otpForm.reset({ code: "" });
+      setResendNow(Date.now());
+      setResendNotice(isRtl ? "تم إرسال رمز تحقق جديد إلى بريدك الإلكتروني." : "A new verification code has been sent to your email.");
+    } catch (cause) {
+      setError(getSafeOtpErrorMessage(cause));
+    }
+  };
+
   const getSafeCredentialsErrorMessage = (cause: unknown) =>
     getAuthLockoutErrorMessage(
       cause,
@@ -348,6 +394,12 @@ export default function SignInForm({ mode }: SignInFormProps) {
         return;
       }
 
+      if (mode === "trainee") {
+        const result = await traineeLogin.mutateAsync(data);
+        redirectAfterAuth(result.user);
+        return;
+      }
+
       const loginResponse = (await practitionerLogin.mutateAsync(
         data,
       )) as PractitionerLoginResponse;
@@ -362,6 +414,7 @@ export default function SignInForm({ mode }: SignInFormProps) {
           challengeId: loginResponse.challengeId,
           maskedTarget: loginResponse.maskedTarget,
           expiresAt: loginResponse.expiresAt,
+          resendAvailableAt: loginResponse.resendAvailableAt,
         });
         otpForm.reset({ code: "" });
         setError(null);
@@ -424,6 +477,7 @@ export default function SignInForm({ mode }: SignInFormProps) {
     patient: PATIENT_TEST_CREDENTIALS,
     practitioner: PRACTITIONER_TEST_CREDENTIALS,
     admin: ADMIN_TEST_CREDENTIALS,
+    trainee: [TEST_CREDENTIALS_BY_MODE.trainee],
   };
   const quickAccounts = quickAccountsByMode[mode];
 
@@ -446,6 +500,7 @@ export default function SignInForm({ mode }: SignInFormProps) {
     patient: isRtl ? "بوابة تسجيل الدخول" : "Client Portal",
     practitioner: isRtl ? "بوابة المعالجين" : "Specialist Portal",
     admin: isRtl ? "بوابة الإدارة" : "Admin Portal",
+    trainee: isRtl ? "بوابة المتدربين" : "Trainee Portal",
   };
 
   const getDynamicTitle = () => {
@@ -457,6 +512,9 @@ export default function SignInForm({ mode }: SignInFormProps) {
     }
     if (mode === "practitioner") {
       return isRtl ? "تسجيل دخول الممارس" : "Practitioner sign in";
+    }
+    if (mode === "trainee") {
+      return isRtl ? "تسجيل دخول المتدرب" : "Trainee sign in";
     }
     return isRtl ? "تسجيل دخول المستخدم " : "Patient sign in";
   };
@@ -470,6 +528,9 @@ export default function SignInForm({ mode }: SignInFormProps) {
     }
     if (mode === "practitioner") {
       return isRtl ? "ادخل لإدارة جلساتك ومواعيدك." : "Sign in to manage your sessions and availability.";
+    }
+    if (mode === "trainee") {
+      return isRtl ? "ادخل لمتابعة تدريباتك وحضورك وشهاداتك." : "Sign in to follow your trainings, attendance, and certificates.";
     }
     return isRtl ? "ادخل لحجز جلساتك ومتابعة مواعيدك." : "Sign in to book sessions and manage your appointments.";
   };
@@ -658,6 +719,22 @@ export default function SignInForm({ mode }: SignInFormProps) {
               </div>
 
               <AuthOtpTimer expiresAt={challenge.expiresAt} />
+
+              <div className="text-center text-xs text-text-secondary">
+                <p>{isRtl ? "لم يصلك الرمز؟" : "Didn't receive the code?"}</p>
+                <button
+                  type="button"
+                  onClick={onResendOtp}
+                  disabled={resendSeconds > 0 || practitionerResendLoginOtp.isPending}
+                  className="mt-1 font-semibold text-primary disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {resendSeconds > 0
+                    ? `${isRtl ? "إعادة إرسال الرمز خلال" : "Resend code in"} ${String(Math.floor(resendSeconds / 60)).padStart(2, "0")}:${String(resendSeconds % 60).padStart(2, "0")}`
+                    : t("forgotPassword.resendButton")}
+                </button>
+              </div>
+
+              {resendNotice && <div className="rounded-2xl bg-success-50 p-3 text-xs text-success-600 dark:bg-success-500/10">{resendNotice}</div>}
 
               {error && (
                 <div className="rounded-2xl bg-error-50 p-3.5 text-xs text-error-500 dark:bg-error-500/10">

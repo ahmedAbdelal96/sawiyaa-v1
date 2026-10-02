@@ -47,18 +47,8 @@ export class ResendOtpChallengeUseCase {
       });
     }
 
-    const latestActive =
-      await this.otpChallengeRepository.findLatestActiveByTarget(
-        input.target,
-        input.purpose,
-      );
-    if (latestActive) {
-      await this.otpChallengeRepository.invalidate(latestActive.id);
-      this.logger.log(
-        `OTP challenge invalidated before resend (${input.purpose})`,
-      );
-    }
-
+    // CreateOtpChallengeUseCase owns replacement atomically under the
+    // purpose/user advisory lock. Do not invalidate outside that transaction.
     const challenge = await this.createOtpChallengeUseCase.execute({
       userId: input.userId ?? null,
       purpose: input.purpose,

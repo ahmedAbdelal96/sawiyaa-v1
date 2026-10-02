@@ -29,6 +29,7 @@ import {
 } from '@nestjs/swagger';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { createReadStream } from 'fs';
+import { setStoredFileResponseHeaders } from '@modules/files/file-response.utils';
 import { Request, Response } from 'express';
 import { resolveCountryFromRequest } from '@modules/auth/utils/request-country-context.util';
 import { CurrentLocale } from '@common/i18n/decorators/current-locale.decorator';
@@ -58,6 +59,9 @@ import { SaveAdminAcademyProgramAttendanceDto } from '../dto/save-admin-academy-
 import { UpdateAcademyProgramEnrollmentLearnerDto } from '../dto/update-academy-program-enrollment-learner.dto';
 import { UpdateAcademyProgramDto } from '../dto/update-academy-program.dto';
 import { UpdateAcademyProgramSessionDto } from '../dto/update-academy-program-session.dto';
+import { CreateAcademyTraineeAccountDto } from '../dto/create-academy-trainee-account.dto';
+import { LinkAcademyEnrollmentAccountDto } from '../dto/link-academy-enrollment-account.dto';
+import { ResetAcademyTraineePasswordDto } from '../dto/reset-academy-trainee-password.dto';
 import { ArchiveAcademyProgramUseCase } from '../use-cases/archive-academy-program.use-case';
 import { CreateAcademyProgramSessionUseCase } from '../use-cases/create-academy-program-session.use-case';
 import { CreateAcademyProgramUseCase } from '../use-cases/create-academy-program.use-case';
@@ -76,6 +80,7 @@ import { UpdateAcademyProgramSessionUseCase } from '../use-cases/update-academy-
 import { UpdateAcademyProgramUseCase } from '../use-cases/update-academy-program.use-case';
 import { UpdateAdminAcademyProgramEnrollmentLearnerUseCase } from '../use-cases/update-admin-academy-program-enrollment-learner.use-case';
 import { AcademyProgramCoverStorageService } from '../services/academy-program-cover-storage.service';
+import { ManageAdminAcademyEnrollmentAccountUseCase } from '../use-cases/manage-admin-academy-enrollment-account.use-case';
 
 const MAX_COVER_IMAGE_BYTES = 10 * 1024 * 1024;
 
@@ -105,9 +110,42 @@ export class AdminAcademyProgramsController {
     private readonly updateAcademyProgramSessionUseCase: UpdateAcademyProgramSessionUseCase,
     private readonly academyProgramCoverStorageService: AcademyProgramCoverStorageService,
     private readonly securityAuditService: SecurityAuditService,
+    private readonly manageAdminAcademyEnrollmentAccountUseCase: ManageAdminAcademyEnrollmentAccountUseCase,
   ) {}
 
+  @Get('program-enrollments/:id/account/status')
+  @Permissions(PermissionKey.ACADEMY_READ)
+  getProgramEnrollmentAccountStatus(@Param('id') enrollmentId: string) {
+    return this.manageAdminAcademyEnrollmentAccountUseCase.status(enrollmentId);
+  }
+
+  @Post('program-enrollments/:id/account/lookup')
+  @Permissions(PermissionKey.ACADEMY_MANAGE)
+  lookupProgramEnrollmentAccount(@Param('id') enrollmentId: string, @Body() body: LinkAcademyEnrollmentAccountDto) {
+    return this.manageAdminAcademyEnrollmentAccountUseCase.lookup({ enrollmentId, email: body.email });
+  }
+
+  @Post('program-enrollments/:id/account')
+  @Permissions(PermissionKey.ACADEMY_MANAGE)
+  createProgramEnrollmentAccount(@Param('id') enrollmentId: string, @Body() body: CreateAcademyTraineeAccountDto, @CurrentUser() currentUser: AuthenticatedUser) {
+    return this.manageAdminAcademyEnrollmentAccountUseCase.create({ enrollmentId, email: body.email, actorUserId: currentUser.id });
+  }
+
+  @Post('program-enrollments/:id/account/link')
+  @Permissions(PermissionKey.ACADEMY_MANAGE)
+  linkProgramEnrollmentAccount(@Param('id') enrollmentId: string, @Body() body: LinkAcademyEnrollmentAccountDto, @CurrentUser() currentUser: AuthenticatedUser) {
+    return this.manageAdminAcademyEnrollmentAccountUseCase.link({ enrollmentId, email: body.email, confirm: body.confirm, actorUserId: currentUser.id });
+  }
+
+  @Post('program-enrollments/:id/account/reset-password')
+  @Roles(AppRole.ADMIN, AppRole.SUPER_ADMIN, AppRole.SUPPORT_AGENT)
+  @Permissions(PermissionKey.USER_CREDENTIALS_RESET)
+  resetProgramEnrollmentPassword(@Param('id') enrollmentId: string, @Body() body: ResetAcademyTraineePasswordDto, @CurrentUser() currentUser: AuthenticatedUser) {
+    return this.manageAdminAcademyEnrollmentAccountUseCase.resetPassword({ enrollmentId, newPassword: body.newPassword, actorUserId: currentUser.id });
+  }
+
   @Post('programs/cover-upload')
+  @Permissions(PermissionKey.ACADEMY_MANAGE)
   @ApiOperation({ summary: 'Upload academy program cover image' })
   @ApiConsumes('multipart/form-data')
   @ApiBody({
@@ -192,18 +230,21 @@ export class AdminAcademyProgramsController {
   }
 
   @Get('programs')
+  @Permissions(PermissionKey.ACADEMY_READ)
   @ApiOperation({ summary: 'List academy programs for admin management' })
   list(@Query() query: ListAdminAcademyProgramsDto) {
     return this.listAdminAcademyProgramsUseCase.execute(query);
   }
 
   @Get('programs/:id')
+  @Permissions(PermissionKey.ACADEMY_READ)
   @ApiOperation({ summary: 'Get academy program details for admin management' })
   getProgram(@Param('id') programId: string) {
     return this.getAdminAcademyProgramUseCase.execute({ programId });
   }
 
   @Get('programs/:id/enrollments')
+  @Permissions(PermissionKey.ACADEMY_READ)
   @ApiOperation({
     summary: 'List academy program enrollments for admin management',
   })
@@ -220,6 +261,7 @@ export class AdminAcademyProgramsController {
   }
 
   @Get('programs/:id/attendance')
+  @Permissions(PermissionKey.ACADEMY_READ)
   @ApiOperation({
     summary: 'Get academy program attendance for admin management',
   })
@@ -236,6 +278,7 @@ export class AdminAcademyProgramsController {
   }
 
   @Get('program-enrollments/:id')
+  @Permissions(PermissionKey.ACADEMY_READ)
   @ApiOperation({
     summary: 'Get academy program enrollment details for admin management',
   })
@@ -250,6 +293,7 @@ export class AdminAcademyProgramsController {
   }
 
   @Get('programs/:id/enrollments/export')
+  @Permissions(PermissionKey.ACADEMY_READ)
   @ApiOperation({
     summary: 'Export academy program enrollments for admin management',
   })
@@ -285,6 +329,7 @@ export class AdminAcademyProgramsController {
   }
 
   @Patch('program-enrollments/:id/learner')
+  @Permissions(PermissionKey.ACADEMY_MANAGE)
   @ApiOperation({
     summary: 'Update academy program enrollment learner details',
   })
@@ -304,7 +349,7 @@ export class AdminAcademyProgramsController {
   }
 
   @Post('program-enrollments/:id/certificate')
-  @Permissions(PermissionKey.PATIENTS_UPDATE_ADMIN)
+  @Permissions(PermissionKey.ACADEMY_MANAGE)
   @ApiOperation({
     summary: 'Upload academy program enrollment certificate PDF',
   })
@@ -355,7 +400,7 @@ export class AdminAcademyProgramsController {
   }
 
   @Get('program-enrollments/:id/certificate')
-  @Permissions(PermissionKey.PATIENTS_READ_ADMIN)
+  @Permissions(PermissionKey.ACADEMY_READ)
   @ApiOperation({
     summary: 'Stream academy program enrollment certificate PDF',
   })
@@ -373,17 +418,13 @@ export class AdminAcademyProgramsController {
         enrollmentId,
       });
 
-    response.setHeader('Content-Type', file.mimeType);
-    response.setHeader('Cache-Control', 'private, max-age=300');
-    response.setHeader(
-      'Content-Disposition',
-      `inline; filename="${file.originalFileName?.replace(/"/g, "'") ?? 'certificate.pdf'}"`,
-    );
+    setStoredFileResponseHeaders(response, { mimeType: file.mimeType, originalFileName: file.originalFileName ?? 'certificate.pdf', isPrivate: true });
 
     return new StreamableFile(createReadStream(file.absolutePath));
   }
 
   @Put('programs/:id/attendance')
+  @Permissions(PermissionKey.ACADEMY_MANAGE)
   @ApiOperation({
     summary: 'Save academy program attendance for admin management',
   })
@@ -402,6 +443,7 @@ export class AdminAcademyProgramsController {
   }
 
   @Patch('program-enrollments/:id/cancel')
+  @Permissions(PermissionKey.ACADEMY_MANAGE)
   @ApiOperation({ summary: 'Cancel academy program enrollment' })
   cancelProgramEnrollment(
     @Param('id') enrollmentId: string,
@@ -419,6 +461,7 @@ export class AdminAcademyProgramsController {
   }
 
   @Patch('program-enrollments/:id/complete')
+  @Permissions(PermissionKey.ACADEMY_MANAGE)
   @ApiOperation({ summary: 'Mark academy program enrollment completed' })
   completeProgramEnrollment(
     @Param('id') enrollmentId: string,
@@ -434,6 +477,7 @@ export class AdminAcademyProgramsController {
   }
 
   @Patch('program-enrollments/:id/certify')
+  @Permissions(PermissionKey.ACADEMY_MANAGE)
   @ApiOperation({ summary: 'Mark academy program enrollment certified' })
   certifyProgramEnrollment(
     @Param('id') enrollmentId: string,
@@ -449,6 +493,7 @@ export class AdminAcademyProgramsController {
   }
 
   @Post('programs/:id/enrollments/bulk')
+  @Permissions(PermissionKey.ACADEMY_MANAGE)
   @ApiOperation({ summary: 'Bulk update academy program enrollments' })
   bulkProgramEnrollments(
     @Param('id') academyProgramId: string,
@@ -466,6 +511,7 @@ export class AdminAcademyProgramsController {
   }
 
   @Post('programs')
+  @Permissions(PermissionKey.ACADEMY_MANAGE)
   @ApiOperation({ summary: 'Create academy program draft' })
   createProgram(
     @Body() body: CreateAcademyProgramDto,
@@ -479,6 +525,7 @@ export class AdminAcademyProgramsController {
   }
 
   @Patch('programs/:id')
+  @Permissions(PermissionKey.ACADEMY_MANAGE)
   @ApiOperation({ summary: 'Update academy program' })
   updateProgram(
     @Param('id') programId: string,
@@ -494,6 +541,7 @@ export class AdminAcademyProgramsController {
   }
 
   @Patch('programs/:id/publish')
+  @Permissions(PermissionKey.ACADEMY_MANAGE)
   @ApiOperation({ summary: 'Publish academy program' })
   publishProgram(
     @Param('id') programId: string,
@@ -507,6 +555,7 @@ export class AdminAcademyProgramsController {
   }
 
   @Patch('programs/:id/archive')
+  @Permissions(PermissionKey.ACADEMY_MANAGE)
   @ApiOperation({ summary: 'Archive academy program' })
   archiveProgram(
     @Param('id') programId: string,
@@ -522,6 +571,7 @@ export class AdminAcademyProgramsController {
   }
 
   @Post('programs/:id/sessions')
+  @Permissions(PermissionKey.ACADEMY_MANAGE)
   @ApiOperation({ summary: 'Create academy program session' })
   createProgramSession(
     @Param('id') programId: string,
@@ -537,6 +587,7 @@ export class AdminAcademyProgramsController {
   }
 
   @Patch('programs/:id/sessions/:sessionId')
+  @Permissions(PermissionKey.ACADEMY_MANAGE)
   @ApiOperation({ summary: 'Update academy program session' })
   updateProgramSession(
     @Param('id') programId: string,

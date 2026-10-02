@@ -30,6 +30,9 @@ export class AuthenticatedUserResponseDto {
   @ApiProperty({ nullable: true })
   practitionerProfileId!: string | null;
 
+  @ApiProperty({ nullable: true })
+  practitionerApplicationId!: string | null;
+
   @ApiProperty({ enum: PractitionerStatus, nullable: true })
   practitionerStatus!: PractitionerStatus | null;
 }
@@ -58,6 +61,9 @@ export class CurrentAuthUserResponseDto {
 
   @ApiProperty({ nullable: true })
   practitionerProfileId!: string | null;
+
+  @ApiProperty({ nullable: true })
+  practitionerApplicationId!: string | null;
 
   @ApiProperty()
   isPractitionerOtpVerified!: boolean;
@@ -113,6 +119,9 @@ export class OtpChallengeResponseDto {
   @ApiProperty()
   expiresAt!: Date;
 
+  @ApiProperty({ required: false })
+  resendAvailableAt?: Date;
+
   @ApiProperty()
   requiresOtpVerification!: boolean;
 
@@ -153,9 +162,6 @@ export class PasswordResetRequestedResponseDto {
 export class PasswordResetOtpVerifiedResponseDto {
   @ApiProperty()
   message!: string;
-
-  @ApiProperty()
-  resetToken!: string;
 
   @ApiProperty()
   expiresAt!: string;

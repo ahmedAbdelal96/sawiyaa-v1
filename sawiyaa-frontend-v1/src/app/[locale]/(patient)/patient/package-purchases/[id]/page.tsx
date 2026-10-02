@@ -23,19 +23,19 @@ export default async function PatientPackagePurchaseDetailPage({ params }: Props
   const isRtl = locale === "ar";
 
   return (
-    <div className="mx-auto max-w-7xl px-4 py-4 sm:py-6">
-      <div className="mb-6">
+    <div className="mx-auto max-w-5xl px-4 py-6 sm:py-8 space-y-6">
+      <div className="border-b border-border-light/60 pb-4">
         <Link
           href="/patient/package-purchases"
-          className="inline-flex items-center gap-1.5 text-sm font-semibold text-text-muted hover:text-primary transition-colors"
+          className="inline-flex items-center gap-1.5 text-xs font-bold text-text-secondary hover:text-[#24564F] transition-colors mb-2"
         >
-          {isRtl ? <ArrowRight className="h-4 w-4" /> : <ArrowLeft className="h-4 w-4" />}
-          {t("detail.back")}
+          {isRtl ? <ArrowRight className="h-3.5 w-3.5" /> : <ArrowLeft className="h-3.5 w-3.5" />}
+          <span>{t("detail.back")}</span>
         </Link>
-        <h1 className="mt-2 text-2xl font-bold text-text-primary dark:text-white">
+        <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-text-primary dark:text-white">
           {t("detail.heading")}
         </h1>
-        <p className="mt-1 max-w-2xl text-sm leading-6 text-text-secondary">
+        <p className="text-xs text-text-secondary mt-0.5 max-w-2xl leading-relaxed">
           {t("detail.subtitle")}
         </p>
       </div>

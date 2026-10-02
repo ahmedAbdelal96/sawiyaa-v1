@@ -1,0 +1,11 @@
+appId: com.sawiyaa.mobile
+---
+- runFlow: patient-login.yaml
+- tapOn:
+    text: "Messages|الرسائل"
+- tapOn:
+    text: "Support|الدعم"
+- assertVisible:
+    id: "patient-message-thread-screen"
+- assertNotVisible:
+    text: "FATAL EXCEPTION"

@@ -23,13 +23,13 @@ export default function BrandMark({
 
   const inner = (
     <span className="inline-flex items-center gap-3.5">
-      <span className="inline-flex h-12 w-12 sm:h-13 sm:w-13 shrink-0 items-center justify-center rounded-2xl bg-surface-secondary/60 p-0.5 dark:bg-white/5">
+      <span className="relative inline-flex h-12 w-12 sm:h-13 sm:w-13 shrink-0 items-center justify-center rounded-2xl bg-surface-secondary/60 p-0.5 dark:bg-white/5">
         <Image
           src="/images/logo/icon.png"
           alt="Sawiyaa Icon"
-          width={52}
-          height={52}
-          className="h-12 w-12 sm:h-13 sm:w-13 object-contain rounded-2xl"
+          fill
+          sizes="(min-width: 640px) 52px, 48px"
+          className="rounded-2xl object-contain"
           priority
         />
       </span>

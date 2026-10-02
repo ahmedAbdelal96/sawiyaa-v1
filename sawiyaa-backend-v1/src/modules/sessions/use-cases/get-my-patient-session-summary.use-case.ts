@@ -2,13 +2,15 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { SessionStatus } from '@prisma/client';
 import { SessionPatientRepository } from '../repositories/session-patient.repository';
 import { SessionRepository } from '../repositories/session.repository';
-import { summarizeSessionPresentations } from '../utils/session-join-policy.util';
+import { SessionOperationalInterpreterService } from '../services/session-operational-interpreter.service';
+import { summarizeOperationalStates } from '../utils/session-operational-summary.util';
 
 @Injectable()
 export class GetMyPatientSessionSummaryUseCase {
   constructor(
     private readonly sessionPatientRepository: SessionPatientRepository,
     private readonly sessionRepository: SessionRepository,
+    private readonly operationalInterpreter: SessionOperationalInterpreterService,
   ) {}
 
   async execute(input: { userId: string }) {
@@ -28,26 +30,21 @@ export class GetMyPatientSessionSummaryUseCase {
         patient.id,
       );
 
-    const presentationSummary = summarizeSessionPresentations(sessions);
-    const counts = sessions.reduce<Record<SessionStatus, number>>(
-      (acc, session) => {
-        acc[session.status] = (acc[session.status] ?? 0) + 1;
-        return acc;
-      },
-      {} as Record<SessionStatus, number>,
-    );
-    const getCount = (...statuses: SessionStatus[]) =>
-      statuses.reduce((sum, status) => sum + (counts[status] ?? 0), 0);
+    const now = new Date();
+    const operational = await Promise.all(sessions.map((session) =>
+      this.operationalInterpreter.interpret({ session, actor: 'ADMIN', now }),
+    ));
+    const { counts, get: getCount } = summarizeOperationalStates(operational.map((item) => item.state));
 
     return {
-      totalItems: presentationSummary.totalItems,
+      totalItems: sessions.length,
       pendingPayment: counts[SessionStatus.PENDING_PAYMENT] ?? 0,
       pendingPractitionerResponse:
         counts[SessionStatus.PENDING_PRACTITIONER_CONFIRMATION] ?? 0,
       confirmed: counts[SessionStatus.UPCOMING] ?? 0,
-      upcoming: presentationSummary.upcoming,
-      readyToJoin: presentationSummary.joinable,
-      inProgress: presentationSummary.inProgress,
+      upcoming: counts[SessionStatus.UPCOMING] ?? 0,
+      readyToJoin: counts[SessionStatus.READY_TO_JOIN] ?? 0,
+      inProgress: counts[SessionStatus.IN_PROGRESS] ?? 0,
       completed: counts[SessionStatus.COMPLETED] ?? 0,
       cancelled: counts[SessionStatus.CANCELLED] ?? 0,
       noShow: getCount(
@@ -61,12 +58,11 @@ export class GetMyPatientSessionSummaryUseCase {
       actionRequired: getCount(
         SessionStatus.PENDING_PAYMENT,
         SessionStatus.PENDING_PRACTITIONER_CONFIRMATION,
-      ) + presentationSummary.joinable,
+      ) + (counts[SessionStatus.READY_TO_JOIN] ?? 0),
       active:
-        presentationSummary.upcoming +
-        presentationSummary.unavailable +
-        presentationSummary.joinable +
-        presentationSummary.inProgress,
+        (counts[SessionStatus.UPCOMING] ?? 0) +
+        (counts[SessionStatus.READY_TO_JOIN] ?? 0) +
+        (counts[SessionStatus.IN_PROGRESS] ?? 0),
       history: getCount(
         SessionStatus.COMPLETED,
         SessionStatus.CANCELLED,

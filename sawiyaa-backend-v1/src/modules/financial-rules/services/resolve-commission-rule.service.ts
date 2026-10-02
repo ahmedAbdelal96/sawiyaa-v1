@@ -26,16 +26,20 @@ export class ResolveCommissionRuleService {
         ?.specialtyId ??
       session.practitioner.specialties[0]?.specialtyId ??
       null;
+    const patientCountryId =
+      session.pricingPatientCountryId !== undefined
+        ? session.pricingPatientCountryId
+        : session.patient.countryId;
     const marketType = this.resolveMarketType(
       session.practitioner.countryId,
-      session.patient.countryId,
+      patientCountryId,
     );
 
     const matching = candidates
       .filter((rule) =>
         this.matchesRule(rule, {
           practitionerCountryId: session.practitioner.countryId,
-          patientCountryId: session.patient.countryId,
+          patientCountryId,
           marketType,
           sessionFlowType: session.flowType,
           sessionMode: session.sessionMode,

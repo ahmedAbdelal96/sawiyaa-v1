@@ -4,7 +4,8 @@ import { MarkPaymentFailedUseCase } from './mark-payment-failed.use-case';
 describe('MarkPaymentFailedUseCase', () => {
   function buildUseCase(input?: { paymentPurpose?: string }) {
     const prisma = {
-      $transaction: jest.fn().mockImplementation(async (fn) => fn({})),
+      $transaction: jest.fn().mockImplementation(async (fn) => fn(prisma)),
+      $executeRaw: jest.fn().mockResolvedValue(1),
     };
     const paymentRepository = {
       findById: jest.fn().mockResolvedValue({
@@ -17,6 +18,7 @@ describe('MarkPaymentFailedUseCase', () => {
         amountFromWallet: { gt: () => false, toString: () => '0.00' },
       }),
       createEvent: jest.fn().mockResolvedValue({}),
+      createWebhookReceipt: jest.fn().mockResolvedValue({}),
       updateStatus: jest.fn().mockResolvedValue({
         id: 'payment_1',
         paymentPurpose: input?.paymentPurpose ?? 'SESSION_BOOKING',

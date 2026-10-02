@@ -1,7 +1,6 @@
 import type {
-  SessionJoinAvailability,
   SessionMode,
-  SessionPresentationStatus,
+  SessionOperationalInterpretation,
 } from "../sessions/types";
 
 export type PackagePlanSessionQuote = {
@@ -98,8 +97,7 @@ export type PatientPackagePurchaseSessionSummary = {
     | "BOTH_NO_SHOW"
     | "AWAITING_COMPLETION_CONFIRMATION"
     | "EXPIRED";
-  presentationStatus: SessionPresentationStatus;
-  joinAvailability: SessionJoinAvailability;
+  operational: SessionOperationalInterpretation;
   scheduledStartAt: string | null;
   scheduledEndAt: string | null;
   durationMinutes: number;
@@ -111,9 +109,19 @@ export type PatientPackagePurchaseItem = {
   id: string;
   status: PackagePurchaseStatus;
   planCode: string;
+  /** Backend-owned package identity; fall back to the localized plan label when absent. */
+  title?: string | null;
+  description?: string | null;
   sessionCount: number;
   discountPercent: string;
   practitionerId: string;
+  practitioner?: {
+    id: string;
+    publicSlug: string;
+    displayName: string;
+    avatarUrl: string | null;
+    professionalTitle: string | null;
+  };
   durationMinutes: number;
   sessionMode: SessionMode;
   selectedCurrencyCode: string;
@@ -125,12 +133,59 @@ export type PatientPackagePurchaseItem = {
   patientPayableTotal: string;
   paymentExpiresAt: string | null;
   linkedSessionsCount: number;
+  progress?: {
+    totalSessions: number;
+    consumedSessions?: number;
+    completedSessions: number;
+    reservedSessions: number;
+    availableSessions: number;
+    remainingSessions: number;
+    scheduledSessions: number;
+    progressPercent: number;
+    nextSessionStartAt: string | null;
+  };
   linkedSessions: {
     totalItems: number;
     items: PatientPackagePurchaseSessionSummary[];
   };
   createdAt: string;
   updatedAt: string;
+  payment: {
+    id: string;
+    status: string;
+    amountTotal: string;
+    amountFromWallet: string;
+    amountFromGateway: string;
+    currency: string;
+    initiatedAt: string;
+    capturedAt: string | null;
+    failedAt: string | null;
+    expiredAt: string | null;
+    refundedAt: string | null;
+    refunds: Array<{
+      id: string;
+      status: string;
+      destination: string;
+      amount: string;
+      currency: string;
+      reason: string | null;
+      requestedAt: string;
+      processedAt: string | null;
+      failedAt: string | null;
+      customerWalletCreditedAt: string | null;
+      sessionId: string | null;
+    }>;
+  } | null;
+  entitlementHistory: Array<{
+    id: string;
+    sessionId: string;
+    sessionCode: string | null;
+    decisionType: string;
+    reasonCode: string;
+    sessionStatus: string;
+    decidedAt: string;
+    scheduledStartAt: string | null;
+  }>;
 };
 
 export type CreatePatientPackagePurchaseRequest = {
@@ -140,8 +195,11 @@ export type CreatePatientPackagePurchaseRequest = {
   sessionMode: SessionMode;
   /** @deprecated Backend selects package pricing; clients must omit this field. */
   selectedCurrencyCode?: string;
-  selectedSessionSlots: PackagePurchaseSessionSlot[];
+  /** Optional first appointment; remaining sessions are booked later. */
+  selectedSessionSlots?: PackagePurchaseSessionSlot[];
 };
+
+export type BookPatientPackageSessionRequest = PackagePurchaseSessionSlot;
 
 export type InitiatePatientPackagePurchasePaymentInput = {
   acceptedRefundPolicyId: string;

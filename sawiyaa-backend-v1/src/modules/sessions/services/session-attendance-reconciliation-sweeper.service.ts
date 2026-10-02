@@ -4,6 +4,7 @@ import {
   OnModuleDestroy,
 } from '@nestjs/common';
 import { AppLoggerService } from '@common/logging/app-logger.service';
+import { OperationsQueueService } from '@common/queue/operations-queue.service';
 import { SessionRepository } from '../repositories/session.repository';
 import { ReconcileSessionAttendanceUseCase } from '../use-cases/reconcile-session-attendance.use-case';
 
@@ -14,6 +15,8 @@ export type SessionReconciliationSweepResult = {
   scanned: number;
   reconciled: number;
   failed: number;
+  enqueued: number;
+  enqueueFailed: number;
 };
 
 /** Optional Phase 2.5 worker. It persists evidence only; it never finalizes. */
@@ -28,6 +31,7 @@ export class SessionAttendanceReconciliationSweeperService
     private readonly sessions: SessionRepository,
     private readonly reconcile: ReconcileSessionAttendanceUseCase,
     private readonly logger: AppLoggerService,
+    private readonly operationsQueue?: OperationsQueueService,
   ) {}
 
   onApplicationBootstrap(): void {
@@ -57,19 +61,57 @@ export class SessionAttendanceReconciliationSweeperService
   }
 
   async sweepOnce(): Promise<SessionReconciliationSweepResult> {
-    if (this.running) return { scanned: 0, reconciled: 0, failed: 0 };
+    if (this.running) {
+      return {
+        scanned: 0,
+        reconciled: 0,
+        failed: 0,
+        enqueued: 0,
+        enqueueFailed: 0,
+      };
+    }
     this.running = true;
-    const result = { scanned: 0, reconciled: 0, failed: 0 };
+    const result = {
+      scanned: 0,
+      reconciled: 0,
+      failed: 0,
+      enqueued: 0,
+      enqueueFailed: 0,
+    };
     try {
       const take = this.readPositiveInt(
         'SESSION_ATTENDANCE_RECONCILIATION_SWEEPER_BATCH_SIZE',
         DEFAULT_BATCH_SIZE,
       );
+      const queueEnabled =
+        this.operationsQueue?.isDailyAttendanceEnabled() === true;
       const candidates = await this.sessions.listSessionsAwaitingReconciliation(
         { take },
       );
       for (const candidate of candidates) {
         result.scanned += 1;
+        if (queueEnabled) {
+          const latestVersion =
+            candidate.attendanceReconciliations?.[0]?.observationVersion ?? 0;
+          const published = await this.operationsQueue!.enqueueDailyAttendance(
+            candidate.id,
+            latestVersion + 1,
+          );
+          if (published.enqueued) {
+            result.enqueued += 1;
+          } else {
+            result.enqueueFailed += 1;
+            this.logger.warn(
+              {
+                message: 'Daily attendance reconciliation enqueue failed',
+                sessionId: candidate.id,
+                reason: published.reason,
+              },
+              'Sessions',
+            );
+          }
+          continue;
+        }
         try {
           await this.reconcile.execute({ sessionId: candidate.id });
           result.reconciled += 1;

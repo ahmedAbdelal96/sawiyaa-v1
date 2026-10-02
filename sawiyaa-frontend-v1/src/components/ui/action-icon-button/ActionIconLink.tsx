@@ -19,6 +19,8 @@ interface ActionIconLinkProps {
   icon: ReactNode;
   intent?: ActionIntent;
   className?: string;
+  target?: string;
+  rel?: string;
 }
 
 const INTENT_STYLES: Record<ActionIntent, string> = {
@@ -38,12 +40,16 @@ export default function ActionIconLink({
   icon,
   intent = "neutral",
   className = "",
+  target,
+  rel,
 }: ActionIconLinkProps) {
   return (
     <Link
       href={href as never}
       title={label}
       aria-label={label}
+      target={target}
+      rel={rel}
       className={`inline-flex h-7.5 w-7.5 items-center justify-center rounded-lg border shadow-2xs transition-all duration-150 active:scale-95 ${INTENT_STYLES[intent]} ${className}`}
     >
       <span className="h-4 w-4">{icon}</span>
@@ -51,4 +57,3 @@ export default function ActionIconLink({
     </Link>
   );
 }
-

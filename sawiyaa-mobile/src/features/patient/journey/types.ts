@@ -1,4 +1,4 @@
-import type { SessionStatus, PaymentStatus } from "../sessions/types";
+import type { SessionOperationalInterpretation, SessionStatus, PaymentStatus } from "../sessions/types";
 import type { SupportTicketStatus, SupportTicketType } from "../support/types";
 
 export type PatientJourneyNextStepType =
@@ -28,6 +28,7 @@ export interface JourneyPractitionerSummaryDto {
 export interface JourneyUpcomingSessionDto {
   id: string;
   status: SessionStatus;
+  operational: SessionOperationalInterpretation;
   scheduledStartAt: string | null;
   scheduledEndAt: string | null;
   practitioner: JourneyPractitionerSummaryDto;
@@ -61,6 +62,7 @@ export interface JourneyUpcomingDto {
 export interface JourneyHistorySessionDto {
   id: string;
   status: SessionStatus;
+  operational: SessionOperationalInterpretation;
   scheduledStartAt: string | null;
   scheduledEndAt: string | null;
   practitioner: JourneyPractitionerSummaryDto;

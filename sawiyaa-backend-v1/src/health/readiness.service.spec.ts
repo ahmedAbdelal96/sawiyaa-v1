@@ -1,0 +1,124 @@
+import { ReadinessService } from './readiness.service';
+
+describe('ReadinessService', () => {
+  const paymentRuntime = {
+    getPaymentRoutingConfig: jest.fn(),
+  };
+  const service = new ReadinessService(paymentRuntime as never);
+
+  beforeEach(() => {
+    jest.resetAllMocks();
+    paymentRuntime.getPaymentRoutingConfig.mockReturnValue({ routeReadiness: [] });
+    process.env.APP_ENV = 'production';
+    process.env.NODE_ENV = 'production';
+    process.env.SESSION_ATTENDANCE_RECONCILIATION_SWEEPER_ENABLED = 'true';
+    process.env.DAILY_API_KEY = 'daily-key';
+    process.env.DAILY_API_BASE_URL = 'https://api.daily.co/v1';
+    process.env.DAILY_WEBHOOK_SECRET = 'daily-secret';
+    process.env.ACCOUNTING_RECONCILIATION_ENABLED = 'false';
+    process.env.ACCOUNTING_RECONCILIATION_ALERTS_ENABLED = 'false';
+  });
+
+  afterEach(() => {
+    delete process.env.APP_ENV;
+    delete process.env.NODE_ENV;
+    delete process.env.SESSION_ATTENDANCE_RECONCILIATION_SWEEPER_ENABLED;
+    delete process.env.DAILY_API_KEY;
+    delete process.env.DAILY_API_BASE_URL;
+    delete process.env.DAILY_WEBHOOK_SECRET;
+    delete process.env.ACCOUNTING_RECONCILIATION_ENABLED;
+    delete process.env.ACCOUNTING_RECONCILIATION_ALERTS_ENABLED;
+  });
+
+  it('keeps completion ready and reports attendance degraded when disabled', async () => {
+    process.env.SESSION_ATTENDANCE_RECONCILIATION_SWEEPER_ENABLED = 'false';
+    const snapshot = await service.getSnapshot();
+    expect(snapshot.components.sessionCompletionWorker.status).toBe('READY');
+    expect(snapshot.components.attendanceReconciliation.status).toBe('DEGRADED');
+    expect(snapshot.status).toBe('DEGRADED');
+  });
+
+  it('reports production Daily configuration as not ready when incomplete', async () => {
+    delete process.env.DAILY_WEBHOOK_SECRET;
+    expect((await service.getSnapshot()).components.dailyWebhook.status).toBe('NOT_READY');
+  });
+
+  it('makes disabled reconciliation explicit in readiness', async () => {
+    const snapshot = await service.getSnapshot();
+
+    expect(snapshot.components.accountingReconciliation).toEqual({
+      status: 'DEGRADED',
+      detail: expect.stringContaining('disabled'),
+    });
+    expect(snapshot.warnings).toEqual(
+      expect.arrayContaining([
+        expect.stringContaining('ACCOUNTING_RECONCILIATION_ENABLED'),
+      ]),
+    );
+  });
+
+  it('degrades notification readiness without taking the API not ready when Redis is unavailable', async () => {
+    const notificationQueue = {
+      getHealthSnapshot: jest.fn().mockResolvedValue({
+        enabled: true,
+        status: 'DEGRADED',
+        redis: 'UNAVAILABLE',
+        worker: 'UNKNOWN',
+        queueName: 'notifications',
+        counts: { waiting: 2, active: 0, completed: 0, failed: 0, delayed: 0 },
+        oldestWaitingJobAgeMs: 12_000,
+        lastEnqueuedAt: null,
+        lastEnqueueFailureAt: new Date().toISOString(),
+        lastWorkerHeartbeatAt: null,
+        lastError: 'redis unavailable',
+      }),
+    };
+    const degradedService = new ReadinessService(
+      paymentRuntime as never,
+      notificationQueue as never,
+    );
+
+    const snapshot = await degradedService.getSnapshot();
+
+    expect(snapshot.components.notificationQueue.status).toBe('DEGRADED');
+    expect(snapshot.status).toBe('DEGRADED');
+    expect(snapshot.status).not.toBe('NOT_READY');
+    expect(snapshot.warnings).toEqual(
+      expect.arrayContaining([expect.stringContaining('DB runner fallback')]),
+    );
+  });
+
+  it('keeps a degraded Daily attendance queue separate from API availability', async () => {
+    const operationsQueue = {
+      getHealthSnapshot: jest.fn().mockResolvedValue({
+        enabled: true,
+        status: 'DEGRADED',
+        redis: 'UNAVAILABLE',
+        worker: 'UNKNOWN',
+        queueName: 'operations',
+        counts: { waiting: 1, active: 0, completed: 0, failed: 1, delayed: 0 },
+        oldestWaitingJobAgeMs: 5000,
+        lastEnqueuedAt: null,
+        lastEnqueueFailureAt: new Date().toISOString(),
+        lastWorkerHeartbeatAt: null,
+        lastError: 'redis unavailable',
+      }),
+    };
+    const degradedService = new ReadinessService(
+      paymentRuntime as never,
+      undefined,
+      operationsQueue as never,
+    );
+
+    const snapshot = await degradedService.getSnapshot();
+
+    expect(snapshot.components.operationsQueue.status).toBe('DEGRADED');
+    expect(snapshot.status).toBe('DEGRADED');
+    expect(snapshot.status).not.toBe('NOT_READY');
+    expect(snapshot.warnings).toEqual(
+      expect.arrayContaining([
+        expect.stringContaining('Daily attendance operations queue is degraded'),
+      ]),
+    );
+  });
+});

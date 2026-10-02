@@ -240,7 +240,7 @@ variables:
     description: Active video provider.
   - name: DAILY_API_KEY
     service: backend
-    required: true
+    required: "VIDEO_PROVIDER_DEFAULT == DAILY"
     secret: true
     phase: runtime
     environments: [production]
@@ -251,7 +251,7 @@ variables:
     description: Daily API key.
   - name: DAILY_API_BASE_URL
     service: backend
-    required: true
+    required: "VIDEO_PROVIDER_DEFAULT == DAILY"
     secret: false
     phase: runtime
     environments: [production]
@@ -262,7 +262,7 @@ variables:
     description: Daily API base URL.
   - name: DAILY_WEBHOOK_SECRET
     service: backend
-    required: true
+    required: "VIDEO_PROVIDER_DEFAULT == DAILY"
     secret: true
     phase: runtime
     environments: [production]
@@ -271,6 +271,39 @@ variables:
     rebuildRequired: false
     validationOwner: backend Zod production policy + Daily webhook signature verification
     description: Secret shared with Daily webhook configuration.
+  - name: ZOOM_ACCOUNT_ID
+    service: backend
+    required: "VIDEO_PROVIDER_DEFAULT == ZOOM"
+    secret: true
+    phase: runtime
+    environments: [production]
+    safeDefault: null
+    restartRequired: true
+    rebuildRequired: false
+    validationOwner: backend video provider conditional policy
+    description: Zoom account ID when Zoom is the active video provider.
+  - name: ZOOM_CLIENT_ID
+    service: backend
+    required: "VIDEO_PROVIDER_DEFAULT == ZOOM"
+    secret: false
+    phase: runtime
+    environments: [production]
+    safeDefault: null
+    restartRequired: true
+    rebuildRequired: false
+    validationOwner: backend video provider conditional policy
+    description: Zoom client ID when Zoom is the active video provider.
+  - name: ZOOM_CLIENT_SECRET
+    service: backend
+    required: "VIDEO_PROVIDER_DEFAULT == ZOOM"
+    secret: true
+    phase: runtime
+    environments: [production]
+    safeDefault: null
+    restartRequired: true
+    rebuildRequired: false
+    validationOwner: backend video provider conditional policy
+    description: Zoom client secret when Zoom is the active video provider.
   - name: CORPORATE_CODE_PEPPER
     service: backend
     required: true
@@ -351,6 +384,94 @@ variables:
     rebuildRequired: false
     validationOwner: database-authoritative payment routing policy
     description: Optional USD card integration; empty is allowed when USD route is disabled.
+  - name: SAWIYAA_DEV_COUNTRY_CODE
+    service: backend
+    required: false
+    secret: false
+    phase: runtime
+    environments: [local, staging, production]
+    safeDefault: null
+    restartRequired: true
+    rebuildRequired: false
+    validationOwner: backend country-resolution configuration
+    description: Development-only country hint; must remain empty in production.
+  - name: PRACTITIONER_REVIEW_SLA_WEEKEND_DAYS
+    service: backend
+    required: false
+    secret: false
+    phase: runtime
+    environments: [local, staging, production]
+    safeDefault: 5,6
+    restartRequired: true
+    rebuildRequired: false
+    validationOwner: practitioner operations calendar
+    description: Weekend day numbers used by the review SLA calendar.
+  - name: PRACTITIONER_REVIEW_SLA_TIMEZONE
+    service: backend
+    required: false
+    secret: false
+    phase: runtime
+    environments: [local, staging, production]
+    safeDefault: Africa/Cairo
+    restartRequired: true
+    rebuildRequired: false
+    validationOwner: practitioner operations calendar
+    description: Timezone used by the review SLA calendar.
+  - name: SESSION_COMPLETION_CONFIRMATION_SWEEPER_GRACE_MINUTES
+    service: backend
+    required: false
+    secret: false
+    phase: runtime
+    environments: [local, staging, production]
+    safeDefault: 15
+    restartRequired: true
+    rebuildRequired: false
+    validationOwner: session reconciliation configuration
+    description: Grace interval for completion confirmation reconciliation.
+  - name: FINANCIAL_OVERVIEW_SLOW_MS
+    service: backend
+    required: false
+    secret: false
+    phase: runtime
+    environments: [local, staging, production]
+    safeDefault: 500
+    restartRequired: true
+    rebuildRequired: false
+    validationOwner: financial operations diagnostics
+    description: Slow-query diagnostic threshold for financial overview reads.
+  - name: PAYMENT_WEBHOOK_RECEIPT_ROLLOUT_AT
+    service: backend
+    required: false
+    secret: false
+    phase: runtime
+    environments: [local, staging, production]
+    safeDefault: null
+    restartRequired: true
+    rebuildRequired: false
+    validationOwner: accounting reconciliation diagnostics
+    description: Optional rollout timestamp for webhook receipt diagnostics.
+  - name: ALLOW_PAYMOB_CONTROL_BOOTSTRAP
+    service: deployment
+    required: false
+    secret: false
+    phase: deployment
+    environments: [production]
+    safeDefault: null
+    restartRequired: false
+    rebuildRequired: false
+    validationOwner: deployment operator
+    description: One-shot operator approval flag; not enabled by runtime env defaults.
+  - name: ALLOW_DISPOSABLE_PRODUCTION_BOOTSTRAP
+    service: deployment
+    required: false
+    secret: false
+    phase: deployment
+    environments: [staging, production]
+    safeDefault: null
+    restartRequired: false
+    rebuildRequired: false
+    validationOwner: deployment operator
+    description: One-shot disposable bootstrap approval flag.
   - name: NEXT_PUBLIC_API_URL
     service: frontend
     required: true
@@ -385,7 +506,7 @@ variables:
     validationOwner: Next config + Compose
     description: Server-side Next proxy target.
   - name: POSTGRES_DB
-    service: database
+    service: backend
     required: true
     secret: false
     phase: runtime
@@ -393,10 +514,10 @@ variables:
     safeDefault: null
     restartRequired: true
     rebuildRequired: false
-    validationOwner: Compose/PostgreSQL
-    description: Database name.
+    validationOwner: backend contract + Compose/PostgreSQL mapping
+    description: Backend-owned PostgreSQL database name for the Compose bootstrap mapping.
   - name: POSTGRES_USER
-    service: database
+    service: backend
     required: true
     secret: false
     phase: runtime
@@ -404,10 +525,10 @@ variables:
     safeDefault: null
     restartRequired: true
     rebuildRequired: false
-    validationOwner: Compose/PostgreSQL
-    description: Database user.
+    validationOwner: backend contract + Compose/PostgreSQL mapping
+    description: Backend-owned PostgreSQL user for the Compose bootstrap mapping.
   - name: POSTGRES_PASSWORD
-    service: database
+    service: backend
     required: true
     secret: true
     phase: runtime
@@ -415,8 +536,19 @@ variables:
     safeDefault: null
     restartRequired: true
     rebuildRequired: false
-    validationOwner: Compose/PostgreSQL
-    description: Database password; never print or interpolate into diagnostics.
+    validationOwner: backend contract + Compose/PostgreSQL mapping
+    description: Backend-owned PostgreSQL password; never print or interpolate into diagnostics.
+  - name: PGDATA
+    service: backend
+    required: false
+    secret: false
+    phase: runtime
+    environments: [local, staging, production]
+    safeDefault: /var/lib/postgresql/data/pgdata
+    restartRequired: true
+    rebuildRequired: false
+    validationOwner: backend contract + Compose/PostgreSQL mapping
+    description: Optional PostgreSQL data subdirectory; Compose supplies the safe default when omitted.
   - name: PERMISSION_SYNC_ADMIN_PASSWORD
     service: deployment
     required: false

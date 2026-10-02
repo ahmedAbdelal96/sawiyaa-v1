@@ -1,5 +1,11 @@
 import { registerAs } from '@nestjs/config';
 import { resolveServiceName } from '@common/logging/service-name.util';
+import {
+  DEFAULT_LOG_MAX_FILE_SIZE,
+  parseLogFileSize,
+} from './log-file-size';
+
+export { parseLogFileSize } from './log-file-size';
 
 const LOG_LEVELS = ['error', 'warn', 'info', 'debug', 'verbose'] as const;
 type LogLevel = (typeof LOG_LEVELS)[number];
@@ -21,24 +27,23 @@ function toNonNegativeInteger(
   return Number.isInteger(parsed) && parsed >= 0 ? parsed : defaultValue;
 }
 
-export function parseLogFileSize(
-  value: string | undefined,
-  defaultValue = 20 * 1024 * 1024,
-): number {
-  if (!value?.trim()) return defaultValue;
-  const match = /^(\d+(?:\.\d+)?)\s*(b|kb|mb|gb)?$/i.exec(value.trim());
-  if (!match) return defaultValue;
-  const multiplier =
-    { b: 1, kb: 1024, mb: 1024 ** 2, gb: 1024 ** 3 }[
-      match[2]?.toLowerCase() ?? 'b'
-    ] ?? 1;
-  const bytes = Number(match[1]) * multiplier;
-  return Number.isFinite(bytes) && bytes > 0 ? Math.floor(bytes) : defaultValue;
+function isPlaceholderReleaseValue(value: string | undefined): boolean {
+  return !value || ['local', 'dev', 'development', 'unknown'].includes(value.toLowerCase());
+}
+
+function resolveReleaseId(): string | null {
+  const value =
+    process.env.SAWIYAA_RELEASE_SHA?.trim() ||
+    process.env.GIT_SHA?.trim() ||
+    process.env.COMMIT_SHA?.trim() ||
+    process.env.SOURCE_VERSION?.trim();
+  return value && !isPlaceholderReleaseValue(value) ? value : null;
 }
 
 export default registerAs('logging', () => {
   const nodeEnv = process.env.NODE_ENV ?? 'development';
-  const isProduction = nodeEnv === 'production';
+  const isProduction =
+    (process.env.APP_ENV ?? nodeEnv).trim().toLowerCase() === 'production';
 
   const level = isLogLevel(process.env.LOG_LEVEL)
     ? process.env.LOG_LEVEL
@@ -67,14 +72,26 @@ export default registerAs('logging', () => {
     process.env.LOG_RETENTION_DAYS,
     30,
   );
-  const maxFileSize = process.env.LOG_MAX_FILE_SIZE?.trim() || '20m';
+  const maxFileSize =
+    process.env.LOG_MAX_FILE_SIZE?.trim() || DEFAULT_LOG_MAX_FILE_SIZE;
   const maxFileSizeBytes = parseLogFileSize(maxFileSize);
   const serviceName = resolveServiceName();
+  const releaseId = resolveReleaseId();
+  const configuredVersion = process.env.APP_VERSION?.trim();
   const version =
-    process.env.APP_VERSION?.trim() ||
+    (!isProduction || !isPlaceholderReleaseValue(configuredVersion)
+      ? configuredVersion
+      : null) ||
+    (isProduction ? releaseId : null) ||
     process.env.npm_package_version?.trim() ||
     '0.0.1';
-  const deploymentId = process.env.DEPLOYMENT_ID?.trim() || null;
+  const configuredDeploymentId = process.env.DEPLOYMENT_ID?.trim();
+  const deploymentId =
+    (!isProduction || !isPlaceholderReleaseValue(configuredDeploymentId)
+      ? configuredDeploymentId
+      : null) ||
+    (isProduction ? releaseId : null) ||
+    null;
 
   return {
     nodeEnv,

@@ -1,24 +1,22 @@
-import { Inject, Injectable, NotFoundException } from '@nestjs/common';
+import { Inject, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { Prisma, SessionProvider } from '@prisma/client';
 import { PrismaService } from '@common/prisma/prisma.service';
 import { SessionRepository } from '../repositories/session.repository';
 import { NormalizeSessionAttendanceReconciliationService } from '../services/normalize-session-attendance-reconciliation.service';
 import { SESSION_ATTENDANCE_RECONCILIATION_PROVIDER } from '../providers/session-attendance-reconciliation.tokens';
 import type { SessionAttendanceReconciliationProvider } from '../types/session-attendance-reconciliation.types';
-import { FinalizeSessionAutomaticallyAsCompletedUseCase } from './finalize-session-automatically-as-completed.use-case';
-import { Optional } from '@nestjs/common';
 
 /** Read-only orchestration: evidence is persisted, lifecycle and money are untouched. */
 @Injectable()
 export class ReconcileSessionAttendanceUseCase {
+  private readonly logger = new Logger(ReconcileSessionAttendanceUseCase.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly sessions: SessionRepository,
     private readonly normalizer: NormalizeSessionAttendanceReconciliationService,
     @Inject(SESSION_ATTENDANCE_RECONCILIATION_PROVIDER)
     private readonly provider: SessionAttendanceReconciliationProvider,
-    @Optional()
-    private readonly finalizer?: FinalizeSessionAutomaticallyAsCompletedUseCase,
   ) {}
 
   async execute(input: { sessionId: string; observationVersion?: number }) {
@@ -72,6 +70,7 @@ export class ReconcileSessionAttendanceUseCase {
     );
     const observationVersion =
       input.observationVersion ?? (latest?.observationVersion ?? 0) + 1;
+    const providerStartedAt = Date.now();
     const result = this.normalizer.normalize(
       await this.provider.reconcileSession({
         sessionId: session.id,
@@ -81,6 +80,9 @@ export class ReconcileSessionAttendanceUseCase {
         patientId: session.patientId,
         practitionerId: session.practitionerId,
       }),
+    );
+    this.logger.debug(
+      `daily_attendance_provider_completed sessionId=${session.id} durationMs=${Date.now() - providerStartedAt} requestStatus=${result.requestStatus}`,
     );
     return this.persist(session.id, observationVersion, {
       ...result,
@@ -130,21 +132,6 @@ export class ReconcileSessionAttendanceUseCase {
         },
         tx,
       ),
-    ).then(async (reconciliation) => {
-      // Evidence is persisted before evaluation. The finalizer only completes
-      // normal sessions; non-normal recommendations are moved to the Admin
-      // resolution state and case by the same evaluator/lifecycle path.
-      if (
-        this.finalizer &&
-        process.env.SESSION_AUTOMATIC_COMPLETION_ENABLED === 'true'
-      ) {
-        await this.finalizer.execute({
-          sessionId,
-          evaluatedAt: reconciliation.reconciledAt,
-          trigger: 'attendance-reconciliation',
-        });
-      }
-      return reconciliation;
-    });
+    );
   }
 }

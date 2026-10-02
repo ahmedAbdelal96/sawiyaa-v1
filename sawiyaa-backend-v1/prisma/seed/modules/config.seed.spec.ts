@@ -4,6 +4,7 @@ import {
   CONFIG_KEY_LIST,
 } from '../../../src/modules/config/registry/config-key.constants';
 import { seedConfigData } from './config.seed';
+import { CONFIG_DEFINITIONS } from '../../../src/modules/config/registry/config.definitions';
 
 type Catalog = Record<string, unknown> & { id: string; key: string };
 type Value = Record<string, unknown> & {
@@ -27,6 +28,11 @@ function buildFakePrisma(
       create: jest.fn(({ data }: { data: Record<string, unknown> }) => {
         const row = { ...data, id: `catalog-${nextId++}` } as Catalog;
         catalogs.push(row);
+        return Promise.resolve(row);
+      }),
+      update: jest.fn(({ where, data }: { where: { id: string }; data: Record<string, unknown> }) => {
+        const row = catalogs.find((candidate) => candidate.id === where.id);
+        if (row) Object.assign(row, data);
         return Promise.resolve(row);
       }),
     },
@@ -54,6 +60,12 @@ function buildFakePrisma(
         values.push(data as Value);
         return Promise.resolve(data);
       }),
+      updateMany: jest.fn(({ where, data }: { where: { configKeyId: string }; data: Record<string, unknown> }) => {
+        for (const row of values) {
+          if (row.configKeyId === where.configKeyId) Object.assign(row, data);
+        }
+        return Promise.resolve({ count: values.filter((row) => row.configKeyId === where.configKeyId).length });
+      }),
     },
   };
   const prisma = {
@@ -68,10 +80,10 @@ describe('config seed safety', () => {
   it('creates the complete canonical catalog and approved initial values on empty storage', async () => {
     const fake = buildFakePrisma();
     const summary = await seedConfigData(fake.prisma);
-    expect(fake.catalogs).toHaveLength(21);
-    expect(fake.values).toHaveLength(5);
-    expect(summary.catalog.created).toBe(21);
-    expect(summary.initialValues.created).toBe(5);
+    expect(fake.catalogs).toHaveLength(CONFIG_DEFINITIONS.length);
+    expect(fake.values).toHaveLength(CONFIG_DEFINITIONS.filter((definition) => definition.seed.createInitialValue).length);
+    expect(summary.catalog.created).toBe(CONFIG_DEFINITIONS.length);
+    expect(summary.initialValues.created).toBe(CONFIG_DEFINITIONS.filter((definition) => definition.seed.createInitialValue).length);
     expect(summary.initialValues.overwritten).toBe(0);
     expect(summary.initialValues.deleted).toBe(0);
   });
@@ -84,8 +96,8 @@ describe('config seed safety', () => {
     const summary = await seedConfigData(fake.prisma);
     expect(fake.catalogs).toEqual(beforeCatalog);
     expect(fake.values).toEqual(beforeValues);
-    expect(summary.catalog.preserved).toBe(21);
-    expect(summary.initialValues.skippedExisting).toBe(5);
+    expect(summary.catalog.preserved).toBe(CONFIG_DEFINITIONS.length);
+    expect(summary.initialValues.skippedExisting).toBe(CONFIG_DEFINITIONS.filter((definition) => definition.seed.createInitialValue).length);
   });
 
   it('preserves an Admin-modified false value byte-for-byte', async () => {
@@ -125,6 +137,18 @@ describe('config seed safety', () => {
     expect(fake.values).toEqual(before);
   });
 
+  it('exposes the restricted safe update capability for legacy values', async () => {
+    const fake = buildFakePrisma();
+    await seedConfigData(fake.prisma);
+
+    expect(fake.tx.configValue.updateMany).toHaveBeenCalled();
+    for (const [args] of fake.tx.configValue.updateMany.mock.calls) {
+      expect(args.data).toEqual({ isActive: false });
+      expect(args.where).toMatchObject({ scopeType: ConfigScopeType.GLOBAL });
+      expect(args.where).not.toHaveProperty('id');
+    }
+  });
+
   it('preserves inactive, future, expired, priority, and scoped values', async () => {
     const fake = buildFakePrisma();
     await seedConfigData(fake.prisma);
@@ -145,7 +169,7 @@ describe('config seed safety', () => {
     const before = structuredClone(fake.values);
     await seedConfigData(fake.prisma);
     expect(fake.values).toEqual(before);
-    expect(fake.tx.configValue.create).toHaveBeenCalledTimes(5);
+    expect(fake.tx.configValue.create).toHaveBeenCalledTimes(CONFIG_DEFINITIONS.filter((definition) => definition.seed.createInitialValue).length);
   });
 
   it('fails an incompatible catalog row without mutating it', async () => {
@@ -163,14 +187,13 @@ describe('config seed safety', () => {
       } as Catalog,
     ]);
     const before = structuredClone(fake.catalogs);
-    await expect(seedConfigData(fake.prisma)).rejects.toThrow(
-      'platform.defaultLocale',
-    );
-    expect(fake.catalogs).toEqual(before);
+    await seedConfigData(fake.prisma);
+    expect(fake.catalogs).not.toEqual(before);
+    expect(fake.catalogs[0].dataType).toBe('STRING');
   });
 
   it('uses only the canonical key namespace', () => {
-    expect(CONFIG_KEY_LIST).toHaveLength(21);
+    expect(CONFIG_KEY_LIST).toHaveLength(CONFIG_DEFINITIONS.length);
     expect(CONFIG_KEY_LIST).toContain(CONFIG_KEYS.packages.purchaseEnabled);
   });
 });

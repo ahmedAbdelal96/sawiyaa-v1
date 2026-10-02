@@ -45,6 +45,28 @@ export const notificationsSeedModule: SeedModule = {
         category: NotificationCategory.SECURITY,
       },
       {
+        slug: 'auth.password-changed',
+        displayName: 'Password Changed',
+        description:
+          'Patient security notification after a successful password change',
+        category: NotificationCategory.SECURITY,
+        supportsEmail: true,
+        supportsSms: false,
+        supportsPush: false,
+        supportsInApp: true,
+      },
+      {
+        slug: 'auth.password-reset-completed',
+        displayName: 'Password Reset Completed',
+        description:
+          'Patient security notification after a successful password reset',
+        category: NotificationCategory.SECURITY,
+        supportsEmail: true,
+        supportsSms: false,
+        supportsPush: false,
+        supportsInApp: true,
+      },
+      {
         slug: 'admin.practitioner-application-approved',
         displayName: 'Practitioner Application Approved',
         description: 'Admin decision notification for approved application',
@@ -91,6 +113,33 @@ export const notificationsSeedModule: SeedModule = {
         slug: 'payments.refund-failed',
         displayName: 'Refund Failed',
         description: 'Operational notification when refund processing fails',
+        category: NotificationCategory.PAYMENT,
+      },
+      {
+        slug: 'payments.package-purchase-succeeded',
+        displayName: 'Package Purchase Payment Succeeded',
+        description:
+          'Patient notification for successful package payment and activation',
+        category: NotificationCategory.PAYMENT,
+      },
+      {
+        slug: 'payments.academy-payment-succeeded',
+        displayName: 'Academy Payment Succeeded',
+        description:
+          'Learner notification for successful academy enrollment payment',
+        category: NotificationCategory.PAYMENT,
+      },
+      {
+        slug: 'financial.practitioner-earning-credited',
+        displayName: 'Practitioner Earning Credited',
+        description:
+          'Practitioner notification when an approved earning is credited',
+        category: NotificationCategory.PAYMENT,
+      },
+      {
+        slug: 'financial.practitioner-payout-completed',
+        displayName: 'Practitioner Payout Completed',
+        description: 'Practitioner notification when a payout is completed',
         category: NotificationCategory.PAYMENT,
       },
       {
@@ -254,12 +303,23 @@ export const notificationsSeedModule: SeedModule = {
         supportsInApp: true,
       },
       {
+        slug: 'instant-booking.request-created',
+        displayName: 'Instant Booking Request Created',
+        description:
+          'Practitioner notification when a patient creates an instant booking request',
+        category: NotificationCategory.SESSION,
+        supportsEmail: true,
+        supportsSms: false,
+        supportsPush: true,
+        supportsInApp: true,
+      },
+      {
         slug: 'instant-booking.request-accepted',
         displayName: 'Instant Booking Request Accepted',
         description:
           'Patient notification when an instant booking request is accepted',
         category: NotificationCategory.SESSION,
-        supportsEmail: false,
+        supportsEmail: true,
         supportsSms: false,
         supportsPush: true,
         supportsInApp: true,
@@ -270,7 +330,7 @@ export const notificationsSeedModule: SeedModule = {
         description:
           'Patient notification when an instant booking request is rejected',
         category: NotificationCategory.SESSION,
-        supportsEmail: false,
+        supportsEmail: true,
         supportsSms: false,
         supportsPush: true,
         supportsInApp: true,
@@ -281,7 +341,7 @@ export const notificationsSeedModule: SeedModule = {
         description:
           'Patient notification when an instant booking request expires',
         category: NotificationCategory.SESSION,
-        supportsEmail: false,
+        supportsEmail: true,
         supportsSms: false,
         supportsPush: true,
         supportsInApp: true,
@@ -330,31 +390,117 @@ export const notificationsSeedModule: SeedModule = {
     ];
 
     for (const type of typeSeed) {
-      await prisma.notificationType.upsert({
+      const existing = await prisma.notificationType.findUnique({
         where: { slug: type.slug },
-        create: {
-          ...type,
-          defaultEnabled: true,
-          supportsEmail: type.supportsEmail ?? true,
-          supportsSms: type.supportsSms ?? true,
-          supportsPush: type.supportsPush ?? false,
-          supportsInApp: type.supportsInApp ?? true,
-          isMandatory: false,
-        },
-        update: {
-          displayName: type.displayName,
-          description: type.description,
-          category: type.category,
-          defaultEnabled: true,
-          supportsEmail: type.supportsEmail ?? true,
-          supportsSms: type.supportsSms ?? true,
-          supportsPush: type.supportsPush ?? false,
-          supportsInApp: type.supportsInApp ?? true,
-        },
+        select: { id: true },
       });
+      if (!existing) {
+        await prisma.notificationType.create({
+          data: {
+            ...type,
+            defaultEnabled: true,
+            supportsEmail: type.supportsEmail ?? true,
+            supportsSms: type.supportsSms ?? true,
+            supportsPush: type.supportsPush ?? false,
+            supportsInApp: type.supportsInApp ?? true,
+            isMandatory: false,
+          },
+        });
+      }
     }
 
     const templateSeed = [
+      {
+        typeSlug: 'instant-booking.request-created',
+        channel: NotificationChannel.EMAIL,
+        slug: 'instant-booking.request-created.email.v1',
+        translations: {
+          en: {
+            subjectTemplate: 'New instant booking request',
+            titleTemplate: 'New instant booking request',
+            bodyTemplate:
+              'A patient sent you a new instant booking request. Open Sawiyaa to respond.',
+            ctaLabel: 'Open request',
+            ctaUrlTemplate: '{{appUrl}}{{routePath}}',
+          },
+          ar: {
+            subjectTemplate: 'طلب حجز فوري جديد',
+            titleTemplate: 'طلب حجز فوري جديد',
+            bodyTemplate:
+              'أرسل أحد المرضى طلب حجز فوري جديدًا. افتح سويّا للرد.',
+            ctaLabel: 'افتح الطلب',
+            ctaUrlTemplate: '{{appUrl}}{{routePath}}',
+          },
+        },
+      },
+      {
+        typeSlug: 'instant-booking.request-accepted',
+        channel: NotificationChannel.EMAIL,
+        slug: 'instant-booking.request-accepted.email.v1',
+        translations: {
+          en: {
+            subjectTemplate: 'Your instant booking was accepted',
+            titleTemplate: 'Instant booking accepted',
+            bodyTemplate:
+              'Your instant booking request was accepted. Continue to payment in Sawiyaa.',
+            ctaLabel: 'Continue to payment',
+            ctaUrlTemplate: '{{appUrl}}{{routePath}}',
+          },
+          ar: {
+            subjectTemplate: 'تم قبول الحجز الفوري',
+            titleTemplate: 'تم قبول الحجز الفوري',
+            bodyTemplate: 'تم قبول طلب الحجز الفوري. تابع إلى الدفع من سويّا.',
+            ctaLabel: 'تابع إلى الدفع',
+            ctaUrlTemplate: '{{appUrl}}{{routePath}}',
+          },
+        },
+      },
+      {
+        typeSlug: 'instant-booking.request-rejected',
+        channel: NotificationChannel.EMAIL,
+        slug: 'instant-booking.request-rejected.email.v1',
+        translations: {
+          en: {
+            subjectTemplate: 'Your instant booking was declined',
+            titleTemplate: 'Instant booking declined',
+            bodyTemplate:
+              'Your instant booking request was declined. Open Sawiyaa for the next step.',
+            ctaLabel: 'Open request',
+            ctaUrlTemplate: '{{appUrl}}{{routePath}}',
+          },
+          ar: {
+            subjectTemplate: 'تم رفض الحجز الفوري',
+            titleTemplate: 'تم رفض الحجز الفوري',
+            bodyTemplate:
+              'تم رفض طلب الحجز الفوري. افتح سويّا لمعرفة الخطوة التالية.',
+            ctaLabel: 'افتح الطلب',
+            ctaUrlTemplate: '{{appUrl}}{{routePath}}',
+          },
+        },
+      },
+      {
+        typeSlug: 'instant-booking.request-expired',
+        channel: NotificationChannel.EMAIL,
+        slug: 'instant-booking.request-expired.email.v1',
+        translations: {
+          en: {
+            subjectTemplate: 'Your instant booking request expired',
+            titleTemplate: 'Instant booking expired',
+            bodyTemplate:
+              'Your instant booking request expired before a response. Open Sawiyaa to try again.',
+            ctaLabel: 'Open instant booking',
+            ctaUrlTemplate: '{{appUrl}}{{routePath}}',
+          },
+          ar: {
+            subjectTemplate: 'انتهت صلاحية طلب الحجز الفوري',
+            titleTemplate: 'انتهت صلاحية الحجز الفوري',
+            bodyTemplate:
+              'انتهت صلاحية طلب الحجز الفوري قبل وصول رد. افتح سويّا للمحاولة مرة أخرى.',
+            ctaLabel: 'افتح الحجز الفوري',
+            ctaUrlTemplate: '{{appUrl}}{{routePath}}',
+          },
+        },
+      },
       {
         typeSlug: 'auth.practitioner-login-otp',
         channel: NotificationChannel.EMAIL,
@@ -985,7 +1131,8 @@ export const notificationsSeedModule: SeedModule = {
           en: {
             subjectTemplate: null,
             titleTemplate: 'Your session is starting now',
-            bodyTemplate: 'Your session is starting now. Open Sawiyaa to join securely.',
+            bodyTemplate:
+              'Your session is starting now. Open Sawiyaa to join securely.',
             ctaLabel: 'Join session',
             ctaUrlTemplate: '{{appUrl}}{{routePath}}',
           },
@@ -999,6 +1146,82 @@ export const notificationsSeedModule: SeedModule = {
         },
       },
       {
+        typeSlug: 'auth.password-changed',
+        channel: NotificationChannel.IN_APP,
+        slug: 'auth.password-changed.in-app.v1',
+        translations: {
+          en: {
+            subjectTemplate: null,
+            titleTemplate: 'Password changed',
+            bodyTemplate:
+              'Your Sawiyaa account password was changed successfully. If you did not make this change, contact support immediately. For your security, your other signed-in sessions were ended.',
+          },
+          ar: {
+            subjectTemplate: null,
+            titleTemplate: 'تم تغيير كلمة المرور',
+            bodyTemplate:
+              'تم تغيير كلمة مرور حسابك على سويّة بنجاح. إذا لم تكن أنت من قام بهذا التغيير، تواصل مع الدعم فورًا. لأمانك، تم إنهاء جلسات تسجيل الدخول الأخرى.',
+          },
+        },
+      },
+      {
+        typeSlug: 'auth.password-changed',
+        channel: NotificationChannel.EMAIL,
+        slug: 'auth.password-changed.email.v1',
+        translations: {
+          en: {
+            subjectTemplate: 'Your Sawiyaa password was changed',
+            titleTemplate: 'Password changed',
+            bodyTemplate:
+              'Your Sawiyaa account password was changed successfully. If you did not make this change, contact support immediately. For your security, your other signed-in sessions were ended.',
+          },
+          ar: {
+            subjectTemplate: 'تم تغيير كلمة مرور حسابك على سويّة',
+            titleTemplate: 'تم تغيير كلمة المرور',
+            bodyTemplate:
+              'تم تغيير كلمة مرور حسابك على سويّة بنجاح. إذا لم تكن أنت من قام بهذا التغيير، تواصل مع الدعم فورًا. لأمانك، تم إنهاء جلسات تسجيل الدخول الأخرى.',
+          },
+        },
+      },
+      {
+        typeSlug: 'auth.password-reset-completed',
+        channel: NotificationChannel.IN_APP,
+        slug: 'auth.password-reset-completed.in-app.v1',
+        translations: {
+          en: {
+            subjectTemplate: null,
+            titleTemplate: 'Password reset completed',
+            bodyTemplate:
+              'Your Sawiyaa account password was reset successfully. For your security, your other signed-in sessions were ended. If you did not make this change, contact support immediately.',
+          },
+          ar: {
+            subjectTemplate: null,
+            titleTemplate: 'تمت إعادة تعيين كلمة المرور',
+            bodyTemplate:
+              'تمت إعادة تعيين كلمة مرور حسابك على سويّة بنجاح. لأمانك، تم إنهاء جلسات تسجيل الدخول الأخرى. إذا لم تكن أنت من قام بهذا التغيير، تواصل مع الدعم فورًا.',
+          },
+        },
+      },
+      {
+        typeSlug: 'auth.password-reset-completed',
+        channel: NotificationChannel.EMAIL,
+        slug: 'auth.password-reset-completed.email.v1',
+        translations: {
+          en: {
+            subjectTemplate: 'Your Sawiyaa password was reset',
+            titleTemplate: 'Password reset completed',
+            bodyTemplate:
+              'Your Sawiyaa account password was reset successfully. For your security, your other signed-in sessions were ended. If you did not make this change, contact support immediately.',
+          },
+          ar: {
+            subjectTemplate: 'تمت إعادة تعيين كلمة مرور حسابك على سويّة',
+            titleTemplate: 'تمت إعادة تعيين كلمة المرور',
+            bodyTemplate:
+              'تمت إعادة تعيين كلمة مرور حسابك على سويّة بنجاح. لأمانك، تم إنهاء جلسات تسجيل الدخول الأخرى. إذا لم تكن أنت من قام بهذا التغيير، تواصل مع الدعم فورًا.',
+          },
+        },
+      },
+      {
         typeSlug: 'sessions.session-starting-now',
         channel: NotificationChannel.EMAIL,
         slug: 'sessions.session-starting-now.email.v1',
@@ -1006,7 +1229,8 @@ export const notificationsSeedModule: SeedModule = {
           en: {
             subjectTemplate: 'Your Sawiyaa session is starting now',
             titleTemplate: 'Your session is starting now',
-            bodyTemplate: 'Your session is starting now. Open Sawiyaa to join securely.',
+            bodyTemplate:
+              'Your session is starting now. Open Sawiyaa to join securely.',
             ctaLabel: 'Join session',
             ctaUrlTemplate: '{{appUrl}}{{routePath}}',
           },
@@ -1027,14 +1251,16 @@ export const notificationsSeedModule: SeedModule = {
           en: {
             subjectTemplate: null,
             titleTemplate: 'Your session is waiting for you',
-            bodyTemplate: 'Your session started a few minutes ago. Open Sawiyaa to join securely.',
+            bodyTemplate:
+              'Your session started a few minutes ago. Open Sawiyaa to join securely.',
             ctaLabel: 'Join session',
             ctaUrlTemplate: '{{appUrl}}{{routePath}}',
           },
           ar: {
             subjectTemplate: null,
             titleTemplate: 'جلستك في انتظارك',
-            bodyTemplate: 'بدأت جلستك منذ دقائق قليلة. افتح سوايا للانضمام بشكل آمن.',
+            bodyTemplate:
+              'بدأت جلستك منذ دقائق قليلة. افتح سوايا للانضمام بشكل آمن.',
             ctaLabel: 'انضم للجلسة',
             ctaUrlTemplate: '{{appUrl}}{{routePath}}',
           },
@@ -1048,14 +1274,16 @@ export const notificationsSeedModule: SeedModule = {
           en: {
             subjectTemplate: 'Your Sawiyaa session is waiting for you',
             titleTemplate: 'Your session is waiting for you',
-            bodyTemplate: 'Your session started a few minutes ago. Open Sawiyaa to join securely.',
+            bodyTemplate:
+              'Your session started a few minutes ago. Open Sawiyaa to join securely.',
             ctaLabel: 'Join session',
             ctaUrlTemplate: '{{appUrl}}{{routePath}}',
           },
           ar: {
             subjectTemplate: 'جلستك على سوايا في انتظارك',
             titleTemplate: 'جلستك في انتظارك',
-            bodyTemplate: 'بدأت جلستك منذ دقائق قليلة. افتح سوايا للانضمام بشكل آمن.',
+            bodyTemplate:
+              'بدأت جلستك منذ دقائق قليلة. افتح سوايا للانضمام بشكل آمن.',
             ctaLabel: 'انضم للجلسة',
             ctaUrlTemplate: '{{appUrl}}{{routePath}}',
           },
@@ -1076,7 +1304,8 @@ export const notificationsSeedModule: SeedModule = {
           ar: {
             subjectTemplate: null,
             titleTemplate: 'ØªØ°ÙƒÙŠØ± Ø¨Ù…ÙˆØ¹Ø¯ Ø§Ù„Ø¬Ù„Ø³Ø©',
-            bodyTemplate: 'Ø³ØªØ¨Ø¯Ø£ Ø¬Ù„Ø³ØªÙƒ Ø®Ù„Ø§Ù„ {{offsetMinutes}} Ø¯Ù‚ÙŠÙ‚Ø©.',
+            bodyTemplate:
+              'Ø³ØªØ¨Ø¯Ø£ Ø¬Ù„Ø³ØªÙƒ Ø®Ù„Ø§Ù„ {{offsetMinutes}} Ø¯Ù‚ÙŠÙ‚Ø©.',
             ctaLabel: 'Ø§ÙØªØ­ Ø§Ù„Ø¬Ù„Ø³Ø©',
             ctaUrlTemplate: '{{appUrl}}{{routePath}}',
           },
@@ -1097,7 +1326,8 @@ export const notificationsSeedModule: SeedModule = {
           ar: {
             subjectTemplate: 'ØªØ°ÙƒÙŠØ± Ø¨Ù…ÙˆØ¹Ø¯ Ø§Ù„Ø¬Ù„Ø³Ø©',
             titleTemplate: 'ØªØ°ÙƒÙŠØ± Ø¨Ù…ÙˆØ¹Ø¯ Ø§Ù„Ø¬Ù„Ø³Ø©',
-            bodyTemplate: 'Ø³ØªØ¨Ø¯Ø£ Ø¬Ù„Ø³ØªÙƒ Ø®Ù„Ø§Ù„ {{offsetMinutes}} Ø¯Ù‚ÙŠÙ‚Ø©.',
+            bodyTemplate:
+              'Ø³ØªØ¨Ø¯Ø£ Ø¬Ù„Ø³ØªÙƒ Ø®Ù„Ø§Ù„ {{offsetMinutes}} Ø¯Ù‚ÙŠÙ‚Ø©.',
             ctaLabel: 'Ø§ÙØªØ­ Ø§Ù„Ø¬Ù„Ø³Ø©',
             ctaUrlTemplate: '{{appUrl}}{{routePath}}',
           },
@@ -1201,24 +1431,22 @@ export const notificationsSeedModule: SeedModule = {
         where: { slug: template.typeSlug },
       });
 
-      const templateRecord = await prisma.notificationTemplate.upsert({
+      const existingTemplate = await prisma.notificationTemplate.findUnique({
         where: { slug: template.slug },
-        create: {
-          notificationTypeId: type.id,
-          channel: template.channel,
-          slug: template.slug,
-          isActive: true,
-          isSystemTemplate: true,
-          version: 1,
-        },
-        update: {
-          notificationTypeId: type.id,
-          channel: template.channel,
-          isActive: true,
-          isSystemTemplate: true,
-          version: 1,
-        },
+        select: { id: true },
       });
+      const templateRecord = existingTemplate
+        ? existingTemplate
+        : await prisma.notificationTemplate.create({
+            data: {
+              notificationTypeId: type.id,
+              channel: template.channel,
+              slug: template.slug,
+              isActive: true,
+              isSystemTemplate: true,
+              version: 1,
+            },
+          });
 
       const translations = [
         {
@@ -1232,30 +1460,29 @@ export const notificationsSeedModule: SeedModule = {
       ];
 
       for (const translation of translations) {
-        await prisma.notificationTemplateTranslation.upsert({
-          where: {
-            notificationTemplateId_locale: {
+        const existingTranslation =
+          await prisma.notificationTemplateTranslation.findUnique({
+            where: {
+              notificationTemplateId_locale: {
+                notificationTemplateId: templateRecord.id,
+                locale: translation.locale,
+              },
+            },
+            select: { id: true },
+          });
+        if (!existingTranslation) {
+          await prisma.notificationTemplateTranslation.create({
+            data: {
               notificationTemplateId: templateRecord.id,
               locale: translation.locale,
+              subjectTemplate: translation.subjectTemplate,
+              titleTemplate: translation.titleTemplate,
+              bodyTemplate: translation.bodyTemplate,
+              ctaLabel: translation.ctaLabel ?? null,
+              ctaUrlTemplate: translation.ctaUrlTemplate ?? null,
             },
-          },
-          create: {
-            notificationTemplateId: templateRecord.id,
-            locale: translation.locale,
-            subjectTemplate: translation.subjectTemplate,
-            titleTemplate: translation.titleTemplate,
-            bodyTemplate: translation.bodyTemplate,
-            ctaLabel: translation.ctaLabel ?? null,
-            ctaUrlTemplate: translation.ctaUrlTemplate ?? null,
-          },
-          update: {
-            subjectTemplate: translation.subjectTemplate,
-            titleTemplate: translation.titleTemplate,
-            bodyTemplate: translation.bodyTemplate,
-            ctaLabel: translation.ctaLabel ?? null,
-            ctaUrlTemplate: translation.ctaUrlTemplate ?? null,
-          },
-        });
+          });
+        }
       }
     }
   },

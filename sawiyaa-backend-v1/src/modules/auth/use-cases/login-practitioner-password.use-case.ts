@@ -113,7 +113,8 @@ export class LoginPractitionerPasswordUseCase {
     }
 
     const practitionerProfile = userEmail.user.practitionerProfile;
-    if (!practitionerProfile) {
+    const practitionerApplication = userEmail.user.practitionerApplications?.[0];
+    if (!practitionerProfile && !practitionerApplication) {
       throw await this.throwFailedLogin({
         subject: lockoutSubject,
         reason: 'PRACTITIONER_PROFILE_NOT_FOUND',
@@ -129,13 +130,13 @@ export class LoginPractitionerPasswordUseCase {
     // to complete the separate professional application flow. Only statuses that
     // explicitly disable the account remain blocked here.
     if (
-      practitionerProfile.status === PractitionerStatus.REJECTED ||
-      practitionerProfile.status === PractitionerStatus.SUSPENDED ||
-      practitionerProfile.status === PractitionerStatus.INACTIVE
+      (practitionerProfile && practitionerProfile.status === PractitionerStatus.REJECTED) ||
+      (practitionerProfile && practitionerProfile.status === PractitionerStatus.SUSPENDED) ||
+      (practitionerProfile && practitionerProfile.status === PractitionerStatus.INACTIVE)
     ) {
       throw await this.throwFailedLogin({
         subject: lockoutSubject,
-        reason: `PRACTITIONER_STATUS_${practitionerProfile.status}`,
+        reason: `PRACTITIONER_STATUS_${practitionerProfile?.status ?? practitionerApplication?.status}`,
         actorUserId: userEmail.user.id,
         actorRoles: userEmail.user.roles.map((r) => r.role),
         ipAddress: input.ipAddress ?? null,
@@ -203,9 +204,11 @@ export class LoginPractitionerPasswordUseCase {
     // environment flags in a real runtime.
 
     await this.authIdentityRepository.touchLastUsed(passwordIdentity.id);
-    await this.practitionerPresenceRepository.markOnline(
-      practitionerProfile.id,
-    );
+    if (practitionerProfile) {
+      await this.practitionerPresenceRepository.markOnline(
+        practitionerProfile.id,
+      );
+    }
     await this.authLockoutService.clear(
       AUTH_LOCKOUT_CONTEXTS.PRACTITIONER_PASSWORD_LOGIN,
       lockoutSubject,

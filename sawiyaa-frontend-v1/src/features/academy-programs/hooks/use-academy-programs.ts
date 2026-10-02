@@ -13,6 +13,12 @@ import {
   getAdminAcademyProgram,
   getAdminAcademyProgramAttendance,
   getAdminAcademyProgramEnrollments,
+  getAdminAcademyProgramEnrollment,
+  getAdminAcademyEnrollmentAccountStatus,
+  lookupAdminAcademyEnrollmentAccount,
+  createAdminAcademyEnrollmentAccount,
+  linkAdminAcademyEnrollmentAccount,
+  resetAdminAcademyTraineePassword,
   getAdminAcademyPrograms,
   getPublicAcademyProgram,
   getPublicAcademyProgramEnrollment,
@@ -46,6 +52,7 @@ import type {
   UpdateAcademyProgramInput,
   UpdateAcademyProgramSessionInput,
   ListPatientAcademyProgramEnrollmentsParams,
+  AcademyAdminEnrollmentAccountStatus,
 } from "../types/academy-programs.types";
 
 export const academyProgramsQueryKeys = {
@@ -73,6 +80,8 @@ export const academyProgramsQueryKeys = {
     programId: string,
     params?: ListAdminAcademyProgramEnrollmentsParams,
   ) => [...academyProgramsQueryKeys.all, "admin-program-enrollments", programId, params ?? {}] as const,
+  adminProgramEnrollment: (enrollmentId: string) => [...academyProgramsQueryKeys.all, "admin-program-enrollment", enrollmentId] as const,
+  adminEnrollmentAccount: (enrollmentId: string) => [...academyProgramsQueryKeys.all, "admin-enrollment-account", enrollmentId] as const,
 };
 
 export function usePublicAcademyPrograms(
@@ -331,6 +340,51 @@ export function useAdminAcademyProgramEnrollments(
     enabled: Boolean(programId),
     staleTime: 20_000,
   });
+}
+
+export function useAdminAcademyProgramEnrollment(enrollmentId: string | null, enabled = true) {
+  return useQuery({
+    queryKey: academyProgramsQueryKeys.adminProgramEnrollment(enrollmentId ?? ""),
+    queryFn: () => getAdminAcademyProgramEnrollment(enrollmentId!),
+    enabled: Boolean(enrollmentId && enabled),
+    staleTime: 0,
+  });
+}
+
+export function useAdminAcademyEnrollmentAccountStatus(enrollmentId: string | null) {
+  return useQuery<AcademyAdminEnrollmentAccountStatus>({
+    queryKey: academyProgramsQueryKeys.adminEnrollmentAccount(enrollmentId ?? ""),
+    queryFn: () => getAdminAcademyEnrollmentAccountStatus(enrollmentId!),
+    enabled: Boolean(enrollmentId),
+    staleTime: 0,
+  });
+}
+
+export function useLookupAdminAcademyEnrollmentAccount() {
+  return useMutation({
+    mutationFn: ({ enrollmentId, email }: { enrollmentId: string; email: string }) =>
+      lookupAdminAcademyEnrollmentAccount(enrollmentId, email),
+  });
+}
+
+export function useCreateAdminAcademyEnrollmentAccount() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ enrollmentId, email }: { enrollmentId: string; email: string }) => createAdminAcademyEnrollmentAccount(enrollmentId, email),
+    onSuccess: (_data, variables) => { queryClient.invalidateQueries({ queryKey: academyProgramsQueryKeys.all }); queryClient.invalidateQueries({ queryKey: academyProgramsQueryKeys.adminEnrollmentAccount(variables.enrollmentId) }); },
+  });
+}
+
+export function useLinkAdminAcademyEnrollmentAccount() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ enrollmentId, email }: { enrollmentId: string; email: string }) => linkAdminAcademyEnrollmentAccount(enrollmentId, email),
+    onSuccess: (_data, variables) => { queryClient.invalidateQueries({ queryKey: academyProgramsQueryKeys.all }); queryClient.invalidateQueries({ queryKey: academyProgramsQueryKeys.adminEnrollmentAccount(variables.enrollmentId) }); },
+  });
+}
+
+export function useResetAdminAcademyTraineePassword() {
+  return useMutation({ mutationFn: ({ enrollmentId, newPassword }: { enrollmentId: string; newPassword: string }) => resetAdminAcademyTraineePassword(enrollmentId, newPassword) });
 }
 
 export function useExportAdminAcademyProgramEnrollments() {

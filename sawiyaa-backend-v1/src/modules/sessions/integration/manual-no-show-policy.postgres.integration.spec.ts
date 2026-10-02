@@ -1,3 +1,5 @@
+import { AccountingLedgerAccountService } from '@modules/financial-operations/services/accounting-ledger-account.service';
+import { AccountingJournalPostingService } from '@modules/financial-operations/services/accounting-journal-posting.service';
 /* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/unbound-method */
 import { randomUUID } from 'node:crypto';
 import {
@@ -39,13 +41,25 @@ import { CalculatePackageSessionAllocationService } from '@modules/financial-ope
 import { MoneyAmountService } from '@modules/financial-operations/services/money-amount.service';
 
 const databaseUrl = process.env.DATABASE_URL;
-const databaseName = databaseUrl
-  ? decodeURIComponent(new URL(databaseUrl).pathname.slice(1))
+const parsedDatabaseUrl = databaseUrl ? new URL(databaseUrl) : null;
+const databaseName = parsedDatabaseUrl
+  ? decodeURIComponent(parsedDatabaseUrl.pathname.slice(1))
   : '';
-if (
-  databaseName === 'fayed_db' ||
-  (databaseName && !/(phase3b1a|phase3b2a)/i.test(databaseName))
-) {
+const isExplicitLocalPhaseCOptIn =
+  process.env.NODE_ENV === 'test' &&
+  process.env.SAWIYAA_ALLOW_DESTRUCTIVE_PHASE_C === 'true' &&
+  databaseName === 'fayed_db' &&
+  ['localhost', '127.0.0.1', '::1'].includes(parsedDatabaseUrl?.hostname ?? '');
+const isExplicitLocalSessionLifecycleOptIn =
+  process.env.NODE_ENV === 'test' &&
+  process.env.SAWIYAA_ALLOW_SESSION_LIFECYCLE_FINAL === 'true' &&
+  parsedDatabaseUrl?.port === '5432' &&
+  ['localhost', '127.0.0.1', '::1'].includes(parsedDatabaseUrl.hostname) &&
+  /^sawiyaa_session_lifecycle_final_\d{8}$/i.test(databaseName);
+if (isExplicitLocalPhaseCOptIn || isExplicitLocalSessionLifecycleOptIn) {
+  console.log(`[Phase C destructive-test authorization] env=${process.env.NODE_ENV} host=${parsedDatabaseUrl?.hostname} database=${databaseName}`);
+}
+if (!isExplicitLocalPhaseCOptIn && !isExplicitLocalSessionLifecycleOptIn && (databaseName === 'fayed_db' || (databaseName && !/(phase3b1a|phase3b2a|^sawiyaa_redteam_[a-z0-9_]+$)/i.test(databaseName)))) {
   throw new Error(`Unsafe Phase 3B.1A database: ${databaseName}`);
 }
 
@@ -71,6 +85,7 @@ describeIfDatabase('Phase 3B.1A manual no-show PostgreSQL proof', () => {
     new CalculatePackageSessionAllocationService(money),
     {} as never,
     {} as never,
+    new AccountingJournalPostingService(prisma, money, new AccountingLedgerAccountService(prisma)),
   );
   const walletAccounting = new CustomerWalletAccountingService(
     prisma,

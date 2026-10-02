@@ -1,6 +1,7 @@
 import {
   buildTimeZoneOptions,
   createTimeZoneOption,
+  getTimeZoneDisplayLabel,
   getTimeZoneSnapshot,
 } from "../src/features/timezone/timezone-options";
 
@@ -26,5 +27,11 @@ describe("timezone options", () => {
     expect(getTimeZoneSnapshot("Africa/Cairo", "ar")).toEqual(
       expect.any(String),
     );
+  });
+
+  it("returns human timezone labels instead of IANA identifiers", () => {
+    expect(getTimeZoneDisplayLabel("Africa/Cairo", "en")).toBe("Cairo time");
+    expect(getTimeZoneDisplayLabel("Asia/Riyadh", "ar")).toBe("توقيت الرياض");
+    expect(getTimeZoneDisplayLabel("Africa/Cairo", "en")).not.toContain("/");
   });
 });

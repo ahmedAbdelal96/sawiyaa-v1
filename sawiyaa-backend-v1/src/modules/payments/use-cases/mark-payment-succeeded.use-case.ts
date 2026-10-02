@@ -6,10 +6,12 @@ import {
   PaymentStatus,
   Payment,
   Prisma,
+  PrismaClient,
 } from '@prisma/client';
 import { PrismaService } from '@common/prisma/prisma.service';
 import { AppLoggerService } from '@common/logging/app-logger.service';
 import { SessionEarningReviewService } from '@modules/financial-operations/services/session-earning-review.service';
+import { AccountingJournalPostingService } from '@modules/financial-operations/services/accounting-journal-posting.service';
 import { RedeemCouponUseCase } from '@modules/financial-rules/use-cases/redeem-coupon.use-case';
 import { OperationalNotificationService } from '@modules/notifications/services/operational-notification.service';
 import { CustomerWalletAccountingService } from '@modules/customer-wallets/services/customer-wallet-accounting.service';
@@ -20,7 +22,10 @@ import { OrchestrateAcademyProgramEnrollmentPaymentStatusService } from '../serv
 import { ValidatePaymentStatusTransitionService } from '../services/validate-payment-status-transition.service';
 import { ReconcilePackagePurchasePaymentUseCase } from '@modules/package-plans/use-cases/reconcile-package-purchase-payment.use-case';
 import { CorporateSponsorshipConsumeService } from '@modules/corporate-sponsorship/services/corporate-sponsorship-consume.service';
-import { SecurityAuditActorType as AuditActorType, SecurityAuditSource } from '@common/security-audit/security-audit.types';
+import {
+  SecurityAuditActorType as AuditActorType,
+  SecurityAuditSource,
+} from '@common/security-audit/security-audit.types';
 
 @Injectable()
 export class MarkPaymentSucceededUseCase {
@@ -38,6 +43,7 @@ export class MarkPaymentSucceededUseCase {
     private readonly reconcilePackagePurchasePaymentUseCase: ReconcilePackagePurchasePaymentUseCase,
     private readonly corporateSponsorshipConsumeService: CorporateSponsorshipConsumeService,
     private readonly logger: AppLoggerService,
+    private readonly accountingJournalPostingService: AccountingJournalPostingService,
   ) {}
 
   async execute(input: {
@@ -54,59 +60,89 @@ export class MarkPaymentSucceededUseCase {
       });
     }
 
-    this.validatePaymentStatusTransitionService.assertCanTransition(
-      payment.status,
-      PaymentStatus.CAPTURED,
-    );
-
     const paymobPaymentMethod = this.resolvePaymobPaymentMethodSnapshot(
       payment.provider,
       input.payload,
     );
 
+    let confirmedSessionId: string | null = null;
     const updated = await this.prisma.$transaction(async (tx) => {
-      await this.paymentRepository.createEvent(
-        {
-          paymentId: payment.id,
-          eventType: PaymentEventType.PROVIDER_WEBHOOK_RECEIVED,
-          providerEventRef: input.providerEventRef,
-          previousStatus: payment.status,
-          payloadJson: input.payload as Prisma.InputJsonValue,
-        },
+      // Match cancellation's order: session row, payment, wallet reservation.
+      if (payment.sessionId) {
+        await tx.$executeRaw`SELECT id FROM "Session" WHERE id = ${payment.sessionId}::uuid FOR UPDATE`;
+      }
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${payment.id})::bigint)`;
+      const current = await this.paymentRepository.findById(payment.id, tx);
+      if (!current) throw new NotFoundException({ error: 'PAYMENT_NOT_FOUND' });
+      this.validatePaymentStatusTransitionService.assertCanTransition(
+        current.status,
+        PaymentStatus.CAPTURED,
+      );
+      const alreadyCaptured = current.status === PaymentStatus.CAPTURED;
+      const receipt = await this.paymentRepository.findWebhookReceipt(
+        current.provider,
+        input.providerEventRef,
         tx,
       );
-
-      const captured = await this.paymentRepository.updateStatus(
-        payment.id,
-        {
-          status: PaymentStatus.CAPTURED,
-          capturedAt: new Date(),
-          metadataJson: {
-            ...((payment.metadataJson ?? {}) as Record<string, unknown>),
-            ...(paymobPaymentMethod
-              ? {
-                  paymobPaymentMethod,
-                }
-              : {}),
+      if (!receipt) {
+        await this.paymentRepository.createWebhookReceipt(
+          {
+            provider: payment.provider,
+            providerEventRef: input.providerEventRef,
+            paymentId: payment.id,
           },
-        },
-        tx,
-      );
+          tx,
+        );
+      }
 
-      await this.paymentRepository.createEvent(
-        {
-          paymentId: payment.id,
-          eventType: PaymentEventType.PAYMENT_CAPTURED,
-          providerEventRef: input.providerEventRef,
-          actorType: AuditActorType.PAYMENT_WEBHOOK,
-          source: SecurityAuditSource.PAYMENT_WEBHOOK,
-          previousStatus: payment.status,
-          newStatus: PaymentStatus.CAPTURED,
-        },
-        tx,
-      );
+      if (!alreadyCaptured) {
+        await this.paymentRepository.createEvent(
+          {
+            paymentId: payment.id,
+            eventType: PaymentEventType.PROVIDER_WEBHOOK_RECEIVED,
+            providerEventRef: input.providerEventRef,
+            previousStatus: current.status,
+            payloadJson: input.payload as Prisma.InputJsonValue,
+          },
+          tx,
+        );
+      }
 
-      const sponsorshipId = (payment.metadataJson as Record<string, unknown>)?.sponsorshipId as string | undefined;
+      const captured = alreadyCaptured
+        ? current
+        : await this.paymentRepository.updateStatus(
+            payment.id,
+            {
+              status: PaymentStatus.CAPTURED,
+              capturedAt: new Date(),
+              metadataJson: {
+                ...((current.metadataJson ?? {}) as Record<string, unknown>),
+                ...(paymobPaymentMethod
+                  ? {
+                      paymobPaymentMethod,
+                    }
+                  : {}),
+              },
+            },
+            tx,
+          );
+
+      if (!alreadyCaptured)
+        await this.paymentRepository.createEvent(
+          {
+            paymentId: payment.id,
+            eventType: PaymentEventType.PAYMENT_CAPTURED,
+            providerEventRef: input.providerEventRef,
+            actorType: AuditActorType.PAYMENT_WEBHOOK,
+            source: SecurityAuditSource.PAYMENT_WEBHOOK,
+            previousStatus: current.status,
+            newStatus: PaymentStatus.CAPTURED,
+          },
+          tx,
+        );
+
+      const sponsorshipId = (payment.metadataJson as Record<string, unknown>)
+        ?.sponsorshipId as string | undefined;
       const hasValidSponsorshipMetadata =
         typeof sponsorshipId === 'string' &&
         sponsorshipId.length > 0 &&
@@ -124,8 +160,68 @@ export class MarkPaymentSucceededUseCase {
         );
       }
 
+      const isAcademy =
+        current.paymentPurpose === PaymentPurpose.ACADEMY_PROGRAM_ENROLLMENT ||
+        (current.metadataJson as Record<string, unknown> | null)?.source ===
+          'academy-program-enrollment';
+      if (
+        !isAcademy &&
+        current.paymentPurpose !== PaymentPurpose.SESSION_PACKAGE_PURCHASE
+      ) {
+        if (captured.amountFromWallet.gt(0)) {
+          await this.customerWalletAccountingService.captureReservationForPayment(
+            {
+              paymentId: captured.id,
+              currencyCode: captured.currencyCode,
+              tx,
+            },
+          );
+        }
+        await this.redeemCouponUseCase.execute({
+          couponId: captured.couponId,
+          couponCode: captured.couponCodeSnapshot ?? null,
+          sessionId: captured.sessionId,
+          paymentId: captured.id,
+          patientId: captured.patientId ?? '',
+          practitionerId: captured.practitionerId,
+          currencyCode: captured.currencyCode,
+          grossAmount: captured.amountSubtotal.toString(),
+          discountAmount: captured.amountDiscount.toString(),
+          couponPlatformSharePercent:
+            captured.couponPlatformShareSnapshot?.toString() ?? null,
+          couponPractitionerSharePercent:
+            captured.couponPractitionerShareSnapshot?.toString() ?? null,
+          tx,
+        });
+        if (captured.sessionId) {
+          const session = await tx.session.findUnique({
+            where: { id: captured.sessionId },
+          });
+          if (session?.status === 'PENDING_PAYMENT') {
+            await this.orchestrateSessionPaymentStatusService.markSessionConfirmedFromPayment(
+              { session, tx },
+            );
+            confirmedSessionId = session.id;
+          }
+          await this.sessionEarningReviewService.syncForSessionCompletion({
+            sessionId: captured.sessionId,
+            tx,
+          });
+        }
+      }
+
+      await this.accountingJournalPostingService.postPaymentCaptured({
+        payment: captured,
+        tx,
+      });
       return captured;
     });
+
+    if (confirmedSessionId) {
+      await this.orchestrateSessionPaymentStatusService.notifySessionConfirmedAfterCommit(
+        confirmedSessionId,
+      );
+    }
 
     const paymentMetadata = (payment.metadataJson ?? {}) as Record<
       string,
@@ -143,6 +239,31 @@ export class MarkPaymentSucceededUseCase {
         payment: updated,
       });
 
+      if (updated.patientId) {
+        const packagePurchaseDelegate = (
+          this.prisma as PrismaClient
+        ).patientPackagePurchase;
+        const packagePurchase = packagePurchaseDelegate
+          ? await packagePurchaseDelegate.findFirst({
+              where: { paymentId: updated.id },
+              include: { packagePlan: { select: { title: true, code: true } } },
+            })
+          : null;
+        if (packagePurchase) {
+          await this.operationalNotificationService.notifyPackagePurchaseSucceeded({
+            patientProfileId: updated.patientId,
+            packagePurchaseId: packagePurchase.id,
+            amount: updated.amountTotal.toString(),
+            currencyCode: updated.currencyCode,
+            packageName:
+              packagePurchase.packagePlan?.title ??
+              packagePurchase.titleSnapshot ??
+              packagePurchase.planCodeSnapshot ??
+              undefined,
+          });
+        }
+      }
+
       this.logger.info(
         {
           message: 'Payment marked as succeeded',
@@ -159,63 +280,33 @@ export class MarkPaymentSucceededUseCase {
       };
     }
 
-    if (
-      !isAcademyProgramEnrollment &&
-      updated.amountFromWallet.gt(0)
-    ) {
-      await this.customerWalletAccountingService.captureReservationForPayment({
-        paymentId: updated.id,
-        currencyCode: updated.currencyCode,
-      });
-    }
-
-    if (!isAcademyProgramEnrollment) {
-      await this.redeemCouponUseCase.execute({
-        couponId: updated.couponId,
-        couponCode: updated.couponCodeSnapshot?.toString() ?? null,
-        sessionId: updated.sessionId,
-        paymentId: updated.id,
-        patientId: updated.patientId ?? '',
-        practitionerId: updated.practitionerId ?? null,
-        currencyCode: updated.currencyCode,
-        grossAmount: updated.amountSubtotal.toString(),
-        discountAmount: updated.amountDiscount.toString(),
-        couponPlatformSharePercent:
-          updated.couponPlatformShareSnapshot?.toString() ?? null,
-        couponPractitionerSharePercent:
-          updated.couponPractitionerShareSnapshot?.toString() ?? null,
-      });
-    }
-
-    if (payment.sessionId) {
-      const session = await this.prisma.session.findUnique({
-        where: { id: payment.sessionId },
-        select: {
-          id: true,
-          status: true,
-          scheduledStartAt: true,
-          scheduledEndAt: true,
-          scheduleRevision: true,
-        },
-      });
-
-      if (session && session.status === 'PENDING_PAYMENT') {
-        await this.orchestrateSessionPaymentStatusService.markSessionConfirmedFromPayment(
-          {
-            session,
-          },
-        );
-      }
-
-      await this.sessionEarningReviewService.syncForSessionCompletion({
-        sessionId: payment.sessionId,
-      });
-    }
-
     if (isAcademyProgramEnrollment) {
       await this.orchestrateAcademyProgramEnrollmentPaymentStatusService.markEnrollmentConfirmedFromPayment(
         payment.id,
       );
+
+      if (updated.patientId) {
+        const enrollmentDelegate = (
+          this.prisma as PrismaClient
+        ).academyProgramEnrollment;
+        const enrollment = enrollmentDelegate
+          ? await enrollmentDelegate.findFirst({
+              where: { paymentId: updated.id },
+              include: {
+                academyProgram: { select: { titleAr: true, titleEn: true } },
+              },
+            })
+          : null;
+        if (enrollment) {
+          await this.operationalNotificationService.notifyAcademyPaymentSucceeded({
+            patientProfileId: updated.patientId,
+            enrollmentId: enrollment.id,
+            amount: updated.amountTotal.toString(),
+            currencyCode: updated.currencyCode,
+            trainingName: enrollment.academyProgram.titleEn ?? enrollment.academyProgram.titleAr,
+          });
+        }
+      }
     }
 
     this.logger.info(

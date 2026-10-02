@@ -101,6 +101,12 @@ export class AdminPatientDetailsDto {
 
   @ApiProperty()
   updatedAt!: string;
+
+  @ApiProperty({ type: Object, isArray: true })
+  packages!: Array<Record<string, unknown>>;
+
+  @ApiProperty({ type: Object, isArray: true })
+  academy!: Array<Record<string, unknown>>;
 }
 
 export class AdminPatientDetailsSuccessResponseDto {

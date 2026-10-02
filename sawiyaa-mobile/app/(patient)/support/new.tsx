@@ -7,7 +7,7 @@ import {
   Platform,
   ActivityIndicator,
 } from "react-native";
-import { useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 import { Ionicons } from "@expo/vector-icons";
 import { Screen, Header, Text, Input } from "../../../src/components/ui";
@@ -15,6 +15,9 @@ import { useTheme } from "../../../src/providers/ThemeProvider";
 import { createPatientSupportTicket } from "../../../src/features/messages/api";
 import { useQueryClient } from "@tanstack/react-query";
 import { extractApiErrorMessage } from "../../../src/lib/api";
+import { createMobileUuid } from "../../../src/lib/mobile-uuid";
+import { normalizeSupportTicketCategory } from "../../../src/features/support/contracts";
+import { useNavigationHistory } from "../../../src/providers/NavigationHistoryProvider";
 
 export default function NewSupportChatScreen() {
   const router = useRouter();
@@ -22,9 +25,12 @@ export default function NewSupportChatScreen() {
   const { t, i18n } = useTranslation();
   const isRTL = i18n.language?.startsWith("ar") ?? false;
   const queryClient = useQueryClient();
+  const { suppressNextRouteRecord } = useNavigationHistory();
+  const { category: routeCategory } = useLocalSearchParams<{ category?: string }>();
+  const category = normalizeSupportTicketCategory(routeCategory);
 
   const [message, setMessage] = useState("");
-  const [idempotencyKey] = useState(() => crypto.randomUUID());
+  const [idempotencyKey] = useState(createMobileUuid);
   const [error, setError] = useState<string | null>(null);
   const [isPending, setIsPending] = useState(false);
 
@@ -43,12 +49,16 @@ export default function NewSupportChatScreen() {
     setIsPending(true);
     try {
       const res = await createPatientSupportTicket({
+        category,
         description: trimmed,
         newConversation: true,
         idempotencyKey,
       });
       // Invalidate canonical conversations to fetch new support ticket
       await queryClient.invalidateQueries({ queryKey: ["canonical-conversations"] });
+      // The compose route is already being replaced; do not record it in the
+      // app-level back history so header and Android back return to the list.
+      suppressNextRouteRecord();
 
       const conversationId = res?.item?.conversationId || res?.item?.id;
       if (conversationId) {
@@ -64,7 +74,7 @@ export default function NewSupportChatScreen() {
   }
 
   return (
-    <Screen bg="background">
+    <Screen bg="background" testID="patient-support-new-screen">
       <Header
         title={t("messages.inbox.newSupportTitle", "Message Support")}
         showBack

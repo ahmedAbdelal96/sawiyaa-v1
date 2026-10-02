@@ -17,10 +17,13 @@ import type {
 
 export type SessionFinancialContext = {
   requestCountryIsoCode?: string | null;
+  /** Effective patient pricing country resolved from the trusted request context. */
+  pricingPatientCountryId?: string | null;
   id: string;
   flowType: SessionFlowType;
   sessionMode: SessionMode;
   durationMinutes: number;
+  pricingPolicySnapshotJson?: unknown;
   practitioner: {
     id: string;
     publicSlug: string;
@@ -57,9 +60,19 @@ export type SessionFinancialContext = {
     amountTotal: { toString(): string } | string;
     currencyCode: string;
     provider: PaymentProvider;
+    paymentPurpose?: PaymentPurpose;
+    commissionRuleId?: string | null;
+    commissionPlatformRatePercent?: { toString(): string } | string | null;
+    commissionPractitionerRatePercent?: { toString(): string } | string | null;
+    couponId?: string | null;
+    couponCodeSnapshot?: string | null;
+    couponDiscountSnapshot?: { toString(): string } | string | null;
+    couponPlatformShareSnapshot?: { toString(): string } | string | null;
+    couponPractitionerShareSnapshot?: { toString(): string } | string | null;
+    metadataJson?: unknown;
   }>;
   instantBookingRequest?: {
-    metadataJson?: unknown | null;
+    metadataJson?: unknown;
   } | null;
 };
 
@@ -121,14 +134,14 @@ export type SessionFinancialBreakdownViewModel = {
   grossAmount: string;
   discountAmount: string;
   netPaidAmount: string;
-  platformCommissionAmount: string;
-  practitionerShareAmount: string;
+  platformCommissionAmount: string | null;
+  practitionerShareAmount: string | null;
   commissionRule: {
     id: string;
     slug: string;
     platformRatePercent: string;
     practitionerRatePercent: string;
-  };
+  } | null;
   coupon: {
     id: string;
     code: string;

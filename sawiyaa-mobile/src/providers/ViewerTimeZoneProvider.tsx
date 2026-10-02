@@ -27,9 +27,9 @@ export function ViewerTimeZoneProvider({
   const practitionerProfile = usePractitionerProfile(role === "practitioner");
   const profileTimeZone =
     role === "patient"
-      ? patientProfile.data?.profile.timezone
+      ? patientProfile.data?.profile?.timezone
       : role === "practitioner"
-        ? practitionerProfile.data?.profile.timezone
+        ? practitionerProfile.data?.profile?.timezone
         : null;
 
   useEffect(() => {

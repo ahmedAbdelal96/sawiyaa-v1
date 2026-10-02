@@ -53,6 +53,23 @@ describe('GeneralChatAvailabilityService', () => {
     });
   });
 
+  it('blocks reads before the session is confirmed', () => {
+    const result = service.resolveAvailability({
+      conversation: baseConversation,
+      linkedSession: {
+        ...linkedSessionBase,
+        status: SessionStatus.PENDING_PAYMENT,
+      },
+    });
+
+    expect(result).toEqual({
+      canRead: false,
+      canSend: false,
+      readOnly: true,
+      reason: 'SESSION_NOT_STARTED',
+    });
+  });
+
   it('keeps linked-session read-only state even if the conversation was archived', () => {
     const result = service.resolveAvailability({
       conversation: {

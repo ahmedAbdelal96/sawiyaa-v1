@@ -168,6 +168,7 @@
       "subtitle": "اختار عدد النجوم. ولو حابب تضيف ملاحظة، اكتبها تحت.",
       "starHelperMin": "نجمة واحدة",
       "starHelperMax": "٥ نجوم",
+      "starAria": "التقييم {value} نجوم",
       "noteLabel": "ملاحظة اختيارية",
       "notePlaceholder": "اكتب ملاحظتك لو حابب...",
       "submit": "إرسال التقييم",

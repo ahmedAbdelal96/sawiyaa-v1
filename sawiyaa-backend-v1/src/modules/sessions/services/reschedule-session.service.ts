@@ -1,5 +1,6 @@
 import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
-import { Prisma, SessionStatus } from '@prisma/client';
+import { Prisma, SessionEventType, SessionStatus } from '@prisma/client';
+import { SecurityAuditActorType, SecurityAuditSource } from '@common/security-audit/security-audit.types';
 import { OperationalNotificationService } from '@modules/notifications/services/operational-notification.service';
 import { SessionSchedulePolicyService } from '@modules/config/services/session-schedule-policy.service';
 import { PrismaService } from '@common/prisma/prisma.service';
@@ -23,6 +24,11 @@ export class RescheduleSessionService {
     scheduledStartAt: Date;
     scheduledEndAt: Date;
     actorUserId?: string | null;
+    actorType?: SecurityAuditActorType;
+    source?: SecurityAuditSource | string | null;
+    requestId?: string | null;
+    correlationId?: string | null;
+    reason?: string | null;
   }) {
     if (
       Number.isNaN(input.scheduledStartAt.getTime()) ||
@@ -72,6 +78,42 @@ export class RescheduleSessionService {
           joinCloseAt,
           scheduleRevision: policy.scheduleRevision,
           schedulePolicySnapshotJson: policy as unknown as Prisma.InputJsonValue,
+        },
+        tx,
+      );
+      const previousStartAt = locked.scheduledStartAt?.toISOString() ?? null;
+      const previousEndAt = locked.scheduledEndAt?.toISOString() ?? null;
+      const nextStartAt = input.scheduledStartAt.toISOString();
+      const nextEndAt = input.scheduledEndAt.toISOString();
+      await this.sessions.createEvent(
+        {
+          sessionId: input.sessionId,
+          eventType: SessionEventType.RESCHEDULED,
+          actorType:
+            input.actorType ??
+            (input.actorUserId
+              ? SecurityAuditActorType.USER
+              : SecurityAuditActorType.SYSTEM),
+          actorUserId: input.actorUserId ?? null,
+          source: input.source ??
+            (input.actorUserId
+              ? SecurityAuditSource.HTTP_REQUEST
+              : SecurityAuditSource.SYSTEM),
+          requestId: input.requestId ?? null,
+          correlationId: input.correlationId ?? null,
+          reason: input.reason ?? null,
+          occurredAt: new Date(),
+          metadataJson: {
+            previousStartAt,
+            previousEndAt,
+            newStartAt: nextStartAt,
+            newEndAt: nextEndAt,
+            previousScheduledStartAt: previousStartAt,
+            previousScheduledEndAt: previousEndAt,
+            newScheduledStartAt: nextStartAt,
+            newScheduledEndAt: nextEndAt,
+            scheduleRevision: policy.scheduleRevision,
+          },
         },
         tx,
       );

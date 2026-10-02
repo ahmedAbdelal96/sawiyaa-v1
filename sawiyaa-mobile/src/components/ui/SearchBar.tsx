@@ -6,16 +6,22 @@ import { Ionicons } from '@expo/vector-icons';
 
 export interface SearchBarProps extends InputProps {
   onClear?: () => void;
+  clearAccessibilityLabel?: string;
 }
 
-export const SearchBar = ({ onClear, value, ...props }: SearchBarProps) => {
+export const SearchBar = ({ onClear, clearAccessibilityLabel, value, ...props }: SearchBarProps) => {
   const { theme } = useTheme();
 
   const SearchIcon = <Ionicons name="search" size={20} color={theme.colors.textMuted} />;
   const ClearIcon = <Ionicons name="close-circle" size={20} color={theme.colors.textMuted} />;
 
   const rightElement = value && value.length > 0 ? (
-    <TouchableOpacity onPress={onClear} hitSlop={{ top: 10, right: 10, bottom: 10, left: 10 }}>
+    <TouchableOpacity
+      accessibilityRole="button"
+      accessibilityLabel={clearAccessibilityLabel}
+      onPress={onClear}
+      hitSlop={{ top: 10, right: 10, bottom: 10, left: 10 }}
+    >
       {ClearIcon}
     </TouchableOpacity>
   ) : undefined;

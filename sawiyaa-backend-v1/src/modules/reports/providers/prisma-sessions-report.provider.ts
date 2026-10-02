@@ -11,6 +11,7 @@ import {
   SessionsReportOverview,
   SessionsReportRow,
 } from '../types/sessions-report.types';
+import { resolvePatientDisplayName } from '@modules/patients/utils/resolve-patient-display-name.util';
 
 type Db = PrismaService | Prisma.TransactionClient | PrismaClient;
 
@@ -46,7 +47,16 @@ export class PrismaSessionsReportProvider implements SessionsReportProvider {
       statusBreakdown[row.status] = String(row._count._all);
       if (row.status === SessionStatus.COMPLETED) completed += row._count._all;
       if (row.status === SessionStatus.CANCELLED) cancelled += row._count._all;
-      if (([SessionStatus.PATIENT_NO_SHOW, SessionStatus.PRACTITIONER_NO_SHOW, SessionStatus.BOTH_NO_SHOW] as SessionStatus[]).includes(row.status)) noShow += row._count._all;
+      if (
+        (
+          [
+            SessionStatus.PATIENT_NO_SHOW,
+            SessionStatus.PRACTITIONER_NO_SHOW,
+            SessionStatus.BOTH_NO_SHOW,
+          ] as SessionStatus[]
+        ).includes(row.status)
+      )
+        noShow += row._count._all;
     }
 
     const bucketKeys = buildDailyBuckets(input.from, input.to);
@@ -160,7 +170,7 @@ export class PrismaSessionsReportProvider implements SessionsReportProvider {
       createdAt: row.createdAt.toISOString(),
       patientId: row.patientId,
       practitionerId: row.practitionerId,
-      patientName: row.patient?.user?.displayName ?? row.patient?.displayName ?? null,
+      patientName: resolvePatientDisplayName(row.patient, row.patient?.user),
       practitionerName: row.practitioner?.user?.displayName ?? null,
     }));
 

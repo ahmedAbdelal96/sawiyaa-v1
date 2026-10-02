@@ -104,6 +104,17 @@ export interface PublicPractitionerPresenceResponse {
   };
 }
 
+export interface PublicPractitionerInstantBookingAvailability {
+  availableNow: boolean;
+  durations: { 30: boolean; 60: boolean };
+  checkedAt: string;
+}
+
+export interface PublicPractitionerInstantBookingAvailabilityResponse {
+  success: boolean;
+  data: PublicPractitionerInstantBookingAvailability;
+}
+
 export interface PublicPractitionersPagination {
   page: number;
   limit: number;
@@ -129,6 +140,7 @@ export interface PublicPractitionerDetailsResponse {
 export interface ListPublicPractitionersFilters {
   search?: string;
   specialtySlug?: string;
+  specialtyCategorySlug?: string;
   language?: string;
   languageCodes?: string[];
   country?: string;

@@ -1,175 +1,84 @@
 import { Injectable } from '@nestjs/common';
 import { promises as fs } from 'fs';
 import * as path from 'path';
+import { PrismaService } from '@common/prisma/prisma.service';
+import { StoredFilePurpose } from '@prisma/client';
+import { UnifiedFileStorageService } from '@modules/files/unified-file-storage.service';
 
-export type StoredUserAvatar = {
-  absolutePath: string;
-  mimeType: string;
-  updatedAtMs: number;
-};
-
-type AvatarMetadata = {
-  avatarUrl: string;
-  updatedAtMs: number;
-};
-
-const MIME_TO_EXTENSION: Record<string, string> = {
-  'image/jpeg': '.jpg',
-  'image/png': '.png',
-  'image/webp': '.webp',
-};
+export type StoredUserAvatar = { absolutePath: string; mimeType: string; updatedAtMs: number };
+type AvatarMetadata = { avatarUrl: string; updatedAtMs: number };
+const MIME_TO_EXTENSION: Record<string, string> = { 'image/jpeg': '.jpg', 'image/png': '.png', 'image/webp': '.webp' };
 
 @Injectable()
 export class UserAvatarStorageService {
-  private readonly baseDir = path.resolve(process.cwd(), 'storage', 'users');
+  private readonly legacyDir = path.resolve(process.cwd(), 'storage', 'users');
 
-  getAllowedMimeTypes(): string[] {
-    return Object.keys(MIME_TO_EXTENSION);
-  }
+  constructor(private readonly prisma: PrismaService, private readonly files: UnifiedFileStorageService) {}
 
-  isAllowedMimeType(mimeType?: string | null): boolean {
-    if (!mimeType) return false;
-    return mimeType in MIME_TO_EXTENSION;
-  }
+  getAllowedMimeTypes(): string[] { return Object.keys(MIME_TO_EXTENSION); }
+  isAllowedMimeType(mimeType?: string | null): boolean { return !!mimeType && mimeType in MIME_TO_EXTENSION; }
 
-  async saveAvatar(params: {
-    userId: string;
-    fileBuffer: Buffer;
-    mimeType: string;
-  }): Promise<AvatarMetadata> {
-    const extension = MIME_TO_EXTENSION[params.mimeType];
-    if (!extension) {
-      throw new Error('Unsupported avatar mime type');
+  async saveAvatar(params: { userId: string; fileBuffer: Buffer; mimeType: string }): Promise<AvatarMetadata> {
+    const stored = await this.files.store({ purpose: StoredFilePurpose.USER_AVATAR, fileBuffer: params.fileBuffer, mimeType: params.mimeType, maxBytes: 512 * 1024, allowedMimeTypes: this.getAllowedMimeTypes(), uploadedByUserId: params.userId });
+    const previous = await this.prisma.user.findUnique({ where: { id: params.userId }, select: { avatarFileId: true } });
+    try {
+      await this.prisma.user.update({ where: { id: params.userId }, data: { avatarFileId: stored.id } });
+    } catch (error) {
+      await this.files.delete(stored.id).catch(() => undefined);
+      throw error;
     }
-
-    const filePrefix = this.getFilePrefix(params.userId);
-    await fs.mkdir(this.baseDir, { recursive: true });
-
-    await this.removeAvatarFiles(filePrefix);
-
-    const nextAbsolutePath = path.join(
-      this.baseDir,
-      `${filePrefix}${extension}`,
-    );
-    await fs.writeFile(nextAbsolutePath, params.fileBuffer);
-    const stat = await fs.stat(nextAbsolutePath);
-
-    return {
-      avatarUrl: this.toApiAvatarUrl(stat.mtimeMs),
-      updatedAtMs: stat.mtimeMs,
-    };
+    if (previous?.avatarFileId && previous.avatarFileId !== stored.id) await this.files.delete(previous.avatarFileId).catch(() => undefined);
+    return { avatarUrl: this.toApiAvatarUrl(stored.updatedAt.getTime()), updatedAtMs: stored.updatedAt.getTime() };
   }
 
   async resolveAvatarMetadata(userId: string): Promise<AvatarMetadata | null> {
     const stored = await this.findStoredAvatar(userId);
-    if (!stored) return null;
-
-    return {
-      avatarUrl: this.toApiAvatarUrl(stored.updatedAtMs),
-      updatedAtMs: stored.updatedAtMs,
-    };
+    return stored ? { avatarUrl: this.toApiAvatarUrl(stored.updatedAtMs), updatedAtMs: stored.updatedAtMs } : null;
   }
 
   async resolveAvatarDataUrl(userId: string): Promise<string | null> {
     const stored = await this.findStoredAvatar(userId);
     if (!stored) return null;
-
-    const fileBuffer = await fs.readFile(stored.absolutePath);
-    const base64 = fileBuffer.toString('base64');
-    return `data:${stored.mimeType};base64,${base64}`;
+    return `data:${stored.mimeType};base64,${(await fs.readFile(stored.absolutePath)).toString('base64')}`;
   }
 
-  async getAvatarFile(userId: string): Promise<StoredUserAvatar | null> {
-    return this.findStoredAvatar(userId);
-  }
+  async getAvatarFile(userId: string): Promise<StoredUserAvatar | null> { return this.findStoredAvatar(userId); }
 
   async deleteAvatar(userId: string): Promise<boolean> {
-    const filePrefix = this.getFilePrefix(userId);
-    return this.removeAvatarFiles(filePrefix);
+    const current = await this.prisma.user.findUnique({ where: { id: userId }, select: { avatarFileId: true } });
+    let removed = false;
+    if (current?.avatarFileId) { removed = await this.files.delete(current.avatarFileId); await this.prisma.user.update({ where: { id: userId }, data: { avatarFileId: null } }); }
+    return (await this.removeLegacyFiles(userId)) || removed;
   }
 
-  private getFilePrefix(userId: string): string {
-    return userId.replace(/[^a-zA-Z0-9-]/g, '');
-  }
-
-  private extensionToMimeType(extension: string): string | null {
-    const ext = extension.toLowerCase();
-    for (const [mime, mimeExt] of Object.entries(MIME_TO_EXTENSION)) {
-      if (mimeExt === ext) return mime;
+  private async findStoredAvatar(userId: string): Promise<StoredUserAvatar | null> {
+    const current = await this.prisma.user.findUnique({ where: { id: userId }, select: { avatarFileId: true } });
+    if (current?.avatarFileId) {
+      const stored = await this.files.resolve(current.avatarFileId);
+      if (stored) return { absolutePath: stored.absolutePath, mimeType: stored.mimeType, updatedAtMs: stored.updatedAt.getTime() };
+    }
+    const safeId = userId.replace(/[^a-zA-Z0-9-]/g, '');
+    const entries = await fs.readdir(this.legacyDir).catch(() => []);
+    for (const name of entries) {
+      const ext = path.extname(name).toLowerCase();
+      if (path.basename(name, ext) !== safeId || !Object.values(MIME_TO_EXTENSION).includes(ext)) continue;
+      const stat = await fs.stat(path.join(this.legacyDir, name)).catch(() => null);
+      if (stat?.isFile()) return { absolutePath: path.join(this.legacyDir, name), mimeType: Object.entries(MIME_TO_EXTENSION).find(([, value]) => value === ext)?.[0] ?? 'image/jpeg', updatedAtMs: stat.mtimeMs };
     }
     return null;
   }
 
-  private async removeAvatarFiles(filePrefix: string): Promise<boolean> {
-    const files = await this.readDirectorySafe(this.baseDir);
-    if (files.length === 0) return false;
-
+  private async removeLegacyFiles(userId: string): Promise<boolean> {
+    const safeId = userId.replace(/[^a-zA-Z0-9-]/g, '');
+    const entries = await fs.readdir(this.legacyDir).catch(() => []);
     let removed = false;
-    await Promise.all(
-      files.map(async (name) => {
-        const extension = path.extname(name).toLowerCase();
-        const basename = path.basename(name, extension);
-        if (basename !== filePrefix) return;
-
-        if (!this.extensionToMimeType(extension)) return;
-
-        const absolutePath = path.join(this.baseDir, name);
-        const stat = await fs.stat(absolutePath).catch(() => null);
-        if (!stat?.isFile()) return;
-
-        await fs.unlink(absolutePath).catch(() => undefined);
-        removed = true;
-      }),
-    );
-
+    for (const name of entries) {
+      const ext = path.extname(name).toLowerCase();
+      if (path.basename(name, ext) !== safeId || !Object.values(MIME_TO_EXTENSION).includes(ext)) continue;
+      await fs.unlink(path.join(this.legacyDir, name)).then(() => { removed = true; }).catch(() => undefined);
+    }
     return removed;
   }
 
-  private async findStoredAvatar(
-    userId: string,
-  ): Promise<StoredUserAvatar | null> {
-    const filePrefix = this.getFilePrefix(userId);
-    const files = await this.readDirectorySafe(this.baseDir);
-    if (files.length === 0) return null;
-
-    const candidates = await Promise.all(
-      files.map(async (name) => {
-        const extension = path.extname(name).toLowerCase();
-        const basename = path.basename(name, extension);
-        if (basename !== filePrefix) return null;
-
-        const mimeType = this.extensionToMimeType(extension);
-        if (!mimeType) return null;
-
-        const absolutePath = path.join(this.baseDir, name);
-        const stat = await fs.stat(absolutePath).catch(() => null);
-        if (!stat?.isFile()) return null;
-
-        return {
-          absolutePath,
-          mimeType,
-          updatedAtMs: stat.mtimeMs,
-        } satisfies StoredUserAvatar;
-      }),
-    );
-
-    const existing = candidates
-      .filter((item): item is StoredUserAvatar => item !== null)
-      .sort((a, b) => b.updatedAtMs - a.updatedAtMs);
-
-    return existing[0] ?? null;
-  }
-
-  private async readDirectorySafe(dir: string): Promise<string[]> {
-    try {
-      return await fs.readdir(dir);
-    } catch {
-      return [];
-    }
-  }
-
-  private toApiAvatarUrl(updatedAtMs: number): string {
-    const version = Math.floor(updatedAtMs);
-    return `/api/v1/users/me/avatar?v=${version}`;
-  }
+  private toApiAvatarUrl(updatedAtMs: number): string { return `/api/v1/users/me/avatar?v=${Math.floor(updatedAtMs)}`; }
 }

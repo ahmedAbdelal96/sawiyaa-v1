@@ -1,7 +1,8 @@
 import React from "react";
-import { View, StyleSheet, ViewProps, I18nManager } from "react-native";
+import { View, StyleSheet, ViewProps } from "react-native";
 import { Text } from "./Text";
 import { useTheme } from "../../providers/ThemeProvider";
+import { useAppDirection } from "../../i18n/direction";
 
 export interface SectionProps extends ViewProps {
   title?: string;
@@ -18,7 +19,7 @@ export const Section = ({
   ...props
 }: SectionProps) => {
   const { theme } = useTheme();
-  const isRTL = I18nManager.isRTL;
+  const { isRtl: isRTL } = useAppDirection();
 
   return (
     <View style={[styles.container, style]} {...props}>

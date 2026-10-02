@@ -31,6 +31,8 @@ export const enAvailabilityCatalog = {
     invalidDurationMinutes:
       'Weekly availability slot duration must be 30 or 60 minutes',
     invalidGranularity: 'Weekly availability must use 30-minute granularity',
+    weekSlotsLimit:
+      'A weekly schedule can contain at most 504 session start times',
     overlappingWeeklySlots:
       'Weekly availability contains overlapping slots on the same day',
     invalidExceptionRange: 'Availability exception range is invalid',
@@ -41,6 +43,8 @@ export const enAvailabilityCatalog = {
     publicAvailabilityNotFound:
       'Public practitioner availability was not found',
     weekNotFound: 'Availability week was not found',
+    weekAlreadyExists:
+      'A schedule already exists for this week. You can edit the current schedule.',
     weekNotDraft: 'This schedule is already published and cannot be published again',
     weekNotEditable: 'This schedule cannot be edited',
     slotInPast: 'Cannot modify a time slot that has already passed',

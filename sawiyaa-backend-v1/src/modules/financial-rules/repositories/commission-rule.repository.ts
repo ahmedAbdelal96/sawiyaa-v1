@@ -2,6 +2,8 @@ import { Injectable } from '@nestjs/common';
 import { MarketType, Prisma } from '@prisma/client';
 import { PrismaService } from '@common/prisma/prisma.service';
 
+type DbClient = PrismaService | Prisma.TransactionClient;
+
 @Injectable()
 export class CommissionRuleRepository {
   constructor(private readonly prisma: PrismaService) {}
@@ -10,8 +12,8 @@ export class CommissionRuleRepository {
     return this.prisma.commissionRule.create({ data });
   }
 
-  findBySlug(slug: string) {
-    return this.prisma.commissionRule.findUnique({ where: { slug } });
+  findBySlug(slug: string, db: DbClient = this.prisma) {
+    return db.commissionRule.findUnique({ where: { slug } });
   }
 
   listRules(where: Prisma.CommissionRuleWhereInput) {
@@ -52,11 +54,22 @@ export class CommissionRuleRepository {
     });
   }
 
-  unsetOtherGlobalDefaults(input: {
+  updateById(
+    id: string,
+    data: Prisma.CommissionRuleUncheckedUpdateInput,
+    db: DbClient = this.prisma,
+  ) {
+    return db.commissionRule.update({ where: { id }, data });
+  }
+
+  unsetOtherGlobalDefaults(
+    input: {
     marketType: MarketType;
     keepSlug: string;
-  }) {
-    return this.prisma.commissionRule.updateMany({
+    },
+    db: DbClient = this.prisma,
+  ) {
+    return db.commissionRule.updateMany({
       where: {
         marketType: input.marketType,
         ruleScope: 'GLOBAL',

@@ -20,6 +20,7 @@ export interface DayGroup {
 }
 
 const MIN_BOOKING_LEAD_MS = 60 * 1000;
+const SLOT_STEP_MS = 30 * 60 * 1000;
 
 export function getWeekRange(weekOffset: number) {
   const today = new Date();
@@ -48,18 +49,50 @@ export function buildSlotsFromWindows(windows: AvailabilityWindow[]) {
 
   for (const window of windows) {
     const startMs = new Date(window.startsAt).getTime();
-    if (startMs <= earliestAllowedStart) {
+    const endMs = new Date(window.endsAt).getTime();
+    if (!Number.isFinite(startMs) || !Number.isFinite(endMs) || endMs <= startMs) {
       continue;
     }
 
-    slots.push({
-      startsAt: new Date(startMs).toISOString(),
-      windowEndsAt: window.endsAt,
-      durationMinutes:
-        window.durationMinutes === 30 || window.durationMinutes === 60
-          ? window.durationMinutes
-          : null,
-    });
+    if (window.durationMinutes === 60) {
+      if (startMs <= earliestAllowedStart || endMs - startMs < 60 * 60 * 1000) {
+        continue;
+      }
+
+      slots.push({
+        startsAt: new Date(startMs).toISOString(),
+        windowEndsAt: window.endsAt,
+        durationMinutes: 60,
+      });
+      continue;
+    }
+
+    if (window.durationMinutes === null) {
+      if (startMs <= earliestAllowedStart) {
+        continue;
+      }
+
+      slots.push({
+        startsAt: new Date(startMs).toISOString(),
+        windowEndsAt: window.endsAt,
+        durationMinutes: endMs - startMs >= 60 * 60 * 1000 ? 60 : 30,
+      });
+      continue;
+    }
+
+    // The Backend can merge adjacent 30-minute published slots into one
+    // window. Keep every future half-hour boundary available to booking.
+    const firstBoundary = Math.ceil(startMs / SLOT_STEP_MS) * SLOT_STEP_MS;
+    const firstAllowedBoundary = Math.ceil(earliestAllowedStart / SLOT_STEP_MS) * SLOT_STEP_MS;
+    const firstStart = Math.max(firstBoundary, firstAllowedBoundary);
+
+    for (let current = firstStart; current + SLOT_STEP_MS <= endMs; current += SLOT_STEP_MS) {
+      slots.push({
+        startsAt: new Date(current).toISOString(),
+        windowEndsAt: window.endsAt,
+        durationMinutes: 30,
+      });
+    }
   }
 
   return slots;

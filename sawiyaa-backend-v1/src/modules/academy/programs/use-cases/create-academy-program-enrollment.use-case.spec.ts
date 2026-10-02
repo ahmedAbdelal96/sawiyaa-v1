@@ -36,6 +36,10 @@ function createUseCase(program = paidProgram) {
     $transaction: jest.fn(async (callback: (tx: object) => unknown) => callback({})),
     user: { create: jest.fn() },
   };
+  const initiateSessionPayment = jest.fn().mockResolvedValue({
+    status: PaymentStatus.CREATED,
+    providerPaymentRef: 'provider-payment-1',
+  });
   const useCase = new CreateAcademyProgramEnrollmentUseCase(
     { get: jest.fn().mockReturnValue(15) } as never,
     prisma as never,
@@ -46,15 +50,19 @@ function createUseCase(program = paidProgram) {
       buildCountrySnapshot: jest.fn().mockReturnValue({}),
     } as never,
     {
-      resolveProvider: jest.fn().mockReturnValue(PaymentProvider.PAYMOB),
+      resolveRoute: jest.fn().mockReturnValue({
+        currencyCode: 'USD',
+        paymentMethod: 'CARD',
+        provider: PaymentProvider.PAYMOB,
+        integrationKey: 'paymob-usd-card',
+        environment: 'development',
+        enabled: true,
+        priority: 100,
+        source: 'DATABASE',
+      }),
     } as never,
     {
-      get: jest.fn().mockReturnValue({
-        initiateSessionPayment: jest.fn().mockResolvedValue({
-          status: PaymentStatus.CREATED,
-          providerPaymentRef: 'provider-payment-1',
-        }),
-      }),
+      get: jest.fn().mockReturnValue({ initiateSessionPayment }),
     } as never,
     {
       getAppBaseUrl: jest.fn().mockReturnValue('https://web.example/'),
@@ -77,7 +85,7 @@ function createUseCase(program = paidProgram) {
     { notifyIfTargetExceeded: jest.fn() } as never,
   );
 
-  return { useCase, enrollmentRepository, paymentRepository, prisma };
+  return { useCase, enrollmentRepository, paymentRepository, prisma, initiateSessionPayment };
 }
 
 const input = {
@@ -110,7 +118,7 @@ describe('CreateAcademyProgramEnrollmentUseCase pricing', () => {
   });
 
   it('creates a paid enrollment and payment from the selected USD amount and currency', async () => {
-    const { useCase, enrollmentRepository, paymentRepository } = createUseCase();
+    const { useCase, enrollmentRepository, paymentRepository, initiateSessionPayment } = createUseCase();
 
     await useCase.execute(input);
 
@@ -125,6 +133,9 @@ describe('CreateAcademyProgramEnrollmentUseCase pricing', () => {
     expect(paymentRepository.createPayment).toHaveBeenCalledWith(
       expect.objectContaining({ amountTotal: '20.00', currencyCode: 'USD' }),
       expect.anything(),
+    );
+    expect(initiateSessionPayment).toHaveBeenCalledWith(
+      expect.objectContaining({ routeIntegrationKey: 'paymob-usd-card' }),
     );
   });
 });

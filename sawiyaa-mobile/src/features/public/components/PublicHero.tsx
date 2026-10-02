@@ -182,7 +182,7 @@ export function PublicHero() {
             accessibilityLabel={t("publicHome.hero.startJourney")}
           >
             <Text style={{ color: publicTheme.secondaryText, fontSize: 13 }}>
-              {isArabic ? "ليس لديك حساب مريض؟" : "Don't have an account?"}
+              {isArabic ? "ليس لديك حساب بعد؟" : "Don't have an account?"}
             </Text>
             <Text
               style={[styles.signupBarLink, { color: publicTheme.primaryText }]}

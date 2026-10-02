@@ -31,6 +31,7 @@ import {
 import { FilterChip } from "../../../../components/ui/FilterChip";
 import { SearchBar } from "../../../../components/ui/SearchBar";
 import { useTheme } from "../../../../providers/ThemeProvider";
+import { getDirectionalIcon } from "../../../../i18n/direction";
 import { extractApiErrorMessage } from "../../../../lib/api";
 import {
   buildCreatePractitionerCouponRequest,
@@ -1342,7 +1343,7 @@ function PromoCodeDatePickerModal({
                 ]}
               >
                 <Ionicons
-                  name={isArabic ? "chevron-forward" : "chevron-back"}
+                  name={getDirectionalIcon("previous", isArabic)}
                   size={18}
                   color={theme.colors.textPrimary}
                 />
@@ -1365,7 +1366,7 @@ function PromoCodeDatePickerModal({
                 ]}
               >
                 <Ionicons
-                  name={isArabic ? "chevron-back" : "chevron-forward"}
+                  name={getDirectionalIcon("next", isArabic)}
                   size={18}
                   color={theme.colors.textPrimary}
                 />

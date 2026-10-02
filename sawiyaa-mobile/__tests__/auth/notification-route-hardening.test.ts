@@ -27,15 +27,26 @@ describe("patient notification route hardening", () => {
     );
   });
 
-  it("routes message notifications to the unified messages tabs", () => {
+  it("routes message notifications only to safe canonical threads", () => {
     expect(
       resolvePatientNotificationRoute("/patient/support/123", "messages.support-message-received"),
-    ).toBe("/(patient)/messages?tab=support");
+    ).toBeNull();
     expect(
-      resolvePatientNotificationRoute("/patient/care-chat/123", "messages.follow-up-message-received"),
-    ).toBe("/(patient)/messages?tab=followup");
+      resolvePatientNotificationRoute("/", "messages.follow-up-message-received", {
+        primaryAction: { kind: "messages", id: "123" },
+      }),
+    ).toBe("/(patient)/messages/123");
     expect(
       resolvePatientNotificationRoute("/patient/messages/123", "messages.session-message-received"),
-    ).toBe("/(patient)/messages?tab=sessions");
+    ).toBe("/(patient)/messages/123");
+  });
+
+  it("preserves the accepted session payment route", () => {
+    expect(resolvePatientNotificationRoute("/patient/sessions/session-1/pay")).toBe(
+      "/(patient)/sessions/session-1/pay",
+    );
+    expect(resolvePatientNotificationRoute("/patient/payments/transactions")).toBe(
+      "/(patient)/payments/transactions",
+    );
   });
 });

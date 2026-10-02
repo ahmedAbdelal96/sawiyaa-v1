@@ -25,6 +25,7 @@ import {
   usePractitionerCoupon,
   usePractitionerCouponRedemptions,
 } from "../hooks";
+import type { PractitionerCouponRedemptionItem } from "../types";
 import {
   formatDateWindow,
   formatPatientLimitLabel,
@@ -49,18 +50,27 @@ export default function PractitionerPromoCodeDetailsScreen() {
   const redemptionsQuery = usePractitionerCouponRedemptions(id);
 
   const coupon = detailQuery.data?.item; // Nested under .item
-  const redemptions = redemptionsQuery.data?.items ?? [];
+  const redemptions = (redemptionsQuery.data?.items ??
+    []) as PractitionerCouponRedemptionItem[];
 
   const handleRefresh = () => {
     detailQuery.refetch();
     redemptionsQuery.refetch();
   };
 
-  const displayStatus = coupon ? (coupon.effectiveStatus ?? coupon.status) : null;
-  const statusTone = displayStatus ? resolveCouponStatusTone(displayStatus) : "info";
+  const displayStatus = coupon
+    ? (coupon.effectiveStatus ?? coupon.status)
+    : null;
+  const statusTone = displayStatus
+    ? resolveCouponStatusTone(displayStatus)
+    : "info";
 
-  const usageLabel = coupon ? formatUsageLabel(coupon.currentUsageCount, coupon.usageLimitTotal, t) : "";
-  const patientLimitLabel = coupon ? formatPatientLimitLabel(coupon.usageLimitPerPatient, t) : "";
+  const usageLabel = coupon
+    ? formatUsageLabel(coupon.currentUsageCount, coupon.usageLimitTotal, t)
+    : "";
+  const patientLimitLabel = coupon
+    ? formatPatientLimitLabel(coupon.usageLimitPerPatient, t)
+    : "";
 
   return (
     <Screen bg="background">
@@ -70,8 +80,16 @@ export default function PractitionerPromoCodeDetailsScreen() {
         onBack={() => router.back()}
         rightElement={
           <View style={styles.headerRight}>
-            <TouchableOpacity onPress={handleRefresh} style={styles.headerAction} accessibilityRole="button">
-              <Ionicons name="refresh-outline" size={22} color={theme.colors.textPrimary} />
+            <TouchableOpacity
+              onPress={handleRefresh}
+              style={styles.headerAction}
+              accessibilityRole="button"
+            >
+              <Ionicons
+                name="refresh-outline"
+                size={22}
+                color={theme.colors.textPrimary}
+              />
             </TouchableOpacity>
           </View>
         }
@@ -81,7 +99,9 @@ export default function PractitionerPromoCodeDetailsScreen() {
         contentContainerStyle={styles.scroll}
         refreshControl={
           <RefreshControl
-            refreshing={detailQuery.isRefetching || redemptionsQuery.isRefetching}
+            refreshing={
+              detailQuery.isRefetching || redemptionsQuery.isRefetching
+            }
             onRefresh={handleRefresh}
             tintColor={theme.colors.primary}
           />
@@ -111,12 +131,28 @@ export default function PractitionerPromoCodeDetailsScreen() {
                 },
               ]}
             >
-              <View style={[styles.couponTopRow, { flexDirection: rowDirection }]}>
-                <View style={[styles.couponTextWrap, { alignItems: alignSelfStart }]}>
-                  <Text weight="700" style={styles.couponCode} color="#24564F" numberOfLines={1}>
+              <View
+                style={[styles.couponTopRow, { flexDirection: rowDirection }]}
+              >
+                <View
+                  style={[
+                    styles.couponTextWrap,
+                    { alignItems: alignSelfStart },
+                  ]}
+                >
+                  <Text
+                    weight="700"
+                    style={styles.couponCode}
+                    color="#24564F"
+                    numberOfLines={1}
+                  >
                     {coupon.code}
                   </Text>
-                  <Text color="#1F332F" weight="600" style={styles.couponSubtitle}>
+                  <Text
+                    color="#1F332F"
+                    weight="600"
+                    style={styles.couponSubtitle}
+                  >
                     {t("practitioner.promoCodes.list.discount", {
                       value: formatPercentLabel(coupon.discountValue),
                     })}
@@ -129,37 +165,85 @@ export default function PractitionerPromoCodeDetailsScreen() {
                 />
               </View>
 
-              <View style={[styles.couponDetailsBlock, { alignItems: alignSelfStart }]}>
-                <View style={[styles.couponDetailRow, { flexDirection: rowDirection }]}>
-                  <Ionicons name="pie-chart-outline" size={14} color="#6F7E78" style={isRtl ? { marginLeft: 8 } : { marginRight: 8 }} />
+              <View
+                style={[
+                  styles.couponDetailsBlock,
+                  { alignItems: alignSelfStart },
+                ]}
+              >
+                <View
+                  style={[
+                    styles.couponDetailRow,
+                    { flexDirection: rowDirection },
+                  ]}
+                >
+                  <Ionicons
+                    name="pie-chart-outline"
+                    size={14}
+                    color="#6F7E78"
+                    style={isRtl ? { marginLeft: 8 } : { marginRight: 8 }}
+                  />
                   <Text color="#6F7E78" style={styles.couponDetailText}>
                     {usageLabel}
                   </Text>
                 </View>
 
-                <View style={[styles.couponDetailRow, { flexDirection: rowDirection }]}>
-                  <Ionicons name="person-outline" size={14} color="#6F7E78" style={isRtl ? { marginLeft: 8 } : { marginRight: 8 }} />
+                <View
+                  style={[
+                    styles.couponDetailRow,
+                    { flexDirection: rowDirection },
+                  ]}
+                >
+                  <Ionicons
+                    name="person-outline"
+                    size={14}
+                    color="#6F7E78"
+                    style={isRtl ? { marginLeft: 8 } : { marginRight: 8 }}
+                  />
                   <Text color="#6F7E78" style={styles.couponDetailText}>
-                    {t("practitioner.promoCodes.list.perPatient")}: {patientLimitLabel}
+                    {t("practitioner.promoCodes.list.perPatient")}:{" "}
+                    {patientLimitLabel}
                   </Text>
                 </View>
 
-                <View style={[styles.couponDetailRow, { flexDirection: rowDirection }]}>
-                  <Ionicons name="calendar-outline" size={14} color="#6F7E78" style={isRtl ? { marginLeft: 8 } : { marginRight: 8 }} />
+                <View
+                  style={[
+                    styles.couponDetailRow,
+                    { flexDirection: rowDirection },
+                  ]}
+                >
+                  <Ionicons
+                    name="calendar-outline"
+                    size={14}
+                    color="#6F7E78"
+                    style={isRtl ? { marginLeft: 8 } : { marginRight: 8 }}
+                  />
                   <Text color="#6F7E78" style={styles.couponDetailText}>
-                    {formatDateWindow(coupon.startsAt, coupon.endsAt, locale, t)}
+                    {formatDateWindow(
+                      coupon.startsAt,
+                      coupon.endsAt,
+                      locale,
+                      t,
+                    )}
                   </Text>
                 </View>
               </View>
             </Card>
 
             {/* Redemptions Activity Log */}
-            <View style={[styles.redemptionsHeaderRow, { flexDirection: rowDirection }]}>
+            <View
+              style={[
+                styles.redemptionsHeaderRow,
+                { flexDirection: rowDirection },
+              ]}
+            >
               <Text weight="700" style={styles.sectionTitle} color="#1F332F">
                 {t("practitioner.promoCodes.detail.redemptionsTitle")}
               </Text>
               <Text color="#6F7E78" style={styles.sectionSubtitle}>
-                {t("practitioner.promoCodes.list.usage")}: {coupon.currentUsageCount} {coupon.usageLimitTotal ? `/ ${coupon.usageLimitTotal}` : ""}
+                {t("practitioner.promoCodes.list.usage")}:{" "}
+                {coupon.currentUsageCount}{" "}
+                {coupon.usageLimitTotal ? `/ ${coupon.usageLimitTotal}` : ""}
               </Text>
             </View>
 
@@ -178,8 +262,12 @@ export default function PractitionerPromoCodeDetailsScreen() {
               </View>
             ) : (
               <EmptyState
-                title={t("practitioner.promoCodes.detail.emptyRedemptionsTitle")}
-                description={t("practitioner.promoCodes.detail.emptyRedemptionsBody")}
+                title={t(
+                  "practitioner.promoCodes.detail.emptyRedemptionsTitle",
+                )}
+                description={t(
+                  "practitioner.promoCodes.detail.emptyRedemptionsBody",
+                )}
                 icon={
                   <Ionicons
                     name="receipt-outline"
@@ -223,9 +311,20 @@ function RedemptionCard({
       ]}
     >
       <View style={[styles.redemptionTopRow, { flexDirection: rowDirection }]}>
-        <View style={[styles.redemptionText, { alignItems: isRtl ? "flex-end" : "flex-start" }]}>
-          <Text weight="700" style={styles.redemptionName} color="#1F332F" numberOfLines={1}>
-            {item.patientDisplayName ?? t("practitioner.promoCodes.detail.unknownPatient")}
+        <View
+          style={[
+            styles.redemptionText,
+            { alignItems: isRtl ? "flex-end" : "flex-start" },
+          ]}
+        >
+          <Text
+            weight="700"
+            style={styles.redemptionName}
+            color="#1F332F"
+            numberOfLines={1}
+          >
+            {item.patientDisplayName ??
+              t("practitioner.promoCodes.detail.unknownPatient")}
           </Text>
           <Text color="#6F7E78" style={styles.redemptionMeta}>
             {formatDateTime(item.redeemedAt, locale)}
@@ -277,7 +376,12 @@ function MetaPill({
   theme: any;
 }) {
   return (
-    <View style={[styles.metaPill, { backgroundColor: "#F9FBF9", borderColor: "#EEF4EF" }]}>
+    <View
+      style={[
+        styles.metaPill,
+        { backgroundColor: "#F9FBF9", borderColor: "#EEF4EF" },
+      ]}
+    >
       <Text color="#6F7E78" style={styles.metaPillLabel}>
         {label}
       </Text>

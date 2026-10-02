@@ -41,6 +41,11 @@ export class InstantBookingPractitionerRepository {
         isPublicProfilePublished: true,
         professionalTitle: true,
         bio: true,
+        primaryContentLocale: true,
+        professionalContentTranslations: {
+          orderBy: { locale: 'asc' as const },
+          select: { locale: true, professionalTitle: true, bio: true },
+        },
         avatarUrl: true,
         yearsOfExperience: true,
         createdAt: true,
@@ -74,6 +79,8 @@ export class InstantBookingPractitionerRepository {
             specialty: {
               select: {
                 slug: true,
+                nameAr: true,
+                nameEn: true,
                 translations: {
                   where: {
                     locale: {

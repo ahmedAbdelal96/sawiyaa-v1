@@ -6,7 +6,7 @@ describe('SessionCompletionConfirmationSweeperService', () => {
   const tryLockDueSessionForCompletionConfirmation = jest.fn();
   const transitionIfCurrentStatus = jest.fn();
   const transaction = jest.fn();
-  const logger = { error: jest.fn(), log: jest.fn() };
+  const logger = { error: jest.fn(), log: jest.fn(), warn: jest.fn() };
   const service = new SessionCompletionConfirmationSweeperService(
     { $transaction: transaction } as never,
     {
@@ -19,12 +19,19 @@ describe('SessionCompletionConfirmationSweeperService', () => {
 
   beforeEach(() => {
     jest.resetAllMocks();
+    listSessionsDueForCompletionConfirmation.mockResolvedValue([]);
     transaction.mockImplementation((fn: (tx: unknown) => unknown) => fn({}));
     tryLockDueSessionForCompletionConfirmation.mockImplementation(
       ({ sessionId }: { sessionId: string }) =>
         Promise.resolve({ id: sessionId, status: SessionStatus.UPCOMING }),
     );
     transitionIfCurrentStatus.mockResolvedValue({ outcome: 'transitioned' });
+  });
+
+  it('starts regardless of the removed completion enable flag', () => {
+    service.onApplicationBootstrap();
+    expect(listSessionsDueForCompletionConfirmation).toHaveBeenCalled();
+    service.onModuleDestroy();
   });
 
   it('moves elapsed upcoming rows to awaiting confirmation after grace', async () => {

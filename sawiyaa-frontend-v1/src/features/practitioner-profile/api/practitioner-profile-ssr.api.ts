@@ -15,14 +15,13 @@ import {
 import type {
   PractitionerProfile,
   PublicPractitionerPresence,
+  PublicPractitionerInstantBookingAvailability,
 } from "../types/profile";
 
 type BackendPublicPractitionerDetailsItem = BackendPublicPractitionerListItem & {
   fullBio: string | null;
-  credentialsSummary: {
-    totalCredentials: number;
-    approvedCredentials: number;
-  };
+  bioAr: string | null;
+  bioEn: string | null;
 };
 
 /** Extended practitioner data as returned by the detail endpoint. */
@@ -42,11 +41,11 @@ function mapBackendDetailsToUi(
   const base = mapBackendListItemToUi(item);
   return {
     ...base,
-    bioAr: item.fullBio ?? "",
-    bioEn: item.fullBio ?? "",
+    bio: item.fullBio ?? null,
+    bioAr: item.bioAr ?? null,
+    bioEn: item.bioEn ?? null,
     approachAr: "",
     approachEn: "",
-    credentialsSummary: item.credentialsSummary,
   };
 }
 
@@ -101,6 +100,23 @@ export async function fetchPublicPractitionerPresence(
   } catch (err) {
     if ((err as { status?: number }).status === 404) return null;
     throw err;
+  }
+}
+
+type BackendInstantBookingAvailabilityData = PublicPractitionerInstantBookingAvailability;
+
+export async function fetchPublicPractitionerInstantBookingAvailability(
+  slug: string,
+  locale: string,
+): Promise<PublicPractitionerInstantBookingAvailability | null> {
+  try {
+    return await serverGet<BackendInstantBookingAvailabilityData>(
+      `${PRACTITIONERS_PUBLIC_ROUTES.bySlug(slug)}/instant-booking-availability`,
+      { locale },
+    );
+  } catch (err) {
+    if ((err as { status?: number }).status === 404) return null;
+    return null;
   }
 }
 

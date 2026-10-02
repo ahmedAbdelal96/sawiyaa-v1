@@ -4,6 +4,7 @@ import { I18nService } from '@common/i18n/services/i18n.service';
 import { SupportedLocale } from '@common/i18n/types/locale.types';
 import { PractitionerApplicationMapper } from '../mappers/practitioner-application.mapper';
 import { PractitionerProfileMapper } from '../mappers/practitioner-profile.mapper';
+import { maskPayoutEmail, maskPayoutIdentifier } from '../utils/mask-payout-destination.util';
 import { PractitionerCredentialRepository } from '../repositories/practitioner-credential.repository';
 import { PractitionerLanguageRepository } from '../repositories/practitioner-language.repository';
 import { PractitionerApplicationRepository } from '../repositories/practitioner-application.repository';
@@ -12,6 +13,9 @@ import { PractitionerUserRepository } from '../repositories/practitioner-user.re
 import { SpecialtyRepository } from '../repositories/specialty.repository';
 import { GetPractitionerProfileReadinessUseCase } from './get-practitioner-profile-readiness.use-case';
 import { PractitionerReviewCaseService } from '../services/practitioner-review-case.service';
+import { Optional } from '@nestjs/common';
+import { PractitionerProfessionalContentRepository } from '../repositories/practitioner-professional-content.repository';
+import { PractitionerProfessionalContentAuthoringService } from '../services/practitioner-professional-content-authoring.service';
 
 /**
  * Current practitioner profile read model for product-facing UI.
@@ -31,6 +35,10 @@ export class GetPractitionerProfileUseCase {
     private readonly practitionerApplicationMapper: PractitionerApplicationMapper,
     private readonly getPractitionerProfileReadinessUseCase: GetPractitionerProfileReadinessUseCase,
     private readonly practitionerReviewCaseService: PractitionerReviewCaseService,
+    @Optional()
+    private readonly professionalContentRepository?: PractitionerProfessionalContentRepository,
+    @Optional()
+    private readonly professionalContentAuthoringService?: PractitionerProfessionalContentAuthoringService,
   ) {}
 
   async execute(input: {
@@ -49,6 +57,12 @@ export class GetPractitionerProfileUseCase {
         error: 'PRACTITIONER_PROFILE_NOT_FOUND',
       });
     }
+
+    const professionalContentState = this.professionalContentRepository
+      ? await this.professionalContentRepository.findByPractitionerProfileId(
+          profile.id,
+        )
+      : null;
 
     const [
       readiness,
@@ -104,6 +118,14 @@ export class GetPractitionerProfileUseCase {
           instantBookingPrice30Usd: profile.instantBookingPrice30Usd ?? null,
           instantBookingPrice60Egp: profile.instantBookingPrice60Egp ?? null,
           instantBookingPrice60Usd: profile.instantBookingPrice60Usd ?? null,
+          professionalContent:
+            professionalContentState && this.professionalContentAuthoringService
+              ? this.professionalContentAuthoringService.toSnapshot(
+                  professionalContentState,
+                )
+              : null,
+          primaryContentLocale:
+            professionalContentState?.primaryContentLocale ?? null,
           payoutDestination: profile.payoutDestination
             ? {
                 methodType: profile.payoutDestination.methodType,
@@ -112,13 +134,15 @@ export class GetPractitionerProfileUseCase {
                   profile.payoutDestination.accountHolderName ?? null,
                 bankName: profile.payoutDestination.bankName ?? null,
                 bankAccountNumber:
-                  profile.payoutDestination.bankAccountNumber ?? null,
-                iban: profile.payoutDestination.iban ?? null,
+                  maskPayoutIdentifier(profile.payoutDestination.bankAccountNumber),
+                iban: maskPayoutIdentifier(profile.payoutDestination.iban),
                 walletProvider:
                   profile.payoutDestination.walletProvider ?? null,
                 walletIdentifier:
-                  profile.payoutDestination.walletIdentifier ?? null,
-                otherDetails: profile.payoutDestination.otherDetails ?? null,
+                  maskPayoutIdentifier(profile.payoutDestination.walletIdentifier),
+                instapayIdentifier: maskPayoutIdentifier(profile.payoutDestination.instapayIdentifier),
+                paypalEmail: maskPayoutEmail(profile.payoutDestination.paypalEmail),
+                otherDetails: profile.payoutDestination.otherDetails ? '[stored]' : null,
               }
             : null,
         },

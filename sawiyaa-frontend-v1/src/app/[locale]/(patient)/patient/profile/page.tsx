@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { getTranslations, setRequestLocale } from "next-intl/server";
-import PatientSectionFrame from "@/components/patient/PatientSectionFrame";
 import PatientProfileForm from "@/features/patients/components/PatientProfileForm";
 
 type Props = {
@@ -20,15 +19,9 @@ export default async function PatientProfilePage({ params }: Props) {
   const { locale } = await params;
   setRequestLocale(locale);
 
-  const t = await getTranslations({ locale, namespace: "patient-profile" });
-
   return (
-    <PatientSectionFrame
-      eyebrow={t("page.title")}
-      title={t("page.title")}
-      description={t("page.subtitle")}
-    >
+    <div className="mx-auto max-w-5xl px-4 py-6 sm:py-8 space-y-6">
       <PatientProfileForm />
-    </PatientSectionFrame>
+    </div>
   );
 }

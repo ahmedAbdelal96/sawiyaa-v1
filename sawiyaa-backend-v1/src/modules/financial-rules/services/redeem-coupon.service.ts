@@ -32,6 +32,7 @@ export class RedeemCouponService {
     discountAmount: string;
     couponPlatformSharePercent: string | null;
     couponPractitionerSharePercent: string | null;
+    tx?: Prisma.TransactionClient;
   }) {
     if (
       !input.couponId ||
@@ -45,6 +46,7 @@ export class RedeemCouponService {
       await this.couponRedemptionRepository.findByCouponAndSession(
         input.couponId,
         input.sessionId,
+        input.tx,
       );
 
     if (existing) {
@@ -58,7 +60,7 @@ export class RedeemCouponService {
       .subtract(input.discountAmount, platformDiscountShare)
       .toFixed(2);
 
-    const redemption = await this.prisma.$transaction(async (tx) => {
+    const run = async (tx: Prisma.TransactionClient) => {
       await this.couponRepository.lockCouponForUpdate(input.couponId!, tx);
 
       const coupon = await this.couponRepository.findById(input.couponId!, tx);
@@ -77,30 +79,9 @@ export class RedeemCouponService {
         return refreshedExisting;
       }
 
-      const currentUsageCount = coupon.currentUsageCount;
-      if (
-        coupon.usageLimitTotal !== null &&
-        coupon.usageLimitTotal !== undefined &&
-        currentUsageCount >= coupon.usageLimitTotal
-      ) {
-        return null;
-      }
-
-      if (
-        coupon.usageLimitPerPatient !== null &&
-        coupon.usageLimitPerPatient !== undefined
-      ) {
-        const patientUsage =
-          await this.couponRepository.countPatientRedemptions(
-            coupon.id,
-            input.patientId,
-            tx,
-          );
-
-        if (patientUsage >= coupon.usageLimitPerPatient) {
-          return null;
-        }
-      }
+      // Checkout reserves usage under this same row lock. Once funds are
+      // captured, record the accepted discount even if an administrator has
+      // subsequently lowered the limit; never silently omit paid redemption.
 
       const redemption = await this.couponRedemptionRepository.createRedemption(
         {
@@ -126,22 +107,18 @@ export class RedeemCouponService {
         throw new Error('COUPON_USAGE_INCREMENT_FAILED');
       }
 
-      return redemption;
-    });
-
-    if (redemption) {
-      this.securityAuditService.logAsync({
+      await this.securityAuditService.recordRequired(tx, {
         action: 'finance.coupons.redeemed.success',
         outcome: SecurityAuditOutcome.SUCCESS,
         resourceType: 'Coupon',
-        resourceId: input.couponId,
+        resourceId: input.couponId!,
         metadata: {
           couponId: input.couponId,
           couponCode: input.couponCode ?? null,
           sessionId: input.sessionId,
           paymentId: input.paymentId,
-          practitionerId: input.practitionerId,
           patientId: input.patientId,
+          practitionerId: input.practitionerId,
           currencyCode: input.currencyCode,
           grossAmount: input.grossAmount,
           discountAmount: input.discountAmount,
@@ -149,7 +126,12 @@ export class RedeemCouponService {
           practitionerDiscountShare,
         },
       });
-    }
+
+      return redemption;
+    };
+    const redemption = input.tx
+      ? await run(input.tx)
+      : await this.prisma.$transaction(run);
 
     return redemption;
   }

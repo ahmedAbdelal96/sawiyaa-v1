@@ -9,6 +9,10 @@ import {
 } from "./api";
 import type {
   CreateCareChatRequestPayload,
+  CareChatConversationDetailsDto,
+  CareChatMessageDto,
+  CareChatRequestItemDto,
+  CareChatRequestListResponseData,
   ListCareChatRequestsQuery,
 } from "./types";
 
@@ -24,7 +28,7 @@ const careChatKeys = {
 export function useMyCareChatRequests(query?: ListCareChatRequestsQuery) {
   const enabled = useAuthenticatedQueryEnabled("patient");
 
-  return useQuery({
+  return useQuery<CareChatRequestListResponseData>({
     queryKey: careChatKeys.list(query),
     queryFn: () => listMyCareChatRequests(query),
     enabled,
@@ -35,7 +39,7 @@ export function useMyCareChatRequests(query?: ListCareChatRequestsQuery) {
 export function useMyCareChatRequest(requestId: string | null) {
   const enabled = useAuthenticatedQueryEnabled("patient");
 
-  return useQuery({
+  return useQuery<CareChatRequestItemDto>({
     queryKey: careChatKeys.request(requestId ?? ""),
     queryFn: async () => {
       const res = await getMyCareChatRequest(requestId!);
@@ -49,7 +53,7 @@ export function useMyCareChatRequest(requestId: string | null) {
 export function useCareChatConversation(conversationId: string | null) {
   const enabled = useAuthenticatedQueryEnabled("patient");
 
-  return useQuery({
+  return useQuery<CareChatConversationDetailsDto>({
     queryKey: careChatKeys.conversation(conversationId ?? ""),
     queryFn: async () => {
       const res = await getCareChatConversation(conversationId!);
@@ -62,7 +66,7 @@ export function useCareChatConversation(conversationId: string | null) {
 
 export function useCreateCareChatRequest() {
   const queryClient = useQueryClient();
-  return useMutation({
+  return useMutation<{ item: CareChatRequestItemDto }, Error, CreateCareChatRequestPayload>({
     mutationFn: (payload: CreateCareChatRequestPayload) =>
       createCareChatRequest(payload),
     onSuccess: () => {
@@ -73,7 +77,7 @@ export function useCreateCareChatRequest() {
 
 export function useSendCareChatMessage(conversationId: string) {
   const queryClient = useQueryClient();
-  return useMutation({
+  return useMutation<{ item: CareChatMessageDto }, Error, string>({
     mutationFn: (message: string) =>
       sendCareChatMessage(conversationId, message),
     onSuccess: () => {

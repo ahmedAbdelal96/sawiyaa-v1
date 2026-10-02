@@ -27,8 +27,13 @@ import { RequireAccountStates } from '@common/decorators/account-state.decorator
 import { CurrentLocale } from '@common/i18n/decorators/current-locale.decorator';
 import { SupportedLocale } from '@common/i18n/types/locale.types';
 import { AccountStateRequirement } from '@common/enums/account-state-requirement.enum';
+import { AppRole } from '@common/enums/app-role.enum';
 import { JwtAccessAuthGuard } from '@common/guards/authentication/jwt-access-auth.guard';
-import { AdminGuard } from '@common/guards/authorization/admin.guard';
+import { Roles } from '@common/decorators/roles.decorator';
+import { Permissions } from '@common/decorators/permissions.decorator';
+import { PermissionKey } from '@common/enums/permission-key.enum';
+import { RolesGuard } from '@common/guards/authorization/roles.guard';
+import { PermissionsGuard } from '@common/guards/authorization/permissions.guard';
 import { CreateSpecialtyDto } from '../dto/create-specialty.dto';
 import { CreateSpecialtyCategoryDto } from '../dto/create-specialty-category.dto';
 import {
@@ -55,8 +60,14 @@ import { UpdateSpecialtyUseCase } from '../use-cases/update-specialty.use-case';
  */
 @ApiTags('Admin - Specialties')
 @ApiBearerAuth()
-@UseGuards(JwtAccessAuthGuard, AdminGuard)
+@UseGuards(JwtAccessAuthGuard, RolesGuard, PermissionsGuard)
 @RequireAccountStates(AccountStateRequirement.ACTIVE_ACCOUNT)
+@Roles(
+  AppRole.ADMIN,
+  AppRole.SUPER_ADMIN,
+  AppRole.CONTENT_REVIEWER,
+  AppRole.PRACTITIONER_REVIEWER,
+)
 @Controller('admin/specialties')
 export class SpecialtiesAdminController {
   constructor(
@@ -71,6 +82,7 @@ export class SpecialtiesAdminController {
 
   /** Lists specialties for admin including inactive rows. */
   @Get()
+  @Permissions(PermissionKey.SPECIALTIES_READ)
   @ApiOperation({
     summary: 'List specialties for admin',
     description:
@@ -97,6 +109,7 @@ export class SpecialtiesAdminController {
 
   /** Lists specialty categories for admin including inactive rows. */
   @Get('categories')
+  @Permissions(PermissionKey.SPECIALTIES_READ)
   @ApiOperation({
     summary: 'List specialty categories for admin',
     description:
@@ -123,6 +136,7 @@ export class SpecialtiesAdminController {
 
   /** Creates a primary specialty category record. */
   @Post('categories')
+  @Permissions(PermissionKey.SPECIALTIES_MANAGE)
   @ApiOperation({
     summary: 'Create specialty category',
     description:
@@ -149,6 +163,7 @@ export class SpecialtiesAdminController {
 
   /** Updates a primary specialty category record. */
   @Patch('categories/:id')
+  @Permissions(PermissionKey.SPECIALTIES_MANAGE)
   @ApiOperation({
     summary: 'Update specialty category',
     description:
@@ -185,6 +200,7 @@ export class SpecialtiesAdminController {
 
   /** Creates a practitioner specialty catalog record. */
   @Post()
+  @Permissions(PermissionKey.SPECIALTIES_MANAGE)
   @ApiOperation({
     summary: 'Create specialty',
     description:
@@ -216,6 +232,7 @@ export class SpecialtiesAdminController {
 
   /** Updates specialty baseline data and localized translation fields. */
   @Patch(':id')
+  @Permissions(PermissionKey.SPECIALTIES_MANAGE)
   @ApiOperation({
     summary: 'Update specialty',
     description:
@@ -254,6 +271,7 @@ export class SpecialtiesAdminController {
 
   /** Toggles specialty activation state for catalog availability control. */
   @Patch(':id/toggle-status')
+  @Permissions(PermissionKey.SPECIALTIES_MANAGE)
   @ApiOperation({
     summary: 'Toggle specialty status',
     description:

@@ -17,6 +17,7 @@ import {
   createMessageSendDescriptor,
   reconcileCanonicalMessage,
 } from "../lib/message-identity";
+import type { MessageSendDescriptor } from "../lib/message-identity";
 
 function notifyUnreadSummaryDirty() {
   if (typeof window !== "undefined") {
@@ -355,9 +356,9 @@ export function useUnifiedMessages({
     });
   }, [conversationId, queryClient]);
 
-  const sendMessage = useCallback(async (text: string) => {
-    if (!conversationId || !text.trim()) return;
-    const descriptor = createMessageSendDescriptor(conversationId, text.trim());
+  const sendMessage = useCallback(async (text: string, attachments: MessageSendDescriptor["attachments"] = []) => {
+    if (!conversationId || (!text.trim() && attachments.length === 0)) return;
+    const descriptor = createMessageSendDescriptor(conversationId, text.trim(), attachments);
     const optimistic: MessagingMessage = {
       id: `optimistic:${descriptor.clientMessageId}`,
       clientMessageId: descriptor.clientMessageId,
@@ -374,7 +375,13 @@ export function useUnifiedMessages({
       deliveryState: "sending",
       deliveredAt: null,
       readAt: null,
-      attachments: [],
+      attachments: descriptor.attachments.map((attachment) => ({
+        id: attachment.fileId,
+        fileUrl: attachment.fileUrl,
+        mimeType: attachment.mimeType,
+        fileSize: attachment.fileSize,
+        originalName: attachment.originalName,
+      })),
     };
     messagesMap.current[optimistic.id] = true;
     messagesMap.current[descriptor.clientMessageId] = true;

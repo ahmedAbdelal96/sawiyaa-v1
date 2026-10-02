@@ -3,9 +3,9 @@ import { SessionMode } from '@prisma/client';
 import { Type } from 'class-transformer';
 import {
   ArrayMaxSize,
-  ArrayMinSize,
   IsArray,
   IsEnum,
+  IsOptional,
   IsIn,
   IsInt,
   IsString,
@@ -49,12 +49,13 @@ export class CreatePackagePurchaseDto {
   @ApiProperty({
     type: [PackagePurchaseSessionSlotDto],
     description:
-      'Exactly one slot per package session count, each with a requested UTC start datetime',
+      'Optional first appointment. Omit or send an empty array to buy now and book package sessions later; legacy clients may still send every slot.',
+    required: false,
   })
+  @IsOptional()
   @IsArray()
-  @ArrayMinSize(1)
   @ArrayMaxSize(8)
   @ValidateNested({ each: true })
   @Type(() => PackagePurchaseSessionSlotDto)
-  selectedSessionSlots!: PackagePurchaseSessionSlotDto[];
+  selectedSessionSlots?: PackagePurchaseSessionSlotDto[];
 }

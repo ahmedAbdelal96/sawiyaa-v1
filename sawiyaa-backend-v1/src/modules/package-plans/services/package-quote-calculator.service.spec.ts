@@ -6,6 +6,7 @@ import {
   SessionMode,
 } from '@prisma/client';
 import { MoneyMathService } from '@modules/financial-rules/services/money-math.service';
+import { CountryRepository } from '@modules/patients/repositories/country.repository';
 import { ValidateSessionDurationService } from '@modules/sessions/services/validate-session-duration.service';
 import { ValidatePackagePlanService } from './validate-package-plan.service';
 import { PackageQuoteCalculatorService } from './package-quote-calculator.service';
@@ -14,6 +15,9 @@ describe('PackageQuoteCalculatorService', () => {
   const resolveCommissionRuleService = {
     resolveForSession: jest.fn(),
   } as never;
+  const countryRepository = {
+    findByIsoCode: jest.fn(),
+  } as unknown as CountryRepository;
   const moneyMathService = new MoneyMathService();
   const validateSessionDurationService = new ValidateSessionDurationService();
   const validatePackagePlanService = new ValidatePackagePlanService();
@@ -23,6 +27,7 @@ describe('PackageQuoteCalculatorService', () => {
     validatePackagePlanService,
     resolveCommissionRuleService,
     moneyMathService,
+    countryRepository,
   );
   const calculateWithTrustedCountry = service.calculate.bind(service);
   service.calculate = ((input: any) =>
@@ -55,6 +60,12 @@ describe('PackageQuoteCalculatorService', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    (countryRepository.findByIsoCode as jest.Mock).mockImplementation(
+      async (isoCode: string) =>
+        isoCode === 'EG'
+          ? { id: 'country-egy', isoCode: 'EG' }
+          : { id: 'country-us', isoCode: 'US' },
+    );
   });
 
   it.each([
@@ -320,6 +331,32 @@ describe('PackageQuoteCalculatorService', () => {
     expect(result.commissionMode).toBe(MarketType.CROSS_BORDER);
     expect(result.platformOriginalShare).toBe('200.00');
     expect(result.practitionerOriginalShare).toBe('200.00');
+  });
+
+  it('passes the trusted request country to commission context instead of the stored patient country', async () => {
+    (
+      resolveCommissionRuleService.resolveForSession as jest.Mock
+    ).mockResolvedValue({
+      rule: { marketType: MarketType.CROSS_BORDER },
+      platformRatePercent: '41.00',
+      practitionerRatePercent: '59.00',
+    });
+
+    await service.calculate({
+      plan: { code: 'SESSIONS_4', sessionCount: 4, discountPercent: '10' },
+      practitioner,
+      selectedDurationMinutes: 60,
+      sessionMode: SessionMode.VIDEO,
+      requestCountryIsoCode: 'US',
+      patient: { ...patient, countryId: 'country-egy' },
+      internalBreakdownVisible: true,
+    });
+
+    expect(
+      resolveCommissionRuleService.resolveForSession,
+    ).toHaveBeenCalledWith(
+      expect.objectContaining({ pricingPatientCountryId: 'country-us' }),
+    );
   });
 
   it('splits the package discount equally between platform and practitioner', async () => {

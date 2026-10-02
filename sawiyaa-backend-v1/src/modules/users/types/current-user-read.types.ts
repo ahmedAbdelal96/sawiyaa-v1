@@ -8,6 +8,7 @@ import { PractitionerStatus, UserStatus } from '@prisma/client';
 export interface CurrentUserBasicsReadModel {
   id: string;
   displayName: string | null;
+  patientProfileDisplayName?: string | null;
   locale: string | null;
   timezone: string | null;
   accountStatus: UserStatus;

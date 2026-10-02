@@ -115,8 +115,6 @@ export class QuotePackagePlanUseCase {
       sessionMode: input.sessionMode,
       selectedCurrencyCode: null,
       requestCountryIsoCode: input.requestCountryIsoCode,
-      patientCountryIsoCode: patientProfile.country?.isoCode ?? null,
-      operatingCountryIsoCode: practitioner.country?.isoCode ?? null,
       patient: {
         id: patientProfile.id,
         countryId: patientProfile.countryId,

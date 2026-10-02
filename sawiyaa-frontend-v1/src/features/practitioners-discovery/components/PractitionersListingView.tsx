@@ -1,6 +1,6 @@
 import { getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, X, RotateCcw } from "lucide-react";
 import ListingPageHero from "./ListingPageHero";
 import FilterControls from "./FilterControls";
 import PractitionerGrid from "./PractitionerGrid";
@@ -9,6 +9,7 @@ import {
   fetchPublicPractitionerFilters,
   fetchPublicPractitioners,
 } from "../api/practitioners-ssr.api";
+import { getLocalizedSpecialtyName } from "@/features/specialties/utils/localized-specialty";
 import type { ActiveFeeFilterContext } from "../types/practitioner";
 
 const VALID_SORT_VALUES = ["recommended", "experience", "rating"] as const;
@@ -27,6 +28,7 @@ export type PractitionersListingSearchParams = {
   gender?: string;
   duration?: string;
   onlineNow?: string;
+  instantBookingEnabled?: string;
   availableToday?: string;
   availableThisWeek?: string;
   acceptsCoupon?: string;
@@ -57,6 +59,7 @@ export type PractitionersListingViewData = {
   safeGender: "male" | "female" | "";
   safeDuration: 30 | 60 | undefined;
   safeOnlineNow: boolean;
+  safeInstantBookingEnabled: boolean;
   safeMinRating: number | undefined;
   safeMinSessionFee: number | undefined;
   safeMaxSessionFee: number | undefined;
@@ -84,6 +87,7 @@ export async function getPractitionersListingData(
     gender = "",
     duration,
     onlineNow,
+    instantBookingEnabled,
     minRating,
     minSessionFee,
     maxSessionFee,
@@ -114,6 +118,7 @@ export async function getPractitionersListingData(
   const parsedDuration = Number(duration);
   const safeDuration: 30 | 60 | undefined = parsedDuration === 30 || parsedDuration === 60 ? parsedDuration : undefined;
   const safeOnlineNow = toBool(onlineNow);
+  const safeInstantBookingEnabled = toBool(instantBookingEnabled);
   const safeMinRatingRaw = toOptionalNumber(minRating);
   const safeMinRating =
     safeMinRatingRaw !== undefined && safeMinRatingRaw >= 1 && safeMinRatingRaw <= 5
@@ -138,8 +143,8 @@ export async function getPractitionersListingData(
     feeBounds: { min: 0, max: 0, currency: "USD", step: 5 },
     availability: {
       onlineNowSupported: true,
-      availableTodaySupported: false,
-      availableThisWeekSupported: false,
+      availableTodaySupported: true,
+      availableThisWeekSupported: true,
     },
   };
 
@@ -148,7 +153,7 @@ export async function getPractitionersListingData(
       duration: safeDuration,
     });
   } catch {
-    // Best-effort rendering: listing still works even if filter metadata is unavailable.
+    // Best-effort rendering
   }
 
   const safeCountry = filters.countries.some((option) => option.value === country.toUpperCase())
@@ -217,6 +222,7 @@ export async function getPractitionersListingData(
       gender: safeGender || undefined,
       duration: safeDuration,
       onlineNow: safeOnlineNow || undefined,
+      instantBookingEnabled: safeInstantBookingEnabled || undefined,
       minRating: safeMinRating,
       minSessionFee: safeMinSessionFee,
       maxSessionFee: safeMaxSessionFee,
@@ -248,6 +254,7 @@ export async function getPractitionersListingData(
     safeGender,
     safeDuration,
     safeOnlineNow,
+    safeInstantBookingEnabled,
     safeMinRating,
     safeMinSessionFee,
     safeMaxSessionFee,
@@ -261,11 +268,13 @@ export default async function PractitionersListingView({
   basePath = "/practitioners",
 }: PractitionersListingViewProps) {
   const tPage = await getTranslations("practitioners-listing.page");
+  const tSort = await getTranslations("practitioners-listing.sort");
+  const tFilter = await getTranslations("practitioners-listing.filter");
+
   const {
     filters,
     specialtyLabels,
     languageLabels,
-    countryLabels,
     items,
     pagination,
     fetchError,
@@ -279,6 +288,7 @@ export default async function PractitionersListingView({
     safeGender,
     safeDuration,
     safeOnlineNow,
+    safeInstantBookingEnabled,
     safeMinRating,
     safeMinSessionFee,
     safeMaxSessionFee,
@@ -286,63 +296,194 @@ export default async function PractitionersListingView({
     safeLimit,
   } = data;
 
-  const buildPageUrl = (nextPage: number) => {
+  const buildUrlWithParams = (overrides: Record<string, string>) => {
     const qs = new URLSearchParams();
-    if (safeSearch) qs.set("search", safeSearch);
-    if (safeSpecialtyCategorySlug) qs.set("specialtyCategorySlug", safeSpecialtyCategorySlug);
-    if (safeSpecialtySlug) qs.set("specialtySlug", safeSpecialtySlug);
-    if (safeLanguageCodes.length > 0) qs.set("languageCodes", safeLanguageCodes.join(","));
-    if (safeCountry) qs.set("country", safeCountry);
-    if (safePractitionerKind) qs.set("practitionerKind", safePractitionerKind);
-    if (safeGender) qs.set("gender", safeGender);
-    if (safeDuration) qs.set("duration", String(safeDuration));
-    if (safeOnlineNow) qs.set("onlineNow", "true");
-    if (safeMinRating !== undefined) qs.set("minRating", String(safeMinRating));
-    if (safeMinSessionFee !== undefined) qs.set("minSessionFee", String(safeMinSessionFee));
-    if (safeMaxSessionFee !== undefined) qs.set("maxSessionFee", String(safeMaxSessionFee));
-    if (safeSort !== "recommended") qs.set("sort", safeSort);
-    if (safeLimit !== 12) qs.set("limit", String(safeLimit));
-    if (nextPage > 1) qs.set("page", String(nextPage));
+    const current: Record<string, string> = {};
+    if (safeSearch) current.search = safeSearch;
+    if (safeSpecialtyCategorySlug) current.specialtyCategorySlug = safeSpecialtyCategorySlug;
+    if (safeSpecialtySlug) current.specialtySlug = safeSpecialtySlug;
+    if (safeLanguageCodes.length > 0) current.languageCodes = safeLanguageCodes.join(",");
+    if (safeCountry) current.country = safeCountry;
+    if (safePractitionerKind) current.practitionerKind = safePractitionerKind;
+    if (safeGender) current.gender = safeGender;
+    if (safeDuration) current.duration = String(safeDuration);
+    if (safeOnlineNow) current.onlineNow = "true";
+    if (safeInstantBookingEnabled) current.instantBookingEnabled = "true";
+    if (safeMinRating !== undefined) current.minRating = String(safeMinRating);
+    if (safeMinSessionFee !== undefined) current.minSessionFee = String(safeMinSessionFee);
+    if (safeMaxSessionFee !== undefined) current.maxSessionFee = String(safeMaxSessionFee);
+    if (safeSort !== "recommended") current.sort = safeSort;
+    if (safeLimit !== 12) current.limit = String(safeLimit);
+    if (currentPage > 1) current.page = String(currentPage);
+
+    const merged = { ...current, ...overrides };
+    Object.entries(merged).forEach(([k, v]) => {
+      if (v) qs.set(k, v);
+    });
+
     const query = qs.toString();
-    return query ? `?${query}` : "";
+    return query ? `${basePath}?${query}` : basePath;
   };
 
-  const resultLabel =
-    pagination.totalItems === 1
-      ? tPage("resultCountSingle")
-      : tPage("resultCount", { count: pagination.totalItems });
-  const startItem = pagination.totalItems === 0 ? 0 : (currentPage - 1) * safeLimit + 1;
-  const endItem = Math.min(currentPage * safeLimit, pagination.totalItems);
+  const buildPageUrl = (nextPage: number) =>
+    buildUrlWithParams({ page: nextPage > 1 ? String(nextPage) : "" });
+
+  const buildSortUrl = (nextSort: string) =>
+    buildUrlWithParams({ sort: nextSort !== "recommended" ? nextSort : "", page: "" });
+
+  const removeFilterUrl = (key: string) =>
+    buildUrlWithParams({ [key]: "", page: "" });
+
+  const resultLabel = tPage("resultCount", { count: pagination.totalItems });
   const activeFeeFilter: ActiveFeeFilterContext = {
     duration: safeDuration,
     minSessionFee: safeMinSessionFee,
     maxSessionFee: safeMaxSessionFee,
   };
 
+  // Build active chips for quick removal
+  const activeChips: Array<{ key: string; label: string }> = [];
+  if (safeSearch) activeChips.push({ key: "search", label: `"${safeSearch}"` });
+  if (safeSpecialtySlug) {
+    const spec = filters.specialties.find((s) => s.slug === safeSpecialtySlug);
+    activeChips.push({ key: "specialtySlug", label: spec?.nameAr ?? spec?.name ?? safeSpecialtySlug });
+  }
+  if (safeSpecialtyCategorySlug) {
+    const cat = filters.specialtyCategories.find((c) => c.value === safeSpecialtyCategorySlug);
+    activeChips.push({ key: "specialtyCategorySlug", label: cat?.label ?? safeSpecialtyCategorySlug });
+  }
+  if (safeGender) {
+    const g = filters.genders.find((item) => item.value === safeGender);
+    activeChips.push({ key: "gender", label: g?.label ?? safeGender });
+  }
+  if (safeOnlineNow) activeChips.push({ key: "onlineNow", label: tFilter("onlineNow") });
+  if (safeLanguageCodes.length > 0) {
+    const langNames = safeLanguageCodes
+      .map((code) => filters.languages.find((l) => l.value === code)?.label ?? code)
+      .join(", ");
+    activeChips.push({ key: "languageCodes", label: langNames });
+  }
+  if (safeCountry) {
+    const c = filters.countries.find((item) => item.value === safeCountry);
+    activeChips.push({ key: "country", label: c?.label ?? safeCountry });
+  }
+  if (safePractitionerKind) {
+    const k = filters.practitionerKinds.find((item) => item.value === safePractitionerKind);
+    activeChips.push({ key: "practitionerKind", label: k?.label ?? safePractitionerKind });
+  }
+  if (safeDuration) {
+    activeChips.push({ key: "duration", label: safeDuration === 30 ? tFilter("duration30") : tFilter("duration60") });
+  }
+  if (safeMinRating !== undefined) activeChips.push({ key: "minRating", label: `⭐ ${safeMinRating}+` });
+  if (safeMinSessionFee !== undefined || safeMaxSessionFee !== undefined) {
+    activeChips.push({ key: "minSessionFee", label: tFilter("sessionFee") });
+  }
+
   return (
     <>
       <ListingPageHero />
 
-      <div className="bg-background px-6 pb-8 pt-3 dark:bg-background">
-        <div className="mx-auto max-w-7xl space-y-3">
-          <FilterControls
-            filters={filters}
-            limitOptions={VALID_LIMIT_VALUES}
-          />
+      <div className="bg-background px-4 sm:px-6 pb-12 pt-6 lg:px-12 dark:bg-background">
+        <div className="mx-auto max-w-7xl">
+          {/* Mobile Search & Filter Trigger */}
+          <div className="lg:hidden mb-4">
+            <FilterControls
+              filters={filters}
+              limitOptions={VALID_LIMIT_VALUES}
+              desktopMode="mobile"
+            />
+          </div>
 
-          <div className="lg:flex lg:items-start lg:gap-4 ltr:lg:flex-row rtl:lg:flex-row-reverse">
-            <section className="min-w-0 flex-1 space-y-4">
-              <div className="rounded-[20px] border border-border-light bg-surface px-4 py-3">
-                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                  <div className="text-sm font-semibold text-text-primary dark:text-white/90">
+          <div className="flex flex-col lg:flex-row items-start gap-6">
+            {/* Desktop Compact Sidebar (270px) */}
+            <aside className="hidden lg:block w-[270px] shrink-0 sticky top-24">
+              <FilterControls
+                filters={filters}
+                limitOptions={VALID_LIMIT_VALUES}
+                desktopMode="sidebar"
+              />
+            </aside>
+
+            {/* Main Content Area */}
+            <main className="min-w-0 flex-1 space-y-4">
+              {/* Header Bar: Result Count + Active Filter Chips + Sort */}
+              <div className="rounded-[20px] border border-border-light/70 bg-white p-4 shadow-2xs dark:bg-surface-secondary dark:border-white/10 space-y-3">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <h2 className="text-base font-bold text-[#1C2F2B] dark:text-white/95">
                     {resultLabel}
-                  </div>
-                  <div className="text-xs text-text-muted">
-                    {startItem}-{endItem} / {pagination.totalItems}
+                  </h2>
+
+                  {/* Compact Sort Options */}
+                  <div className="flex items-center gap-1.5 text-xs">
+                    <span className="text-text-muted font-medium">{tSort("label")}:</span>
+                    <div className="flex items-center gap-1">
+                      <Link
+                        href={buildSortUrl("recommended")}
+                        scroll={false}
+                        className={`rounded-lg px-2.5 py-1 font-bold transition ${
+                          safeSort === "recommended"
+                            ? "bg-[#24564F] text-white"
+                            : "text-text-secondary hover:bg-[#EEF4EF] dark:hover:bg-white/5"
+                        }`}
+                      >
+                        {tSort("recommended")}
+                      </Link>
+                      <Link
+                        href={buildSortUrl("rating")}
+                        scroll={false}
+                        className={`rounded-lg px-2.5 py-1 font-bold transition ${
+                          safeSort === "rating"
+                            ? "bg-[#24564F] text-white"
+                            : "text-text-secondary hover:bg-[#EEF4EF] dark:hover:bg-white/5"
+                        }`}
+                      >
+                        {tSort("rating")}
+                      </Link>
+                      <Link
+                        href={buildSortUrl("experience")}
+                        scroll={false}
+                        className={`rounded-lg px-2.5 py-1 font-bold transition ${
+                          safeSort === "experience"
+                            ? "bg-[#24564F] text-white"
+                            : "text-text-secondary hover:bg-[#EEF4EF] dark:hover:bg-white/5"
+                        }`}
+                      >
+                        {tSort("experience")}
+                      </Link>
+                    </div>
                   </div>
                 </div>
+
+                {/* Active Filter Chips */}
+                {activeChips.length > 0 && (
+                  <div className="flex flex-wrap items-center gap-1.5 pt-2 border-t border-border-light/50">
+                    <span className="text-xs font-semibold text-text-muted me-1">
+                      {tFilter("activeFilters")}:
+                    </span>
+                    {activeChips.map((chip) => (
+                      <Link
+                        key={chip.key}
+                        href={removeFilterUrl(chip.key)}
+                        scroll={false}
+                        className="inline-flex items-center gap-1 rounded-full border border-[#24564F]/20 bg-[#EEF4EF] py-0.5 ps-2.5 pe-1.5 text-xs font-bold text-[#24564F] hover:bg-[#24564F]/10 transition dark:bg-white/10 dark:text-[#A7BFAE]"
+                      >
+                        <span>{chip.label}</span>
+                        <X size={12} />
+                      </Link>
+                    ))}
+
+                    <Link
+                      href={basePath}
+                      scroll={false}
+                      className="text-xs font-bold text-[#24564F] underline hover:text-[#1F4A44] transition ms-2"
+                    >
+                      {tFilter("clearAll")}
+                    </Link>
+                  </div>
+                )}
               </div>
 
+              {/* Practitioners Grid */}
               {fetchError ? (
                 <ListingErrorState basePath={basePath} />
               ) : (
@@ -355,96 +496,78 @@ export default async function PractitionersListingView({
                     basePath={basePath}
                   />
 
+                  {/* Server Pagination */}
                   {pagination.totalPages > 1 ? (
-                    <div className="rounded-[20px] border border-border-light bg-surface px-4 py-4">
-                      <div className="mb-3 flex flex-wrap items-center justify-between gap-2 text-sm text-text-secondary">
-                        <span>
-                          {startItem}-{endItem} / {pagination.totalItems}
-                        </span>
-                        <span className="text-text-muted">
-                          {currentPage} / {pagination.totalPages}
-                        </span>
-                      </div>
+                    <div className="mt-8 flex items-center justify-center gap-2 pt-4">
+                      <Link
+                        href={buildPageUrl(currentPage - 1)}
+                        scroll={false}
+                        aria-disabled={currentPage <= 1}
+                        className={`flex h-10 w-10 items-center justify-center rounded-xl border transition-colors ${
+                          currentPage <= 1
+                            ? "pointer-events-none border-border-light text-text-muted opacity-40"
+                            : "border-border-light bg-white text-text-secondary hover:border-[#24564F] hover:text-[#24564F] dark:border-white/10 dark:bg-surface-secondary"
+                        }`}
+                      >
+                        <ChevronLeft size={16} className="rtl:rotate-180" />
+                      </Link>
 
-                      <div className="flex items-center justify-center gap-2">
-                        <Link
-                          href={buildPageUrl(currentPage - 1)}
-                          scroll={false}
-                          aria-disabled={currentPage <= 1}
-                          className={`flex h-10 w-10 items-center justify-center rounded-xl border transition-colors ${
-                            currentPage <= 1
-                              ? "pointer-events-none border-border-light text-text-muted opacity-40"
-                              : "border-border-light bg-white text-text-secondary hover:border-primary hover:text-primary dark:border-border-light dark:bg-surface-secondary"
-                          }`}
-                        >
-                          <ChevronLeft size={16} className="rtl:rotate-180" />
-                        </Link>
+                      {Array.from({ length: pagination.totalPages }, (_, index) => index + 1).map(
+                        (listPage) => {
+                          const isActive = listPage === currentPage;
+                          const isNear =
+                            listPage === 1 ||
+                            listPage === pagination.totalPages ||
+                            Math.abs(listPage - currentPage) <= 1;
 
-                        {Array.from({ length: pagination.totalPages }, (_, index) => index + 1).map(
-                          (listPage) => {
-                            const isActive = listPage === currentPage;
-                            const isNear =
-                              listPage === 1 ||
-                              listPage === pagination.totalPages ||
-                              Math.abs(listPage - currentPage) <= 1;
-
-                            if (!isNear) {
-                              if (listPage === 2 || listPage === pagination.totalPages - 1) {
-                                return (
-                                  <span
-                                    key={listPage}
-                                    className="flex h-10 w-10 items-center justify-center text-sm text-text-muted"
-                                  >
-                                    ...
-                                  </span>
-                                );
-                              }
-                              return null;
+                          if (!isNear) {
+                            if (listPage === 2 || listPage === pagination.totalPages - 1) {
+                              return (
+                                <span
+                                  key={listPage}
+                                  className="flex h-10 w-10 items-center justify-center text-sm text-text-muted"
+                                >
+                                  ...
+                                </span>
+                              );
                             }
+                            return null;
+                          }
 
-                            return (
-                              <Link
-                                key={listPage}
-                                href={buildPageUrl(listPage)}
-                                scroll={false}
-                                className={`flex h-10 min-w-10 items-center justify-center rounded-xl border px-3 text-sm font-medium transition-colors ${
-                                  isActive
-                                    ? "border-primary bg-primary text-white"
-                                    : "border-border-light bg-white text-text-secondary hover:border-primary hover:text-primary dark:border-border-light dark:bg-surface-secondary dark:text-white/70"
-                                }`}
-                              >
-                                {listPage}
-                              </Link>
-                            );
-                          },
-                        )}
+                          return (
+                            <Link
+                              key={listPage}
+                              href={buildPageUrl(listPage)}
+                              scroll={false}
+                              className={`flex h-10 min-w-10 items-center justify-center rounded-xl border px-3 text-sm font-bold transition-colors ${
+                                isActive
+                                  ? "border-[#24564F] bg-[#24564F] text-white"
+                                  : "border-border-light bg-white text-text-secondary hover:border-[#24564F] hover:text-[#24564F] dark:border-white/10 dark:bg-surface-secondary dark:text-white/70"
+                              }`}
+                            >
+                              {listPage}
+                            </Link>
+                          );
+                        },
+                      )}
 
-                        <Link
-                          href={buildPageUrl(currentPage + 1)}
-                          scroll={false}
-                          aria-disabled={currentPage >= pagination.totalPages}
-                          className={`flex h-10 w-10 items-center justify-center rounded-xl border transition-colors ${
-                            currentPage >= pagination.totalPages
-                              ? "pointer-events-none border-border-light text-text-muted opacity-40"
-                              : "border-border-light bg-white text-text-secondary hover:border-primary hover:text-primary dark:border-border-light dark:bg-surface-secondary"
-                          }`}
-                        >
-                          <ChevronRight size={16} className="rtl:rotate-180" />
-                        </Link>
-                      </div>
+                      <Link
+                        href={buildPageUrl(currentPage + 1)}
+                        scroll={false}
+                        aria-disabled={currentPage >= pagination.totalPages}
+                        className={`flex h-10 w-10 items-center justify-center rounded-xl border transition-colors ${
+                          currentPage >= pagination.totalPages
+                            ? "pointer-events-none border-border-light text-text-muted opacity-40"
+                            : "border-border-light bg-white text-text-secondary hover:border-[#24564F] hover:text-[#24564F] dark:border-white/10 dark:bg-surface-secondary"
+                        }`}
+                      >
+                        <ChevronRight size={16} className="rtl:rotate-180" />
+                      </Link>
                     </div>
                   ) : null}
                 </>
               )}
-            </section>
-
-            <div className="w-full lg:max-w-[390px] lg:shrink-0">
-              <FilterControls
-                filters={filters}
-                limitOptions={VALID_LIMIT_VALUES}
-                desktopMode="sidebar"
-              />
-            </div>
+            </main>
           </div>
         </div>
       </div>

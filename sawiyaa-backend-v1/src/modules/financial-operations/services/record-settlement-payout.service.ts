@@ -24,6 +24,7 @@ import { RefreshPractitionerWalletService } from './refresh-practitioner-wallet.
 import { FINANCIAL_OPS_ERROR_CODES } from '../types/financial-operations.types';
 import { AccountingJournalPostingService } from './accounting-journal-posting.service';
 import { CalculatePractitionerPayoutConversionService } from './calculate-practitioner-payout-conversion.service';
+import { lockPractitionerFinance } from '../utils/lock-practitioner-finance';
 import {
   assertWalletCurrencyMatches,
   walletCurrencyMismatchException,
@@ -41,6 +42,13 @@ type SettlementWithBatch = PractitionerSettlement & {
 };
 
 type TransferFeeTreatment = 'PLATFORM_EXPENSE' | 'DEDUCT_FROM_PRACTITIONER';
+type SettlementPayoutExecutionResult = {
+  payoutRecord: ReturnType<FinancialOperationsMapper['toSettlementPayout']>;
+  settlement: NonNullable<
+    Awaited<ReturnType<SettlementRepository['findPractitionerSettlementById']>>
+  >;
+  wasAlreadyRecorded: boolean;
+};
 
 @Injectable()
 export class RecordSettlementPayoutService {
@@ -75,13 +83,18 @@ export class RecordSettlementPayoutService {
       overrideReason?: string | null;
     },
     tx?: Prisma.TransactionClient,
-  ) {
-    const currentSettlement = tx
-      ? await this.settlementRepository.findPractitionerSettlementById(
-          input.settlement.id,
-          tx,
-        )
-      : input.settlement;
+  ): Promise<SettlementPayoutExecutionResult> {
+    if (!tx)
+      return this.prisma.$transaction((transaction) =>
+        this.execute(input, transaction),
+      );
+    await lockPractitionerFinance(tx, input.settlement.practitionerId);
+    await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${input.settlement.id})::bigint)`;
+    const currentSettlement =
+      await this.settlementRepository.findPractitionerSettlementById(
+        input.settlement.id,
+        tx,
+      );
 
     if (!currentSettlement) {
       throw new NotFoundException({
@@ -96,7 +109,10 @@ export class RecordSettlementPayoutService {
 
     const db = tx ?? this.prisma;
     const wallet = await db.practitionerWallet.findFirst({
-      where: { practitionerId: currentSettlement.practitionerId, status: 'ACTIVE' },
+      where: {
+        practitionerId: currentSettlement.practitionerId,
+        status: 'ACTIVE',
+      },
       select: { id: true, currencyCode: true },
     });
     if (!wallet) {
@@ -105,7 +121,10 @@ export class RecordSettlementPayoutService {
         error: FINANCIAL_OPS_ERROR_CODES.practitionerWalletNotFound,
       });
     }
-    if (currentSettlement.walletId && currentSettlement.walletId !== wallet.id) {
+    if (
+      currentSettlement.walletId &&
+      currentSettlement.walletId !== wallet.id
+    ) {
       throw walletCurrencyMismatchException({
         operation: 'WALLET_DEBIT',
         walletCurrency: wallet.currencyCode,
@@ -150,16 +169,43 @@ export class RecordSettlementPayoutService {
       attemptedCurrency:
         currentSettlement.walletCurrencyCode ?? currentSettlement.currencyCode,
     });
-    if (input.payoutCurrencyCode && input.payoutCurrencyCode.trim().toUpperCase() !== walletCurrency) {
-      throw new BadRequestException('External payout currency must match the practitioner wallet currency');
+    if (
+      input.payoutCurrencyCode &&
+      input.payoutCurrencyCode.trim().toUpperCase() !== walletCurrency
+    ) {
+      throw new BadRequestException(
+        'External payout currency must match the practitioner wallet currency',
+      );
     }
-    if (input.exchangeRateEgpPerUsd !== undefined || input.actualPayoutAmount !== undefined || input.overrideReason !== undefined) {
-      throw new BadRequestException('Currency conversion and payout amount overrides belong to settlement approval');
+    if (
+      input.exchangeRateEgpPerUsd !== undefined ||
+      input.actualPayoutAmount !== undefined ||
+      input.overrideReason !== undefined
+    ) {
+      throw new BadRequestException(
+        'Currency conversion and payout amount overrides belong to settlement approval',
+      );
     }
-    assertWalletCurrencyMatches({ operation: 'EXTERNAL_PAYOUT', walletCurrency, attemptedCurrency: walletCurrency });
-    assertWalletCurrencyMatches({ operation: 'TRANSFER_FEE', walletCurrency, attemptedCurrency: walletCurrency });
-    assertWalletCurrencyMatches({ operation: 'NET_RECEIVED', walletCurrency, attemptedCurrency: walletCurrency });
-    assertWalletCurrencyMatches({ operation: 'PLATFORM_OUTFLOW', walletCurrency, attemptedCurrency: walletCurrency });
+    assertWalletCurrencyMatches({
+      operation: 'EXTERNAL_PAYOUT',
+      walletCurrency,
+      attemptedCurrency: walletCurrency,
+    });
+    assertWalletCurrencyMatches({
+      operation: 'TRANSFER_FEE',
+      walletCurrency,
+      attemptedCurrency: walletCurrency,
+    });
+    assertWalletCurrencyMatches({
+      operation: 'NET_RECEIVED',
+      walletCurrency,
+      attemptedCurrency: walletCurrency,
+    });
+    assertWalletCurrencyMatches({
+      operation: 'PLATFORM_OUTFLOW',
+      walletCurrency,
+      attemptedCurrency: walletCurrency,
+    });
     const amountPaid = legacyAmountPaid;
     if (amountPaid.lte(0)) {
       throw new BadRequestException({
@@ -168,15 +214,20 @@ export class RecordSettlementPayoutService {
       });
     }
     const transferFee = transferFeeAmount;
-    if (transferFee.lt(0)) throw new BadRequestException('Transfer fee cannot be negative');
-    if (transferFee.gt(0) && !input.transferFeeTreatment) throw new BadRequestException('Transfer fee bearer is required');
-    const netAmountReceived = transferFeeTreatment === 'DEDUCT_FROM_PRACTITIONER'
-      ? amountPaid.sub(transferFee).toDecimalPlaces(2)
-      : amountPaid;
-    if (netAmountReceived.lt(0)) throw new BadRequestException('Net amount received cannot be negative');
-    const totalPlatformOutflow = transferFeeTreatment === 'PLATFORM_EXPENSE'
-      ? amountPaid.add(transferFee).toDecimalPlaces(2)
-      : amountPaid;
+    if (transferFee.lt(0))
+      throw new BadRequestException('Transfer fee cannot be negative');
+    if (transferFee.gt(0) && !input.transferFeeTreatment)
+      throw new BadRequestException('Transfer fee bearer is required');
+    const netAmountReceived =
+      transferFeeTreatment === 'DEDUCT_FROM_PRACTITIONER'
+        ? amountPaid.sub(transferFee).toDecimalPlaces(2)
+        : amountPaid;
+    if (netAmountReceived.lt(0))
+      throw new BadRequestException('Net amount received cannot be negative');
+    const totalPlatformOutflow =
+      transferFeeTreatment === 'PLATFORM_EXPENSE'
+        ? amountPaid.add(transferFee).toDecimalPlaces(2)
+        : amountPaid;
 
     const existingPayoutByExternalRef = externalPayoutRef
       ? await this.settlementPayoutRepository.findSettlementPayoutByExternalPayoutRef(
@@ -276,6 +327,34 @@ export class RecordSettlementPayoutService {
         tx,
       },
     );
+
+    const available = await db.ledgerEntry.groupBy({
+      by: ['direction'],
+      where: {
+        practitionerId: currentSettlement.practitionerId,
+        currencyCode: walletCurrency,
+        balanceBucket: WalletBalanceBucket.AVAILABLE,
+      },
+      _sum: { amount: true },
+    });
+    const availableAmount = available.reduce(
+      (sum, entry) =>
+        entry.direction === 'CREDIT'
+          ? sum.add(entry._sum.amount ?? 0)
+          : sum.sub(entry._sum.amount ?? 0),
+      new Prisma.Decimal(0),
+    );
+    const outstandingRecovery =
+      await this.practitionerRecoveryService.getOutstandingAmount({
+        practitionerId: currentSettlement.practitionerId,
+        currencyCode: walletCurrency,
+        tx,
+      });
+    if (amountPaid.gt(availableAmount.sub(outstandingRecovery))) {
+      throw new BadRequestException({
+        error: FINANCIAL_OPS_ERROR_CODES.payoutAmountExceedsDue,
+      });
+    }
 
     if (reservedBalanceBefore.lt(settlementAppliedAmount)) {
       throw new BadRequestException({
@@ -412,14 +491,8 @@ export class RecordSettlementPayoutService {
       tx,
     );
 
-    await this.practitionerRecoveryService.applyOpenRecoveriesToPayout({
-      practitionerId: currentSettlement.practitionerId,
-      currencyCode: walletCurrency,
-      payoutId: payoutRecord.id,
-      payoutAmount: amountPaid,
-      operatorUserId: input.processedByUserId ?? null,
-      tx,
-    });
+    // Recording an outgoing transfer does not collect an outstanding debt.
+    // Recovery remains open until a separately recorded collection/waiver.
 
     await this.refreshPractitionerWalletService.refresh(
       currentSettlement.practitionerId,
@@ -433,7 +506,7 @@ export class RecordSettlementPayoutService {
         practitionerId: currentSettlement.practitionerId,
         amountPaid,
         settlementAppliedAmount,
-      currencyCode: walletCurrency,
+        currencyCode: walletCurrency,
         effectiveAt,
         payoutMethodSnapshot: payoutMethodSnapshot as Prisma.JsonValue,
         transferFeeAmount,

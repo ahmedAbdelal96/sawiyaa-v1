@@ -168,7 +168,7 @@ export default function PatientProfileDetailsScreen() {
   const isAvatarLoading = uploadAvatar.isPending || removeAvatar.isPending;
 
   return (
-    <Screen bg="background">
+    <Screen bg="background" testID="patient-profile-edit-screen">
       <Header title={t("profileScreen.details.screenTitle")} showBack />
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>

@@ -26,7 +26,12 @@ import { CurrentLocale } from '@common/i18n/decorators/current-locale.decorator'
 import { SupportedLocale } from '@common/i18n/types/locale.types';
 import { AccountStateRequirement } from '@common/enums/account-state-requirement.enum';
 import { JwtAccessAuthGuard } from '@common/guards/authentication/jwt-access-auth.guard';
-import { AdminGuard } from '@common/guards/authorization/admin.guard';
+import { Roles } from '@common/decorators/roles.decorator';
+import { AppRole } from '@common/enums/app-role.enum';
+import { RolesGuard } from '@common/guards/authorization/roles.guard';
+import { PermissionsGuard } from '@common/guards/authorization/permissions.guard';
+import { Permissions } from '@common/decorators/permissions.decorator';
+import { PermissionKey } from '@common/enums/permission-key.enum';
 import {
   CreateAdminAssessmentDto,
   CreateAdminAssessmentOptionDto,
@@ -46,7 +51,17 @@ import { AdminAssessmentAuthoringQuestionsUseCase } from '../use-cases/admin-ass
 
 @ApiTags('Admin - Assessments Authoring')
 @ApiBearerAuth()
-@UseGuards(JwtAccessAuthGuard, AdminGuard)
+@UseGuards(JwtAccessAuthGuard, RolesGuard, PermissionsGuard)
+@Roles(
+  AppRole.ADMIN,
+  AppRole.SUPER_ADMIN,
+  AppRole.FINANCE_STAFF,
+  AppRole.MARKETING_STAFF,
+  AppRole.PRACTITIONER_REVIEWER,
+  AppRole.PATIENT_OPERATIONS,
+  AppRole.SUPPORT_AGENT,
+  AppRole.CONTENT_REVIEWER,
+)
 @RequireAccountStates(AccountStateRequirement.ACTIVE_ACCOUNT)
 @Controller('admin/assessments')
 export class AdminAssessmentsAuthoringController {
@@ -57,12 +72,14 @@ export class AdminAssessmentsAuthoringController {
   ) {}
 
   @Get()
+  @Permissions(PermissionKey.ASSESSMENTS_AUTHORING_READ)
   @ApiOperation({ summary: 'List assessments for admin authoring' })
   list(@Query() query: ListAdminAssessmentsDto) {
     return this.definitionsUseCase.list(query);
   }
 
   @Post()
+  @Permissions(PermissionKey.ASSESSMENTS_AUTHORING_MANAGE)
   @ApiOperation({ summary: 'Create draft assessment definition' })
   @ApiResponse({ status: 201 })
   @ApiBadRequestResponse()
@@ -72,6 +89,7 @@ export class AdminAssessmentsAuthoringController {
   }
 
   @Get(':id')
+  @Permissions(PermissionKey.ASSESSMENTS_AUTHORING_READ)
   @ApiOperation({ summary: 'Get one assessment editable graph for admin' })
   @ApiNotFoundResponse()
   details(@Param('id', new ParseUUIDPipe()) id: string) {
@@ -79,6 +97,7 @@ export class AdminAssessmentsAuthoringController {
   }
 
   @Patch(':id')
+  @Permissions(PermissionKey.ASSESSMENTS_AUTHORING_MANAGE)
   @ApiOperation({ summary: 'Update draft assessment metadata' })
   @ApiNotFoundResponse()
   @ApiConflictResponse()
@@ -90,6 +109,7 @@ export class AdminAssessmentsAuthoringController {
   }
 
   @Post(':id/fork-draft')
+  @Permissions(PermissionKey.ASSESSMENTS_AUTHORING_MANAGE)
   @ApiOperation({
     summary: 'Fork active published assessment into next draft version',
   })
@@ -100,6 +120,7 @@ export class AdminAssessmentsAuthoringController {
   }
 
   @Post(':id/questions')
+  @Permissions(PermissionKey.ASSESSMENTS_AUTHORING_MANAGE)
   @ApiOperation({ summary: 'Create draft question' })
   createQuestion(
     @Param('id', new ParseUUIDPipe()) id: string,
@@ -109,6 +130,7 @@ export class AdminAssessmentsAuthoringController {
   }
 
   @Patch(':id/questions/reorder')
+  @Permissions(PermissionKey.ASSESSMENTS_AUTHORING_MANAGE)
   @ApiOperation({ summary: 'Reorder draft questions' })
   reorderQuestions(
     @Param('id', new ParseUUIDPipe()) id: string,
@@ -118,6 +140,7 @@ export class AdminAssessmentsAuthoringController {
   }
 
   @Patch(':id/questions/:questionId')
+  @Permissions(PermissionKey.ASSESSMENTS_AUTHORING_MANAGE)
   @ApiOperation({ summary: 'Update draft question' })
   updateQuestion(
     @Param('id', new ParseUUIDPipe()) id: string,
@@ -128,6 +151,7 @@ export class AdminAssessmentsAuthoringController {
   }
 
   @Delete(':id/questions/:questionId')
+  @Permissions(PermissionKey.ASSESSMENTS_AUTHORING_MANAGE)
   @ApiOperation({ summary: 'Delete draft question' })
   deleteQuestion(
     @Param('id', new ParseUUIDPipe()) id: string,
@@ -137,6 +161,7 @@ export class AdminAssessmentsAuthoringController {
   }
 
   @Post(':id/questions/:questionId/options')
+  @Permissions(PermissionKey.ASSESSMENTS_AUTHORING_MANAGE)
   @ApiOperation({ summary: 'Create draft option for one question' })
   createOption(
     @Param('id', new ParseUUIDPipe()) id: string,
@@ -147,6 +172,7 @@ export class AdminAssessmentsAuthoringController {
   }
 
   @Patch(':id/questions/:questionId/options/reorder')
+  @Permissions(PermissionKey.ASSESSMENTS_AUTHORING_MANAGE)
   @ApiOperation({ summary: 'Reorder options for one draft question' })
   reorderOptions(
     @Param('id', new ParseUUIDPipe()) id: string,
@@ -157,6 +183,7 @@ export class AdminAssessmentsAuthoringController {
   }
 
   @Patch(':id/questions/:questionId/options/:optionId')
+  @Permissions(PermissionKey.ASSESSMENTS_AUTHORING_MANAGE)
   @ApiOperation({ summary: 'Update draft option for one question' })
   updateOption(
     @Param('id', new ParseUUIDPipe()) id: string,
@@ -168,6 +195,7 @@ export class AdminAssessmentsAuthoringController {
   }
 
   @Delete(':id/questions/:questionId/options/:optionId')
+  @Permissions(PermissionKey.ASSESSMENTS_AUTHORING_MANAGE)
   @ApiOperation({ summary: 'Delete draft option for one question' })
   deleteOption(
     @Param('id', new ParseUUIDPipe()) id: string,
@@ -178,6 +206,7 @@ export class AdminAssessmentsAuthoringController {
   }
 
   @Patch(':id/scoring-config')
+  @Permissions(PermissionKey.ASSESSMENTS_AUTHORING_MANAGE)
   @ApiOperation({ summary: 'Update draft scoring config thresholds' })
   updateScoringConfig(
     @Param('id', new ParseUUIDPipe()) id: string,
@@ -187,6 +216,7 @@ export class AdminAssessmentsAuthoringController {
   }
 
   @Post(':id/preview-score')
+  @Permissions(PermissionKey.ASSESSMENTS_AUTHORING_READ)
   @ApiOperation({
     summary: 'Preview score for sample answers without persistence',
   })
@@ -199,6 +229,7 @@ export class AdminAssessmentsAuthoringController {
   }
 
   @Post(':id/publish')
+  @Permissions(PermissionKey.ASSESSMENTS_AUTHORING_MANAGE)
   @ApiOperation({ summary: 'Publish validated draft assessment' })
   @ApiForbiddenResponse()
   @ApiUnauthorizedResponse()
@@ -210,6 +241,7 @@ export class AdminAssessmentsAuthoringController {
   }
 
   @Post(':id/unpublish')
+  @Permissions(PermissionKey.ASSESSMENTS_AUTHORING_MANAGE)
   @ApiOperation({ summary: 'Unpublish active assessment and set it inactive' })
   unpublish(@Param('id', new ParseUUIDPipe()) id: string) {
     return this.lifecycleUseCase.unpublish(id);

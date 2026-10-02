@@ -2,6 +2,8 @@ import { forwardRef, Module } from '@nestjs/common';
 import { ActiveAccountGuard } from '@common/guards/account-state/active-account.guard';
 import { JwtAccessAuthGuard } from '@common/guards/authentication/jwt-access-auth.guard';
 import { RolesGuard } from '@common/guards/authorization/roles.guard';
+import { PermissionResolverService } from '@common/guards/authorization/permission-resolver.service';
+import { PermissionsGuard } from '@common/guards/authorization/permissions.guard';
 import { AdminPackagePlansController } from './controllers/admin-package-plans.controller';
 import { AdminPackagePlanSettingsController } from './controllers/admin-package-plan-settings.controller';
 import { PatientPackagePurchasesController } from './controllers/patient-package-purchases.controller';
@@ -45,6 +47,8 @@ import { ListMyPackagePurchasesUseCase } from './use-cases/list-my-package-purch
 import { InitiatePackagePurchasePaymentUseCase } from './use-cases/initiate-package-purchase-payment.use-case';
 import { UpdatePackagePlanUseCase } from './use-cases/update-package-plan.use-case';
 import { UpdatePackagePlanSettingsUseCase } from './use-cases/update-package-plan-settings.use-case';
+import { PackageEntitlementService } from './services/package-entitlement.service';
+import { BookPackageSessionUseCase } from './use-cases/book-package-session.use-case';
 
 @Module({
   imports: [
@@ -70,6 +74,8 @@ import { UpdatePackagePlanSettingsUseCase } from './use-cases/update-package-pla
   providers: [
     JwtAccessAuthGuard,
     RolesGuard,
+    PermissionsGuard,
+    PermissionResolverService,
     ActiveAccountGuard,
     PackagePlanRepository,
     PackagePlanPresenter,
@@ -77,6 +83,8 @@ import { UpdatePackagePlanSettingsUseCase } from './use-cases/update-package-pla
     PackagePurchasePresenter,
     PackagePlanAdminService,
     PackagePlanPolicyService,
+    PackageEntitlementService,
+    BookPackageSessionUseCase,
     PackagePurchaseExpirySweeperService,
     PackageQuoteCalculatorService,
     PatientPackagePurchaseRepository,
@@ -106,6 +114,8 @@ import { UpdatePackagePlanSettingsUseCase } from './use-cases/update-package-pla
     ReconcilePackagePurchasePaymentUseCase,
     ReconcilePackageSettlementUseCase,
     ExpirePackagePurchaseUseCase,
+    PatientPackagePurchaseRepository,
+    PackageEntitlementService,
   ],
 })
 export class PackagePlansModule {}

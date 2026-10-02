@@ -29,7 +29,7 @@ describe('AppLoggerService', () => {
         nestInternalEnabled: false,
         logDir: 'logs',
         retentionDays: 30,
-        maxFileSize: '20m',
+        maxFileSize: '20mb',
       } as never,
     );
 
@@ -62,7 +62,7 @@ describe('AppLoggerService', () => {
         nestInternalEnabled: false,
         logDir: 'logs',
         retentionDays: 30,
-        maxFileSize: '20m',
+        maxFileSize: '20mb',
       } as never,
     );
 

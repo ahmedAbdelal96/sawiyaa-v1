@@ -1,8 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useLocale } from "next-intl";
 import {
   createPatientPackagePurchase,
   getMyPackagePurchase,
   initiatePatientPackagePurchasePayment,
+  bookPatientPackageSession,
   listMyPackagePurchasesWithParams,
 } from "../api/package-purchases.api";
 import type {
@@ -13,32 +15,47 @@ import type {
 
 export const packagePurchaseQueryKeys = {
   all: ["package-purchases"] as const,
-  list: (params?: ListMyPackagePurchasesParams) =>
-    [...packagePurchaseQueryKeys.all, "list", params ?? {}] as const,
-  detail: (purchaseId: string) => [...packagePurchaseQueryKeys.all, purchaseId] as const,
+  list: (params?: ListMyPackagePurchasesParams, locale?: string) =>
+    [
+      ...packagePurchaseQueryKeys.all,
+      "list",
+      locale ?? "en",
+      params ?? {},
+    ] as const,
+  detail: (purchaseId: string, locale?: string) =>
+    [...packagePurchaseQueryKeys.all, purchaseId, locale ?? "en"] as const,
 };
 
 export function useMyPackagePurchases(params?: ListMyPackagePurchasesParams) {
+  const locale = useLocale();
+
   return useQuery({
-    queryKey: packagePurchaseQueryKeys.list(params),
+    queryKey: packagePurchaseQueryKeys.list(params, locale),
     queryFn: () => listMyPackagePurchasesWithParams(params),
     staleTime: 30_000,
+    refetchOnMount: "always",
+    refetchOnWindowFocus: true,
   });
 }
 
 export function useMyPackagePurchase(purchaseId: string | null) {
+  const locale = useLocale();
+
   return useQuery({
-    queryKey: packagePurchaseQueryKeys.detail(purchaseId ?? ""),
+    queryKey: packagePurchaseQueryKeys.detail(purchaseId ?? "", locale),
     queryFn: () => getMyPackagePurchase(purchaseId!),
     enabled: Boolean(purchaseId),
     staleTime: 30_000,
+    refetchOnMount: "always",
+    refetchOnWindowFocus: true,
   });
 }
 
 export function useCreatePackagePurchase() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (input: CreatePatientPackagePurchaseRequest) => createPatientPackagePurchase(input),
+    mutationFn: (input: CreatePatientPackagePurchaseRequest) =>
+      createPatientPackagePurchase(input),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: packagePurchaseQueryKeys.all });
     },
@@ -47,6 +64,7 @@ export function useCreatePackagePurchase() {
 
 export function useInitiatePackagePurchasePayment() {
   const queryClient = useQueryClient();
+  const locale = useLocale();
   return useMutation({
     mutationFn: ({
       purchaseId,
@@ -57,8 +75,31 @@ export function useInitiatePackagePurchasePayment() {
     }) => initiatePatientPackagePurchasePayment(purchaseId, input),
     onSuccess: (_, variables) => {
       const { purchaseId } = variables;
-      queryClient.invalidateQueries({ queryKey: packagePurchaseQueryKeys.detail(purchaseId) });
+      queryClient.invalidateQueries({
+        queryKey: packagePurchaseQueryKeys.detail(purchaseId, locale),
+      });
       queryClient.invalidateQueries({ queryKey: packagePurchaseQueryKeys.all });
+    },
+  });
+}
+
+export function useBookPackageSession() {
+  const queryClient = useQueryClient();
+  const locale = useLocale();
+  return useMutation({
+    mutationFn: ({
+      purchaseId,
+      scheduledStartAt,
+    }: {
+      purchaseId: string;
+      scheduledStartAt: string;
+    }) => bookPatientPackageSession(purchaseId, { scheduledStartAt }),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({
+        queryKey: packagePurchaseQueryKeys.detail(variables.purchaseId, locale),
+      });
+      queryClient.invalidateQueries({ queryKey: packagePurchaseQueryKeys.all });
+      queryClient.invalidateQueries({ queryKey: ["patient-sessions"] });
     },
   });
 }

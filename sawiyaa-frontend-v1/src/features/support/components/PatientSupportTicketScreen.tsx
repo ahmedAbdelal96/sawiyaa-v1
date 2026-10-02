@@ -160,9 +160,9 @@ export default function PatientSupportTicketScreen({
                 </span>
               </div>
               <p className="text-text-muted mt-0.5 text-[11px] font-medium">
-                {locale === "ar"
-                  ? `تم الإنشاء: ${formatDateTime(item.createdAt, locale, viewerTimeZone)}`
-                  : `Created: ${formatDateTime(item.createdAt, locale, viewerTimeZone)}`}
+                {t("list.createdAt", {
+                  date: formatDateTime(item.createdAt, locale, viewerTimeZone),
+                })}
               </p>
             </div>
           }

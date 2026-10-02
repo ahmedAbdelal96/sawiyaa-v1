@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import {
   MarketType,
+  PackageSchedulePolicy,
   PaymentEventType,
   PaymentPurpose,
   PaymentStatus,
@@ -104,7 +105,11 @@ export class InitiatePackagePurchasePaymentUseCase {
       });
     }
 
-    if (!purchase.sessions.length) {
+    if (
+      !purchase.sessions.length &&
+      purchase.schedulePolicySnapshot !==
+        PackageSchedulePolicy.ALLOW_SCHEDULE_LATER
+    ) {
       throw new ConflictException({
         messageKey: 'packagePurchases.errors.noLinkedSessions',
         error: 'PACKAGE_PURCHASE_NO_LINKED_SESSIONS',
@@ -146,7 +151,13 @@ export class InitiatePackagePurchasePaymentUseCase {
 
     const practitionerCountryIsoCode =
       purchase.practitioner?.country?.isoCode ?? null;
-    const requestCountryIsoCode = input.requestCountryIsoCode ?? null;
+    const snapshottedCountry = this.resolvePurchasePricingCountryIsoCode(
+      purchase.metadataJson,
+    );
+    const requestCountryIsoCode =
+      snapshottedCountry !== undefined
+        ? snapshottedCountry
+        : input.requestCountryIsoCode ?? null;
 
     const provider = this.resolveProvider({
       currencyCode,
@@ -417,6 +428,25 @@ export class InitiatePackagePurchasePaymentUseCase {
         currencyCode: input.currencyCode,
       },
     });
+  }
+
+  private resolvePurchasePricingCountryIsoCode(metadataJson: unknown) {
+    if (!metadataJson || typeof metadataJson !== 'object') {
+      return undefined;
+    }
+
+    const metadataRecord = metadataJson as Record<string, unknown>;
+    if (
+      !Object.prototype.hasOwnProperty.call(
+        metadataRecord,
+        'pricingCountryIsoCode',
+      )
+    ) {
+      return undefined;
+    }
+
+    const value = metadataRecord.pricingCountryIsoCode;
+    return typeof value === 'string' && value.trim() ? value : null;
   }
 
   private resolveProviderRedirectionUrl(input: {

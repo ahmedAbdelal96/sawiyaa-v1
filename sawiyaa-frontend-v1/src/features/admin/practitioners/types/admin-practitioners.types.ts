@@ -18,6 +18,15 @@ export interface AdminPractitionerListItem {
     averageRating: number | null;
     totalReviews: number;
   };
+  application: {
+    id: string;
+    status: string;
+    submittedAt: string | null;
+    updatedAt: string;
+  } | null;
+  applicationStatus: string;
+  lifecycleStatus: string;
+  readinessStatus: "READY" | "BLOCKED";
 }
 
 export interface AdminPractitionersPagination {
@@ -39,6 +48,9 @@ export interface ListAdminPractitionersParams {
   country?: string;
   onlineNow?: boolean;
   minRating?: number;
+  applicationStatus?: string;
+  publicationStatus?: "PUBLISHED" | "UNPUBLISHED";
+  readinessStatus?: "READY" | "BLOCKED";
   page?: number;
   limit?: number;
   sort?: "recommended" | "experience" | "rating" | "newest" | "oldest";
@@ -56,6 +68,50 @@ export interface AdminPractitionerAvatarResponse {
 export interface AdminPractitionerAvatarSuccessResponse {
   message: string;
   avatar: AdminPractitionerAvatarResponse;
+}
+
+export interface AdminPractitionerDetails {
+  id: string;
+  userId: string;
+  displayName: string | null;
+  publicSlug: string;
+  avatarUrl: string | null;
+  accountStatus: string;
+  profileStatus: string;
+  countryCode: string | null;
+  countryName: string | null;
+  email: string | null;
+  phone: string | null;
+  timezone: string | null;
+  defaultLocale: string | null;
+  practitionerType: string;
+  practitionerGender: string | null;
+  professionalTitle: string | null;
+  bio: string | null;
+  professionalContentReadiness: any;
+  yearsOfExperience: number | null;
+  languages: string[];
+  acceptsPackages: boolean;
+  isInstantBookingEnabled: boolean;
+  pricing: {
+    session30: { egp: number | null; usd: number | null };
+    session60: { egp: number | null; usd: number | null };
+    instantBooking30: { egp: number | null; usd: number | null };
+    instantBooking60: { egp: number | null; usd: number | null };
+  };
+  specialties: any[];
+  credentials: any[];
+  payoutDestination: any | null;
+  application: any | null;
+  operations: {
+    totalSessions: number;
+    completedSessions: number;
+    upcomingSessions: number;
+    cancelledSessions: number;
+  };
+  auditLogs: any[];
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface PractitionerPublicationImpact {

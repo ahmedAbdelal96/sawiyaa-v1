@@ -1,10 +1,10 @@
-import { ConflictException, Injectable, Optional } from '@nestjs/common';
+import { BadRequestException, ConflictException, Injectable, Optional } from '@nestjs/common';
 import { CredentialLifecycleState, CredentialType, PractitionerStatus, SecurityAuditOutcome } from '@prisma/client';
 import { I18nService } from '@common/i18n/services/i18n.service';
 import { SupportedLocale } from '@common/i18n/types/locale.types';
-import { CreatePractitionerProfileUseCase } from './create-practitioner-profile.use-case';
 import { PractitionerCredentialMapper } from '../mappers/practitioner-credential.mapper';
 import { PractitionerCredentialRepository } from '../repositories/practitioner-credential.repository';
+import { PractitionerProfileRepository } from '../repositories/practitioner-profile.repository';
 import { PrismaService } from '@common/prisma/prisma.service';
 import { SecurityAuditService } from '@common/security-audit/security-audit.service';
 import { SecurityAuditActorType, SecurityAuditSource } from '@common/security-audit/security-audit.types';
@@ -18,8 +18,8 @@ import { PractitionerChangeReviewService } from '../services/practitioner-change
 export class UploadPractitionerCredentialMetadataUseCase {
   constructor(
     private readonly i18nService: I18nService,
-    private readonly createPractitionerProfileUseCase: CreatePractitionerProfileUseCase,
     private readonly practitionerCredentialRepository: PractitionerCredentialRepository,
+    private readonly practitionerProfileRepository: PractitionerProfileRepository,
     private readonly practitionerCredentialMapper: PractitionerCredentialMapper,
     @Optional() private readonly prisma?: PrismaService,
     @Optional() private readonly securityAuditService?: SecurityAuditService,
@@ -33,9 +33,19 @@ export class UploadPractitionerCredentialMetadataUseCase {
     fileUrl: string;
     expiresAt?: Date | null;
   }) {
-    const profile = await this.createPractitionerProfileUseCase.execute(
-      input.userId,
-    );
+    if (!input.fileUrl.trim().startsWith('/uploads/')) {
+      throw new BadRequestException({
+        messageKey: 'practitioners.errors.credentialFileUploadRequired',
+        error: 'PRACTITIONER_CREDENTIAL_EXTERNAL_URL_NOT_ALLOWED',
+      });
+    }
+    const profile = await this.practitionerProfileRepository.findByUserId(input.userId);
+    if (!profile) {
+      throw new BadRequestException({
+        messageKey: 'practitioners.errors.applicationCredentialFileRequired',
+        error: 'PRACTITIONER_APPLICATION_CREDENTIAL_FILE_REQUIRED',
+      });
+    }
 
     if (input.credentialType !== CredentialType.OTHER) {
       const existingType =

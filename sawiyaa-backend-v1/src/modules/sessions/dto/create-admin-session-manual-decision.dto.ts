@@ -58,4 +58,12 @@ export class CreateAdminSessionManualDecisionDto {
   @IsOptional()
   @IsBoolean()
   supersedePrevious?: boolean;
+
+  @ApiPropertyOptional({
+    description:
+      'Explicitly completes an open Admin resolution case. Required only when completing from AWAITING_ADMIN_RESOLUTION.',
+  })
+  @IsOptional()
+  @IsBoolean()
+  resolveOpenCase?: boolean;
 }

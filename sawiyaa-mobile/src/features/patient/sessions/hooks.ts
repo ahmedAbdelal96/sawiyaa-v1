@@ -4,6 +4,7 @@ import {
   useQuery,
   useQueryClient,
 } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import { useAuthenticatedQueryEnabled } from "../../auth/query-auth";
 import { patientJourneyQueryKey } from "../journey/hooks";
 import {
@@ -24,8 +25,8 @@ const patientSessionsQueryKeys = {
     [...patientSessionsQueryKeys.all, "list", query ?? {}] as const,
   infiniteList: (query?: Omit<ListSessionsQuery, "page">) =>
     [...patientSessionsQueryKeys.all, "infinite-list", query ?? {}] as const,
-  details: (sessionId: string) =>
-    [...patientSessionsQueryKeys.all, "details", sessionId] as const,
+  details: (sessionId: string, locale = "ar") =>
+    [...patientSessionsQueryKeys.all, "details", sessionId, locale] as const,
   summary: () => [...patientSessionsQueryKeys.all, "summary"] as const,
   cancelPreview: (sessionId: string) =>
     [...patientSessionsQueryKeys.all, "cancel-preview", sessionId] as const,
@@ -71,10 +72,27 @@ export function useCreateScheduledSession() {
     onSuccess: (payload) => {
       queryClient.invalidateQueries({ queryKey: patientSessionsQueryKeys.all });
       queryClient.invalidateQueries({ queryKey: patientJourneyQueryKey });
-      queryClient.setQueryData(
-        patientSessionsQueryKeys.details(payload.item.id),
-        payload.item,
-      );
+      // The create-session response is intentionally a lightweight booking
+      // acknowledgement and does not include the full operational action
+      // contract used by the payment screen. Do not seed the details cache
+      // with that partial shape; the details query must fetch the canonical
+      // patient session representation before deciding whether payment is
+      // allowed.
+      queryClient.removeQueries({
+        queryKey: patientSessionsQueryKeys.details(payload.item.id),
+      });
+    },
+    onError: (_error, variables) => {
+      // If another patient won the selected slot, invalidate only the
+      // availability queries for that practitioner. The next screen render
+      // must not keep presenting a stale slot from the cache.
+      queryClient.invalidateQueries({
+        queryKey: [
+          ...patientSessionsQueryKeys.all,
+          "availability",
+          variables.practitionerSlug,
+        ],
+      });
     },
   });
 }
@@ -87,6 +105,7 @@ export function usePatientSessions(query?: ListSessionsQuery) {
     queryFn: () => getPatientSessions(query),
     enabled,
     staleTime: 30_000,
+    refetchOnWindowFocus: true,
   });
 }
 
@@ -104,6 +123,7 @@ export function usePatientSessionSummary() {
     },
     enabled,
     staleTime: 30_000,
+    refetchOnWindowFocus: true,
   });
 }
 
@@ -130,20 +150,24 @@ export function useInfinitePatientSessions(
     },
     enabled,
     staleTime: 30_000,
+    refetchOnWindowFocus: true,
   });
 }
 
 export function usePatientSession(sessionId: string | null) {
   const enabled = useAuthenticatedQueryEnabled("patient");
+  const { i18n } = useTranslation();
+  const locale = i18n.language?.startsWith("ar") ? "ar" : "en";
 
   return useQuery({
-    queryKey: patientSessionsQueryKeys.details(sessionId ?? ""),
+    queryKey: patientSessionsQueryKeys.details(sessionId ?? "", locale),
     queryFn: async () => {
       const response = await getPatientSession(sessionId!);
       return response.item;
     },
     enabled: enabled && Boolean(sessionId),
     staleTime: 30_000,
+    refetchOnWindowFocus: true,
   });
 }
 
@@ -163,6 +187,8 @@ export function usePatientSessionCancellationPreview(sessionId: string | null) {
 
 export function useCancelPatientSession() {
   const queryClient = useQueryClient();
+  const { i18n } = useTranslation();
+  const locale = i18n.language?.startsWith("ar") ? "ar" : "en";
   return useMutation({
     mutationFn: ({
       sessionId,
@@ -175,7 +201,7 @@ export function useCancelPatientSession() {
       queryClient.invalidateQueries({ queryKey: patientSessionsQueryKeys.all });
       queryClient.invalidateQueries({ queryKey: patientJourneyQueryKey });
       queryClient.setQueryData(
-        patientSessionsQueryKeys.details(payload.item.id),
+        patientSessionsQueryKeys.details(payload.item.id, locale),
         payload.item,
       );
     },
@@ -183,9 +209,19 @@ export function useCancelPatientSession() {
 }
 
 export function useResolvePatientSessionJoinContract() {
+  const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (sessionId: string) =>
       resolvePatientSessionJoinContract(sessionId),
+    onSuccess: async (payload) => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: patientSessionsQueryKeys.all }),
+        queryClient.invalidateQueries({ queryKey: patientJourneyQueryKey }),
+        queryClient.invalidateQueries({
+          queryKey: patientSessionsQueryKeys.details(payload.item.sessionId),
+        }),
+      ]);
+    },
   });
 }
 

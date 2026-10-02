@@ -91,7 +91,28 @@ export type AdminPaymentOpsPaymentSummary = {
   capturedAt: string | null;
   failedAt: string | null;
   expiredAt: string | null;
+  patientId: string | null;
+  patientName: string | null;
 };
+
+export type AdminPaymentOpsPackagePurchaseContext = {
+  id: string;
+  title: string | null;
+  planCode: string | null;
+  status: string;
+  settlementId: string | null;
+} | null;
+
+export type AdminPaymentOpsAcademyEnrollmentContext = {
+  id: string;
+  programId: string;
+  programSlug: string;
+  programTitleAr: string;
+  programTitleEn: string;
+  status: string;
+  paymentStatus: string;
+  registeredAt: string;
+} | null;
 
 export type AdminPaymentOpsSessionContext = {
   id: string;
@@ -130,7 +151,12 @@ export type AdminPaymentRefundItem = {
   requestedAt: string;
   processedAt: string | null;
   failedAt: string | null;
+  customerWalletCreditedAt: string | null;
   createdAt: string;
+  manualProviderFinalizationAvailable: boolean;
+  providerReconciliationOutcome: string | null;
+  providerReconciliationLastAttemptAt: string | null;
+  providerReconciliationEvidence: string | null;
 };
 
 export type AdminPaymentEventItem = {
@@ -156,10 +182,34 @@ export type AdminPaymentOpsRelatedSettlement = {
 
 export type AdminPaymentOpsItem = {
   payment: AdminPaymentOpsPaymentSummary;
+  packagePurchase: AdminPaymentOpsPackagePurchaseContext;
+  academyEnrollment: AdminPaymentOpsAcademyEnrollmentContext;
   session: AdminPaymentOpsSessionContext;
+  sessionSummary?: {
+    id: string;
+    sessionCode: string;
+    status: string;
+    scheduledStartAt: string | null;
+    scheduledEndAt: string | null;
+    durationMinutes: number;
+    practitionerName: string | null;
+    bookingState: string;
+    paymentState: string;
+    cancellationState: string;
+  } | null;
+  failureDiagnosis?: {
+    category: string | null;
+    provider: PaymentProvider;
+    attemptNumber: number;
+    lastAttemptAt: string | null;
+    retryAvailable: boolean;
+    recommendedNextAction: string;
+  };
   refundSummary: AdminPaymentRefundSummary;
   refunds: AdminPaymentRefundItem[];
   recentEvents: AdminPaymentEventItem[];
+  timeline?: Array<{ id: string; type: string; occurredAt: string; reference: string | null; reason: string | null }>;
+  exceptions?: Array<{ id: string; type: string; status: string; provider: string; ownerUserId: string | null; reason: string; resolutionNote: string | null; createdAt: string; resolvedAt: string | null }>;
   relatedSettlement?: AdminPaymentOpsRelatedSettlement | null;
 };
 
@@ -178,4 +228,30 @@ export type AdminRefundItemResponseData = {
 export type RequestAdminRefundInput = {
   amount?: number;
   reason?: string;
+};
+
+export type ManualFinalizeAdminRefundInput = {
+  outcome: "SUCCEEDED" | "FAILED";
+  evidenceReference: string;
+  reason: string;
+  evidenceMetadata?: Record<string, string>;
+};
+
+export type AdminPaymentException = {
+  id: string;
+  paymentId: string;
+  type: string;
+  status: string;
+  provider: string;
+  ownerUserId: string | null;
+  reason: string;
+  resolutionNote: string | null;
+  createdAt: string;
+  resolvedAt: string | null;
+};
+
+export type CreateAdminPaymentExceptionInput = {
+  paymentId: string;
+  type: "LATE_PROVIDER_SUCCESS" | "WEBHOOK_CONFLICT" | "RECONCILIATION_ISSUE" | "UNKNOWN_PAYMENT_STATE";
+  reason: string;
 };

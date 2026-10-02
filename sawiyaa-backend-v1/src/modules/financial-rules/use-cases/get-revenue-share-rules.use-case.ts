@@ -1,112 +1,91 @@
-import { Injectable } from '@nestjs/common';
-import { CommissionRuleScope, MarketType, Prisma } from '@prisma/client';
+import { BadRequestException, Injectable } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { CommissionRuleRepository } from '../repositories/commission-rule.repository';
-import { MoneyMathService } from '../services/money-math.service';
+import { MarketType } from '@prisma/client';
 import { ValidateCommissionRuleDefinitionService } from '../services/validate-commission-rule-definition.service';
+import { PLATFORM_DEFAULTS } from '@modules/config/registry/platform-defaults';
 
-const LOCAL_DEFAULT_SLUG = 'revenue-share-default-local';
-const CROSS_BORDER_DEFAULT_SLUG = 'revenue-share-default-cross-border';
+const LOCAL_DEFAULT = PLATFORM_DEFAULTS.revenueShare.local;
+const CROSS_BORDER_DEFAULT = PLATFORM_DEFAULTS.revenueShare.crossBorder;
+const LOCAL_DEFAULT_SLUG = LOCAL_DEFAULT.slug;
+const CROSS_BORDER_DEFAULT_SLUG = CROSS_BORDER_DEFAULT.slug;
 
 @Injectable()
 export class GetRevenueShareRulesUseCase {
   constructor(
     private readonly commissionRuleRepository: CommissionRuleRepository,
     private readonly validateCommissionRuleDefinitionService: ValidateCommissionRuleDefinitionService,
-    private readonly moneyMathService: MoneyMathService,
   ) {}
 
   async execute() {
     const [local, crossBorder] = await Promise.all([
-      this.ensureDefaultRule({
-        slug: LOCAL_DEFAULT_SLUG,
-        marketType: MarketType.LOCAL,
-        platformRatePercent: '30.00',
-        practitionerRatePercent: '70.00',
-        ruleName: 'Default local revenue share',
-      }),
-      this.ensureDefaultRule({
-        slug: CROSS_BORDER_DEFAULT_SLUG,
-        marketType: MarketType.CROSS_BORDER,
-        platformRatePercent: '50.00',
-        practitionerRatePercent: '50.00',
-        ruleName: 'Default cross-border revenue share',
-      }),
+      this.readRequiredRule(LOCAL_DEFAULT),
+      this.readRequiredRule(CROSS_BORDER_DEFAULT),
     ]);
+
+    const localPlatform = this.toPercent(local.platformRatePercent);
+    const crossBorderPlatform = this.toPercent(crossBorder.platformRatePercent);
+    const localPractitioner = this.toPercent(local.practitionerRatePercent);
+    const crossBorderPractitioner = this.toPercent(
+      crossBorder.practitionerRatePercent,
+    );
+    const isUnified =
+      localPlatform === crossBorderPlatform &&
+      localPractitioner === crossBorderPractitioner;
+    const updatedAt = new Date(
+      Math.max(local.updatedAt.getTime(), crossBorder.updatedAt.getTime()),
+    );
 
     return {
       item: {
-        local: this.toRuleView(local),
-        crossBorder: this.toRuleView(crossBorder),
+        configurationState: isUnified ? ('READY' as const) : ('REQUIRES_UNIFICATION' as const),
+        platformCommissionPercent: isUnified ? localPlatform : null,
+        practitionerSharePercent: isUnified ? localPractitioner : null,
+        effectiveAt: isUnified ? updatedAt.toISOString() : null,
+        updatedAt: updatedAt.toISOString(),
+        expectedUpdatedAt: this.buildVersion(local.updatedAt, crossBorder.updatedAt),
       },
     };
   }
 
-  private async ensureDefaultRule(input: {
+  private async readRequiredRule(input: {
     slug: string;
     ruleName: string;
-    marketType: MarketType;
     platformRatePercent: Prisma.Decimal | string;
     practitionerRatePercent: Prisma.Decimal | string;
+    ruleScope: typeof LOCAL_DEFAULT.ruleScope;
+    marketType: MarketType;
+    sessionFlowType: null;
+    sessionMode: null;
+    priority: number;
+    isDefault: boolean;
   }) {
+    const existing = await this.commissionRuleRepository.findBySlug(input.slug);
+    if (!existing || !existing.isActive) {
+      throw new BadRequestException({
+        messageKey: 'financialRules.errors.commissionRuleNotFound',
+        error: 'FINANCIAL_RULE_COMMISSION_RULE_NOT_FOUND',
+      });
+    }
     this.validateCommissionRuleDefinitionService.validate({
-      platformRatePercent: input.platformRatePercent,
-      practitionerRatePercent: input.practitionerRatePercent,
+      platformRatePercent: existing.platformRatePercent,
+      practitionerRatePercent: existing.practitionerRatePercent,
     });
-
-    const platformRate = this.moneyMathService
-      .toDecimal(input.platformRatePercent)
-      .toFixed(2);
-    const practitionerRate = this.moneyMathService
-      .toDecimal(input.practitionerRatePercent)
-      .toFixed(2);
-
-    const rule = await this.commissionRuleRepository.upsertRuleBySlug({
-      slug: input.slug,
-      create: {
-        slug: input.slug,
-        ruleName: input.ruleName,
-        ruleScope: CommissionRuleScope.GLOBAL,
-        marketType: input.marketType,
-        platformRatePercent: platformRate,
-        practitionerRatePercent: practitionerRate,
-        priority: 0,
-        isDefault: true,
-        isActive: true,
-      },
-      update: {
-        ruleName: input.ruleName,
-        ruleScope: CommissionRuleScope.GLOBAL,
-        marketType: input.marketType,
-        platformRatePercent: platformRate,
-        practitionerRatePercent: practitionerRate,
-        isDefault: true,
-        isActive: true,
-      },
-    });
-
-    await this.commissionRuleRepository.unsetOtherGlobalDefaults({
-      marketType: input.marketType,
-      keepSlug: input.slug,
-    });
-
-    return rule;
+    return existing;
   }
 
-  private toRuleView(rule: {
-    id: string;
-    slug: string;
-    platformRatePercent: Prisma.Decimal;
-    practitionerRatePercent: Prisma.Decimal;
-    updatedAt: Date;
-  }) {
-    return {
-      ruleId: rule.id,
-      slug: rule.slug,
-      platformRatePercent: rule.platformRatePercent.toString(),
-      practitionerRatePercent: rule.practitionerRatePercent.toString(),
-      updatedAt: rule.updatedAt.toISOString(),
-    };
+  private toPercent(value: Prisma.Decimal | string) {
+    return new Prisma.Decimal(value.toString()).toFixed(2);
+  }
+
+  private buildVersion(localUpdatedAt: Date, crossBorderUpdatedAt: Date) {
+    return `${localUpdatedAt.toISOString()}|${crossBorderUpdatedAt.toISOString()}`;
   }
 }
 
-export { LOCAL_DEFAULT_SLUG, CROSS_BORDER_DEFAULT_SLUG };
+export {
+  LOCAL_DEFAULT,
+  CROSS_BORDER_DEFAULT,
+  LOCAL_DEFAULT_SLUG,
+  CROSS_BORDER_DEFAULT_SLUG,
+};

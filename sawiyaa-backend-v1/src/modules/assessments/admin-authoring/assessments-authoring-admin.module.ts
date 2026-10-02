@@ -1,7 +1,9 @@
 import { Module } from '@nestjs/common';
 import { ActiveAccountGuard } from '@common/guards/account-state/active-account.guard';
 import { JwtAccessAuthGuard } from '@common/guards/authentication/jwt-access-auth.guard';
-import { AdminGuard } from '@common/guards/authorization/admin.guard';
+import { RolesGuard } from '@common/guards/authorization/roles.guard';
+import { PermissionResolverService } from '@common/guards/authorization/permission-resolver.service';
+import { PermissionsGuard } from '@common/guards/authorization/permissions.guard';
 import { BuildAssessmentNextStepService } from '@modules/assessments/services/build-assessment-next-step.service';
 import { BuildAssessmentResultSummaryService } from '@modules/assessments/services/build-assessment-result-summary.service';
 import { MapAssessmentResultBandService } from '@modules/assessments/services/map-assessment-result-band.service';
@@ -20,7 +22,9 @@ import { AdminAssessmentAuthoringQuestionsUseCase } from './use-cases/admin-asse
   controllers: [AdminAssessmentsAuthoringController],
   providers: [
     JwtAccessAuthGuard,
-    AdminGuard,
+    RolesGuard,
+    PermissionsGuard,
+    PermissionResolverService,
     ActiveAccountGuard,
     AdminAssessmentAuthoringRepository,
     AdminAssessmentLifecyclePolicy,

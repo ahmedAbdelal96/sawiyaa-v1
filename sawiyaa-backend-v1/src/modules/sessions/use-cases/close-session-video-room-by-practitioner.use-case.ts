@@ -11,6 +11,8 @@ import { SessionPractitionerRepository } from '../repositories/session-practitio
 import { SessionRepository } from '../repositories/session.repository';
 import { SessionVideoProviderRegistryService } from '../services/session-video-provider-registry.service';
 import { SessionVideoProviderResolverService } from '../services/session-video-provider-resolver.service';
+import { ParticipantSessionOutcomeBoundaryService } from '../services/participant-session-outcome-boundary.service';
+import { SessionLifecycleService } from '../services/session-lifecycle.service';
 import {
   SecurityAuditActorType,
   SecurityAuditSource,
@@ -34,6 +36,8 @@ export class CloseSessionVideoRoomByPractitionerUseCase {
     private readonly sessionAccessPolicy: SessionAccessPolicy,
     private readonly sessionVideoProviderRegistryService: SessionVideoProviderRegistryService,
     private readonly sessionVideoProviderResolverService: SessionVideoProviderResolverService,
+    private readonly outcomeBoundary: ParticipantSessionOutcomeBoundaryService,
+    private readonly sessionLifecycleService: SessionLifecycleService,
   ) {}
 
   async execute(input: {
@@ -150,16 +154,44 @@ export class CloseSessionVideoRoomByPractitionerUseCase {
     const closedAt = this.normalizeDate(providerResult.closedAt) ?? now;
 
     const updated = await this.prisma.$transaction(async (tx) => {
-      const persisted = await this.sessionRepository.updateRuntimeFields(
+      const lockedSession = await this.sessionRepository.findByIdForUpdate(
         session.id,
-        {
-          videoRoomClosedAt: closedAt,
-          videoRoomClosedByUserId: input.userId,
-          videoRoomCloseReason: resolvedCloseReason,
-          videoRoomCloseNote: trimmedNote,
-        },
         tx,
       );
+      if (!lockedSession) {
+        throw new NotFoundException({
+          messageKey: 'sessions.errors.sessionNotFound',
+          error: 'SESSION_NOT_FOUND',
+        });
+      }
+      const roomFields = {
+        videoRoomClosedAt: closedAt,
+        videoRoomClosedByUserId: input.userId,
+        videoRoomCloseReason: resolvedCloseReason,
+        videoRoomCloseNote: trimmedNote,
+      };
+      const decision = this.outcomeBoundary.decideRoomClosure({
+        status: lockedSession.status,
+      });
+      const persisted = decision.kind === 'REQUIRES_ADMIN_RESOLUTION' &&
+        lockedSession.status !== SessionStatus.AWAITING_ADMIN_RESOLUTION
+        ? await this.sessionLifecycleService.transition({
+            session: lockedSession,
+            to: SessionStatus.AWAITING_ADMIN_RESOLUTION,
+            actorUserId: input.userId,
+            data: roomFields,
+            metadata: {
+              requestedOutcome: 'ROOM_CLOSE',
+              decision: 'REQUIRES_ADMIN_RESOLUTION',
+              reason: decision.reason,
+            },
+            tx,
+          })
+        : await this.sessionRepository.updateRuntimeFields(
+            session.id,
+            roomFields,
+            tx,
+          );
 
       await this.sessionRepository.createEvent(
         {

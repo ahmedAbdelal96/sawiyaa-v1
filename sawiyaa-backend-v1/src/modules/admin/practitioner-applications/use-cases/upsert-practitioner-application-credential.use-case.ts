@@ -95,6 +95,7 @@ export class UpsertPractitionerApplicationCredentialUseCase {
     const now = new Date();
     let previousReviewStatus: CredentialReviewStatus | null = null;
     let previousExpiresAt: string | null = null;
+    let persistedCredentialId = input.credentialId;
     const credential = await this.prisma.$transaction(
       async (tx: Prisma.TransactionClient) => {
         const normalizedReviewNotes =
@@ -116,9 +117,10 @@ export class UpsertPractitionerApplicationCredentialUseCase {
           previousExpiresAt = null;
           const isCreateReviewed = createReviewStatus !== 'PENDING';
 
-          await this.credentialRepository.create(
+          const createdCredential = await this.credentialRepository.create(
             {
               practitionerId: application.practitionerId,
+              applicationId: application.practitionerId ? null : application.id,
               credentialType: input.data.credentialType,
               fileUrl: input.data.fileUrl.trim(),
               reviewStatus: createReviewStatus,
@@ -129,6 +131,7 @@ export class UpsertPractitionerApplicationCredentialUseCase {
             },
             tx,
           );
+          persistedCredentialId = createdCredential.id;
         } else {
           const existing = await this.credentialRepository.findById(
             input.credentialId,
@@ -136,7 +139,9 @@ export class UpsertPractitionerApplicationCredentialUseCase {
           );
           if (
             !existing ||
-            existing.practitionerId !== application.practitionerId
+            (application.practitionerId
+              ? existing.practitionerId !== application.practitionerId
+              : existing.applicationId !== application.id)
           ) {
             throw new NotFoundException({
               messageKey:
@@ -182,7 +187,65 @@ export class UpsertPractitionerApplicationCredentialUseCase {
           );
         }
 
-        const [user, profile, specialtyLinks, credentials] = await Promise.all([
+        if (!application.practitionerId) {
+          if (!persistedCredentialId) {
+            throw new NotFoundException({
+              messageKey:
+                'admin.practitionerApplications.errors.applicationNotFound',
+              error: 'ADMIN_PRACTITIONER_CREDENTIAL_NOT_FOUND',
+            });
+          }
+
+          const applicantCredential = await tx.practitionerCredential.findUnique({
+            where: { id: persistedCredentialId },
+            select: {
+              id: true,
+              credentialType: true,
+              fileUrl: true,
+              storedFileId: true,
+              reviewStatus: true,
+              reviewedAt: true,
+              reviewedByUserId: true,
+              reviewNotes: true,
+              expiresAt: true,
+              createdAt: true,
+            },
+          });
+
+          if (!applicantCredential) {
+            throw new NotFoundException({
+              messageKey:
+                'admin.practitionerApplications.errors.applicationNotFound',
+              error: 'ADMIN_PRACTITIONER_CREDENTIAL_NOT_FOUND',
+            });
+          }
+
+          await this.securityAuditService?.recordRequired(tx, {
+            action: input.credentialId
+              ? 'security.practitioner.credential.update'
+              : 'security.practitioner.credential.create',
+            outcome: SecurityAuditOutcome.SUCCESS,
+            actorType: SecurityAuditActorType.USER,
+            source: SecurityAuditSource.HTTP_REQUEST,
+            actorUserId: input.adminUserId,
+            resourceType: 'PractitionerCredential',
+            resourceId: applicantCredential.id,
+            targetUserId: application.userId,
+            reason: input.data.reviewNotes?.trim() || null,
+            metadata: {
+              applicationId: application.id,
+              credentialType: applicantCredential.credentialType,
+              previousReviewStatus,
+              reviewStatus: applicantCredential.reviewStatus,
+              previousExpiresAt,
+              expiresAt: applicantCredential.expiresAt?.toISOString() ?? null,
+            },
+          });
+
+          return applicantCredential;
+        }
+
+        const [user, profile, specialtyLinks] = await Promise.all([
           tx.user.findUnique({
             where: { id: application.practitioner.userId },
             select: {
@@ -216,10 +279,6 @@ export class UpsertPractitionerApplicationCredentialUseCase {
               isPrimary: true,
             },
           }),
-          tx.practitionerCredential.findMany({
-            where: { practitionerId: application.practitionerId },
-            orderBy: { createdAt: 'desc' },
-          }),
         ]);
 
         if (!user || !profile) {
@@ -229,6 +288,11 @@ export class UpsertPractitionerApplicationCredentialUseCase {
             error: 'ADMIN_PRACTITIONER_APPLICATION_INVALID_RELATION',
           });
         }
+
+        const currentCredentials = await tx.practitionerCredential.findMany({
+          where: { practitionerId: application.practitionerId },
+          orderBy: { createdAt: 'desc' },
+        });
 
         const specialtyIds = specialtyLinks.map((item) => item.specialtyId);
         const specialties = await this.specialtyRepository.listByIds(
@@ -270,7 +334,7 @@ export class UpsertPractitionerApplicationCredentialUseCase {
                 categoryId: specialty?.categoryId ?? null,
               };
             }),
-            credentials: credentials.map((item) => ({
+            credentials: currentCredentials.map((item) => ({
               credentialId: item.id,
               credentialType: item.credentialType,
               fileUrl: item.fileUrl,
@@ -307,8 +371,8 @@ export class UpsertPractitionerApplicationCredentialUseCase {
         );
 
         const refreshedCredential =
-          credentials.find((item) => item.id === input.credentialId) ??
-          credentials[0];
+          currentCredentials.find((item) => item.id === input.credentialId) ??
+          currentCredentials[0];
 
         if (!refreshedCredential) {
           throw new NotFoundException({

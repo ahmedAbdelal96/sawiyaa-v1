@@ -40,6 +40,10 @@ import {
   SecurityAuditSource,
 } from '@common/security-audit/security-audit.types';
 import { PractitionerCredentialStorageService } from '@modules/practitioners/services/practitioner-credential-storage.service';
+import {
+  PractitionerProfessionalContentAuthoringService,
+  ProfessionalContentAuthoringInput,
+} from '@modules/practitioners/services/practitioner-professional-content-authoring.service';
 
 /**
  * Creates a practitioner directly from admin scope without practitioner self-submission.
@@ -59,7 +63,10 @@ export class CreateAdminPractitionerUseCase {
     private readonly phoneNumberValidationService: PhoneNumberValidationService,
     private readonly userPhoneRepository: UserPhoneRepository,
     @Optional() private readonly securityAuditService?: SecurityAuditService,
-    @Optional() private readonly credentialStorageService?: PractitionerCredentialStorageService,
+    @Optional()
+    private readonly credentialStorageService?: PractitionerCredentialStorageService,
+    @Optional()
+    private readonly professionalContentAuthoringService?: PractitionerProfessionalContentAuthoringService,
   ) {}
 
   private async hashPassword(password: string): Promise<string> {
@@ -103,6 +110,8 @@ export class CreateAdminPractitionerUseCase {
     practitionerGender?: PractitionerGender | null;
     professionalTitle?: string | null;
     bio?: string | null;
+    professionalContent?: ProfessionalContentAuthoringInput['professionalContent'];
+    primaryContentLocale?: ProfessionalContentAuthoringInput['primaryContentLocale'];
     yearsOfExperience?: number | null;
     sessionPrice30Egp?: number | null;
     sessionPrice30Usd?: number | null;
@@ -207,10 +216,21 @@ export class CreateAdminPractitionerUseCase {
 
     const passwordHash = await this.hashPassword(input.password);
     const displayName = input.displayName?.trim() || null;
-    const professionalTitle = assertProfessionalTitle(input.professionalTitle, { required: true });
+    const contentPlan = this.professionalContentAuthoringService?.plan(
+      {},
+      {
+        professionalTitle: input.professionalTitle,
+        bio: input.bio,
+        professionalContent: input.professionalContent,
+        primaryContentLocale: input.primaryContentLocale,
+      },
+    );
+    const professionalTitle =
+      contentPlan?.state.professionalTitle ??
+      assertProfessionalTitle(input.professionalTitle, { required: true });
     const practitionerType = input.practitionerType ?? PractitionerType.OTHER;
     const practitionerGender = input.practitionerGender ?? null;
-    const bio = input.bio?.trim() || null;
+    const bio = contentPlan?.state.bio ?? (input.bio?.trim() || null);
     const yearsOfExperience =
       typeof input.yearsOfExperience === 'number'
         ? input.yearsOfExperience
@@ -231,9 +251,13 @@ export class CreateAdminPractitionerUseCase {
     );
     const credentials = (input.credentials ?? [])
       .map((item) => {
-        const fileUrl = (item.credentialId && item.mimeType && this.credentialStorageService
-          ? this.credentialStorageService.resolveDirectCreateCredentialFileUrl(item.credentialId, item.mimeType)
-          : item.fileUrl?.trim() ?? '') ?? '';
+        const fileUrl =
+          (item.credentialId && item.mimeType && this.credentialStorageService
+            ? this.credentialStorageService.resolveDirectCreateCredentialFileUrl(
+                item.credentialId,
+                item.mimeType,
+              )
+            : (item.fileUrl?.trim() ?? '')) ?? '';
         return {
           credentialType: item.credentialType,
           fileUrl,
@@ -501,6 +525,20 @@ export class CreateAdminPractitionerUseCase {
           },
         });
 
+        if (this.professionalContentAuthoringService) {
+          await this.professionalContentAuthoringService.applyDirect(
+            tx,
+            practitionerProfile.id,
+            { professionalTitle, bio },
+            {
+              professionalTitle: input.professionalTitle,
+              bio: input.bio,
+              professionalContent: input.professionalContent,
+              primaryContentLocale: input.primaryContentLocale,
+            },
+          );
+        }
+
         await tx.practitionerProfileLanguage.createMany({
           data: resolvedLanguages.map((language, index) => ({
             practitionerId: practitionerProfile.id,
@@ -552,6 +590,7 @@ export class CreateAdminPractitionerUseCase {
 
         const application = await tx.practitionerApplication.create({
           data: {
+            userId: user.id,
             practitionerId: practitionerProfile.id,
             status: PractitionerApplicationStatus.APPROVED,
             submittedAt: now,
@@ -571,6 +610,12 @@ export class CreateAdminPractitionerUseCase {
                   practitionerGender,
                   professionalTitle,
                   bio,
+                  professionalContent: contentPlan
+                    ? this.professionalContentAuthoringService!.toSnapshot(
+                        contentPlan,
+                      )
+                    : undefined,
+                  primaryContentLocale: contentPlan?.state.primaryContentLocale,
                   yearsOfExperience,
                   countryCode: normalizedCountryCode,
                   primarySpecialtyCategoryId:

@@ -27,6 +27,7 @@ export type PaymentStatus =
 export type PaymentItem = {
   id: string;
   sessionId: string | null;
+  sessionCode: string | null;
   provider: PaymentProvider;
   status: PaymentStatus;
   amount: string;
@@ -55,6 +56,25 @@ export type PaymentItem = {
   failedAt: string | null;
   expiredAt: string | null;
   refundedAt: string | null;
+  createdAt: string;
+  refunds?: PatientRefundItem[];
+};
+
+export type PatientRefundItem = {
+  id: string;
+  paymentId: string;
+  sessionId: string | null;
+  sessionCode: string | null;
+  refundType: "FULL" | "PARTIAL";
+  destination: "ORIGINAL_METHOD" | "CUSTOMER_WALLET";
+  status: "REQUESTED" | "PROCESSING" | "SUCCEEDED" | "FAILED" | "CANCELLED";
+  amount: string;
+  currency: string;
+  reason: string | null;
+  requestedAt: string;
+  processedAt: string | null;
+  failedAt: string | null;
+  customerWalletCreditedAt: string | null;
   createdAt: string;
 };
 
@@ -118,6 +138,10 @@ export type ListPaymentsParams = {
   status?: PaymentStatus;
   page?: number;
   limit?: number;
+  search?: string;
+  currencyCode?: "EGP" | "USD";
+  dateFrom?: string;
+  dateTo?: string;
 };
 
 export type CustomerWalletEntryType =

@@ -215,14 +215,14 @@ export class FinancialBreakdownItemDto {
   @ApiProperty()
   netPaidAmount!: string;
 
-  @ApiProperty()
-  platformCommissionAmount!: string;
+  @ApiProperty({ nullable: true })
+  platformCommissionAmount!: string | null;
 
-  @ApiProperty()
-  practitionerShareAmount!: string;
+  @ApiProperty({ nullable: true })
+  practitionerShareAmount!: string | null;
 
-  @ApiProperty({ type: FinancialBreakdownCommissionDto })
-  commissionRule!: FinancialBreakdownCommissionDto;
+  @ApiProperty({ type: FinancialBreakdownCommissionDto, nullable: true })
+  commissionRule!: FinancialBreakdownCommissionDto | null;
 
   @ApiProperty({ type: FinancialBreakdownCouponDto, nullable: true })
   coupon!: FinancialBreakdownCouponDto | null;
@@ -280,29 +280,24 @@ export class FinancialBreakdownItemSuccessResponseDto {
   data!: FinancialBreakdownItemDataResponseDto;
 }
 
-export class RevenueShareRuleDto {
-  @ApiProperty()
-  ruleId!: string;
-
-  @ApiProperty()
-  slug!: string;
-
-  @ApiProperty()
-  platformRatePercent!: string;
-
-  @ApiProperty()
-  practitionerRatePercent!: string;
-
-  @ApiProperty()
-  updatedAt!: string;
-}
-
 export class RevenueShareRulesItemDto {
-  @ApiProperty({ type: RevenueShareRuleDto })
-  local!: RevenueShareRuleDto;
+  @ApiProperty({ enum: ['READY', 'REQUIRES_UNIFICATION'] })
+  configurationState!: 'READY' | 'REQUIRES_UNIFICATION';
 
-  @ApiProperty({ type: RevenueShareRuleDto })
-  crossBorder!: RevenueShareRuleDto;
+  @ApiProperty({ nullable: true, example: '30.00' })
+  platformCommissionPercent!: string | null;
+
+  @ApiProperty({ nullable: true, example: '70.00' })
+  practitionerSharePercent!: string | null;
+
+  @ApiProperty({ nullable: true })
+  effectiveAt!: string | null;
+
+  @ApiProperty({ nullable: true })
+  updatedAt!: string | null;
+
+  @ApiProperty({ nullable: true })
+  expectedUpdatedAt!: string | null;
 }
 
 export class RevenueShareRulesItemDataResponseDto {

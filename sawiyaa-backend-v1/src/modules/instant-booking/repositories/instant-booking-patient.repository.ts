@@ -9,6 +9,11 @@ export class InstantBookingPatientRepository {
     return this.prisma.patientProfile.findUnique({
       where: { userId },
       include: {
+        country: {
+          select: {
+            isoCode: true,
+          },
+        },
         user: {
           select: {
             id: true,

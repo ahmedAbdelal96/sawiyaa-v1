@@ -47,6 +47,7 @@ export interface AuthUser {
   lastName: string;
   role: string; // kept as string to avoid type-cast failures on unknown role values from the API
   avatar?: string;
+  practitionerStatus?: string | null;
 }
 
 export interface AuthTenant {

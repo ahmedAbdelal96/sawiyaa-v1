@@ -10,12 +10,23 @@ import type {
   InstantBookingRequestResponseData,
   InstantBookingRequestsListResponseData,
 } from "../types/instant-booking.types";
+import type { PublicPractitionerInstantBookingAvailability } from "@/features/practitioner-profile/types/profile";
 
 export type PatientInstantBookingPractitionersParams = {
   duration?: InstantBookingDiscoveryDuration;
   page?: number;
   limit?: number;
 };
+
+export async function getPublicPractitionerInstantBookingAvailability(
+  slug: string,
+): Promise<PublicPractitionerInstantBookingAvailability> {
+  const response = await httpClient.get<
+    ApiPayload<PublicPractitionerInstantBookingAvailability>
+  >(`/public/practitioners/${encodeURIComponent(slug)}/instant-booking-availability`);
+
+  return extractData(response.data);
+}
 
 /**
  * Lists the practitioners currently eligible for instant booking.
@@ -46,10 +57,14 @@ export async function getPatientInstantBookingPractitioners(
  */
 export async function createPatientInstantBookingRequest(
   input: CreatePatientInstantBookingRequestInput,
+  idempotencyKey?: string,
 ): Promise<InstantBookingRequest> {
   const response = await httpClient.post<ApiPayload<InstantBookingRequestResponseData>>(
     "/patients/me/instant-booking-requests",
     input,
+    idempotencyKey
+      ? { headers: { "Idempotency-Key": idempotencyKey } }
+      : undefined,
   );
 
   return extractData(response.data).item;

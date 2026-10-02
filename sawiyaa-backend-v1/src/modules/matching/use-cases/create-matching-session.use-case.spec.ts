@@ -11,6 +11,7 @@ import { BuildMatchingRationaleService } from '../services/build-matching-ration
 import { MatchingPresenter } from '../presenters/matching.presenter';
 import { PublicPractitionerVisibilityPolicy } from '@modules/practitioners/policies/public-practitioner-visibility.policy';
 import { CreateMatchingSessionDto } from '../dto/create-matching-session.dto';
+import { ResolveMatchingProfessionalContentService } from '../services/resolve-matching-professional-content.service';
 
 describe('CreateMatchingSessionUseCase', () => {
   const matchingPatientRepository = {
@@ -43,6 +44,9 @@ describe('CreateMatchingSessionUseCase', () => {
   const publicPractitionerVisibilityPolicy = {
     evaluate: jest.fn().mockReturnValue({ isVisible: true }),
   } as unknown as PublicPractitionerVisibilityPolicy;
+  const resolveMatchingProfessionalContentService = {
+    resolveTitles: jest.fn().mockResolvedValue(new Map()),
+  } as unknown as ResolveMatchingProfessionalContentService;
 
   const useCase = new CreateMatchingSessionUseCase(
     matchingPatientRepository,
@@ -55,6 +59,7 @@ describe('CreateMatchingSessionUseCase', () => {
     buildMatchingRationaleService,
     matchingPresenter,
     publicPractitionerVisibilityPolicy,
+    resolveMatchingProfessionalContentService,
   );
 
   beforeEach(() => {

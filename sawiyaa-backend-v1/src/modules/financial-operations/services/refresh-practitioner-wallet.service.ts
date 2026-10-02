@@ -10,6 +10,7 @@ import { LedgerRepository } from '../repositories/ledger.repository';
 import { WalletRepository } from '../repositories/wallet.repository';
 import { MoneyAmountService } from './money-amount.service';
 import { assertWalletCurrencyMatches } from '../utils/wallet-currency-invariant';
+import { lockPractitionerFinance } from '../utils/lock-practitioner-finance';
 
 /**
  * Wallet remains a projection. Every refresh is rebuilt from ledger aggregates
@@ -24,7 +25,15 @@ export class RefreshPractitionerWalletService {
     private readonly moneyAmountService: MoneyAmountService,
   ) {}
 
-  async refresh(practitionerId: string, tx?: Prisma.TransactionClient) {
+  async refresh(
+    practitionerId: string,
+    tx?: Prisma.TransactionClient,
+  ): Promise<Awaited<ReturnType<WalletRepository['upsertWallet']>>> {
+    if (!tx)
+      return this.prisma.$transaction((transaction) =>
+        this.refresh(practitionerId, transaction),
+      );
+    await lockPractitionerFinance(tx, practitionerId);
     const aggregates =
       await this.ledgerRepository.aggregatePractitionerBalances(
         practitionerId,

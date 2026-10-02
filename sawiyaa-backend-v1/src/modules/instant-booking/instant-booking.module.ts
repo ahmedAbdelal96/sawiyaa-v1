@@ -8,7 +8,10 @@ import { PublicPractitionerVisibilityPolicy } from '@modules/practitioners/polic
 import { ReviewsModule } from '@modules/reviews/reviews.module';
 import { SessionsModule } from '@modules/sessions/sessions.module';
 import { PatientsModule } from '@modules/patients/patients.module';
+import { ConfigModule } from '@modules/config/config.module';
+import { PractitionersModule } from '@modules/practitioners/practitioners.module';
 import { PatientInstantBookingDiscoveryController } from './controllers/patient-instant-booking-discovery.controller';
+import { PublicPractitionerInstantBookingAvailabilityController } from './controllers/public-practitioner-instant-booking-availability.controller';
 import { PatientInstantBookingController } from './controllers/patient-instant-booking.controller';
 import { PractitionerInstantBookingController } from './controllers/practitioner-instant-booking.controller';
 import { InstantBookingMapper } from './mappers/instant-booking.mapper';
@@ -29,6 +32,8 @@ import { ListPatientInstantBookingRequestsUseCase } from './use-cases/list-patie
 import { ListPractitionerInstantBookingRequestsUseCase } from './use-cases/list-practitioner-instant-booking-requests.use-case';
 import { ListPractitionerPendingInstantBookingRequestsUseCase } from './use-cases/list-practitioner-pending-instant-booking-requests.use-case';
 import { RejectInstantBookingRequestUseCase } from './use-cases/reject-instant-booking-request.use-case';
+import { InstantBookingPolicyService } from './services/instant-booking-policy.service';
+import { GetPublicPractitionerInstantBookingAvailabilityUseCase } from './use-cases/get-public-practitioner-instant-booking-availability.use-case';
 
 /**
  * Instant Booking Module owns only the immediate request/decision lifecycle.
@@ -42,9 +47,12 @@ import { RejectInstantBookingRequestUseCase } from './use-cases/reject-instant-b
     ReviewsModule,
     SessionsModule,
     PatientsModule,
+    ConfigModule,
+    PractitionersModule,
   ],
   controllers: [
     PatientInstantBookingDiscoveryController,
+    PublicPractitionerInstantBookingAvailabilityController,
     PatientInstantBookingController,
     PractitionerInstantBookingController,
   ],
@@ -59,6 +67,7 @@ import { RejectInstantBookingRequestUseCase } from './use-cases/reject-instant-b
     ValidateInstantBookingStatusTransitionService,
     ValidateInstantBookingEligibilityService,
     CreateSessionFromInstantBookingService,
+    InstantBookingPolicyService,
     InstantBookingExpirySweeperService,
     CreateInstantBookingRequestUseCase,
     GetPatientInstantBookingRequestUseCase,
@@ -70,6 +79,7 @@ import { RejectInstantBookingRequestUseCase } from './use-cases/reject-instant-b
     AcceptInstantBookingRequestUseCase,
     RejectInstantBookingRequestUseCase,
     ExpireInstantBookingRequestUseCase,
+    GetPublicPractitionerInstantBookingAvailabilityUseCase,
   ],
   exports: [
     ExpireInstantBookingRequestUseCase,

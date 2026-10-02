@@ -1,5 +1,11 @@
 import React, { useMemo, useState } from "react";
-import { Image, ScrollView, StyleSheet, TouchableOpacity, View } from "react-native";
+import {
+  Image,
+  ScrollView,
+  StyleSheet,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
@@ -15,7 +21,10 @@ import {
 } from "../../src/components/ui";
 import { useAuth } from "../../src/providers/AuthProvider";
 import { useTheme } from "../../src/providers/ThemeProvider";
-import { CompactSectionHeader, resolvePractitionerTone } from "../../src/features/practitioner/ui/compact";
+import {
+  CompactSectionHeader,
+  resolvePractitionerTone,
+} from "../../src/features/practitioner/ui/compact";
 import {
   usePractitionerApplicationStatus,
   usePractitionerProfile,
@@ -34,6 +43,12 @@ import {
 } from "../../src/features/practitioner/profile/utils";
 import { useGeneralChatUnreadSummary } from "../../src/features/messages/hooks";
 import { getProfessionalTitleLabel } from "../../src/features/practitioner/reference-data";
+import { getTimeZoneDisplayLabel } from "../../src/features/timezone/timezone-options";
+import type {
+  PractitionerApplicationStatusResponse,
+  PractitionerProfile,
+  PractitionerReadiness,
+} from "../../src/features/practitioner/profile/types";
 
 export default function PractitionerAccountScreen() {
   const router = useRouter();
@@ -46,9 +61,12 @@ export default function PractitionerAccountScreen() {
   const applicationQuery = usePractitionerApplicationStatus();
   const messagesSummaryQuery = useGeneralChatUnreadSummary("practitioner");
 
-  const profile = profileQuery.data?.profile ?? null;
-  const readiness = readinessQuery.data?.readiness ?? null;
-  const application = applicationQuery.data?.application ?? null;
+  const profile = (profileQuery.data?.profile ??
+    null) as PractitionerProfile | null;
+  const readiness = (readinessQuery.data?.readiness ??
+    null) as PractitionerReadiness | null;
+  const application = (applicationQuery.data?.application ??
+    null) as PractitionerApplicationStatusResponse | null;
 
   const locale = i18n.language?.startsWith("ar") ? "ar-SA" : "en-US";
   const isArabic = i18n.language?.startsWith("ar") ?? false;
@@ -61,40 +79,58 @@ export default function PractitionerAccountScreen() {
       t("practitioner.account.fallbackName"),
     [profile?.displayName, t, user?.displayName],
   );
-  const professionalTitle = getProfessionalTitleLabel(profile?.professionalTitle, isArabic) || t("practitioner.account.fallbackTitle");
+  const professionalTitle =
+    getProfessionalTitleLabel(profile?.professionalTitle, isArabic) ||
+    t("practitioner.account.fallbackTitle");
   const initials = getInitials(displayName);
   const primarySpecialty =
-    profile?.specialties.find((item) => item.isPrimary) ?? profile?.specialties[0] ?? null;
+    profile?.specialties.find((item) => item.isPrimary) ??
+    profile?.specialties[0] ??
+    null;
   const messagesTone = resolvePractitionerTone(theme, "messages");
   const supportTone = resolvePractitionerTone(theme, "support");
   const dangerTone = resolvePractitionerTone(theme, "danger");
 
-  const isBusy = profileQuery.isLoading || readinessQuery.isLoading || applicationQuery.isLoading;
+  const isBusy =
+    profileQuery.isLoading ||
+    readinessQuery.isLoading ||
+    applicationQuery.isLoading;
 
   if (isBusy) {
     return (
-      <Screen bg="background">
+      <Screen bg="background" testID="practitioner-profile-edit-screen">
         <Header
           title={t("practitioner.account.title")}
           rightElement={
             <TouchableOpacity onPress={signOut} style={styles.headerAction}>
-              <Ionicons name="log-out-outline" size={22} color={theme.colors.textPrimary} />
+              <Ionicons
+                name="log-out-outline"
+                size={22}
+                color={theme.colors.textPrimary}
+              />
             </TouchableOpacity>
           }
         />
-        <LoadingState fullScreen message={t("practitioner.account.common.loading")} />
+        <LoadingState
+          fullScreen
+          message={t("practitioner.account.common.loading")}
+        />
       </Screen>
     );
   }
 
   if (profileQuery.isError || !profile) {
     return (
-      <Screen bg="background">
+      <Screen bg="background" testID="practitioner-profile-edit-screen">
         <Header
           title={t("practitioner.account.title")}
           rightElement={
             <TouchableOpacity onPress={signOut} style={styles.headerAction}>
-              <Ionicons name="log-out-outline" size={22} color={theme.colors.textPrimary} />
+              <Ionicons
+                name="log-out-outline"
+                size={22}
+                color={theme.colors.textPrimary}
+              />
             </TouchableOpacity>
           }
         />
@@ -108,13 +144,19 @@ export default function PractitionerAccountScreen() {
     );
   }
 
-  const profileStatusLabel = t(`practitioner.profileStatus.${profile.profileStatus}`);
+  const profileStatusLabel = t(
+    `practitioner.profileStatus.${profile.profileStatus}`,
+  );
   const accountStatusLabel = practitionerAccountStatusLabel(user?.status, t);
-  const applicationStatusLabel = practitionerApplicationStatusLabel(application?.status ?? null, t);
+  const applicationStatusLabel = practitionerApplicationStatusLabel(
+    application?.status ?? null,
+    t,
+  );
   const payoutDataStatusLabel = profile.payoutDestination?.methodType
     ? t("practitioner.account.statusCard.payoutReady")
     : t("practitioner.account.statusCard.payoutMissing");
-  const unreadMessagesCount = messagesSummaryQuery.data?.item.totalUnreadMessages ?? 0;
+  const unreadMessagesCount =
+    messagesSummaryQuery.data?.item.totalUnreadMessages ?? 0;
   const isApproved = profile.profileStatus === "APPROVED";
   const missingRequirements = readiness?.missingRequirements ?? [];
   const missingRequirementLabels = missingRequirements.map((item) =>
@@ -123,28 +165,62 @@ export default function PractitionerAccountScreen() {
   const hasNotes = missingRequirementLabels.length > 0;
   const rowDirection = isArabic ? "row-reverse" : "row";
   const alignSelfStart = isArabic ? "flex-end" : "flex-start";
+  const displayTimeZone =
+    getTimeZoneDisplayLabel(profile.timezone, isArabic ? "ar" : "en") ??
+    t("practitioner.account.unknown");
 
   return (
-    <Screen bg="background">
+    <Screen bg="background" testID="practitioner-profile-edit-screen">
       <Header
         title={t("practitioner.account.title")}
         rightElement={
-          <TouchableOpacity onPress={signOut} style={styles.headerAction} accessibilityRole="button">
-            <Ionicons name="log-out-outline" size={22} color={theme.colors.textPrimary} />
+          <TouchableOpacity
+            onPress={signOut}
+            style={styles.headerAction}
+            accessibilityRole="button"
+          >
+            <Ionicons
+              name="log-out-outline"
+              size={22}
+              color={theme.colors.textPrimary}
+            />
           </TouchableOpacity>
         }
       />
 
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+      >
         {/* Hero Section */}
-        <View style={[styles.newHeroHeader, { backgroundColor: "#FCFAF6", borderColor: "#E8DED0", borderWidth: 1.5 }]}>
+        <View
+          style={[
+            styles.newHeroHeader,
+            {
+              backgroundColor: "#FCFAF6",
+              borderColor: "#E8DED0",
+              borderWidth: 1.5,
+            },
+          ]}
+        >
           <View style={[styles.newHeroRow, { flexDirection: rowDirection }]}>
             <View style={styles.newAvatarContainer}>
               {profile.avatarUrl ? (
-                <Image source={{ uri: profile.avatarUrl }} style={styles.newAvatarImage} />
+                <Image
+                  source={{ uri: profile.avatarUrl }}
+                  style={styles.newAvatarImage}
+                />
               ) : (
-                <View style={[styles.newAvatarPlaceholder, { backgroundColor: "#EEF4EF" }]}>
-                  <Text weight="700" style={[styles.newAvatarText, { color: "#24564F" }]}>
+                <View
+                  style={[
+                    styles.newAvatarPlaceholder,
+                    { backgroundColor: "#EEF4EF" },
+                  ]}
+                >
+                  <Text
+                    weight="700"
+                    style={[styles.newAvatarText, { color: "#24564F" }]}
+                  >
                     {initials}
                   </Text>
                 </View>
@@ -154,18 +230,84 @@ export default function PractitionerAccountScreen() {
               <Text weight="700" style={styles.newDisplayName} color="#1F332F">
                 {displayName}
               </Text>
-              <Text color="#6F7E78" style={styles.newProfessionalTitle} weight="600">
+              <Text
+                color="#6F7E78"
+                style={styles.newProfessionalTitle}
+                weight="600"
+              >
                 {professionalTitle}
               </Text>
               <Text color="#8F9E98" style={styles.newSpecialtyText}>
-                {primarySpecialty?.title ?? t("practitioner.account.specialtyFallback")}
+                {primarySpecialty?.title ??
+                  t("practitioner.account.specialtyFallback")}
               </Text>
               <View style={[styles.newBadgeRow, { alignSelf: alignSelfStart }]}>
-                <StatusBadge label={profileStatusLabel} status={profileTone(profile.profileStatus)} />
+                <StatusBadge
+                  label={profileStatusLabel}
+                  status={profileTone(profile.profileStatus)}
+                />
               </View>
             </View>
           </View>
         </View>
+
+        {/* Profile editing split: operational quick edits versus review requests. */}
+        <Card variant="outlined" padding="md" style={styles.newSectionCard}>
+          <CompactSectionHeader
+            title={t("practitioner.account.editingSplit.title")}
+            subtitle={t("practitioner.account.editingSplit.quickSubtitle")}
+          />
+          <View style={styles.newActionList}>
+            <ListRow
+              title={t("practitioner.account.editingSplit.prices")}
+              subtitle={t("practitioner.account.editingSplit.quickSubtitle")}
+              leftElement={<Ionicons name="pricetag-outline" size={20} color="#24564F" />}
+              onPress={() => router.push("/(mobile-tools)/normal-pricing" as any)}
+              showChevron
+            />
+            <View style={styles.newRowDivider} />
+            <ListRow
+              title={t("practitioner.account.editingSplit.instantPrices")}
+              subtitle={t("practitioner.account.editingSplit.quickSubtitle")}
+              leftElement={<Ionicons name="flash-outline" size={20} color="#24564F" />}
+              onPress={() => router.push("/(mobile-tools)/instant-booking-pricing" as any)}
+              showChevron
+            />
+            <View style={styles.newRowDivider} />
+            <ListRow
+              title={t("practitioner.account.editingSplit.settlement")}
+              subtitle={t("practitioner.account.sections.financialSubtitle")}
+              leftElement={<Ionicons name="wallet-outline" size={20} color="#24564F" />}
+              onPress={() => router.push("/(practitioner)/finance/settlements" as any)}
+              showChevron
+            />
+            <View style={styles.newRowDivider} />
+            <ListRow
+              title={t("practitioner.account.editingSplit.availability")}
+              subtitle={t("practitioner.account.editingSplit.quickSubtitle")}
+              leftElement={<Ionicons name="calendar-outline" size={20} color="#24564F" />}
+              onPress={() => router.push("/(practitioner)/availability" as any)}
+              showChevron
+            />
+          </View>
+        </Card>
+
+        <Card variant="outlined" padding="md" style={styles.newSectionCard}>
+          <CompactSectionHeader
+            title={t("practitioner.account.editingSplit.requestTitle")}
+            subtitle={t("practitioner.account.editingSplit.requestSubtitle")}
+          />
+          <ListRow
+            title={t("practitioner.account.editingSplit.openRequest")}
+            subtitle={t("practitioner.account.editingSplit.requestSubtitle")}
+            leftElement={<Ionicons name="document-text-outline" size={20} color="#24564F" />}
+            onPress={() => router.push("/(practitioner)/application-status" as any)}
+            showChevron
+          />
+          <Text color="#6F7E78" style={styles.newSectionSubtitle}>
+            {t("practitioner.account.editingSplit.pending")}
+          </Text>
+        </Card>
 
         {/* Account Status Card */}
         <Card variant="outlined" padding="md" style={styles.newSectionCard}>
@@ -174,22 +316,58 @@ export default function PractitionerAccountScreen() {
             subtitle={t("practitioner.account.statusCard.subtitle")}
           />
           <View style={styles.newReadOnlyList}>
-            <InfoRow label={t("practitioner.account.statusCard.rows.account")} value={accountStatusLabel} icon="checkbox-outline" isRtl={isArabic} />
+            <InfoRow
+              label={t("practitioner.account.statusCard.rows.account")}
+              value={accountStatusLabel}
+              icon="checkbox-outline"
+              isRtl={isArabic}
+            />
             <View style={styles.newRowDivider} />
-            <InfoRow label={t("practitioner.account.statusCard.rows.approval")} value={profileStatusLabel} icon="shield-outline" isRtl={isArabic} />
+            <InfoRow
+              label={t("practitioner.account.statusCard.rows.approval")}
+              value={profileStatusLabel}
+              icon="shield-outline"
+              isRtl={isArabic}
+            />
             <View style={styles.newRowDivider} />
             {!isApproved ? (
               <>
-                <InfoRow label={t("practitioner.account.statusCard.rows.applicationStatus")} value={applicationStatusLabel} icon="document-text-outline" isRtl={isArabic} />
+                <InfoRow
+                  label={t(
+                    "practitioner.account.statusCard.rows.applicationStatus",
+                  )}
+                  value={applicationStatusLabel}
+                  icon="document-text-outline"
+                  isRtl={isArabic}
+                />
                 <View style={styles.newRowDivider} />
               </>
             ) : null}
-            <InfoRow label={t("practitioner.account.statusCard.rows.lastUpdated")} value={formatDateTime(profile.updatedAt, locale)} icon="time-outline" isRtl={isArabic} />
+            <InfoRow
+              label={t("practitioner.account.statusCard.rows.lastUpdated")}
+              value={formatDateTime(profile.updatedAt, locale)}
+              icon="time-outline"
+              isRtl={isArabic}
+            />
           </View>
           {isApproved ? (
-            <View style={[styles.newApprovedNoteBox, { flexDirection: rowDirection }]}>
-              <Ionicons name="shield-checkmark" size={18} color="#24564F" style={isArabic ? { marginLeft: 8 } : { marginRight: 8 }} />
-              <Text color="#24564F" style={styles.newApprovedNoteText} weight="600">
+            <View
+              style={[
+                styles.newApprovedNoteBox,
+                { flexDirection: rowDirection },
+              ]}
+            >
+              <Ionicons
+                name="shield-checkmark"
+                size={18}
+                color="#24564F"
+                style={isArabic ? { marginLeft: 8 } : { marginRight: 8 }}
+              />
+              <Text
+                color="#24564F"
+                style={styles.newApprovedNoteText}
+                weight="600"
+              >
                 {t("practitioner.account.statusCard.approvedNote")}
               </Text>
             </View>
@@ -203,25 +381,94 @@ export default function PractitionerAccountScreen() {
             subtitle={t("practitioner.account.sections.professionalSubtitle")}
           />
           <View style={styles.newCompactGrid}>
-            <CompactField label={t("practitioner.account.fields.displayName")} value={profile.displayName?.trim() || t("practitioner.account.unknown")} icon="person-outline" isRtl={isArabic} />
-            <CompactField label={t("practitioner.account.fields.professionalTitle")} value={getProfessionalTitleLabel(profile.professionalTitle, isArabic) || t("practitioner.account.unknown")} icon="ribbon-outline" isRtl={isArabic} />
-            <CompactField label={t("practitioner.account.fields.specialty")} value={primarySpecialty?.title ?? t("practitioner.account.specialtyFallback")} icon="medical-outline" isRtl={isArabic} />
-            <CompactField label={t("practitioner.account.fields.yearsOfExperience")} value={profile.yearsOfExperience !== null && profile.yearsOfExperience !== undefined ? String(profile.yearsOfExperience) : t("practitioner.account.unknown")} icon="calendar-outline" isRtl={isArabic} />
-            <CompactField label={t("practitioner.account.fields.languages")} value={profile.languages.length ? profile.languages.map((item) => languageCodeLabel(item, t)).join(", ") : t("practitioner.account.unknown")} icon="language-outline" isRtl={isArabic} />
-            <CompactField label={t("practitioner.account.fields.timezone")} value={profile.timezone?.trim() || t("practitioner.account.unknown")} icon="earth-outline" isRtl={isArabic} />
-            <CompactField label={t("practitioner.account.fields.countryCode")} value={profile.countryCode?.trim() || t("practitioner.account.unknown")} icon="flag-outline" isRtl={isArabic} />
+            <CompactField
+              label={t("practitioner.account.fields.displayName")}
+              value={
+                profile.displayName?.trim() || t("practitioner.account.unknown")
+              }
+              icon="person-outline"
+              isRtl={isArabic}
+            />
+            <CompactField
+              label={t("practitioner.account.fields.professionalTitle")}
+              value={
+                getProfessionalTitleLabel(
+                  profile.professionalTitle,
+                  isArabic,
+                ) || t("practitioner.account.unknown")
+              }
+              icon="ribbon-outline"
+              isRtl={isArabic}
+            />
+            <CompactField
+              label={t("practitioner.account.fields.specialty")}
+              value={
+                primarySpecialty?.title ??
+                t("practitioner.account.specialtyFallback")
+              }
+              icon="medical-outline"
+              isRtl={isArabic}
+            />
+            <CompactField
+              label={t("practitioner.account.fields.yearsOfExperience")}
+              value={
+                profile.yearsOfExperience !== null &&
+                profile.yearsOfExperience !== undefined
+                  ? String(profile.yearsOfExperience)
+                  : t("practitioner.account.unknown")
+              }
+              icon="calendar-outline"
+              isRtl={isArabic}
+            />
+            <CompactField
+              label={t("practitioner.account.fields.languages")}
+              value={
+                profile.languages.length
+                  ? profile.languages
+                      .map((item) => languageCodeLabel(item, t))
+                      .join(", ")
+                  : t("practitioner.account.unknown")
+              }
+              icon="language-outline"
+              isRtl={isArabic}
+            />
+            <CompactField
+              label={t("practitioner.account.fields.timezone")}
+              value={displayTimeZone}
+              icon="earth-outline"
+              isRtl={isArabic}
+            />
+            <CompactField
+              label={t("practitioner.account.fields.countryCode")}
+              value={
+                profile.countryCode?.trim() || t("practitioner.account.unknown")
+              }
+              icon="flag-outline"
+              isRtl={isArabic}
+            />
           </View>
         </Card>
 
         {/* Biography Card */}
         <Card variant="outlined" padding="md" style={styles.newBioCard}>
           <View style={[styles.newBioHeader, { flexDirection: rowDirection }]}>
-            <Ionicons name="document-text-outline" size={18} color="#24564F" style={isArabic ? { marginLeft: 8 } : { marginRight: 8 }} />
+            <Ionicons
+              name="document-text-outline"
+              size={18}
+              color="#24564F"
+              style={isArabic ? { marginLeft: 8 } : { marginRight: 8 }}
+            />
             <Text weight="700" style={styles.newBioTitle} color="#1F332F">
               {t("practitioner.account.fields.bio")}
             </Text>
           </View>
-          <Text color="#6F7E78" style={[styles.newBioBody, { textAlign: isArabic ? "right" : "left" }]}>
+          <Text
+            color="#6F7E78"
+            style={[
+              styles.newBioBody,
+              { textAlign: isArabic ? "right" : "left" },
+            ]}
+          >
             {profile.bio?.trim() || t("practitioner.account.unknown")}
           </Text>
         </Card>
@@ -233,11 +480,29 @@ export default function PractitionerAccountScreen() {
             subtitle={t("practitioner.account.sections.financialSubtitle")}
           />
           <View style={styles.newReadOnlyList}>
-            <InfoRow label={t("practitioner.account.fields.payoutMethodType")} value={payoutMethodLabel(profile.payoutDestination?.methodType, t) ?? t("practitioner.account.unknown")} icon="cash-outline" isRtl={isArabic} />
+            <InfoRow
+              label={t("practitioner.account.fields.payoutMethodType")}
+              value={
+                payoutMethodLabel(profile.payoutDestination?.methodType, t) ??
+                t("practitioner.account.unknown")
+              }
+              icon="cash-outline"
+              isRtl={isArabic}
+            />
             <View style={styles.newRowDivider} />
-            <InfoRow label={t("practitioner.account.statusCard.rows.payoutStatus")} value={payoutDataStatusLabel} icon="wallet-outline" isRtl={isArabic} />
+            <InfoRow
+              label={t("practitioner.account.statusCard.rows.payoutStatus")}
+              value={payoutDataStatusLabel}
+              icon="wallet-outline"
+              isRtl={isArabic}
+            />
             <View style={styles.newRowDivider} />
-            <InfoRow label={t("practitioner.account.statusCard.rows.lastUpdated")} value={formatDateTime(profile.updatedAt, locale)} icon="time-outline" isRtl={isArabic} />
+            <InfoRow
+              label={t("practitioner.account.statusCard.rows.lastUpdated")}
+              value={formatDateTime(profile.updatedAt, locale)}
+              icon="time-outline"
+              isRtl={isArabic}
+            />
           </View>
         </Card>
 
@@ -252,15 +517,32 @@ export default function PractitionerAccountScreen() {
               title={t("practitioner.account.actions.messages")}
               subtitle={t("practitioner.account.actions.messagesSubtitle")}
               leftElement={
-                <View style={[styles.newActionIcon, { backgroundColor: "#EEF4EF" }]}>
-                  <Ionicons name="chatbubbles-outline" size={18} color="#24564F" />
+                <View
+                  style={[styles.newActionIcon, { backgroundColor: "#EEF4EF" }]}
+                >
+                  <Ionicons
+                    name="chatbubbles-outline"
+                    size={18}
+                    color="#24564F"
+                  />
                 </View>
               }
               rightElement={
                 unreadMessagesCount > 0 ? (
-                  <View style={[styles.newInlineBadge, { backgroundColor: "#DC2626" }]}>
-                    <Text color="#FFFFFF" weight="600" style={styles.newBadgeText}>
-                      {unreadMessagesCount > 99 ? "99+" : String(unreadMessagesCount)}
+                  <View
+                    style={[
+                      styles.newInlineBadge,
+                      { backgroundColor: "#DC2626" },
+                    ]}
+                  >
+                    <Text
+                      color="#FFFFFF"
+                      weight="600"
+                      style={styles.newBadgeText}
+                    >
+                      {unreadMessagesCount > 99
+                        ? "99+"
+                        : String(unreadMessagesCount)}
                     </Text>
                   </View>
                 ) : undefined
@@ -273,7 +555,9 @@ export default function PractitionerAccountScreen() {
               title={t("practitioner.account.actions.support")}
               subtitle={t("practitioner.account.actions.supportSubtitle")}
               leftElement={
-                <View style={[styles.newActionIcon, { backgroundColor: "#EEF4EF" }]}>
+                <View
+                  style={[styles.newActionIcon, { backgroundColor: "#EEF4EF" }]}
+                >
                   <Ionicons name="headset-outline" size={18} color="#24564F" />
                 </View>
               }
@@ -290,7 +574,9 @@ export default function PractitionerAccountScreen() {
               title={t("practitioner.account.actions.logout")}
               subtitle={t("practitioner.account.actions.logoutSubtitle")}
               leftElement={
-                <View style={[styles.newActionIcon, { backgroundColor: "#FEF3F2" }]}>
+                <View
+                  style={[styles.newActionIcon, { backgroundColor: "#FEF3F2" }]}
+                >
                   <Ionicons name="log-out-outline" size={18} color="#DC2626" />
                 </View>
               }
@@ -307,7 +593,9 @@ export default function PractitionerAccountScreen() {
             activeOpacity={0.85}
             style={[styles.newMoreToggle, { flexDirection: rowDirection }]}
           >
-            <View style={[styles.newMoreToggleCopy, { alignItems: alignSelfStart }]}>
+            <View
+              style={[styles.newMoreToggleCopy, { alignItems: alignSelfStart }]}
+            >
               <Text weight="700" style={styles.newSectionTitle} color="#1F332F">
                 {t("practitioner.account.moreDetails.title")}
               </Text>
@@ -325,7 +613,14 @@ export default function PractitionerAccountScreen() {
           {showMoreDetails ? (
             <View style={styles.newMoreDetailsBody}>
               <View style={styles.newDetailGroup}>
-                <Text weight="700" style={[styles.newSubsectionTitle, { textAlign: isArabic ? "right" : "left" }]} color="#1F332F">
+                <Text
+                  weight="700"
+                  style={[
+                    styles.newSubsectionTitle,
+                    { textAlign: isArabic ? "right" : "left" },
+                  ]}
+                  color="#1F332F"
+                >
                   {t("practitioner.account.moreDetails.credentialsTitle")}
                 </Text>
                 <View style={styles.newReadOnlyList}>
@@ -357,10 +652,22 @@ export default function PractitionerAccountScreen() {
               </View>
 
               <View style={styles.newDetailGroup}>
-                <Text weight="700" style={[styles.newSubsectionTitle, { textAlign: isArabic ? "right" : "left" }]} color="#1F332F">
+                <Text
+                  weight="700"
+                  style={[
+                    styles.newSubsectionTitle,
+                    { textAlign: isArabic ? "right" : "left" },
+                  ]}
+                  color="#1F332F"
+                >
                   {t("practitioner.account.moreDetails.verificationTitle")}
                 </Text>
-                <View style={[styles.newBadgeRow, { justifyContent: isArabic ? "flex-end" : "flex-start" }]}>
+                <View
+                  style={[
+                    styles.newBadgeRow,
+                    { justifyContent: isArabic ? "flex-end" : "flex-start" },
+                  ]}
+                >
                   <StatusBadge
                     label={
                       user?.isEmailVerified
@@ -383,7 +690,11 @@ export default function PractitionerAccountScreen() {
                         ? t("practitioner.account.otpVerified")
                         : t("practitioner.account.otpNotVerified")
                     }
-                    status={readiness?.checks?.isPractitionerOtpVerified ? "success" : "warning"}
+                    status={
+                      readiness?.checks?.isPractitionerOtpVerified
+                        ? "success"
+                        : "warning"
+                    }
                   />
                   <StatusBadge
                     label={
@@ -391,32 +702,63 @@ export default function PractitionerAccountScreen() {
                         ? t("practitioner.account.accountActive")
                         : t("practitioner.account.accountInactive")
                     }
-                    status={readiness?.checks?.isAccountActive ? "success" : "warning"}
+                    status={
+                      readiness?.checks?.isAccountActive ? "success" : "warning"
+                    }
                   />
                 </View>
               </View>
 
               {hasNotes ? (
                 <View style={styles.newDetailGroup}>
-                  <Text weight="700" style={[styles.newSubsectionTitle, { textAlign: isArabic ? "right" : "left" }]} color="#1F332F">
+                  <Text
+                    weight="700"
+                    style={[
+                      styles.newSubsectionTitle,
+                      { textAlign: isArabic ? "right" : "left" },
+                    ]}
+                    color="#1F332F"
+                  >
                     {t("practitioner.account.statusCard.missingTitle")}
                   </Text>
-                  <View style={[styles.newBadgeRow, { justifyContent: isArabic ? "flex-end" : "flex-start" }]}>
+                  <View
+                    style={[
+                      styles.newBadgeRow,
+                      { justifyContent: isArabic ? "flex-end" : "flex-start" },
+                    ]}
+                  >
                     {missingRequirementLabels.slice(0, 4).map((item) => (
                       <StatusBadge key={item} label={item} status="default" />
                     ))}
                     {missingRequirementLabels.length > 4 ? (
-                      <StatusBadge label={t("practitioner.account.statusCard.moreNotes", { count: missingRequirementLabels.length - 4 })} status="default" />
+                      <StatusBadge
+                        label={t("practitioner.account.statusCard.moreNotes", {
+                          count: missingRequirementLabels.length - 4,
+                        })}
+                        status="default"
+                      />
                     ) : null}
                   </View>
                 </View>
               ) : null}
 
               <View style={styles.newDetailGroup}>
-                <Text weight="700" style={[styles.newSubsectionTitle, { textAlign: isArabic ? "right" : "left" }]} color="#1F332F">
+                <Text
+                  weight="700"
+                  style={[
+                    styles.newSubsectionTitle,
+                    { textAlign: isArabic ? "right" : "left" },
+                  ]}
+                  color="#1F332F"
+                >
                   {t("practitioner.account.moreDetails.specialtiesTitle")}
                 </Text>
-                <View style={[styles.newBadgeRow, { justifyContent: isArabic ? "flex-end" : "flex-start" }]}>
+                <View
+                  style={[
+                    styles.newBadgeRow,
+                    { justifyContent: isArabic ? "flex-end" : "flex-start" },
+                  ]}
+                >
                   {profile.specialties.length ? (
                     profile.specialties.map((item) => (
                       <StatusBadge
@@ -431,33 +773,60 @@ export default function PractitionerAccountScreen() {
                     </Text>
                   )}
                 </View>
-                <Text color="#8F9E98" style={[styles.newNoteText, { textAlign: isArabic ? "right" : "left" }]}>
+                <Text
+                  color="#8F9E98"
+                  style={[
+                    styles.newNoteText,
+                    { textAlign: isArabic ? "right" : "left" },
+                  ]}
+                >
                   {t("practitioner.account.specialtiesNote")}
                 </Text>
               </View>
 
               <View style={styles.newDetailGroup}>
-                <Text weight="700" style={[styles.newSubsectionTitle, { textAlign: isArabic ? "right" : "left" }]} color="#1F332F">
+                <Text
+                  weight="700"
+                  style={[
+                    styles.newSubsectionTitle,
+                    { textAlign: isArabic ? "right" : "left" },
+                  ]}
+                  color="#1F332F"
+                >
                   {t("practitioner.account.moreDetails.applicationTitle")}
                 </Text>
                 <View style={styles.newReadOnlyList}>
                   <InfoRow
-                    label={t("practitioner.account.statusCard.rows.applicationStatus")}
+                    label={t(
+                      "practitioner.account.statusCard.rows.applicationStatus",
+                    )}
                     value={applicationStatusLabel}
                     icon="document-text-outline"
                     isRtl={isArabic}
                   />
                   <View style={styles.newRowDivider} />
                   <InfoRow
-                    label={t("practitioner.account.fields.applicationSubmittedAt")}
-                    value={application?.submittedAt ? formatDateTime(application.submittedAt, locale) : t("practitioner.account.unknown")}
+                    label={t(
+                      "practitioner.account.fields.applicationSubmittedAt",
+                    )}
+                    value={
+                      application?.submittedAt
+                        ? formatDateTime(application.submittedAt, locale)
+                        : t("practitioner.account.unknown")
+                    }
                     icon="calendar-outline"
                     isRtl={isArabic}
                   />
                   <View style={styles.newRowDivider} />
                   <InfoRow
-                    label={t("practitioner.account.fields.applicationReviewedAt")}
-                    value={application?.reviewedAt ? formatDateTime(application.reviewedAt, locale) : t("practitioner.account.unknown")}
+                    label={t(
+                      "practitioner.account.fields.applicationReviewedAt",
+                    )}
+                    value={
+                      application?.reviewedAt
+                        ? formatDateTime(application.reviewedAt, locale)
+                        : t("practitioner.account.unknown")
+                    }
                     icon="time-outline"
                     isRtl={isArabic}
                   />
@@ -465,25 +834,45 @@ export default function PractitionerAccountScreen() {
               </View>
 
               <View style={styles.newDetailGroup}>
-                <Text weight="700" style={[styles.newSubsectionTitle, { textAlign: isArabic ? "right" : "left" }]} color="#1F332F">
+                <Text
+                  weight="700"
+                  style={[
+                    styles.newSubsectionTitle,
+                    { textAlign: isArabic ? "right" : "left" },
+                  ]}
+                  color="#1F332F"
+                >
                   {t("practitioner.account.moreDetails.payoutTitle")}
                 </Text>
                 <View style={styles.newReadOnlyList}>
                   <InfoRow
                     label={t("practitioner.account.fields.payoutMethodType")}
-                    value={payoutMethodLabel(profile.payoutDestination?.methodType, t) ?? t("practitioner.account.unknown")}
+                    value={
+                      payoutMethodLabel(
+                        profile.payoutDestination?.methodType,
+                        t,
+                      ) ?? t("practitioner.account.unknown")
+                    }
                     icon="cash-outline"
                     isRtl={isArabic}
                   />
                   <View style={styles.newRowDivider} />
                   <InfoRow
-                    label={t("practitioner.account.statusCard.rows.payoutStatus")}
+                    label={t(
+                      "practitioner.account.statusCard.rows.payoutStatus",
+                    )}
                     value={payoutDataStatusLabel}
                     icon="wallet-outline"
                     isRtl={isArabic}
                   />
                 </View>
-                <Text color="#8F9E98" style={[styles.newNoteText, { textAlign: isArabic ? "right" : "left" }]}>
+                <Text
+                  color="#8F9E98"
+                  style={[
+                    styles.newNoteText,
+                    { textAlign: isArabic ? "right" : "left" },
+                  ]}
+                >
                   {t("practitioner.account.payoutReadOnlyNote")}
                 </Text>
               </View>
@@ -519,16 +908,27 @@ function InfoRow({
           <Ionicons name={icon} size={16} color="#24564F" />
         </View>
       ) : null}
-      <View style={[styles.infoRowText, { alignItems: isRtl ? "flex-end" : "flex-start" }]}>
+      <View
+        style={[
+          styles.infoRowText,
+          { alignItems: isRtl ? "flex-end" : "flex-start" },
+        ]}
+      >
         <Text color={theme.colors.textMuted} style={styles.infoLabel}>
           {label}
         </Text>
         <Text
           weight="600"
-          style={[styles.infoValue, { color: "#1F332F" }, multiline ? styles.infoValueMultiline : null]}
+          style={[
+            styles.infoValue,
+            { color: "#1F332F" },
+            multiline ? styles.infoValueMultiline : null,
+          ]}
           numberOfLines={multiline ? undefined : 2}
         >
-          {value && String(value).trim() ? value : t("practitioner.account.unknown")}
+          {value && String(value).trim()
+            ? value
+            : t("practitioner.account.unknown")}
         </Text>
       </View>
     </View>
@@ -557,12 +957,24 @@ function CompactField({
           <Ionicons name={icon} size={15} color="#24564F" />
         </View>
       ) : null}
-      <View style={[styles.compactFieldText, { alignItems: isRtl ? "flex-end" : "flex-start" }]}>
+      <View
+        style={[
+          styles.compactFieldText,
+          { alignItems: isRtl ? "flex-end" : "flex-start" },
+        ]}
+      >
         <Text color={theme.colors.textMuted} style={styles.compactFieldLabel}>
           {label}
         </Text>
-        <Text weight="600" color="#1F332F" style={styles.compactFieldValue} numberOfLines={2}>
-          {value && String(value).trim() ? value : t("practitioner.account.unknown")}
+        <Text
+          weight="600"
+          color="#1F332F"
+          style={styles.compactFieldValue}
+          numberOfLines={2}
+        >
+          {value && String(value).trim()
+            ? value
+            : t("practitioner.account.unknown")}
         </Text>
       </View>
     </View>

@@ -12,6 +12,7 @@ import {
   mapUserRoleTypeToAppRole,
   normalizeAppRoles,
 } from '../utils/auth-role.util';
+import { resolvePatientDisplayName } from '@modules/patients/utils/resolve-patient-display-name.util';
 
 type UserWithAuthContext = {
   id: string;
@@ -25,6 +26,11 @@ type UserWithAuthContext = {
     id: string;
     status: PractitionerStatus;
   } | null;
+  practitionerApplications?: Array<{
+    id: string;
+    status: string;
+  }>;
+  patientProfile?: { displayName: string | null } | null;
 };
 
 /**
@@ -39,7 +45,9 @@ export class AuthUserContextMapper {
 
     return {
       id: user.id,
-      displayName: user.displayName,
+      displayName: this.hasRole(user, UserRoleType.PATIENT)
+        ? resolvePatientDisplayName(user.patientProfile, user)
+        : user.displayName,
       status: user.status,
       roles: normalizeAppRoles(
         user.roles.map((role) => mapUserRoleTypeToAppRole(role.role)),
@@ -49,6 +57,7 @@ export class AuthUserContextMapper {
       primaryPhone: primaryPhone?.phone ?? null,
       isPhoneVerified: primaryPhone?.isVerified ?? false,
       practitionerProfileId: user.practitionerProfile?.id ?? null,
+      practitionerApplicationId: user.practitionerApplications?.[0]?.id ?? null,
       practitionerStatus: user.practitionerProfile?.status ?? null,
     };
   }
@@ -72,10 +81,11 @@ export class AuthUserContextMapper {
       isEmailVerified: response.isEmailVerified,
       isPhoneVerified: response.isPhoneVerified,
       practitionerProfileId: response.practitionerProfileId,
-      practitionerApplicationId: null,
+      practitionerApplicationId: response.practitionerApplicationId,
       isPractitionerOtpVerified:
         authMethod === 'access' && roles.includes(AppRole.PRACTITIONER),
-      isPractitionerOnboardingCompleted: false,
+      isPractitionerOnboardingCompleted:
+        response.practitionerStatus === PractitionerStatus.APPROVED,
       isPractitionerApproved:
         response.practitionerStatus === PractitionerStatus.APPROVED,
       featureFlags: [],

@@ -2,7 +2,6 @@ import React from "react";
 import { StyleSheet, ScrollView, View } from "react-native";
 import { Screen } from "../../../components/ui";
 import { usePublicTheme } from "../theme/public-theme";
-import { PublicBottomNav } from "./PublicBottomNav";
 
 interface PublicPageContainerProps {
   children: React.ReactNode;
@@ -21,8 +20,6 @@ export function PublicPageContainer({ children }: PublicPageContainerProps) {
         >
           {children}
         </ScrollView>
-        {/* Sticky Fixed Bottom Navigation Bar */}
-        <PublicBottomNav />
       </View>
     </Screen>
   );
@@ -38,6 +35,6 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     flexGrow: 1,
-    paddingBottom: 76,
+    paddingBottom: 24,
   },
 });

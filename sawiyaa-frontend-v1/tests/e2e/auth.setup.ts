@@ -26,7 +26,8 @@ setup("authenticate practitioner with local OTP sink", async ({ page }) => {
   await page.goto("/en/signin/practitioner");
   await page.locator('input[type="email"]').fill(email);
   await page.locator('input[type="password"]').fill(password);
-  await page.getByRole("button", { name: /sign in|login/i }).click();
+  // The page also renders a Sign In mode tab; target the actual form submit button.
+  await page.getByRole("button", { name: /^sign in$/i }).last().click();
 
   await expect(page.getByRole("group", { name: /verification code/i })).toBeVisible();
   await expect.poll(() => readLatestCode(email), { timeout: 20_000, intervals: [100, 250, 500] }).not.toBeNull();

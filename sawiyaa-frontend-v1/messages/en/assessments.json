@@ -59,7 +59,10 @@
     "trustNote": "Your answers are submitted only when you finish. This web flow does not save partial progress yet.",
     "meta": {
       "duration": "{value} minutes",
-      "questionCount": "{value} questions"
+    "questionCount": "{value} questions",
+    "estimatedDuration": "Estimated duration",
+    "questionCountLabel": "Question count",
+    "privacy": "Privacy"
     },
     "beforeYouBegin": {
       "heading": "Before you begin",
@@ -78,6 +81,8 @@
   "result": {
     "eyebrow": "Assessment result",
     "note": "This is a supportive summary of your completed assessment to help you choose a practical next step.",
+    "severityLevel": "Severity level",
+    "recommendedNextSteps": "Recommended next steps",
     "submissionId": "Result #{id}",
     "completedAt": "Completed {date}",
     "score": "Score: {value}",

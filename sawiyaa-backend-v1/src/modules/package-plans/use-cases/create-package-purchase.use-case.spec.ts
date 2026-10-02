@@ -291,6 +291,88 @@ describe('CreatePackagePurchaseUseCase', () => {
     expect(result.item.linkedSessionsCount).toBe(4);
   });
 
+  it('supports buying first and booking all package sessions later', async () => {
+    setHappyPathMocks();
+    (
+      validatePackagePurchaseSlotsService.validate as jest.Mock
+    ).mockResolvedValue({ timezone: 'Africa/Cairo', slots: [] });
+    (sessionRepository.createSession as jest.Mock).mockReset();
+
+    await useCase.execute({
+      userId: 'user-1',
+      locale: 'en',
+      packagePlanCode: 'SESSIONS_4',
+      practitionerSlug: 'dr-youssef-abdallah',
+      durationMinutes: 60,
+      sessionMode: SessionMode.VIDEO,
+    });
+
+    expect(validatePackagePurchaseSlotsService.validate).toHaveBeenCalledWith(
+      expect.objectContaining({ selectedSessionSlots: [] }),
+    );
+    expect(packagePurchaseRepository.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        schedulePolicySnapshot: 'ALLOW_SCHEDULE_LATER',
+      }),
+      expect.anything(),
+    );
+    expect(sessionRepository.createSession).not.toHaveBeenCalled();
+  });
+
+  it('supports an optional first appointment while leaving the remainder available', async () => {
+    setHappyPathMocks();
+    (
+      validatePackagePurchaseSlotsService.validate as jest.Mock
+    ).mockResolvedValue({
+      timezone: 'Africa/Cairo',
+      slots: [
+        {
+          scheduledStartAt: new Date('2999-01-01T10:00:00.000Z'),
+          scheduledEndAt: new Date('2999-01-01T11:00:00.000Z'),
+        },
+      ],
+    });
+    (sessionRepository.createSession as jest.Mock)
+      .mockReset()
+      .mockResolvedValue({
+        id: 'session-1',
+        sessionCode: 'SES-2999-000001',
+        status: SessionStatus.PENDING_PAYMENT,
+        scheduledStartAt: new Date('2999-01-01T10:00:00.000Z'),
+        scheduledEndAt: new Date('2999-01-01T11:00:00.000Z'),
+        durationMinutes: 60,
+        sessionMode: SessionMode.VIDEO,
+        packageSessionIndex: 1,
+      });
+
+    await useCase.execute({
+      userId: 'user-1',
+      locale: 'en',
+      packagePlanCode: 'SESSIONS_4',
+      practitionerSlug: 'dr-youssef-abdallah',
+      durationMinutes: 60,
+      sessionMode: SessionMode.VIDEO,
+      selectedSessionSlots: [{ scheduledStartAt: '2999-01-01T10:00:00.000Z' }],
+    });
+
+    expect(packagePurchaseRepository.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        schedulePolicySnapshot: 'ALLOW_SCHEDULE_LATER',
+      }),
+      expect.anything(),
+    );
+    expect(sessionRepository.createSession).toHaveBeenCalledTimes(1);
+    expect(sessionRepository.createSession).toHaveBeenCalledWith(
+      expect.objectContaining({
+        packageSessionIndex: 1,
+        packageSessionCount: 4,
+        paymentCoverageType: SessionPaymentCoverageType.PACKAGE,
+      }),
+      expect.anything(),
+      'package_purchase',
+    );
+  });
+
   it('rejects inactive package plans', async () => {
     (patientProfileRepository.findByUserId as jest.Mock).mockResolvedValue({
       id: 'patient-1',

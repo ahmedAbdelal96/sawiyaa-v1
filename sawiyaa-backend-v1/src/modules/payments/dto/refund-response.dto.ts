@@ -49,6 +49,18 @@ export class RefundItemDto {
 
   @ApiProperty()
   createdAt!: string;
+
+  @ApiProperty()
+  manualProviderFinalizationAvailable!: boolean;
+
+  @ApiProperty({ nullable: true })
+  providerReconciliationOutcome!: string | null;
+
+  @ApiProperty({ nullable: true })
+  providerReconciliationLastAttemptAt!: string | null;
+
+  @ApiProperty({ nullable: true })
+  providerReconciliationEvidence!: string | null;
 }
 
 export class RefundItemDataResponseDto {

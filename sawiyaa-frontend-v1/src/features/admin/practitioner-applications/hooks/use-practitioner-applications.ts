@@ -13,6 +13,7 @@ import {
   viewAdminDirectPractitionerCredentialFile,
   updateAdminPractitionerApplicationCredential,
   updateAdminPractitionerApplicationDraft,
+  updateAdminPractitionerRequirement,
 } from "../api/practitioner-applications.api";
 import { adminPractitionerApplicationsQueryKeys } from "../constants/query-keys";
 import type {
@@ -28,7 +29,6 @@ import type {
 } from "../types/practitioner-applications.types";
 import { useSessionRole } from "@/lib/auth/use-session-role";
 import { isAdminRole } from "@/lib/auth/roles";
-import { toAppError } from "@/lib/api/errors";
 
 /**
  * Lists admin review queue items with optional status/search/pagination filters.
@@ -159,27 +159,18 @@ export function useUpdatePractitionerApplicationDraft() {
       queryClient.invalidateQueries({
         queryKey: adminPractitionerApplicationsQueryKeys.details(variables.id),
       });
-      queryClient.invalidateQueries({ queryKey: ["practitioners"] });
-      queryClient.invalidateQueries({ queryKey: ["users"] });
     },
   });
 }
 
 /**
- * Creates practitioner account directly from admin and refreshes practitioner application surfaces.
+ * Creates practitioner account directly from admin scope.
  */
-export function useCreateAdminPractitionerDirect() {
+export function useCreateAdminPractitionerDirectly() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (data: CreateAdminPractitionerRequest) =>
       createAdminPractitionerDirectly(data),
-    retry: (failureCount, error) => {
-      const appError = toAppError(error);
-      if (appError.statusCode >= 400 && appError.statusCode < 500) {
-        return false;
-      }
-      return failureCount < 1;
-    },
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: adminPractitionerApplicationsQueryKeys.all,
@@ -190,9 +181,8 @@ export function useCreateAdminPractitionerDirect() {
   });
 }
 
-/**
- * Uploads a credential file for admin direct-create wizard.
- */
+export const useCreateAdminPractitionerDirect = useCreateAdminPractitionerDirectly;
+
 export function useUploadAdminDirectPractitionerCredentialFile() {
   return useMutation({
     mutationFn: (data: UploadAdminPractitionerCredentialFileRequest) =>
@@ -278,6 +268,32 @@ export function useDeleteAdminPractitionerApplicationCredential() {
       });
       queryClient.invalidateQueries({
         queryKey: adminPractitionerApplicationsQueryKeys.details(variables.id),
+      });
+    },
+  });
+}
+
+/**
+ * Satisfies, rejects, or reopens an application requirement.
+ */
+export function useUpdateAdminPractitionerRequirement() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      applicationId,
+      requirementId,
+      data,
+    }: {
+      applicationId: string;
+      requirementId: string;
+      data: { action: "SATISFY" | "REJECT" | "REOPEN"; reason?: string };
+    }) => updateAdminPractitionerRequirement(applicationId, requirementId, data),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({
+        queryKey: adminPractitionerApplicationsQueryKeys.all,
+      });
+      queryClient.invalidateQueries({
+        queryKey: adminPractitionerApplicationsQueryKeys.details(variables.applicationId),
       });
     },
   });

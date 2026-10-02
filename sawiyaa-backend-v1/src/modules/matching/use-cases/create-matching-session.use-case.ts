@@ -12,6 +12,7 @@ import { BuildMatchingRationaleService } from '../services/build-matching-ration
 import { NormalizeMatchingInputService } from '../services/normalize-matching-input.service';
 import { ScorePractitionerMatchService } from '../services/score-practitioner-match.service';
 import { MatchingPresenter } from '../presenters/matching.presenter';
+import { ResolveMatchingProfessionalContentService } from '../services/resolve-matching-professional-content.service';
 
 @Injectable()
 export class CreateMatchingSessionUseCase {
@@ -28,6 +29,7 @@ export class CreateMatchingSessionUseCase {
     private readonly buildMatchingRationaleService: BuildMatchingRationaleService,
     private readonly matchingPresenter: MatchingPresenter,
     private readonly publicPractitionerVisibilityPolicy: PublicPractitionerVisibilityPolicy,
+    private readonly resolveMatchingProfessionalContentService: ResolveMatchingProfessionalContentService,
   ) {}
 
   async execute(input: {
@@ -163,6 +165,14 @@ export class CreateMatchingSessionUseCase {
       rationaleJson: item.rationale,
     }));
 
+    const resolvedProfessionalTitles =
+      await this.resolveMatchingProfessionalContentService.resolveTitles({
+        practitionerProfileIds: recommendations.map(
+          (recommendation) => recommendation.practitionerProfileId,
+        ),
+        requestedLocale: input.locale,
+      });
+
     const session = await this.matchingSessionRepository.createCompletedSession(
       {
         patientProfileId: patientProfile.id,
@@ -180,6 +190,7 @@ export class CreateMatchingSessionUseCase {
       answers: session.answers,
       recommendations: session.recommendations,
       assessmentRecommendations,
+      resolvedProfessionalTitles,
     });
   }
 }

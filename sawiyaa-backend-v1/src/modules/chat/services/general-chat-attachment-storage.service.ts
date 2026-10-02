@@ -1,18 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { promises as fs } from 'fs';
 import * as path from 'path';
-import { randomUUID } from 'crypto';
-
-const MIME_TO_EXTENSION: Record<string, string> = {
-  'image/jpeg': '.jpg',
-  'image/png': '.png',
-  'image/webp': '.webp',
-  'application/pdf': '.pdf',
-  // Basic "homework" docs. Keep bounded and expand only when needed.
-  'text/plain': '.txt',
-  'application/vnd.openxmlformats-officedocument.wordprocessingml.document':
-    '.docx',
-};
+import { StoredFilePurpose } from '@prisma/client';
+import { UnifiedFileStorageService } from '@modules/files/unified-file-storage.service';
+import { CHAT_DOCUMENT_MIME_TYPES, CHAT_IMAGE_MIME_TYPES } from '@modules/files/file.types';
 
 export type StoredGeneralChatAttachment = {
   fileId: string;
@@ -22,115 +13,51 @@ export type StoredGeneralChatAttachment = {
   originalFileName: string | null;
 };
 
+const MIME_TO_EXTENSION: Record<string, string> = {
+  'image/jpeg': '.jpg', 'image/png': '.png', 'image/webp': '.webp', 'application/pdf': '.pdf',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document': '.docx',
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': '.xlsx',
+  'application/vnd.openxmlformats-officedocument.presentationml.presentation': '.pptx', 'text/plain': '.txt',
+};
+
 @Injectable()
 export class GeneralChatAttachmentStorageService {
-  private readonly baseDir = path.resolve(
-    process.cwd(),
-    'storage',
-    'chat-attachments',
-  );
+  private readonly legacyBaseDir = path.resolve(process.cwd(), 'storage', 'chat-attachments');
 
-  getAllowedMimeTypes(): string[] {
-    return Object.keys(MIME_TO_EXTENSION);
+  constructor(private readonly files: UnifiedFileStorageService) {}
+
+  getAllowedMimeTypes(): string[] { return [...CHAT_IMAGE_MIME_TYPES, ...CHAT_DOCUMENT_MIME_TYPES]; }
+  isAllowedMimeType(mimeType?: string | null): boolean { return !!mimeType && mimeType in MIME_TO_EXTENSION; }
+
+  async save(params: { conversationId: string; fileBuffer: Buffer; mimeType: string; originalFileName?: string | null; uploadedByUserId?: string | null }): Promise<StoredGeneralChatAttachment> {
+    const stored = await this.files.store({ purpose: StoredFilePurpose.CHAT_ATTACHMENT, fileBuffer: params.fileBuffer, mimeType: params.mimeType, originalFileName: params.originalFileName, uploadedByUserId: params.uploadedByUserId, chatConversationId: params.conversationId });
+    return { fileId: stored.id, absolutePath: stored.absolutePath, mimeType: stored.mimeType, fileSizeBytes: stored.sizeBytes, originalFileName: stored.originalFileName };
   }
 
-  isAllowedMimeType(mimeType?: string | null): boolean {
-    if (!mimeType) return false;
-    return mimeType in MIME_TO_EXTENSION;
+  async resolve(params: { conversationId: string; fileId: string }): Promise<StoredGeneralChatAttachment | null> {
+    const stored = await this.files.resolve(params.fileId);
+    if (stored?.purpose === StoredFilePurpose.CHAT_ATTACHMENT) return { fileId: stored.id, absolutePath: stored.absolutePath, mimeType: stored.mimeType, fileSizeBytes: stored.sizeBytes, originalFileName: stored.originalFileName };
+    return this.resolveLegacy(params);
   }
 
-  async save(params: {
-    conversationId: string;
-    fileBuffer: Buffer;
-    mimeType: string;
-    originalFileName?: string | null;
-  }): Promise<StoredGeneralChatAttachment> {
-    const extension = MIME_TO_EXTENSION[params.mimeType];
-    if (!extension) {
-      throw new Error('Unsupported general chat attachment mime type');
-    }
-
-    const fileId = `chat_${randomUUID().replace(/-/g, '')}`; // url-safe
-    const safeConversationId = this.sanitizeSegment(params.conversationId);
-    const relativeDir = path.join('chat-attachments', safeConversationId);
-    const absoluteDir = path.join(process.cwd(), 'storage', relativeDir);
-    await fs.mkdir(absoluteDir, { recursive: true });
-
-    const absolutePath = path.join(absoluteDir, `${fileId}${extension}`);
-    const metaPath = path.join(absoluteDir, `${fileId}.json`);
-
-    await fs.writeFile(absolutePath, params.fileBuffer);
-    const stat = await fs.stat(absolutePath);
-
-    const meta = {
-      mimeType: params.mimeType,
-      originalFileName: params.originalFileName ?? null,
-      fileSizeBytes: stat.size,
-    };
-    await fs.writeFile(metaPath, JSON.stringify(meta), 'utf8');
-
-    return {
-      fileId,
-      absolutePath,
-      mimeType: params.mimeType,
-      fileSizeBytes: stat.size,
-      originalFileName: meta.originalFileName,
-    };
+  resolveStoredFile(fileId: string) {
+    return this.files.resolve(fileId);
   }
 
-  async resolve(params: { conversationId: string; fileId: string }): Promise<{
-    absolutePath: string;
-    mimeType: string;
-    fileSizeBytes: number;
-    originalFileName: string | null;
-  } | null> {
-    const safeConversationId = this.sanitizeSegment(params.conversationId);
-    const safeFileId = this.sanitizeSegment(params.fileId);
-    const absoluteDir = path.join(
-      process.cwd(),
-      'storage',
-      'chat-attachments',
-      safeConversationId,
-    );
-    const metaPath = path.join(absoluteDir, `${safeFileId}.json`);
-    const metaRaw = await fs.readFile(metaPath, 'utf8').catch(() => null);
-    if (!metaRaw) return null;
-
-    let meta: {
-      mimeType: string;
-      originalFileName: string | null;
-      fileSizeBytes: number;
-    };
-    try {
-      meta = JSON.parse(metaRaw);
-    } catch {
-      return null;
-    }
-
-    if (
-      !meta ||
-      typeof meta.mimeType !== 'string' ||
-      typeof meta.fileSizeBytes !== 'number'
-    ) {
-      return null;
-    }
-
-    const extension = MIME_TO_EXTENSION[meta.mimeType];
-    if (!extension) return null;
-
-    const absolutePath = path.join(absoluteDir, `${safeFileId}${extension}`);
+  private async resolveLegacy(params: { conversationId: string; fileId: string }): Promise<StoredGeneralChatAttachment | null> {
+    const conversationId = params.conversationId.replace(/[^a-zA-Z0-9_-]/g, '');
+    const fileId = params.fileId.replace(/[^a-zA-Z0-9_-]/g, '');
+    if (!conversationId || !fileId) return null;
+    const directory = path.join(this.legacyBaseDir, conversationId);
+    const metaPath = path.join(directory, `${fileId}.json`);
+    const raw = await fs.readFile(metaPath, 'utf8').catch(() => null);
+    if (!raw) return null;
+    let meta: { mimeType?: string; originalFileName?: string | null; fileSizeBytes?: number };
+    try { meta = JSON.parse(raw); } catch { return null; }
+    const extension = meta.mimeType ? MIME_TO_EXTENSION[meta.mimeType] : null;
+    if (!extension || typeof meta.fileSizeBytes !== 'number') return null;
+    const absolutePath = path.join(directory, `${fileId}${extension}`);
     const stat = await fs.stat(absolutePath).catch(() => null);
-    if (!stat?.isFile()) return null;
-
-    return {
-      absolutePath,
-      mimeType: meta.mimeType,
-      fileSizeBytes: meta.fileSizeBytes,
-      originalFileName: meta.originalFileName ?? null,
-    };
-  }
-
-  private sanitizeSegment(value: string): string {
-    return value.replace(/[^a-zA-Z0-9_-]/g, '');
+    return stat?.isFile() ? { fileId: params.fileId, absolutePath, mimeType: meta.mimeType!, fileSizeBytes: stat.size, originalFileName: meta.originalFileName ?? null } : null;
   }
 }

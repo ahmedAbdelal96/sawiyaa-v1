@@ -52,7 +52,9 @@ describe('PostPaymentLedgerEntriesUseCase', () => {
       refresh: jest.fn().mockResolvedValue({}),
     };
     const accountingJournalPostingService = {
-      postPaymentCaptured: jest.fn().mockResolvedValue({}),
+      postPaymentCaptured: jest.fn().mockResolvedValue({
+        wasAlreadyPosted: false,
+      }),
     };
 
     const useCase = new PostPaymentLedgerEntriesUseCase(
@@ -72,41 +74,35 @@ describe('PostPaymentLedgerEntriesUseCase', () => {
     };
   }
 
-  it('posts payment ledger entries and accounting journal', async () => {
+  it('posts the captured-funds accounting journal without recognizing earnings', async () => {
     const setup = buildUseCase();
 
     await setup.useCase.execute({ paymentId: 'payment_1' });
 
     expect(
       setup.ledgerRepository.createManyLedgerEntries,
-    ).toHaveBeenCalledTimes(1);
-    expect(
-      setup.ledgerRepository.createManyLedgerEntries.mock.calls[0][0],
-    ).not.toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          entryType: 'PRACTITIONER_EARNING',
-          direction: 'CREDIT',
-        }),
-      ]),
-    );
+    ).not.toHaveBeenCalled();
     expect(setup.refreshPractitionerWalletService.refresh).not.toHaveBeenCalled();
     expect(
       setup.accountingJournalPostingService.postPaymentCaptured,
     ).toHaveBeenCalledTimes(1);
   });
 
-  it('is idempotent when payment ledger already posted', async () => {
+  it('uses the accounting journal idempotency result as the source of truth', async () => {
     const setup = buildUseCase({
       existingEntries: [{ id: 'entry_1' }],
     });
+
+    setup.accountingJournalPostingService.postPaymentCaptured.mockResolvedValueOnce(
+      { wasAlreadyPosted: true },
+    );
 
     const result = await setup.useCase.execute({ paymentId: 'payment_1' });
 
     expect(result.wasAlreadyPosted).toBe(true);
     expect(
       setup.accountingJournalPostingService.postPaymentCaptured,
-    ).not.toHaveBeenCalled();
+    ).toHaveBeenCalledTimes(1);
   });
 
   it('rejects non-captured payments', async () => {
@@ -132,7 +128,7 @@ describe('PostPaymentLedgerEntriesUseCase', () => {
     ).rejects.toThrow(NotFoundException);
   });
 
-  it('skips package payments so capture accounting cannot double count package earnings', async () => {
+  it('records package payment capture as deferred funds without recognizing package earnings', async () => {
     const setup = buildUseCase({
       payment: {
         id: 'payment_1',
@@ -158,8 +154,8 @@ describe('PostPaymentLedgerEntriesUseCase', () => {
     ).not.toHaveBeenCalled();
     expect(
       setup.accountingJournalPostingService.postPaymentCaptured,
-    ).not.toHaveBeenCalled();
-    expect(result.wasAlreadyPosted).toBe(true);
+    ).toHaveBeenCalledTimes(1);
+    expect(result.wasAlreadyPosted).toBe(false);
     expect(result.items).toEqual([]);
   });
 });

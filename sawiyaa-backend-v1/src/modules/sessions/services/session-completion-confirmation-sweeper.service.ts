@@ -42,11 +42,6 @@ export class SessionCompletionConfirmationSweeperService
   ) {}
 
   onApplicationBootstrap(): void {
-    if (
-      process.env.SESSION_COMPLETION_CONFIRMATION_SWEEPER_ENABLED !== 'true'
-    ) {
-      return;
-    }
     void this.sweepOnce();
     this.intervalHandle = setInterval(
       () => void this.sweepOnce(),

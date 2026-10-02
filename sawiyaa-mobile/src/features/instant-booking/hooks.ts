@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuthenticatedQueryEnabled } from "../auth/query-auth";
+import i18n from "../../i18n";
 import { patientJourneyQueryKey } from "../patient/journey/hooks";
 import {
   acceptInstantBookingRequest,
@@ -20,7 +21,7 @@ export const instantBookingQueryKeys = {
   all: ["instant-booking"] as const,
   patient: () => [...instantBookingQueryKeys.all, "patient"] as const,
   patientPractitioners: (params?: PatientInstantBookingPractitionersParams) =>
-    [...instantBookingQueryKeys.patient(), "practitioners", params ?? {}] as const,
+    [...instantBookingQueryKeys.patient(), "practitioners", i18n.language, params ?? {}] as const,
   patientRequests: () => [...instantBookingQueryKeys.patient(), "requests"] as const,
   patientRequest: (requestId: string) =>
     [...instantBookingQueryKeys.patient(), "request", requestId] as const,
@@ -62,7 +63,7 @@ export function usePatientInstantBookingRequest(requestId: string | null) {
     enabled: enabled && Boolean(requestId),
     staleTime: 0,
     refetchInterval: (query) => {
-      const request = query.state.data as InstantBookingRequest | undefined;
+      const request = query.state.data?.item;
       if (!request || request.status !== "PENDING") {
         return false;
       }
@@ -81,8 +82,13 @@ export function useCreatePatientInstantBookingRequest() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (input: CreatePatientInstantBookingRequestInput) =>
-      createPatientInstantBookingRequest(input),
+    mutationFn: ({
+      input,
+      idempotencyKey,
+    }: {
+      input: CreatePatientInstantBookingRequestInput;
+      idempotencyKey: string;
+    }) => createPatientInstantBookingRequest(input, idempotencyKey),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: instantBookingQueryKeys.patient() });
       queryClient.invalidateQueries({ queryKey: patientJourneyQueryKey });

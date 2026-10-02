@@ -14,6 +14,11 @@ describe('BuildPatientJourneyNextStepsService', () => {
   it('prioritizes pending payment first', () => {
     const result = service.build({
       hasPendingPayment: true,
+      pendingPayment: {
+        id: 'payment_1',
+        sessionId: 'session_1',
+        expiredAt: new Date('2026-09-22T12:00:00.000Z'),
+      },
       hasUpcomingSession: true,
       upcomingSessionStatus: SessionStatus.UPCOMING,
       hasOpenSupportTicket: false,
@@ -26,13 +31,23 @@ describe('BuildPatientJourneyNextStepsService', () => {
 
     expect(result.suggestedNextAction).toBe('COMPLETE_PAYMENT');
     expect(result.nextSteps[0].type).toBe('COMPLETE_PAYMENT');
+    expect(result.nextSteps[0].action).toMatchObject({
+      type: 'OPEN_PENDING_PAYMENT',
+      targetType: 'SESSION',
+      targetId: 'session_1',
+    });
+    expect(result.nextSteps[0].entityRefs).toEqual([
+      { entityType: 'PAYMENT', entityId: 'payment_1' },
+      { entityType: 'SESSION', entityId: 'session_1' },
+    ]);
+    expect(result.nextSteps[0].expiresAt).toBe('2026-09-22T12:00:00.000Z');
   });
 
   it('returns join upcoming session action when payment is not pending', () => {
     const result = service.build({
       hasPendingPayment: false,
       hasUpcomingSession: true,
-      upcomingSessionStatus: SessionStatus.CONFIRMED,
+      upcomingSessionStatus: SessionStatus.READY_TO_JOIN,
       hasOpenSupportTicket: false,
       hasRecentMatching: true,
       hasAnyAssessment: true,
@@ -161,6 +176,32 @@ describe('BuildPatientJourneyNextStepsService', () => {
 
     expect(result.nextSteps.map((item) => item.type)).toEqual([
       'COMPLETE_PAYMENT',
+    ]);
+  });
+
+  it('falls back to the payment target when a pending payment has no session', () => {
+    const result = service.build({
+      hasPendingPayment: true,
+      pendingPayment: {
+        id: 'payment_package_1',
+        sessionId: null,
+        expiredAt: null,
+      },
+      hasUpcomingSession: false,
+      hasOpenSupportTicket: false,
+      hasRecentMatching: false,
+      hasAnyAssessment: true,
+      hasPastSessions: false,
+      hasActiveAcademyEnrollment: false,
+      continuityStage: 'PAYMENT_BLOCKED',
+    });
+
+    expect(result.nextSteps[0].action).toMatchObject({
+      targetType: 'PAYMENT',
+      targetId: 'payment_package_1',
+    });
+    expect(result.nextSteps[0].entityRefs).toEqual([
+      { entityType: 'PAYMENT', entityId: 'payment_package_1' },
     ]);
   });
 });

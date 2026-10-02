@@ -86,8 +86,10 @@
     }
   },
   "fields": {
+    "name": "Full Name",
+    "displayName": "Display Name",
     "userId": "User ID",
-    "createdAt": "Created at",
+    "createdAt": "Created At",
     "email": "Email",
     "phone": "Phone"
   },
@@ -102,6 +104,7 @@
     "subtitle": "Full view of the patient's account, wallet, sessions, payments, and assessments.",
     "back": "Back to patients",
     "tabs": {
+      "profile": "Profile Details",
       "overview": "Overview",
       "wallet": "Wallet",
       "sessions": "Sessions",
@@ -170,6 +173,32 @@
       "loadError": "Failed to load assessments history.",
       "emptyTitle": "No assessments",
       "emptyDescription": "This patient has no assessment submissions yet."
+    },
+    "sessionStatus": {
+      "SCHEDULED": "Scheduled",
+      "CONFIRMED": "Confirmed",
+      "IN_PROGRESS": "In Progress",
+      "AWAITING_COMPLETION_CONFIRMATION": "Awaiting Completion",
+      "COMPLETED": "Completed",
+      "CANCELLED": "Cancelled",
+      "EXPIRED": "Expired"
+    },
+    "paymentStatus": {
+      "CAPTURED": "Successful / Captured",
+      "PENDING": "Pending",
+      "EXPIRED": "Expired",
+      "REFUNDED": "Refunded",
+      "FAILED": "Failed"
+    },
+    "gender": {
+      "MALE": "Male",
+      "FEMALE": "Female"
+    },
+    "quickActions": {
+      "copyId": "Copy ID",
+      "copied": "Copied",
+      "changeCountry": "Change Country",
+      "yearsOld": "{age} yrs"
     }
   }
 }

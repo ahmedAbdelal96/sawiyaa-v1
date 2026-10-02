@@ -1,17 +1,13 @@
 import { Injectable } from '@nestjs/common';
-import { promises as fs } from 'fs';
-import * as path from 'path';
+import { StoredFilePurpose } from '@prisma/client';
+import { UnifiedFileStorageService } from '@modules/files/unified-file-storage.service';
 
-const MIME_TO_EXTENSION: Record<string, string> = {
-  'image/jpeg': '.jpg',
-  'image/png': '.png',
-  'image/webp': '.webp',
-  'application/pdf': '.pdf',
-};
+const MIME_TO_EXTENSION: Record<string, string> = { 'image/jpeg': '.jpg', 'image/png': '.png', 'image/webp': '.webp', 'application/pdf': '.pdf' };
 
 export type StoredSettlementPayoutProof = {
   absolutePath: string;
   storagePath: string;
+  storedFileId: string;
   mimeType: string;
   fileSizeBytes: number;
   originalFileName: string | null;
@@ -19,95 +15,28 @@ export type StoredSettlementPayoutProof = {
 
 @Injectable()
 export class SettlementPayoutProofStorageService {
-  private readonly baseDir = path.resolve(
-    process.cwd(),
-    'storage',
-    'settlement-payout-proofs',
-  );
+  constructor(private readonly files: UnifiedFileStorageService) {}
+  getAllowedMimeTypes(): string[] { return Object.keys(MIME_TO_EXTENSION); }
+  isAllowedMimeType(mimeType?: string | null): boolean { return !!mimeType && mimeType in MIME_TO_EXTENSION; }
 
-  getAllowedMimeTypes(): string[] {
-    return Object.keys(MIME_TO_EXTENSION);
-  }
-
-  isAllowedMimeType(mimeType?: string | null): boolean {
-    if (!mimeType) {
-      return false;
-    }
-    return mimeType in MIME_TO_EXTENSION;
-  }
-
-  async saveProof(params: {
-    practitionerId: string;
-    payoutId: string;
-    fileBuffer: Buffer;
-    mimeType: string;
-    originalFileName?: string | null;
-  }): Promise<StoredSettlementPayoutProof> {
-    const extension = MIME_TO_EXTENSION[params.mimeType];
-    if (!extension) {
-      throw new Error('Unsupported settlement payout proof mime type');
-    }
-
-    const safePractitionerId = this.sanitizeSegment(params.practitionerId);
-    const safePayoutId = this.sanitizeSegment(params.payoutId);
-    const relativeStoragePath = path.join(
-      'settlement-payout-proofs',
-      safePractitionerId,
-      `${safePayoutId}${extension}`,
-    );
-    const absolutePath = path.join(
-      process.cwd(),
-      'storage',
-      relativeStoragePath,
-    );
-    await fs.mkdir(path.dirname(absolutePath), { recursive: true });
-    await fs.writeFile(absolutePath, params.fileBuffer);
-    const stat = await fs.stat(absolutePath);
-
-    return {
-      absolutePath,
-      storagePath: relativeStoragePath,
-      mimeType: params.mimeType,
-      fileSizeBytes: stat.size,
-      originalFileName: params.originalFileName ?? null,
-    };
+  async saveProof(params: { practitionerId: string; payoutId: string; fileBuffer: Buffer; mimeType: string; originalFileName?: string | null }): Promise<StoredSettlementPayoutProof> {
+    const stored = await this.files.store({ purpose: StoredFilePurpose.PAYOUT_PROOF, fileBuffer: params.fileBuffer, mimeType: params.mimeType, originalFileName: params.originalFileName, maxBytes: 10 * 1024 * 1024 });
+    return { absolutePath: stored.absolutePath, storagePath: `file:${stored.id}`, storedFileId: stored.id, mimeType: stored.mimeType, fileSizeBytes: stored.sizeBytes, originalFileName: stored.originalFileName };
   }
 
   async deleteProof(storagePath: string): Promise<boolean> {
-    const absolutePath = path.resolve(process.cwd(), 'storage', storagePath);
-    return fs
-      .unlink(absolutePath)
-      .then(() => true)
-      .catch(() => false);
+    const id = this.extractId(storagePath);
+    return id ? this.files.delete(id) : false;
   }
 
-  async resolveProof(storagePath: string): Promise<{
-    absolutePath: string;
-    mimeType: string;
-    fileSizeBytes: number;
-  } | null> {
-    const absolutePath = path.resolve(process.cwd(), 'storage', storagePath);
-    const stat = await fs.stat(absolutePath).catch(() => null);
-    if (!stat?.isFile()) {
-      return null;
-    }
-
-    const ext = path.extname(absolutePath).toLowerCase();
-    const mimeType = Object.entries(MIME_TO_EXTENSION).find(
-      ([, value]) => value === ext,
-    )?.[0];
-    if (!mimeType) {
-      return null;
-    }
-
-    return {
-      absolutePath,
-      mimeType,
-      fileSizeBytes: stat.size,
-    };
+  async resolveProof(storagePath: string) {
+    const id = this.extractId(storagePath);
+    const stored = id ? await this.files.resolve(id) : null;
+    return stored && stored.purpose === StoredFilePurpose.PAYOUT_PROOF ? { absolutePath: stored.absolutePath, mimeType: stored.mimeType, fileSizeBytes: stored.sizeBytes } : null;
   }
 
-  private sanitizeSegment(value: string): string {
-    return value.replace(/[^a-zA-Z0-9-]/g, '');
+  private extractId(storagePath: string): string | null {
+    const id = String(storagePath ?? '').replace(/^file:/, '').trim();
+    return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id) ? id : null;
   }
 }

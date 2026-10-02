@@ -1,4 +1,6 @@
-import { Injectable, ServiceUnavailableException } from '@nestjs/common';
+import { Injectable, Optional, ServiceUnavailableException } from '@nestjs/common';
+import { PrismaService } from '@common/prisma/prisma.service';
+import { AvailabilityWeekStatus, SessionStatus } from '@prisma/client';
 import { SupportedLocale } from '@common/i18n/types/locale.types';
 import { isPresenceEffectivelyOnline } from '@modules/presence/utils/presence-liveness';
 import {
@@ -14,12 +16,22 @@ import { SessionReviewRatingAggregationService } from '@modules/reviews/services
 import { resolvePublicPractitionerPricing } from '../utils/public-practitioner-pricing.util';
 import { PublicPractitionerPricingContextService } from '../services/public-practitioner-pricing-context.service';
 import { PractitionerAvatarStorageService } from '../services/practitioner-avatar-storage.service';
+import { PractitionerProfessionalContentResolver } from '../services/practitioner-professional-content-resolver.service';
+import { AvailabilityWeekCalendarService } from '@modules/availability/services/availability-week-calendar.service';
+import { BuildPublishedWeekAvailabilityWindowsService } from '@modules/availability/services/build-published-week-availability-windows.service';
+import { ResolvePractitionerTimezoneService } from '@modules/availability/services/resolve-practitioner-timezone.service';
+import { getCalendarDateParts } from '@modules/availability/utils/availability-timezone.util';
+import { BLOCKING_SESSION_STATUSES } from '@modules/availability/utils/availability-session.constants';
 
 type PublicPractitionerPricingProfile = {
   sessionPrice30Egp: string | { toString(): string } | null;
   sessionPrice30Usd: string | { toString(): string } | null;
   sessionPrice60Egp: string | { toString(): string } | null;
   sessionPrice60Usd: string | { toString(): string } | null;
+  instantBookingPrice30Egp: string | { toString(): string } | null;
+  instantBookingPrice30Usd: string | { toString(): string } | null;
+  instantBookingPrice60Egp: string | { toString(): string } | null;
+  instantBookingPrice60Usd: string | { toString(): string } | null;
 };
 
 type PublicPractitionerRatingSummary = {
@@ -49,8 +61,122 @@ export class ListPublicPractitionersUseCase {
     private readonly publicReadRepository: PublicPractitionerReadRepository,
     private readonly pricingContextService: PublicPractitionerPricingContextService,
     private readonly sessionReviewRatingAggregationService: SessionReviewRatingAggregationService,
+    private readonly professionalContentResolver: PractitionerProfessionalContentResolver,
     private readonly avatarStorage?: PractitionerAvatarStorageService,
+    @Optional() private readonly prisma?: PrismaService,
   ) {}
+
+  /**
+   * Filter against the same concrete published-window builder used by the
+   * booking availability endpoint. The repository intentionally returns a
+   * coarse public candidate set; this step supplies elapsed-time, exception,
+   * and booked-session semantics without changing any booking policy.
+   */
+  private async filterByAvailability<T extends { id: string; user: { timezone?: string | null } }>(
+    rows: T[],
+    input: { availableToday?: boolean; availableThisWeek?: boolean },
+  ): Promise<T[]> {
+    if (
+      !this.prisma ||
+      (input.availableToday !== true && input.availableThisWeek !== true) ||
+      rows.length === 0
+    ) {
+      return rows;
+    }
+
+    const now = new Date();
+    const calendar = new AvailabilityWeekCalendarService();
+    const builder = new BuildPublishedWeekAvailabilityWindowsService();
+    const timezoneResolver = new ResolvePractitionerTimezoneService();
+    const ranges = rows.map((row) => {
+      const timezone = timezoneResolver.resolve({
+        fallbackTimezone: row.user.timezone,
+      });
+      const currentWeek = calendar.getCurrentWeekRange({ timezone, now });
+      return { row, timezone, currentWeek };
+    });
+    const weekStarts = Array.from(
+      new Map(ranges.map(({ currentWeek }) => [currentWeek.startDate.toISOString(), currentWeek.startDate])).values(),
+    );
+    const weekEnd = new Date(
+      Math.max(...ranges.map(({ currentWeek }) => currentWeek.endDate.getTime())) + 24 * 60 * 60 * 1000,
+    );
+    const [weeks, exceptions, sessions] = await Promise.all([
+      this.prisma.practitionerAvailabilityWeek.findMany({
+        where: {
+          practitionerId: { in: rows.map((row) => row.id) },
+          status: AvailabilityWeekStatus.PUBLISHED,
+          weekStartDate: { in: weekStarts },
+        },
+        include: { slots: true },
+      }),
+      this.prisma.availabilityException.findMany({
+        where: {
+          practitionerId: { in: rows.map((row) => row.id) },
+          isActive: true,
+          startsAtUtc: { lt: weekEnd },
+          endsAtUtc: { gt: now },
+        },
+      }),
+      this.prisma.session.findMany({
+        where: {
+          practitionerId: { in: rows.map((row) => row.id) },
+          scheduledStartAt: { lt: weekEnd },
+          scheduledEndAt: { gt: now },
+          OR: [
+            { status: { in: BLOCKING_SESSION_STATUSES } },
+            { status: SessionStatus.PENDING_PAYMENT, expiresAt: { gt: now } },
+          ],
+        },
+        select: {
+          practitionerId: true,
+          scheduledStartAt: true,
+          scheduledEndAt: true,
+        },
+      }),
+    ]);
+
+    return ranges.flatMap(({ row, timezone, currentWeek }) => {
+      const practitionerWeeks = weeks.filter(
+        (week) => week.practitionerId === row.id,
+      );
+      const practitionerExceptions = exceptions.filter(
+        (exception) => exception.practitionerId === row.id,
+      );
+      const practitionerSessions = sessions
+        .filter((session) => session.practitionerId === row.id)
+        .filter(
+          (session): session is typeof session & {
+            scheduledStartAt: Date;
+            scheduledEndAt: Date;
+          } => Boolean(session.scheduledStartAt && session.scheduledEndAt),
+        );
+      const windows = builder.buildForRange({
+        timezone,
+        weeks: practitionerWeeks,
+        exceptions: practitionerExceptions,
+        bookedSessions: practitionerSessions.map((session) => ({
+          startsAt: session.scheduledStartAt,
+          endsAt: session.scheduledEndAt,
+        })),
+        fromUtc: currentWeek.startDate,
+        toUtc: new Date(currentWeek.endDate.getTime() + 24 * 60 * 60 * 1000),
+        now,
+      });
+      const hasWindow = input.availableToday === true
+        ? windows.some((window) => {
+            const localNow = getCalendarDateParts(now, timezone);
+            const localStart = getCalendarDateParts(new Date(window.startsAt), timezone);
+            return (
+              localStart.year === localNow.year &&
+              localStart.month === localNow.month &&
+              localStart.day === localNow.day
+            );
+          })
+        : windows.length > 0;
+      return hasWindow ? [row] : [];
+    });
+  }
 
   async execute(input: {
     locale: SupportedLocale;
@@ -65,6 +191,7 @@ export class ListPublicPractitionersUseCase {
     gender?: PublicPractitionerGender;
     duration?: PublicPractitionerSessionDuration;
     onlineNow?: boolean;
+    instantBookingEnabled?: boolean;
     availableToday?: boolean;
     availableThisWeek?: boolean;
     acceptsCoupon?: boolean;
@@ -96,6 +223,7 @@ export class ListPublicPractitionersUseCase {
       gender: input.gender,
       duration: input.duration,
       onlineNow: input.onlineNow,
+      instantBookingEnabled: input.instantBookingEnabled,
       availableToday: input.availableToday,
       availableThisWeek: input.availableThisWeek,
       acceptsCoupon: input.acceptsCoupon,
@@ -105,13 +233,15 @@ export class ListPublicPractitionersUseCase {
       sort: input.sort,
     });
 
+    const availabilityFilteredRows = await this.filterByAvailability(rows, input);
+
     const summaries =
       await this.sessionReviewRatingAggregationService.aggregateByPractitionerIds(
-        rows.map((row) => row.id),
+        availabilityFilteredRows.map((row) => row.id),
       );
 
     const rowsWithPublicAvatars = await Promise.all(
-      rows.map(async (profile) => {
+      availabilityFilteredRows.map(async (profile) => {
         const storedAvatar = this.avatarStorage
           ? await this.avatarStorage.resolveAvatarMetadata(profile.id)
           : null;
@@ -154,6 +284,10 @@ export class ListPublicPractitionersUseCase {
           hasProfessionalTitle: Boolean(profile.professionalTitle?.trim()),
           hasBio: Boolean(profile.bio?.trim()),
           hasAtLeastOneActiveSpecialty: profile.specialties.length > 0,
+          sessionPrice30Egp: profile.sessionPrice30Egp,
+          sessionPrice30Usd: profile.sessionPrice30Usd,
+          sessionPrice60Egp: profile.sessionPrice60Egp,
+          sessionPrice60Usd: profile.sessionPrice60Usd,
         });
 
         if (!visibility.isVisible) {
@@ -175,6 +309,17 @@ export class ListPublicPractitionersUseCase {
           sessionPrice60Egp: pricingProfile.sessionPrice60Egp,
           sessionPrice60Usd: pricingProfile.sessionPrice60Usd,
         });
+        const professionalContent = this.professionalContentResolver.resolve({
+          requestedLocale: input.locale,
+          primaryContentLocale: profile.primaryContentLocale,
+          translations: (profile.professionalContentTranslations ?? []).map((translation) => ({
+            locale: translation.locale as SupportedLocale,
+            professionalTitle: translation.professionalTitle,
+            bio: translation.bio,
+          })),
+          legacyProfessionalTitle: profile.professionalTitle,
+          legacyBio: profile.bio,
+        });
 
         return [
           {
@@ -185,14 +330,19 @@ export class ListPublicPractitionersUseCase {
               id: profile.id,
               slug: profile.publicSlug,
               displayName: profile.user.displayName ?? null,
-              professionalTitle: profile.professionalTitle ?? null,
-              bioSnippet: this.mapper.toBioSnippet(profile.bio ?? null),
+              professionalTitle: professionalContent.professionalTitle,
+              bioSnippet: this.mapper.toBioSnippet(professionalContent.bio),
               specialties: profile.specialties.map((link) => ({
                 specialtyId: link.specialtyId,
                 slug: link.specialty.slug,
                 title: this.mapper.pickLocalizedTitle(
                   link.specialty.translations,
                   input.locale,
+                  {
+                    nameAr: link.specialty.nameAr,
+                    nameEn: link.specialty.nameEn,
+                    fallback: link.specialty.slug,
+                  },
                 ),
                 isPrimary: link.isPrimary,
               })),
@@ -252,6 +402,26 @@ export class ListPublicPractitionersUseCase {
                 pricingProfile.sessionPrice60Usd === undefined
                   ? null
                   : Number(pricingProfile.sessionPrice60Usd),
+              instantBookingPrice30Egp:
+                pricingProfile.instantBookingPrice30Egp === null ||
+                pricingProfile.instantBookingPrice30Egp === undefined
+                  ? null
+                  : Number(pricingProfile.instantBookingPrice30Egp),
+              instantBookingPrice30Usd:
+                pricingProfile.instantBookingPrice30Usd === null ||
+                pricingProfile.instantBookingPrice30Usd === undefined
+                  ? null
+                  : Number(pricingProfile.instantBookingPrice30Usd),
+              instantBookingPrice60Egp:
+                pricingProfile.instantBookingPrice60Egp === null ||
+                pricingProfile.instantBookingPrice60Egp === undefined
+                  ? null
+                  : Number(pricingProfile.instantBookingPrice60Egp),
+              instantBookingPrice60Usd:
+                pricingProfile.instantBookingPrice60Usd === null ||
+                pricingProfile.instantBookingPrice60Usd === undefined
+                  ? null
+                  : Number(pricingProfile.instantBookingPrice60Usd),
               isOnlineNow: isPresenceEffectivelyOnline(profile.presence),
               acceptsCoupon:
                 profile.coupons?.some(

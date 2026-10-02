@@ -2,8 +2,8 @@ import type { ListMyNotificationsParams } from "../types/user-notifications.type
 
 export const userNotificationsQueryKeys = {
   all: ["notifications", "me"] as const,
-  list: (params: ListMyNotificationsParams) =>
-    [...userNotificationsQueryKeys.all, "list", params] as const,
+  list: (params: ListMyNotificationsParams, locale: string = "en") =>
+    [...userNotificationsQueryKeys.all, "list", locale, params] as const,
   unreadCount: () => [...userNotificationsQueryKeys.all, "unread-count"] as const,
 };
 

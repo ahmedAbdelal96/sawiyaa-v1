@@ -1,6 +1,10 @@
 import { Module } from '@nestjs/common';
+import { CustomerWalletsModule } from '@modules/customer-wallets/customer-wallets.module';
+import { PatientsModule } from '@modules/patients/patients.module';
 import { JwtAccessAuthGuard } from '@common/guards/authentication/jwt-access-auth.guard';
 import { RolesGuard } from '@common/guards/authorization/roles.guard';
+import { PermissionResolverService } from '@common/guards/authorization/permission-resolver.service';
+import { PermissionsGuard } from '@common/guards/authorization/permissions.guard';
 import { AdminCommissionRulesController } from './controllers/admin-commission-rules.controller';
 import { AdminRevenueShareRulesController } from './controllers/admin-revenue-share-rules.controller';
 import { AdminCouponsController } from './controllers/admin-coupons.controller';
@@ -40,6 +44,7 @@ import { ValidateCouponUseCase } from './use-cases/validate-coupon.use-case';
  * It intentionally stops before ledger posting, settlement generation, or wallet accounting.
  */
 @Module({
+  imports: [CustomerWalletsModule, PatientsModule],
   controllers: [
     AdminCommissionRulesController,
     AdminRevenueShareRulesController,
@@ -50,6 +55,8 @@ import { ValidateCouponUseCase } from './use-cases/validate-coupon.use-case';
   providers: [
     JwtAccessAuthGuard,
     RolesGuard,
+    PermissionsGuard,
+    PermissionResolverService,
     FinancialRulesMapper,
     FinancialSessionRepository,
     CommissionRuleRepository,

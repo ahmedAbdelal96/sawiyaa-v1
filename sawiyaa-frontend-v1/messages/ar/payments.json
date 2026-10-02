@@ -29,7 +29,7 @@
       "heading": "أحدث سجل مدفوعات",
       "note": "راجع أحدث العمليات المالية المرتبطة بجلساتك.",
       "columns": {
-        "sessionPractitioner": "الجلسة / المعالج",
+        "sessionPractitioner": "الجلسة / المختص",
         "date": "التاريخ",
         "method": "وسيلة الدفع",
         "amount": "المبلغ",
@@ -42,7 +42,7 @@
       "next": "التالي"
     },
     "unknownSession": "جلسة غير معروفة",
-    "unknownPractitioner": "معالج غير معروف",
+    "unknownPractitioner": "مختص غير معروف",
     "emptyHeading": "لا توجد مدفوعات بعد",
     "emptyNote": "ستظهر مدفوعاتك هنا بعد حجز جلسة وإتمام الدفع.",
     "emptyAction": "عرض جلساتي",
@@ -72,12 +72,12 @@
     },
     "provider": {
       "STRIPE": "بطاقة",
-      "PAYMOB": "Paymob",
+      "PAYMOB": "مزود الدفع",
       "INTERNAL_WALLET": "المحفظة"
     },
     "method": {
       "card": "بطاقة بنكية",
-      "paymob": "Paymob",
+      "paymob": "مزود الدفع",
       "wallet": "المحفظة",
       "stripe": "Stripe",
       "gateway": "بوابة الدفع"
@@ -215,7 +215,7 @@
       "availableLabel": "الرصيد المتاح",
       "reservedLabel": "الرصيد المحجوز",
       "lastActivityLabel": "آخر حركة",
-      "fallbackName": "المريض"
+      "fallbackName": "العميل"
     },
     "currencyLabels": {
       "local": "العملة المحلية",
@@ -307,13 +307,16 @@
     "sessionExpiredUnavailableNote": "هذه الصفحة لم تعد متاحة لأن مهلة الحجز انتهت.",
     "sessionExpiredRedirectNote": "سنعود بك إلى صفحة المختص خلال ثوانٍ قليلة حتى تختار موعدًا جديدًا.",
     "returnToPractitioner": "العودة إلى المختص",
-    "bookAgain": "تصفح المختصين",
-    "alreadyPaid": "تم تأكيد الجلسة مسبقًا",
-    "alreadyPaidNote": "تم استلام الدفع وتأكيد الجلسة بالفعل.",
-    "viewSessions": "عرض جلساتي",
     "proceedToPay": "المتابعة إلى الدفع",
-    "payWithAmount": "ادفع {amount}",
-    "payNow": "ادفع الآن",
+    "payWithAmount": "ادفع {amount} وأكد الحجز",
+    "confirmWithWallet": "تأكيد الحجز برصيد المحفظة",
+    "payNow": "ادفع الآن وأكد الحجز",
+    "inlinePolicyAgreement": "أوافق على شروط الاستخدام وسياسة الإلغاء والاسترداد الخاصة بالجلسات.",
+    "readPolicyClauses": "مراجعة بنود السياسة",
+    "policyConsentRequired": "يرجى الموافقة على سياسة الإلغاء والاسترداد وشروط الجلسة للمتابعة.",
+    "sessionSecurityPillar1": "خصوصية وسرية تامة",
+    "sessionSecurityPillar2": "مختص معتمد وموثوق",
+    "sessionSecurityPillar3": "دفع آمن واسترداد مرن",
     "initiating": "جارٍ تجهيز صفحة الدفع...",
     "redirecting": "جارٍ فتح صفحة الدفع...",
     "redirectingToCheckout": "نقوم الآن بإرسالك إلى صفحة الدفع الآمنة.",
@@ -324,14 +327,14 @@
     "initiateConflict": "يوجد بالفعل دفع نشط لهذه الجلسة. يرجى تحديث الصفحة والمحاولة مرة أخرى.",
     "paymobMethod": {
       "heading": "طريقة الدفع",
-      "note": "اختر إحدى طرق Paymob المفعلة فعليًا على حساب التاجر الخاص بك.",
+      "note": "اختر إحدى طرق الدفع المتاحة لحسابك.",
       "card": {
         "title": "بطاقة بنكية",
         "note": "ادفع باستخدام Visa أو Mastercard أو أي بطاقة أخرى يدعمها حسابك."
       },
       "wallet": {
         "title": "محفظة موبايل",
-        "note": "ادفع من خلال محفظة الهاتف عند تفعيلها على حساب Paymob."
+        "note": "ادفع من خلال محفظة الهاتف عند توفرها لحسابك."
       }
     },
     "journey": {
@@ -389,7 +392,11 @@
     "confirmed": {
       "heading": "تم تأكيد الحجز",
       "note": "تم استلام دفعتك وتم تأكيد الجلسة.",
-      "sessionWith": "الجلسة مع {practitioner}"
+      "sessionWith": "الجلسة مع {practitioner}",
+      "sessionDetails": "تفاصيل الموعد والمختص",
+      "viewSessionDetail": "عرض تفاصيل الجلسة والاستعداد",
+      "paymentReceipt": "إيصال وتفاصيل الدفع",
+      "statusPaid": "مدفوع ومؤكد"
     },
     "verifying": {
       "heading": "جارٍ التحقق من الدفع...",
@@ -454,6 +461,10 @@
           "label": "أين تؤكد",
           "value": "سجل المدفوعات",
           "helper": "ستُظهر المحفظة والسجل أي حركة مالية لاحقة."
+        },
+        "patientPaid": {
+          "label": "المبلغ المدفوع",
+          "helper": "المبلغ المسجل لهذا الحجز."
         }
       },
       "actions": {

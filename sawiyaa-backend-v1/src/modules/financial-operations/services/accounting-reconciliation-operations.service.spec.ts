@@ -128,12 +128,17 @@ function buildService() {
   const configService = {
     get: jest.fn((key: string, fallback: number | boolean) => fallback),
   } as unknown as ConfigService;
+  const paymentOperationalExceptionService = {
+    createAutomaticInTransaction: jest.fn().mockResolvedValue({ created: true }),
+  };
 
   const service = new AccountingReconciliationOperationsService(
     prisma,
     diagnostics,
     alertService,
     configService,
+    undefined,
+    paymentOperationalExceptionService as never,
   );
 
   return {
@@ -174,6 +179,7 @@ function buildService() {
     alertService: alertService as unknown as {
       handleCriticalRunIssues: jest.Mock;
     },
+    paymentOperationalExceptionService,
     issueUpsert,
     issueFindUnique,
     runCreate,
@@ -233,6 +239,14 @@ describe('AccountingReconciliationOperationsService', () => {
     expect(result.summary.totalCritical).toBe(1);
     expect(result.issueCount).toBe(1);
     expect(setup.issueUpsert).toHaveBeenCalledTimes(1);
+    expect(setup.paymentOperationalExceptionService.createAutomaticInTransaction).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        paymentId: 'payment_1',
+        type: 'RECONCILIATION_ISSUE',
+        dedupeKey: 'reconciliation:issue_1',
+      }),
+    );
     expect(setup.alertService.handleCriticalRunIssues).toHaveBeenCalledTimes(1);
   });
 

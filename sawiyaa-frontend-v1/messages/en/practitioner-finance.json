@@ -1,31 +1,31 @@
 {
   "meta": {
-    "walletTitle": "Wallet summary — Practitioner",
-    "walletDescription": "Review your current wallet balances and summary totals without overbuilding the finance suite.",
-    "ledgerTitle": "Ledger history — Practitioner",
-    "ledgerDescription": "Review your ledger history entries without jumping into settlements or payout tooling.",
-    "settlementsTitle": "Payouts — Practitioner",
-    "settlementsDescription": "Review settlement records and status updates without entering payout tooling."
+    "walletTitle": "Earnings summary — Practitioner",
+    "walletDescription": "Review your available balance, earnings, and current totals.",
+    "ledgerTitle": "Transactions — Practitioner",
+    "ledgerDescription": "Review your transaction history without entering transfer tooling.",
+    "settlementsTitle": "Transfers — Practitioner",
+    "settlementsDescription": "Review your transfer records and current status."
   },
   "summary": {
-    "eyebrow": "Practitioner wallet",
-    "title": "Wallet",
-    "note": "Track your balances and financial settlements.",
+    "eyebrow": "Earnings",
+    "title": "Earnings",
+    "note": "Track your available balance, earnings, and transfers.",
     "manualRecoveryLabel": "Manual recovery amount",
-    "manualRecoveryNote": "This amount is separate from the payable total and is not deducted automatically from the next payout.",
+    "manualRecoveryNote": "This amount is separate from the payable total and is not deducted automatically from the next transfer.",
     "currency": "Currency: {currency}",
     "timezoneLabel": "Timezone",
     "scopeHeading": "Available now",
     "scopeItems": {
-      "balances": "Current balances split by availability state.",
+      "balances": "Current balances by status.",
       "totals": "Lifetime earned and paid out totals.",
-      "timestamps": "Last ledger update timestamps."
+      "timestamps": "Last transaction update timestamps."
     },
     "boundaryHeading": "Outside current scope",
     "boundaryItems": {
-      "noLedger": "Ledger detail is available in a separate ledger screen.",
-      "noSettlements": "Settlement visibility is a separate surface.",
-      "noPayouts": "Payout actions and scheduling are not part of this baseline."
+      "noLedger": "Transaction detail is available in a separate transactions screen.",
+      "noSettlements": "Transfer visibility is a separate surface.",
+      "noPayouts": "Transfer actions and scheduling are not part of this baseline."
     },
     "cards": {
       "available": "Available balance",
@@ -34,39 +34,39 @@
       "totalEarned": "Total earned",
       "lifetimePaidOut": "Lifetime paid out"
     },
-    "detailsHeading": "Wallet details",
+    "detailsHeading": "Earnings details",
     "details": {
-      "lastLedgerEntryAt": "Last ledger entry",
-      "updatedAt": "Last wallet update",
+      "lastLedgerEntryAt": "Last transaction",
+      "updatedAt": "Last earnings update",
       "timezoneLabel": "Timezone"
     }
   },
   "states": {
     "empty": {
-      "heading": "Wallet summary is not available yet",
-      "note": "The current wallet summary could not be loaded."
+      "heading": "Earnings summary is not available yet",
+      "note": "The current earnings summary could not be loaded."
     },
     "error": {
-      "heading": "Wallet summary is not available right now",
+      "heading": "Earnings summary is not available right now",
       "retry": "Try again"
     }
   },
   "ledger": {
-    "eyebrow": "Practitioner ledger",
-    "title": "Review ledger history entries tied to your practitioner wallet.",
-    "note": "This ledger provides a visibility-first history of financial entries linked to sessions, payments, and settlements.",
+    "eyebrow": "Transactions",
+    "title": "Review transaction history linked to your earnings.",
+    "note": "This history shows financial activity linked to sessions, payments, and transfers.",
     "count": "{value} entries",
     "countLoading": "Loading entries",
     "scopeHeading": "Available now",
     "scopeItems": {
-      "history": "Ledger history with entry types and timestamps.",
-      "balances": "Balance bucket impact per entry.",
-      "references": "References to related payments, sessions, or settlement records."
+      "history": "Transaction history with types and timestamps.",
+      "balances": "Balance impact per transaction.",
+      "references": "References to related payments, sessions, or transfer records."
     },
     "boundaryHeading": "Outside current scope",
     "boundaryItems": {
-      "noPayouts": "Payout actions are not available in this ledger view.",
-      "noSettlements": "Settlement detail lives on the settlements surface.",
+      "noPayouts": "Transfer actions are not available in this transactions view.",
+      "noSettlements": "Transfer detail lives on the transfers surface.",
       "noReconciliation": "Reconciliation, exports, and analytics are not part of this baseline."
     },
     "fields": {
@@ -83,8 +83,8 @@
       "REFUND_PLATFORM_REVERSAL": "Platform refund reversal",
       "REFUND_PRACTITIONER_REVERSAL": "Practitioner refund reversal",
       "MANUAL_ADJUSTMENT": "Manual adjustment",
-      "SETTLEMENT_PAYOUT": "Settlement payout",
-      "SETTLEMENT_REVERSAL": "Settlement reversal"
+      "SETTLEMENT_PAYOUT": "Transfer",
+      "SETTLEMENT_REVERSAL": "Transfer adjustment"
     },
     "directions": {
       "CREDIT": "Credit",
@@ -98,7 +98,7 @@
     "reference": {
       "payment": "Payment",
       "session": "Session",
-      "settlement": "Settlement",
+      "settlement": "Transfer",
       "generic": "{type} reference"
     },
     "pagination": {
@@ -108,32 +108,32 @@
     },
     "states": {
       "empty": {
-        "heading": "No ledger entries yet",
-        "note": "Ledger entries will appear here when financial activity is recorded."
+        "heading": "No transactions yet",
+        "note": "Transactions will appear here when financial activity is recorded."
       },
       "error": {
-        "heading": "Ledger entries are not available right now",
+        "heading": "Transactions are not available right now",
         "retry": "Try again"
       }
     }
   },
   "settlements": {
-    "eyebrow": "Practitioner settlements",
-    "title": "Review settlement records tied to your practitioner earnings.",
-    "note": "This surface provides a visibility-first view of payout records and status updates.",
-    "count": "{value} settlements",
-    "countLoading": "Loading settlements",
+    "eyebrow": "Transfers",
+    "title": "Review transfers linked to your earnings.",
+    "note": "This surface provides a visibility-first view of transfer records and status updates.",
+    "count": "{value} transfers",
+    "countLoading": "Loading transfers",
     "timezoneLabel": "Timezone",
     "scopeHeading": "Available now",
     "scopeItems": {
-      "history": "Settlement history with timestamps and payout state.",
-      "statuses": "Current status for each settlement record.",
-      "amounts": "Gross, adjustments, and net amounts per settlement."
+      "history": "Transfer history with timestamps and status.",
+      "statuses": "Current status for each transfer.",
+      "amounts": "Gross, adjustments, and net amounts per transfer."
     },
     "boundaryHeading": "Outside current scope",
     "boundaryItems": {
-      "noPayouts": "Payout actions are not available in this view.",
-      "noLedger": "Ledger history remains a separate surface.",
+      "noPayouts": "Transfer actions are not available in this view.",
+      "noLedger": "Transaction history remains a separate surface.",
       "noAdjustments": "Manual adjustments and reconciliation are not part of this baseline."
     },
     "fields": {
@@ -141,10 +141,10 @@
       "adjustments": "Adjustments",
       "net": "Net amount",
       "createdAt": "Created",
-      "paidAt": "Paid at",
+      "paidAt": "Transferred at",
       "failedAt": "Failed at",
-      "batch": "Payout reference",
-      "reference": "Payout reference",
+      "batch": "Transfer reference",
+      "reference": "Transfer reference",
       "notes": "Notes"
     },
     "statuses": {
@@ -152,17 +152,17 @@
       "APPROVED": "Approved",
       "REJECTED": "Rejected",
       "CREDITED": "Credited",
-      "PAID_OUT": "Paid out",
+      "PAID_OUT": "Transferred",
       "DRAFT": "Draft",
       "READY": "Ready",
       "PROCESSING": "Processing",
-      "PAID": "Paid",
+      "PAID": "Transferred",
       "FAILED": "Failed",
       "CANCELLED": "Cancelled"
     },
     "payoutStatuses": {
-      "PENDING": "Pending payout",
-      "PAID": "Paid",
+      "PENDING": "Pending transfer",
+      "PAID": "Transferred",
       "NOT_ELIGIBLE": "Not eligible"
     },
     "filters": {
@@ -175,20 +175,63 @@
     },
     "states": {
       "empty": {
-        "heading": "No settlements yet",
-        "note": "Settlement records will appear here when payouts are generated."
+        "heading": "No transfers yet",
+        "note": "Transfers will appear here when they are generated."
       },
       "error": {
-        "heading": "Settlements are not available right now",
+        "heading": "Transfers are not available right now",
         "retry": "Try again"
       }
     }
   },
+  "ui": {
+    "filterStatus": "Filter by status",
+    "statusLabel": "Status",
+    "currency": "Currency",
+    "entries": "Entries",
+    "debitFocus": "Debit focus",
+    "linkedRefs": "Linked references",
+    "currentPage": "Current page",
+    "ledgerFilters": "Transaction filters",
+    "ledgerFiltersNote": "Filter transactions by type, balance bucket, reference, and date range.",
+    "allTypes": "All types",
+    "allBuckets": "All balance buckets",
+    "paymentId": "Payment ID",
+    "searchPayment": "Search payment",
+    "transferId": "Transfer ID",
+    "searchTransfer": "Search transfer",
+    "referenceType": "Reference type",
+    "transactionsLog": "Transactions log",
+    "transactionsSubtitle": "Detailed list of transactions recorded for your account",
+    "historyFilters": "Transfer history filters",
+    "session": "Session",
+    "date": "Date",
+    "addedToEarnings": "Added to earnings",
+    "settlementStatus": "Transfer status",
+    "payoutStatus": "Payout status",
+    "fromDate": "From date",
+    "toDate": "To date",
+    "allStatuses": "All statuses",
+    "net": "Net amount",
+    "gross": "Gross amount",
+    "adjustments": "Adjustments",
+    "batch": "Transfer reference",
+    "reference": "Transfer reference",
+    "created": "Created",
+    "paidAt": "Transferred at",
+    "entryType": "Entry type",
+    "amount": "Amount",
+    "referenceColumn": "Reference",
+    "effective": "Effective date",
+    "recorded": "Recorded at",
+    "description": "Description",
+    "balanceBucket": "Balance bucket"
+  },
   "errors": {
     "practitionerNotFound": "Your practitioner profile could not be found.",
-    "invalidFilter": "Some ledger filters are not supported.",
-    "forbidden": "Your account is not allowed to access this finance data.",
+    "invalidFilter": "Some transaction filters are not supported.",
+    "forbidden": "Your account is not allowed to access this earnings data.",
     "notFound": "Financial data could not be found in scope.",
-    "generic": "Could not load finance data right now."
+    "generic": "Could not load earnings data right now."
   }
 }

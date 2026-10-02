@@ -2,17 +2,12 @@ import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
 import { buildPublicMetadata } from "@/lib/seo/public-metadata";
 import HeroSection from "@/features/home/components/HeroSection";
-import ReassuranceStrip from "@/features/home/components/ReassuranceStrip";
-import GuidedEntrySection from "@/features/home/components/GuidedEntrySection";
-import WhySawiyaaSection from "@/features/home/components/WhySawiyaaSection";
+import InstantHelpBanner from "@/features/home/components/InstantHelpBanner";
 import SpecialtiesSection from "@/features/home/components/SpecialtiesSection";
+import PractitionersSection from "@/features/home/components/PractitionersSection";
 import HowItWorksSection from "@/features/home/components/HowItWorksSection";
+import WhySawiyaaSection from "@/features/home/components/WhySawiyaaSection";
 import GuidedCareSection from "@/features/home/components/GuidedCareSection";
-import BookingClaritySection from "@/features/home/components/BookingClaritySection";
-import ArticlesPreviewSection from "@/features/home/components/ArticlesPreviewSection";
-import AcademyPreviewSection from "@/features/home/components/AcademyPreviewSection";
-import PractitionerCTASection from "@/features/home/components/PractitionerCTASection";
-import HelpPreviewSection from "@/features/home/components/HelpPreviewSection";
 import FinalCTASection from "@/features/home/components/FinalCTASection";
 
 type Props = {
@@ -31,24 +26,17 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   });
 }
 
-export default async function HomePage({ params }: Props) {
-  const { locale } = await params;
-
+export default async function HomePage() {
   return (
-    <>
+    <div className="space-y-4 sm:space-y-6">
       <HeroSection />
-      <ReassuranceStrip />
-      <GuidedEntrySection />
-      <WhySawiyaaSection />
+      <InstantHelpBanner />
       <SpecialtiesSection />
+      <PractitionersSection />
       <HowItWorksSection />
+      <WhySawiyaaSection />
       <GuidedCareSection />
-      <BookingClaritySection />
-      <ArticlesPreviewSection locale={locale} />
-      <AcademyPreviewSection locale={locale} />
-      <PractitionerCTASection />
-      <HelpPreviewSection />
       <FinalCTASection />
-    </>
+    </div>
   );
 }

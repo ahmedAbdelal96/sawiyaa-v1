@@ -41,6 +41,13 @@ export class GeneralChatActorRepository {
       },
       select: {
         id: true,
+        status: true,
+        sessionMode: true,
+        scheduledStartAt: true,
+        scheduledEndAt: true,
+        provider: true,
+        providerRoomId: true,
+        providerSessionRef: true,
       },
     });
   }

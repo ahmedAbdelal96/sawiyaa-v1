@@ -206,3 +206,18 @@ export async function viewAdminDirectPractitionerCredentialFile(
   );
   return response.data;
 }
+
+/**
+ * Satisfies, rejects, or reopens a practitioner application requirement from admin review scope.
+ */
+export async function updateAdminPractitionerRequirement(
+  applicationId: string,
+  requirementId: string,
+  data: { action: "SATISFY" | "REJECT" | "REOPEN"; reason?: string }
+) {
+  const response = await httpClient.patch<ApiPayload<{ message: string }>>(
+    `/admin/practitioner-applications/${applicationId}/requirements/${requirementId}`,
+    data
+  );
+  return extractData(response.data);
+}

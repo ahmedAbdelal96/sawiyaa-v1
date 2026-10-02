@@ -35,6 +35,8 @@ import {
   PaymentProviderInitiationResult,
 } from '../providers/payment-provider-adapter.interface';
 import { PaymentRoute } from '../types/payment-routing.types';
+import { PaymentProviderRecoveryService } from '../services/payment-provider-recovery.service';
+import { reserveCouponEconomicIntent } from '../services/reserve-coupon-economic-intent.service';
 @Injectable()
 export class InitiateSessionPaymentUseCase {
   constructor(
@@ -53,6 +55,7 @@ export class InitiateSessionPaymentUseCase {
     private readonly paymentMapper: PaymentMapper,
     private readonly refundPolicyService: RefundPolicyService,
     private readonly corporateSponsorshipPaymentService: CorporateSponsorshipPaymentService,
+    private readonly paymentProviderRecoveryService?: PaymentProviderRecoveryService,
   ) {}
 
   async execute(input: {
@@ -119,11 +122,43 @@ export class InitiateSessionPaymentUseCase {
     const activePayment =
       await this.paymentRepository.findLatestActiveBySessionId(session.id);
 
+    if (activePayment) {
+      await this.refundPolicyService.ensureAcceptedRefundPolicyForPayment({
+        policyType: RefundPolicyType.SESSION,
+        acceptedRefundPolicyId: input.acceptedRefundPolicyId,
+        acceptedByUserId: input.userId,
+        paymentId: activePayment.id,
+        sessionId: session.id,
+        displayLocale: input.displayLocale,
+        userAgent: input.userAgent ?? null,
+        ipAddress: input.ipAddress ?? null,
+      });
+      // A reservation has already reduced available wallet funds. Recover the
+      // same provider operation; never recompute or create a second payment.
+      const recovered =
+        await this.paymentProviderRecoveryService?.reconcilePayment(
+          activePayment.id,
+          true,
+        );
+      const latest = await this.paymentRepository.findById(activePayment.id);
+      return {
+        item: this.paymentMapper.toViewModel(latest ?? activePayment),
+        reconciliation: recovered ? 'attempted' : 'not-required',
+      };
+    }
+
     const pricing = await this.resolveSessionPaymentPricingService.resolve({
       requestCountryIsoCode: input.requestCountryIsoCode,
       session,
       couponCode: input.couponCode ?? null,
     });
+
+    if (!pricing.commissionRuleId) {
+      throw new BadRequestException({
+        messageKey: 'payments.errors.financialConfigurationUnavailable',
+        error: 'PAYMENT_FINANCIAL_CONFIGURATION_UNAVAILABLE',
+      });
+    }
 
     // Check corporate sponsorship eligibility
     const sponsorshipEligibility =
@@ -183,7 +218,7 @@ export class InitiateSessionPaymentUseCase {
       : new Prisma.Decimal(0);
     const amountFromGateway = totalAmountDecimal.sub(amountFromWallet);
     const platformCommissionAmountDecimal = new Prisma.Decimal(
-      pricing.breakdown.platformCommissionAmount,
+      pricing.breakdown.platformCommissionAmount!,
     );
     const vatRatePercentDecimal = accountingConfig.vatEnabled
       ? new Prisma.Decimal(accountingConfig.vatRatePercent)
@@ -210,9 +245,7 @@ export class InitiateSessionPaymentUseCase {
 
     let provider: PaymentProvider;
     let paymentRoute: PaymentRoute | null = null;
-    if (activePayment) {
-      provider = activePayment.provider;
-    } else if (amountFromGateway.lte(0)) {
+    if (amountFromGateway.lte(0)) {
       provider = PaymentProvider.INTERNAL_WALLET;
     } else {
       const routingContext = {
@@ -221,13 +254,15 @@ export class InitiateSessionPaymentUseCase {
         operatingCountryIsoCode: session.practitioner.country?.isoCode ?? null,
         checkoutCountryIsoCode: input.requestCountryIsoCode ?? null,
       };
-      const resolver = this.paymentProviderResolverService as PaymentProviderResolverService & {
+      const resolver = this
+        .paymentProviderResolverService as PaymentProviderResolverService & {
         resolveRoute?: (context: typeof routingContext) => PaymentRoute;
       };
       paymentRoute = resolver.resolveRoute
         ? resolver.resolveRoute(routingContext)
         : null;
-      provider = paymentRoute?.provider ?? resolver.resolveProvider(routingContext);
+      provider =
+        paymentRoute?.provider ?? resolver.resolveProvider(routingContext);
     }
     const providerCode = String(provider);
     const isInternalWalletProvider = providerCode === 'INTERNAL_WALLET';
@@ -244,7 +279,10 @@ export class InitiateSessionPaymentUseCase {
       checkoutCountryIsoCode: input.requestCountryIsoCode ?? null,
       operatingCountryIsoCode: session.practitioner.country?.isoCode ?? null,
     };
-    const amountMinor = toGatewayMinorUnits(amountFromGateway, pricing.currencyCode);
+    const amountMinor = toGatewayMinorUnits(
+      amountFromGateway,
+      pricing.currencyCode,
+    );
     const providerAdapter: PaymentProviderAdapter | null =
       isInternalWalletProvider
         ? null
@@ -281,38 +319,58 @@ export class InitiateSessionPaymentUseCase {
       : this.paymentRuntimeConfigService.isTestMode(provider)
         ? 'test'
         : 'live';
+    const pricingCountryIsoCode = this.resolvePricingCountryIsoCode(
+      session,
+      input.requestCountryIsoCode,
+    );
     const countrySnapshot = this.paymentGeoContextService.buildCountrySnapshot({
-      declaredCountryCode: session.patient.country?.isoCode ?? null,
-      resolvedCountryCode: pricing.resolvedCountryIsoCode,
-      countrySource: 'ACCOUNT',
+      declaredCountryCode: pricingCountryIsoCode,
+      resolvedCountryCode: pricingCountryIsoCode,
+      countrySource: 'SYSTEM',
       countryMismatch: false,
       phoneCountryCode: null,
       operatingCountryCode: session.practitioner.country?.isoCode ?? null,
-      checkoutCountryCode: session.patient.country?.isoCode ?? null,
+      checkoutCountryCode: pricingCountryIsoCode,
       pricingCurrencyCode: pricing.currencyCode,
       pricingMarketType: pricing.marketType,
       provider,
     });
 
+    let ownsInitiation = false;
     const payment =
       activePayment ??
       (await this.prisma.$transaction(async (tx) => {
-        if (typeof (tx as { $executeRaw?: unknown }).$executeRaw === 'function') {
-          await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${session.id})::bigint)`;
+        await tx.$executeRaw`SELECT id FROM "Session" WHERE id = ${session.id}::uuid FOR UPDATE`;
+        const lockedSession = await tx.session.findUniqueOrThrow({
+          where: { id: session.id },
+        });
+        if (
+          lockedSession.status !== SessionStatus.PENDING_PAYMENT ||
+          (lockedSession.expiresAt &&
+            lockedSession.expiresAt.getTime() <= Date.now())
+        ) {
+          throw new ConflictException({ error: 'PAYMENT_SESSION_NOT_PAYABLE' });
         }
-        const repositoryWithTransactionRecheck = this.paymentRepository as PaymentRepository & {
-          findLatestActiveBySessionIdInTransaction?: (
-            sessionId: string,
-            transaction: typeof tx,
-          ) => Promise<typeof activePayment>;
-        };
-        if (repositoryWithTransactionRecheck.findLatestActiveBySessionIdInTransaction) {
-          const lockedActive =
-            await repositoryWithTransactionRecheck.findLatestActiveBySessionIdInTransaction(
-              session.id,
-              tx,
-            );
-          if (lockedActive) return lockedActive;
+        const lockedActive =
+          await this.paymentRepository.findLatestActiveBySessionId(
+            session.id,
+            tx,
+          );
+        if (lockedActive) return lockedActive;
+        // Active collection intents reserve coupon capacity. Capture uses the
+        // same coupon row lock before converting this reservation to paid usage.
+        if (pricing.couponId) {
+          const reserved = await reserveCouponEconomicIntent({
+            tx,
+            couponId: pricing.couponId,
+            patientId: patient.id,
+          });
+          if (!reserved) {
+            throw new ConflictException({
+              error: 'COUPON_USAGE_LIMIT_REACHED',
+              messageKey: 'financialRules.errors.couponUsageLimitReached',
+            });
+          }
         }
         const paymobRegistrySnapshot = isPaymobProvider
           ? this.paymentRuntimeConfigService
@@ -437,26 +495,12 @@ export class InitiateSessionPaymentUseCase {
           tx,
         );
 
+        ownsInitiation = true;
         return created;
       }));
 
-    if (activePayment) {
-      await this.refundPolicyService.ensureAcceptedRefundPolicyForPayment({
-        policyType: RefundPolicyType.SESSION,
-        acceptedRefundPolicyId: input.acceptedRefundPolicyId,
-        acceptedByUserId: input.userId,
-        paymentId: activePayment.id,
-        sessionId: session.id,
-        displayLocale: input.displayLocale,
-        userAgent: input.userAgent ?? null,
-        ipAddress: input.ipAddress ?? null,
-        metadataJson: {
-          paymentPurpose: pricing.paymentPurpose,
-          sessionId: session.id,
-          policyType: RefundPolicyType.SESSION,
-        },
-      });
-    }
+    if (!ownsInitiation)
+      return { item: this.paymentMapper.toViewModel(payment) };
 
     if (isInternalWalletProvider) {
       const captured = await this.markPaymentSucceededUseCase.execute({
@@ -473,6 +517,24 @@ export class InitiateSessionPaymentUseCase {
     }
 
     let providerResult: PaymentProviderInitiationResult;
+    await this.paymentRepository.updateStatus(payment.id, {
+      metadataJson: {
+        ...((payment.metadataJson as Record<string, unknown> | null) ?? {}),
+        providerOperation: {
+          economicId: payment.id,
+          idempotencyKey:
+            provider === PaymentProvider.STRIPE
+              ? `payment:${payment.id}`
+              : payment.id,
+          firstDispatchAt: new Date().toISOString(),
+          lastDispatchAt: new Date().toISOString(),
+          requestedAmountMinor: amountMinor,
+          currency: effectiveBreakdown.currency ?? pricing.currencyCode,
+          state: 'DISPATCH_STARTED',
+          reconciliationAttempts: 0,
+        },
+      } as Prisma.InputJsonValue,
+    });
     try {
       providerResult = await providerAdapter!.initiateSessionPayment({
         paymentId: payment.id,
@@ -487,39 +549,24 @@ export class InitiateSessionPaymentUseCase {
         checkoutCountryIsoCode: paymobContext.checkoutCountryIsoCode,
         operatingCountryIsoCode: paymobContext.operatingCountryIsoCode,
       });
-    } catch {
+    } catch (error) {
       await this.prisma.$transaction(async (tx) => {
-        await this.paymentRepository.updateStatus(
-          payment.id,
-          {
-            status: PaymentStatus.FAILED,
-            failedAt: new Date(),
-          },
-          tx,
-        );
-
+        // A network exception is not proof the provider failed to create a
+        // charge. Retain its reservation and let verified callbacks reconcile.
         await this.paymentRepository.createEvent(
           {
             paymentId: payment.id,
-            eventType: PaymentEventType.PAYMENT_FAILED,
+            eventType: PaymentEventType.PROVIDER_CHECKOUT_CREATED,
+            reason: 'PROVIDER_INITIATION_OUTCOME_UNKNOWN',
             payloadJson: {
               source: 'provider-initiation',
               reason: 'provider-initiation-failed',
+              errorType: error instanceof Error ? error.name : 'unknown',
             },
           },
           tx,
         );
       });
-
-      if (amountFromWallet.gt(0)) {
-        await this.customerWalletAccountingService.releaseReservationForPayment(
-          {
-            paymentId: payment.id,
-            currencyCode: pricing.currencyCode,
-            releaseReason: 'PAYMENT_FAILED',
-          },
-        );
-      }
 
       throw new ConflictException({
         messageKey: 'payments.errors.providerInitiationFailed',
@@ -533,6 +580,10 @@ export class InitiateSessionPaymentUseCase {
     );
 
     const initializedPayment = await this.prisma.$transaction(async (tx) => {
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${payment.id})::bigint)`;
+      const current = await this.paymentRepository.findById(payment.id, tx);
+      if (!current) throw new NotFoundException({ error: 'PAYMENT_NOT_FOUND' });
+      if (current.status !== PaymentStatus.CREATED) return current;
       const updated = await this.paymentRepository.updateStatus(
         payment.id,
         {
@@ -553,6 +604,25 @@ export class InitiateSessionPaymentUseCase {
             regionalPricingMode: pricing.regionalPricingMode,
             resolvedCountryIsoCode: pricing.resolvedCountryIsoCode,
             pricingCurrencyCode: pricing.currencyCode,
+            providerOperation: {
+              economicId: payment.id,
+              idempotencyKey:
+                provider === PaymentProvider.STRIPE
+                  ? `payment:${payment.id}`
+                  : payment.id,
+              firstDispatchAt:
+                ((
+                  (payment.metadataJson as Record<string, unknown> | null)
+                    ?.providerOperation as Record<string, unknown> | undefined
+                )?.firstDispatchAt as string | undefined) ??
+                payment.createdAt?.toISOString?.() ??
+                new Date().toISOString(),
+              lastDispatchAt: new Date().toISOString(),
+              requestedAmountMinor: amountMinor,
+              currency: effectiveBreakdown.currency ?? pricing.currencyCode,
+              state: 'PROVIDER_RESPONSE_OBSERVED',
+              reconciliationAttempts: 0,
+            },
             ...(providerResult.metadata ?? {}),
           },
         },
@@ -586,7 +656,6 @@ export class InitiateSessionPaymentUseCase {
     };
   }
 
-
   private resolveProviderRedirectionUrl(input: {
     provider: PaymentProvider;
     locale: SupportedLocale;
@@ -615,5 +684,59 @@ export class InitiateSessionPaymentUseCase {
     }
 
     return `${input.appBaseUrl}/${input.locale}/patient/sessions/${input.sessionId}/payment-return`;
+  }
+
+  private resolvePricingCountryIsoCode(
+    session: {
+      pricingPolicySnapshotJson?: unknown;
+      instantBookingRequest?: { metadataJson?: unknown | null } | null;
+    },
+    requestCountryIsoCode?: string | null,
+  ) {
+    const policy = session.pricingPolicySnapshotJson;
+    if (policy && typeof policy === 'object') {
+      const policyRecord = policy as Record<string, unknown>;
+      if (
+        Object.prototype.hasOwnProperty.call(
+          policyRecord,
+          'pricingCountryIsoCode',
+        )
+      ) {
+        const snapshotCountry = policyRecord.pricingCountryIsoCode;
+        return typeof snapshotCountry === 'string' && snapshotCountry.trim()
+          ? snapshotCountry
+          : null;
+      }
+      if (
+        Object.prototype.hasOwnProperty.call(
+          policyRecord,
+          'requestCountryIsoCode',
+        )
+      ) {
+        const snapshotCountry = policyRecord.requestCountryIsoCode;
+        return typeof snapshotCountry === 'string' && snapshotCountry.trim()
+          ? snapshotCountry
+          : null;
+      }
+    }
+
+    const metadata = session.instantBookingRequest?.metadataJson;
+    if (metadata && typeof metadata === 'object') {
+      const metadataRecord = metadata as Record<string, unknown>;
+      if (
+        Object.prototype.hasOwnProperty.call(
+          metadataRecord,
+          'pricingCountryIsoCode',
+        )
+      ) {
+        const instantSnapshotCountry = metadataRecord.pricingCountryIsoCode;
+        return typeof instantSnapshotCountry === 'string' &&
+          instantSnapshotCountry.trim()
+          ? instantSnapshotCountry
+          : null;
+      }
+    }
+
+    return requestCountryIsoCode ?? null;
   }
 }

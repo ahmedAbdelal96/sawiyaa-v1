@@ -2,6 +2,7 @@ import { ForbiddenException, NotFoundException } from '@nestjs/common';
 import { SessionAccessPolicy } from '../policies/session-access.policy';
 import { GetSessionDetailsUseCase } from './get-session-details.use-case';
 import { SessionMapper } from '../mappers/session.mapper';
+import { PractitionerProfessionalContentResolver } from '@modules/practitioners/services/practitioner-professional-content-resolver.service';
 import { SessionStatus, SessionMode, SessionFlowType, PaymentStatus, PaymentPurpose } from '@prisma/client';
 
 describe('Practitioner Session Details API Contract & Authorization', () => {
@@ -119,6 +120,40 @@ describe('Practitioner Session Details API Contract & Authorization', () => {
     const resolvePatientSessionActionsService = {
       resolveOne: jest.fn().mockResolvedValue({}),
     };
+    const operationalInterpreter = {
+      interpret: jest.fn().mockImplementation(({ session }: { session: typeof sessionMockVal }) =>
+        Promise.resolve({
+          state: session.status === SessionStatus.COMPLETED ? SessionStatus.COMPLETED : SessionStatus.UPCOMING,
+          timelineBucket: session.status === SessionStatus.COMPLETED ? 'COMPLETED' : 'ACTIONABLE',
+          reasonCode: 'LIFECYCLE_STATUS',
+          actions: {
+            canJoin: false,
+            canPrepareRuntime: false,
+            canCancel: false,
+            canPay: false,
+            canReview: false,
+            canMarkPatientNoShow: false,
+            noShowReasonCode: null,
+          },
+          join: { allowed: false, reasonCode: null, canPrepareRuntime: false, opensAt: null, closesAt: null },
+          attendance: {
+            patientTrustedAttendance: false,
+            practitionerTrustedAttendance: false,
+            reconciliationStatus: 'NOT_AVAILABLE',
+            outcomeRecommendation: null,
+          },
+          room: { state: 'NOT_APPLICABLE', closedAt: null },
+          resolution: { required: false, finalDecision: null },
+          replacement: { replacesSessionId: null },
+        }),
+      ),
+    };
+    const professionalContentRepository = {
+      findByPractitionerProfileId: jest.fn().mockResolvedValue(null),
+    };
+    const practitionerCommandActions = {
+      resolve: jest.fn().mockResolvedValue({}),
+    };
 
     const useCase = new GetSessionDetailsUseCase(
       sessionRepository as any,
@@ -127,6 +162,11 @@ describe('Practitioner Session Details API Contract & Authorization', () => {
       sessionMapper,
       new SessionAccessPolicy(),
       resolvePatientSessionActionsService as any,
+      operationalInterpreter as any,
+      { resolve: jest.fn().mockResolvedValue({ canMarkPatientNoShow: false, noShowReasonCode: null }) } as any,
+      { resolve: jest.fn().mockReturnValue({ available: true }) } as any,
+      professionalContentRepository as any,
+      new PractitionerProfessionalContentResolver(),
     );
 
     return { useCase, sessionRepository, sessionPractitionerRepository };
@@ -214,7 +254,7 @@ describe('Practitioner Session Details API Contract & Authorization', () => {
     expect(result.item.packagePurchase?.packagePlan.code).toBe('PKG-PSY');
   });
 
-  it('8. Meeting readiness join availability is returned', async () => {
+  it('8. Chat CTA availability is returned from the Session Details projection', async () => {
     const { useCase } = setupTestContext();
     const result = await useCase.execute({
       userId: 'user-id-prac',
@@ -223,8 +263,7 @@ describe('Practitioner Session Details API Contract & Authorization', () => {
       actorType: 'PRACTITIONER',
     });
 
-    expect(result.item.joinAvailability).toBeDefined();
-    expect(typeof result.item.joinAvailability.canJoin).toBe('boolean');
+    expect(result.item.sessionChat).toEqual({ available: true });
   });
 
   it('9. Conversation metadata is returned when present', async () => {

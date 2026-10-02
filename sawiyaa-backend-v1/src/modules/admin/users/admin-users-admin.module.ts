@@ -6,7 +6,7 @@ import { PermissionResolverService } from '@common/guards/authorization/permissi
 import { PermissionsGuard } from '@common/guards/authorization/permissions.guard';
 import { RolesGuard } from '@common/guards/authorization/roles.guard';
 import { SecurityAuditModule } from '@common/security-audit/security-audit.module';
-import { PrismaService } from '@common/prisma/prisma.service';
+import { PrismaModule } from '@common/prisma/prisma.module';
 import { PasswordHashService } from '@modules/auth/services/password-hash.service';
 import { HashPasswordUseCase } from '@modules/auth/use-cases/hash-password.use-case';
 import { AdminUsersController } from './controllers/admin-users.controller';
@@ -31,7 +31,7 @@ import { UpdateAdminUserStatusUseCase } from './use-cases/update-admin-user-stat
  * - Does not manage patient-only or practitioner-only accounts in this phase.
  */
 @Module({
-  imports: [SecurityAuditModule],
+  imports: [SecurityAuditModule, PrismaModule],
   controllers: [AdminUsersController],
   providers: [
     // Guards (consistent with other admin sub-modules)
@@ -43,7 +43,6 @@ import { UpdateAdminUserStatusUseCase } from './use-cases/update-admin-user-stat
     ActiveAccountGuard,
 
     // Dependencies
-    PrismaService,
     PasswordHashService,
     HashPasswordUseCase,
 

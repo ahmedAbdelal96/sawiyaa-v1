@@ -21,20 +21,20 @@ Required means production cannot proceed without a non-empty valid value. Option
 
 ## Build-time, runtime, and secrets
 
-`NEXT_PUBLIC_*` values are public build-time inputs and require a frontend rebuild when changed. Backend/database values are runtime inputs and generally require restart only. Secrets are never printed, partially displayed, length-counted, or included in Compose diagnostics. Production secret files are passed by explicit path; the validator never assumes they live in Git.
+`NEXT_PUBLIC_*` values are public build-time inputs and require a frontend rebuild when changed. Backend/database values are runtime inputs and generally require restart only. Secrets are never printed, partially displayed, length-counted, or included in Compose diagnostics. Local development uses `sawiyaa-backend-v1/.env` and `sawiyaa-frontend-v1/.env`; production uses `sawiyaa-backend-v1/.env.production` and `sawiyaa-frontend-v1/.env.production`. Production secret files are passed by explicit path; the validator never assumes they live in Git.
 
 ## Local validation
 
 With safe local/fixture env files:
 
 ```text
-node deploy/scripts/validate-environment-contract.js --backend-env <backend-env> --frontend-env <frontend-env> --db-env <db-env> --environment production
+node deploy/scripts/validate-environment-contract.js --backend-env <backend-env> --frontend-env <frontend-env> --environment production
 ```
 
 On Linux/WSL with a disposable Compose environment:
 
 ```text
-bash deploy/scripts/validate-production-preflight.sh --project-dir "$PWD" --backend-env <backend-env> --frontend-env <frontend-env> --db-env <db-env>
+bash deploy/scripts/validate-production-preflight.sh --project-dir "$PWD" --backend-env <backend-env> --frontend-env <frontend-env>
 ```
 
 For deterministic tests without Docker:

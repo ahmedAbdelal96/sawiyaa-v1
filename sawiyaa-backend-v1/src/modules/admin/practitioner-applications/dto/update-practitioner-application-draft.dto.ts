@@ -1,4 +1,4 @@
-import { ApiPropertyOptional } from '@nestjs/swagger';
+import { ApiPropertyOptional, ApiSchema } from '@nestjs/swagger';
 import { PractitionerGender, PractitionerType } from '@prisma/client';
 import { Type } from 'class-transformer';
 import {
@@ -16,11 +16,16 @@ import {
 } from 'class-validator';
 import { PractitionerPayoutDestinationInputDto } from '@modules/practitioners/dto/practitioner-payout-destination.dto';
 import { PractitionerSpecialtySelectionInputDto } from '@modules/practitioners/dto/practitioner-specialty-selection.dto';
+import { PractitionerProfessionalContentDto } from '@modules/practitioners/dto/practitioner-professional-content.dto';
 
 /**
  * Admin can amend practitioner draft/submitted data before final approve/reject decisions.
  * This payload keeps updates explicit and bounded to onboarding-related fields only.
+ * This is intentionally a distinct Swagger schema from the applicant-owned
+ * draft DTO. The two payloads share a purpose but not a contract: admin edits
+ * may include payout data, while applicant drafts explicitly exclude it.
  */
+@ApiSchema({ name: 'AdminUpdatePractitionerApplicationDraftDto' })
 export class UpdatePractitionerApplicationDraftDto {
   @ApiPropertyOptional()
   @IsOptional()
@@ -49,6 +54,20 @@ export class UpdatePractitionerApplicationDraftDto {
   @IsString()
   @MaxLength(4000)
   bio?: string | null;
+
+  @ApiPropertyOptional({
+    type: PractitionerProfessionalContentDto,
+    nullable: true,
+  })
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => PractitionerProfessionalContentDto)
+  professionalContent?: PractitionerProfessionalContentDto | null;
+
+  @ApiPropertyOptional({ enum: ['ar', 'en'], nullable: true })
+  @IsOptional()
+  @IsEnum(['ar', 'en'])
+  primaryContentLocale?: 'ar' | 'en' | null;
 
   @ApiPropertyOptional({ minimum: 0, maximum: 80 })
   @IsOptional()

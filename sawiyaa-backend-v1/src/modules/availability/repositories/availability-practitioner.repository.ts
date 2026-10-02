@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PractitionerStatus, UserStatus } from '@prisma/client';
 import { PrismaService } from '@common/prisma/prisma.service';
+import { publicPractitionerPricingWhere } from '@modules/practitioners/utils/public-practitioner-pricing-readiness.util';
 
 /**
  * AvailabilityPractitionerRepository reads only the practitioner/account fields required by Availability.
@@ -39,6 +40,7 @@ export class AvailabilityPractitionerRepository {
   findByPublicSlug(slug: string) {
     return this.prisma.practitionerProfile.findFirst({
       where: {
+        ...publicPractitionerPricingWhere(),
         publicSlug: slug.trim().toLowerCase(),
       },
       include: {

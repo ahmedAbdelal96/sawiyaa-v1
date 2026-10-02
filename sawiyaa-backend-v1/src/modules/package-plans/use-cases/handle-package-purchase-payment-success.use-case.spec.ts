@@ -1,4 +1,5 @@
 import {
+  PackageSchedulePolicy,
   SessionEventType,
   SessionStatus,
   PatientPackagePurchaseStatus,
@@ -15,6 +16,7 @@ describe('HandlePackagePurchasePaymentSuccessUseCase', () => {
     activatedAt?: Date | null;
     resolveByPayment?: boolean;
     resolveByMetadata?: boolean;
+    schedulePolicySnapshot?: PackageSchedulePolicy;
   }) {
     const prisma = {
       $transaction: jest.fn().mockImplementation(async (fn) => fn({})),
@@ -45,6 +47,9 @@ describe('HandlePackagePurchasePaymentSuccessUseCase', () => {
                 discountPercent: 10,
               },
               paymentExpiresAt: new Date('2999-01-01T00:00:00.000Z'),
+              schedulePolicySnapshot:
+                input?.schedulePolicySnapshot ??
+                PackageSchedulePolicy.REQUIRE_ALL_SESSIONS_AT_PURCHASE,
               paidAt: input?.paidAt ?? null,
               activatedAt: input?.activatedAt ?? null,
               sessions: (
@@ -76,6 +81,9 @@ describe('HandlePackagePurchasePaymentSuccessUseCase', () => {
           discountPercent: 10,
         },
         paymentExpiresAt: new Date('2999-01-01T00:00:00.000Z'),
+        schedulePolicySnapshot:
+          input?.schedulePolicySnapshot ??
+          PackageSchedulePolicy.REQUIRE_ALL_SESSIONS_AT_PURCHASE,
         paidAt: input?.paidAt ?? null,
         activatedAt: input?.activatedAt ?? null,
         sessions: (
@@ -246,6 +254,34 @@ describe('HandlePackagePurchasePaymentSuccessUseCase', () => {
     expect(setup.sessionLifecycleService.transition).toHaveBeenCalledTimes(1);
     expect(setup.sessionRepository.createEvent).toHaveBeenCalledTimes(1);
     expect(setup.packageSettlementService.reconcilePurchase).toHaveBeenCalled();
+    expect(result.purchase.status).toBe(PatientPackagePurchaseStatus.ACTIVE);
+  });
+
+  it('activates a captured buy-now package with no prebooked sessions', async () => {
+    const setup = buildUseCase({
+      sessionStatuses: [],
+      schedulePolicySnapshot: PackageSchedulePolicy.ALLOW_SCHEDULE_LATER,
+    });
+
+    const result = await setup.useCase.execute({
+      paymentId: 'payment-1',
+      providerEventRef: 'evt-buy-now',
+      payload: {},
+    });
+
+    expect(setup.packagePurchaseRepository.updateStatus).toHaveBeenCalledWith(
+      'purchase-1',
+      expect.objectContaining({
+        status: PatientPackagePurchaseStatus.ACTIVE,
+        paidAt: expect.any(Date),
+        activatedAt: expect.any(Date),
+      }),
+      expect.anything(),
+    );
+    expect(setup.sessionLifecycleService.transition).not.toHaveBeenCalled();
+    expect(
+      setup.operationalNotificationService.notifySessionConfirmed,
+    ).not.toHaveBeenCalled();
     expect(result.purchase.status).toBe(PatientPackagePurchaseStatus.ACTIVE);
   });
 

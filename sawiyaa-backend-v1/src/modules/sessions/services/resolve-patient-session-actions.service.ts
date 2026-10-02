@@ -6,9 +6,7 @@ import {
 } from '@prisma/client';
 import { ResolveSessionReviewEligibilityService } from '@modules/reviews/services/resolve-session-review-eligibility.service';
 import { EvaluateSessionCancellationPolicyService } from './evaluate-session-cancellation-policy.service';
-import {
-  resolveSessionJoinPolicy,
-} from '../utils/session-join-policy.util';
+import { ResolveSessionJoinReadinessService } from './resolve-session-join-readiness.service';
 
 export type PatientSessionActionsViewModel = {
   canCancel: boolean;
@@ -47,6 +45,7 @@ export class ResolvePatientSessionActionsService {
   constructor(
     private readonly evaluateCancellationPolicy: EvaluateSessionCancellationPolicyService,
     private readonly resolveSessionReviewEligibility: ResolveSessionReviewEligibilityService,
+    private readonly joinPolicy: ResolveSessionJoinReadinessService,
   ) {}
 
   async resolveMany(input: {
@@ -100,7 +99,7 @@ export class ResolvePatientSessionActionsService {
         hasValidSource: hasReviewEligibleSource,
         hasReview,
       });
-    const runtime = resolveSessionJoinPolicy({
+    const runtime = this.joinPolicy.resolve({
       ...input.session,
       now: input.now,
       finalManualDecision: input.finalManualDecision,

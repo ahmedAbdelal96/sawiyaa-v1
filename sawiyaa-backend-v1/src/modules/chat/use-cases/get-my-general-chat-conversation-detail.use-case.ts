@@ -3,11 +3,14 @@ import { AuthenticatedUser } from '@common/interfaces/authenticated-user.interfa
 import {
   buildGeneralChatParticipantDirectoryMap,
   buildGeneralChatParticipantSummary,
+  resolveGeneralChatProfessionalTitles,
 } from '../helpers/general-chat-identity.mapper';
 import { GeneralChatRepository } from '../repositories/general-chat.repository';
 import { ConversationAccessPolicy } from '../policies/conversation-access.policy';
 import { GENERAL_CHAT_ERROR_CODES } from '../types/general-chat.types';
 import { GeneralChatAvailabilityService } from '../services/general-chat-availability.service';
+import { PractitionerProfessionalContentResolver } from '@modules/practitioners/services/practitioner-professional-content-resolver.service';
+import { SupportedLocale } from '@common/i18n/types/locale.types';
 
 @Injectable()
 export class GetMyGeneralChatConversationDetailUseCase {
@@ -15,11 +18,13 @@ export class GetMyGeneralChatConversationDetailUseCase {
     private readonly generalChatRepository: GeneralChatRepository,
     private readonly conversationAccessPolicy: ConversationAccessPolicy,
     private readonly generalChatAvailabilityService: GeneralChatAvailabilityService,
+    private readonly professionalContentResolver: PractitionerProfessionalContentResolver,
   ) {}
 
   async execute(input: {
     authenticatedUser: AuthenticatedUser;
     conversationId: string;
+    locale?: SupportedLocale;
   }) {
     const conversation =
       await this.generalChatRepository.findConversationByIdInGeneralScope(
@@ -61,8 +66,17 @@ export class GetMyGeneralChatConversationDetailUseCase {
     const participantDirectory = buildGeneralChatParticipantDirectoryMap(
       participantDirectoryRecords,
     );
+    const resolvedProfessionalTitles = resolveGeneralChatProfessionalTitles(
+      participantDirectoryRecords,
+      input.locale ?? 'ar',
+      this.professionalContentResolver,
+    );
     const participantSummaries = conversation.participants.map((participant) =>
-      buildGeneralChatParticipantSummary(participant, participantDirectory),
+      buildGeneralChatParticipantSummary(
+        participant,
+        participantDirectory,
+        resolvedProfessionalTitles,
+      ),
     );
     const chatAvailability =
       this.generalChatAvailabilityService.resolveAvailability({

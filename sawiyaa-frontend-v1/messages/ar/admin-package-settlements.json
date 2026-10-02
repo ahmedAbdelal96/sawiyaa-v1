@@ -54,7 +54,30 @@
   "actions": {
     "viewDetails": "عرض التفاصيل",
     "release": "صرف المستحقات",
-    "review": "مراجعة"
+    "review": "مراجعة",
+    "refund": "استرداد الباقة"
+  },
+  "refund": {
+    "eyebrow": "استرداد الباقة",
+    "title": "استرداد وإغلاق الباقة",
+    "description": "سيُعاد المبلغ المعتمد إلى محفظة العميل وتُغلق حجوزات الباقة المستقبلية.",
+    "calculation": "يستخدم الاقتراح سعر الجلسة المستقل المثبت وقت الشراء.",
+    "manualReview": "بيانات السعر التاريخية مفقودة أو غير متطابقة. أدخل المبلغ النهائي للمحفظة واحتفظ بالسبب كدليل.",
+    "confirm": "تأكيد الاسترداد للمحفظة",
+    "cancel": "إلغاء",
+    "success": "تم إغلاق الباقة وتأكيد الاسترداد للمحفظة.",
+    "manualAmount": "المبلغ اليدوي مطلوب",
+    "fields": {
+      "packagePaid": "صافي المدفوع للباقة",
+      "used": "الجلسات المستخدمة",
+      "usedValue": "قيمة الجلسات المستقلة المستخدمة",
+      "suggested": "الاسترداد المقترح",
+      "maximum": "الحد الأقصى القابل للاسترداد",
+      "future": "الجلسات المستقبلية الملغاة",
+      "finalAmount": "المبلغ النهائي للمحفظة",
+      "reason": "سبب المراجعة",
+      "evidence": "مرجع الدليل"
+    }
   },
   "states": {
     "listError": "تعذر تحميل تسويات الباقات.",
@@ -108,6 +131,9 @@
     "sections": {
       "overview": "نظرة عامة",
       "overviewNote": "معلومات الباقة والأطراف المعنية.",
+      "sessions": "الجلسات المرتبطة",
+      "sessionsNote": "جلسات النظام الموحدة المحجوزة من هذه الباقة وقرارات الاستحقاق الخاصة بها.",
+      "noSessions": "لا توجد جلسات مرتبطة بعملية الشراء حتى الآن.",
       "amounts": "المبالغ",
       "amountsNote": "أرقام الحجز والصرف والاستخدام داخل التسوية.",
       "review": "المراجعة",
@@ -123,6 +149,17 @@
       "currency": "العملة",
       "sessions": "الجلسات",
       "sessionsValue": "{completed} / {total}",
+      "availableSessions": "متاحة للحجز",
+      "reservedSessions": "محجوزة",
+      "consumedSessions": "مستخدمة",
+      "nextSession": "الجلسة القادمة",
+      "noNextSession": "لا توجد جلسة مجدولة",
+      "paymentStatus": "حالة الدفع",
+      "paymentReference": "مرجع الدفع",
+      "paymentAmount": "قيمة الدفع المحصلة",
+      "sessionIndex": "الجلسة {current} / {total}",
+      "notScheduled": "لم يتم تحديد موعد بعد",
+      "noEntitlementDecision": "لا يوجد قرار استحقاق",
       "updatedAt": "آخر تحديث"
     },
     "totals": {
@@ -130,7 +167,12 @@
       "releasablePractitioner": "جاهز للصرف",
       "releasedPractitioner": "تم صرفه",
       "sessions": "الجلسات",
-      "sessionsValue": "{completed} / {total}"
+      "sessionsValue": "{completed} / {total}",
+      "availableSessions": "متاحة للحجز",
+      "reservedSessions": "محجوزة",
+      "consumedSessions": "مستخدمة",
+      "nextSession": "الجلسة القادمة",
+      "noNextSession": "لا توجد جلسة مجدولة"
     },
     "amounts": {
       "heldPractitioner": "المحجوز للمعالج",

@@ -4,14 +4,15 @@ import { normalizeCountryIsoCode } from '@modules/auth/utils/request-country-con
 export type PaymentRegionalPricingMode = 'EGYPT_LOCAL' | 'INTERNATIONAL';
 export type PaymentRegionalResolutionStatus = 'RESOLVED';
 export type PaymentRegionalResolutionSource =
+  | 'PARTICIPANT_COUNTRIES'
   | 'TRUSTED_COUNTRY'
   | 'DEFAULT_USD';
 
 export interface PaymentRegionalResolutionInput {
   requestCountryIsoCode?: string | null;
-  /** @deprecated Stored/account country is not a pricing signal. */
   patientCountryIsoCode?: string | null;
-  /** @deprecated Stored/account country is not a pricing signal. */
+  practitionerCountryIsoCode?: string | null;
+  /** @deprecated Use patientCountryIsoCode. */
   accountCountryIsoCode?: string | null;
   /** @deprecated Checkout country is not a trusted request signal. */
   checkoutCountryIsoCode?: string | null;
@@ -37,14 +38,38 @@ const SUPPORTED_CURRENCY_CODES = new Set(['EGP', 'USD']);
 export function resolvePaymentRegionalResolution(
   input: PaymentRegionalResolutionInput,
 ): PaymentRegionalResolution {
-  const resolvedCountryIsoCode = normalizeCountryIsoCode(
+  const requestCountryIsoCode = normalizeCountryIsoCode(
     input.requestCountryIsoCode,
   );
-  const regionalPricingMode = isEgyptCountryCode(resolvedCountryIsoCode)
+  const patientCountryIsoCode = normalizeCountryIsoCode(
+    input.patientCountryIsoCode,
+  );
+  const practitionerCountryIsoCode = normalizeCountryIsoCode(
+    input.practitionerCountryIsoCode,
+  );
+  const hasParticipantCountries = Boolean(
+    patientCountryIsoCode && practitionerCountryIsoCode,
+  );
+  const participantsAreInEgypt =
+    isEgyptCountryCode(patientCountryIsoCode) &&
+    isEgyptCountryCode(practitionerCountryIsoCode);
+  const currencyCode = (
+    hasParticipantCountries
+      ? participantsAreInEgypt
+        ? 'EGP'
+        : 'USD'
+      : isEgyptCountryCode(requestCountryIsoCode)
+        ? 'EGP'
+        : 'USD'
+  ) as 'EGP' | 'USD';
+  const resolvedCountryIsoCode = hasParticipantCountries
+    ? participantsAreInEgypt
+      ? 'EG'
+      : null
+    : requestCountryIsoCode;
+  const regionalPricingMode = currencyCode === 'EGP'
     ? 'EGYPT_LOCAL'
     : 'INTERNATIONAL';
-  const currencyCode =
-    regionalPricingMode === 'EGYPT_LOCAL' ? 'EGP' : 'USD';
   const provider = PaymentProvider.PAYMOB;
 
   return {
@@ -53,10 +78,15 @@ export function resolvePaymentRegionalResolution(
     regionalPricingMode,
     currencyCode,
     provider,
-    resolutionSource: resolvedCountryIsoCode
-      ? 'TRUSTED_COUNTRY'
-      : 'DEFAULT_USD',
-    fallbackReasonCode: resolvedCountryIsoCode ? null : 'COUNTRY_UNAVAILABLE',
+    resolutionSource: hasParticipantCountries
+      ? 'PARTICIPANT_COUNTRIES'
+      : requestCountryIsoCode
+        ? 'TRUSTED_COUNTRY'
+        : 'DEFAULT_USD',
+    fallbackReasonCode:
+      hasParticipantCountries || requestCountryIsoCode
+        ? null
+        : 'COUNTRY_UNAVAILABLE',
   };
 }
 

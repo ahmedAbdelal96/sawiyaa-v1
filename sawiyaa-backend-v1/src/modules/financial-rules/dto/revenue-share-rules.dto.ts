@@ -1,20 +1,29 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsNumberString } from 'class-validator';
+import { IsNotEmpty, IsString, Matches, MaxLength } from 'class-validator';
 
 export class UpdateRevenueShareRulesDto {
-  @ApiProperty({ example: '30.00' })
-  @IsNumberString()
-  localPlatformRatePercent!: string;
+  @ApiProperty({
+    example: '30.00',
+    description:
+      'The single platform commission percentage. Practitioner share is derived as 100.00 minus this value.',
+  })
+  @Matches(/^\d{1,3}(?:\.\d{1,2})?$/)
+  platformCommissionPercent!: string;
 
-  @ApiProperty({ example: '70.00' })
-  @IsNumberString()
-  localPractitionerRatePercent!: string;
+  @ApiProperty({
+    example: 'Unify the platform split for future session allocations.',
+    maxLength: 500,
+  })
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(500)
+  reason!: string;
 
-  @ApiProperty({ example: '50.00' })
-  @IsNumberString()
-  crossBorderPlatformRatePercent!: string;
-
-  @ApiProperty({ example: '50.00' })
-  @IsNumberString()
-  crossBorderPractitionerRatePercent!: string;
+  @ApiProperty({
+    required: false,
+    nullable: true,
+    description: 'Opaque version returned by GET for optimistic concurrency.',
+  })
+  @IsString()
+  expectedUpdatedAt?: string | null;
 }

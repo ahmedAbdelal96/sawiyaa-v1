@@ -10,7 +10,11 @@ import {
 } from "@/config/navigation";
 import { useAuthMe } from "@/features/auth/hooks/use-auth";
 import { usePractitionerPresenceHeartbeat } from "@/features/presence/hooks/use-presence";
-import { usePractitionerProfile } from "../hooks/use-practitioners";
+import {
+  usePractitionerApplicationStatus,
+  usePractitionerProfile,
+} from "../hooks/use-practitioners";
+import PractitionerRequirementsBanner from "./requirements/PractitionerRequirementsBanner";
 
 type PractitionerShellProps = {
   children: ReactNode;
@@ -37,15 +41,24 @@ export default function PractitionerShell({ children }: PractitionerShellProps) 
     isError: authError,
   } = useAuthMe();
   const isOtpVerified = authMe?.isPractitionerOtpVerified === true;
-  const shouldLoadProfile = isOtpVerified;
-  const { data, isLoading: profileLoading } = usePractitionerProfile(shouldLoadProfile);
-  const profile = data?.profile;
+  // Application status is the applicant-safe lifecycle source. Operational
+  // profile data must not be queried until approval is known.
+  const {
+    data: applicationData,
+    isLoading: applicationLoading,
+  } = usePractitionerApplicationStatus(isOtpVerified);
+  const applicationStatus = applicationData?.application?.status ?? null;
+  const approved =
+    authMe?.isPractitionerApproved === true || applicationStatus === "APPROVED";
+  const { isLoading: profileLoading } = usePractitionerProfile(
+    isOtpVerified && approved,
+  );
 
   const pathWithoutLocale = pathname.replace(/^\/[a-z]{2}(?=\/|$)/, "") || "/";
-  const approved = profile?.profileStatus === "APPROVED";
   const onboardingPathActive = isOnboardingPath(pathWithoutLocale);
-  
-  const isLoading = authLoading || profileLoading;
+
+  const isLoading =
+    authLoading || applicationLoading || (approved && profileLoading);
   const isError = authError;
 
   const heartbeatEnabled =
@@ -55,11 +68,11 @@ export default function PractitionerShell({ children }: PractitionerShellProps) 
 
   useEffect(() => {
     if (isLoading || isError) return;
-    if (!isOtpVerified || !profile || approved || onboardingPathActive) {
+    if (!isOtpVerified || approved || onboardingPathActive) {
       return;
     }
     router.replace(ONBOARDING_PATH as never);
-  }, [approved, onboardingPathActive, isOtpVerified, profile, router, isLoading, isError]);
+  }, [approved, onboardingPathActive, isOtpVerified, router, isLoading, isError]);
 
   if (isLoading || isError) {
     return (
@@ -67,7 +80,6 @@ export default function PractitionerShell({ children }: PractitionerShellProps) 
         navigation={[]} // Safe minimal shell, no unauthorized tabs
         basePathPrefix="/practitioner"
         layoutVariant="practitioner"
-        messagingRole="practitioner"
         contentMode={onboardingPathActive ? "full" : "constrained"}
       >
         <div className="rounded-2xl border border-border-light bg-surface-primary p-6 dark:bg-white/5 animate-pulse">
@@ -84,7 +96,6 @@ export default function PractitionerShell({ children }: PractitionerShellProps) 
         navigation={practitionerOnboardingNavigation}
         basePathPrefix="/practitioner"
         layoutVariant="practitioner"
-        messagingRole="practitioner"
         contentMode={onboardingPathActive ? "full" : "constrained"}
       >
         <div className="rounded-2xl border border-border-light bg-surface-primary p-6 dark:bg-white/5">
@@ -113,7 +124,6 @@ export default function PractitionerShell({ children }: PractitionerShellProps) 
           navigation={practitionerOnboardingNavigation}
           basePathPrefix="/practitioner"
           layoutVariant="practitioner"
-          messagingRole="practitioner"
           contentMode="full"
         >
           <div className="flex justify-center py-10">
@@ -128,7 +138,6 @@ export default function PractitionerShell({ children }: PractitionerShellProps) 
         navigation={practitionerOnboardingNavigation}
         basePathPrefix="/practitioner"
         layoutVariant="practitioner"
-        messagingRole="practitioner"
         contentMode="full"
       >
         {children}
@@ -144,6 +153,7 @@ export default function PractitionerShell({ children }: PractitionerShellProps) 
       messagingRole="practitioner"
       contentMode={onboardingPathActive ? "full" : "constrained"}
     >
+      <PractitionerRequirementsBanner />
       {children}
     </DashboardLayout>
   );

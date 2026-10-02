@@ -1,14 +1,10 @@
-export type RevenueShareRuleItem = {
-  ruleId: string;
-  slug: string;
-  platformRatePercent: string;
-  practitionerRatePercent: string;
-  updatedAt: string;
-};
-
 export type RevenueShareRulesItem = {
-  local: RevenueShareRuleItem;
-  crossBorder: RevenueShareRuleItem;
+  configurationState: "READY" | "REQUIRES_UNIFICATION";
+  platformCommissionPercent: string | null;
+  practitionerSharePercent: string | null;
+  effectiveAt: string | null;
+  updatedAt: string | null;
+  expectedUpdatedAt: string | null;
 };
 
 export type RevenueShareRulesResponseData = {
@@ -16,8 +12,7 @@ export type RevenueShareRulesResponseData = {
 };
 
 export type UpdateRevenueShareRulesRequest = {
-  localPlatformRatePercent: string;
-  localPractitionerRatePercent: string;
-  crossBorderPlatformRatePercent: string;
-  crossBorderPractitionerRatePercent: string;
+  platformCommissionPercent: string;
+  reason: string;
+  expectedUpdatedAt?: string | null;
 };

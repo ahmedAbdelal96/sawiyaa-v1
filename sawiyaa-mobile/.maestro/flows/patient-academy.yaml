@@ -1,0 +1,9 @@
+appId: com.sawiyaa.mobile
+---
+- runFlow: patient-login.yaml
+- tapOn:
+    text: "Academy|الأكاديمية"
+- assertVisible:
+    text: "Academy|الأكاديمية"
+- assertNotVisible:
+    text: "FATAL EXCEPTION"

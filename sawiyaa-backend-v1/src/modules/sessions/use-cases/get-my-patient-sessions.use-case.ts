@@ -6,6 +6,7 @@ import { SessionMapper } from '../mappers/session.mapper';
 import { SessionPatientRepository } from '../repositories/session-patient.repository';
 import { SessionRepository } from '../repositories/session.repository';
 import { ResolvePatientSessionActionsService } from '../services/resolve-patient-session-actions.service';
+import { SessionOperationalInterpreterService } from '../services/session-operational-interpreter.service';
 
 /**
  * Patient session listing is intentionally ownership-scoped.
@@ -18,6 +19,7 @@ export class GetMyPatientSessionsUseCase {
     private readonly sessionRepository: SessionRepository,
     private readonly sessionMapper: SessionMapper,
     private readonly resolvePatientSessionActionsService: ResolvePatientSessionActionsService,
+    private readonly operationalInterpreter: SessionOperationalInterpreterService,
   ) {}
 
   async execute(input: {
@@ -67,15 +69,24 @@ export class GetMyPatientSessionsUseCase {
     });
 
     return {
-      items: sessions.map((session) =>
-        this.sessionMapper.toListItem(
+      items: await Promise.all(sessions.map(async (session) => {
+        const actions = actionMap.get(session.id);
+        const operational = await this.operationalInterpreter.interpret({
+          session,
+          actor: 'PATIENT',
+          now,
+          finalManualDecision: decisionMap.get(session.id) ?? null,
+          patientActions: actions,
+        });
+        return this.sessionMapper.toListItem(
           session,
           now,
           unreadMap.get(session.id) ?? 0,
           decisionMap.get(session.id) ?? null,
-          actionMap.get(session.id),
-        ),
-      ),
+          actions,
+          operational,
+        );
+      })),
       pagination: {
         page,
         limit,

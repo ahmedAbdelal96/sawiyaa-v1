@@ -40,6 +40,7 @@ export {
 // Export utilities
 export {
   exportToExcel,
+  exportToPdf,
   exportSelectedRows,
 } from './export-utils';
 

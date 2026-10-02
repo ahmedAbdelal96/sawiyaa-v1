@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { getTranslations, setRequestLocale } from "next-intl/server";
-import { PatientQuickNav } from "@/components/patient/PatientSectionFrame";
 import PublicHelpScreen from "@/features/help/components/PublicHelpScreen";
 
 type Props = {
@@ -22,10 +21,7 @@ export default async function PatientHelpPage({ params }: Props) {
   setRequestLocale(locale);
 
   return (
-    <div className="app-max-content mx-auto space-y-5 px-4 py-6 sm:space-y-6">
-      <section className="app-panel-soft rounded-[28px] p-4 sm:p-5">
-        <PatientQuickNav />
-      </section>
+    <div className="mx-auto max-w-5xl px-4 py-6 sm:py-8">
       <PublicHelpScreen />
     </div>
   );

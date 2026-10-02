@@ -37,6 +37,10 @@ const PACKAGE_SELECTION_ERROR_KEYS = new Set([
   "packagepurchases.errors.duplicateslot",
   "packagepurchases.errors.overlappingslots",
   "packagepurchases.errors.timezoneresolutionfailed",
+  "packagepurchases.errors.noavailablesessions",
+  "package_entitlement_not_available",
+  "package_capacity_exceeded",
+  "entitlement_not_available",
 ]);
 
 const GENERIC_TIMEOUT_CODES = new Set(["econnaborted", "request_timeout"]);
@@ -47,6 +51,10 @@ export function getBookingErrorMessage(
   context: BookingErrorContext,
 ) {
   const tokens = readErrorTokens(error);
+
+  if (context === "package" && isAxiosError(error) && error.response?.status === 409) {
+    return t("packagePurchases.detail.bookingConflict");
+  }
 
   if (tokens.some((value) => GENERIC_TIMEOUT_CODES.has(value))) {
     return t(

@@ -7,18 +7,13 @@ export class GetAdminDirectCreateCredentialFileUseCase {
   constructor(private readonly storageService: PractitionerCredentialStorageService) {}
 
   async execute(input: { credentialId: string; mimeType: string }) {
-    const fileUrl = this.storageService.resolveDirectCreateCredentialFileUrl(
-      input.credentialId,
-      input.mimeType,
-    );
-    const absolutePath = fileUrl
-      ? this.storageService.resolveAbsolutePathFromFileUrl(fileUrl)
-      : null;
+    const stored = await this.storageService.resolveDirectCreateCredentialFile(input.credentialId, input.mimeType);
+    const absolutePath = stored?.absolutePath ?? null;
     const stat = absolutePath ? await fs.stat(absolutePath).catch(() => null) : null;
     if (!absolutePath || !stat?.isFile()) {
       throw new NotFoundException({ error: 'ADMIN_DIRECT_CREATE_CREDENTIAL_NOT_FOUND' });
     }
 
-    return { absolutePath, mimeType: input.mimeType };
+    return { absolutePath, mimeType: stored?.mimeType ?? input.mimeType };
   }
 }

@@ -200,7 +200,7 @@ describe('refundPoliciesSeedModule', () => {
     const policy = policies.get(RefundPolicyType.SESSION);
 
     expect(mocks.update).toHaveBeenCalledTimes(1);
-    expect(mocks.createMany).toHaveBeenCalledTimes(1);
+    expect(mocks.createMany).toHaveBeenCalledTimes(2);
     expect(policy?.titleAr).toBe('سياسة استرجاع الجلسات');
     expect(policy?.titleEn).toBe('Session Refund Policy');
     expect(policy?.clauses).toHaveLength(7);
@@ -216,7 +216,14 @@ describe('refundPoliciesSeedModule', () => {
     const policy = policies.get(RefundPolicyType.PACKAGE);
 
     expect(mocks.update).not.toHaveBeenCalled();
-    expect(mocks.createMany).not.toHaveBeenCalled();
+    expect(mocks.createMany).toHaveBeenCalledTimes(1);
+    expect(mocks.createMany).not.toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.arrayContaining([
+          expect.objectContaining({ policyId: 'PACKAGE_policy' }),
+        ]),
+      }),
+    );
     expect(policy?.titleAr).toBe('Policy Title');
     expect(policy?.clauses).toHaveLength(1);
   });
@@ -232,7 +239,7 @@ describe('refundPoliciesSeedModule', () => {
     const policy = policies.get(RefundPolicyType.SESSION);
 
     expect(mocks.update).toHaveBeenCalledTimes(1);
-    expect(mocks.createMany).toHaveBeenCalledTimes(1);
+    expect(mocks.createMany).toHaveBeenCalledTimes(2);
     expect(policy?.clauses).toHaveLength(7);
   });
 

@@ -31,7 +31,7 @@ export function DataTablePagination({
     <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border-light/80 px-4 py-3 sm:px-6">
       <p className="text-[13px] font-semibold text-text-secondary">{summary}</p>
       
-      <div className="flex flex-wrap items-center gap-1.5" role="navigation" aria-label="Pagination">
+      <div className="flex flex-wrap items-center gap-1.5" role="navigation" aria-label={t("dataTable.pagination")}>
         <button
           onClick={() => !loading && page > 1 && onPageChange(page - 1)}
           disabled={loading || page === 1}

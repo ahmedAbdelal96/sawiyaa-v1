@@ -1,11 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import {
-  ArrayMaxSize,
-  ArrayMinSize,
-  ArrayUnique,
-  IsArray,
-  IsUUID,
-} from 'class-validator';
+import { ArrayMaxSize, ArrayUnique, IsArray, IsUUID } from 'class-validator';
 
 export class PractitionerSpecialtySelectionInputDto {
   @ApiProperty({
@@ -21,7 +15,6 @@ export class PractitionerSpecialtySelectionInputDto {
     description: 'Specialty ids that must all belong to the selected category',
   })
   @IsArray()
-  @ArrayMinSize(1)
   @ArrayMaxSize(12)
   @ArrayUnique()
   @IsUUID('4', { each: true })

@@ -5,6 +5,7 @@ import { NotificationChannelExecutionService } from './notification-channel-exec
 import { NotificationDeliveryAttemptEngineService } from './notification-delivery-attempt-engine.service';
 import { NotificationRetryPolicyService } from './notification-retry-policy.service';
 import { NotificationDomainValidityGuardService } from './notification-domain-validity-guard.service';
+import { NotificationRealtimePublisher } from './notification-realtime.publisher';
 
 describe('NotificationDeliveryAttemptEngineService', () => {
   const repository = {
@@ -31,6 +32,9 @@ describe('NotificationDeliveryAttemptEngineService', () => {
   const domainValidityGuardService = {
     evaluate: jest.fn(),
   } as unknown as NotificationDomainValidityGuardService;
+  const notificationRealtimePublisher = {
+    publish: jest.fn(),
+  } as unknown as NotificationRealtimePublisher;
 
   const service = new NotificationDeliveryAttemptEngineService(
     repository,
@@ -38,6 +42,7 @@ describe('NotificationDeliveryAttemptEngineService', () => {
     channelExecutionService,
     retryPolicyService,
     domainValidityGuardService,
+    notificationRealtimePublisher,
   );
 
   const queuedBase = {
@@ -114,6 +119,16 @@ describe('NotificationDeliveryAttemptEngineService', () => {
       notificationId: 'n1',
       sentAt: new Date('2026-05-01T08:00:00.000Z'),
     });
+    expect(notificationRealtimePublisher.publish).toHaveBeenCalledWith(
+      'user_1',
+      {
+        notificationId: 'n1',
+        typeSlug: 'sessions.session-reminder-60',
+        relatedEntityType: 'SESSION',
+        relatedEntityId: 'session_1',
+        createdAt: '2026-05-01T08:00:00.000Z',
+      },
+    );
     expect(result).toEqual(
       expect.objectContaining({
         notificationId: 'n1',
@@ -286,6 +301,7 @@ describe('NotificationDeliveryAttemptEngineService', () => {
         reason: 'SUPPRESSED_SESSION_STATUS_CANCELLED',
       }),
     );
+    expect(notificationRealtimePublisher.publish).not.toHaveBeenCalled();
   });
 
   it('prevents duplicate execution in same boundary when second run cannot re-queue', async () => {
@@ -305,6 +321,7 @@ describe('NotificationDeliveryAttemptEngineService', () => {
     });
 
     expect(first.outcome).toBe('SENT');
+    expect(notificationRealtimePublisher.publish).toHaveBeenCalledTimes(1);
     expect(second).toEqual(
       expect.objectContaining({
         notificationId: 'n4',

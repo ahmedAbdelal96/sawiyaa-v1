@@ -114,6 +114,7 @@ export class UploadPractitionerPayoutProofUseCase {
               mimeType: storedProof.mimeType,
               fileSizeBytes: storedProof.fileSizeBytes,
               originalFileName: storedProof.originalFileName,
+              storedFileId: storedProof.storedFileId,
               uploadedAt: new Date(),
             },
             tx,

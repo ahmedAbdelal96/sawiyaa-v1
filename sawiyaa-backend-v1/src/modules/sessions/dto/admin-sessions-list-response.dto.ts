@@ -54,6 +54,38 @@ export class AdminSessionListItemResponseDto {
 
   @ApiProperty()
   isDelayed!: boolean;
+
+  @ApiProperty({ nullable: true })
+  reviewEnteredAt!: string | null;
+
+  @ApiProperty({ nullable: true })
+  queueAgeSeconds!: number | null;
+
+  @ApiProperty({ type: Object })
+  attendance!: {
+    classification: SessionStatus | null;
+    patientMinutes: number;
+    practitionerMinutes: number;
+    overlapMinutes: number;
+    overlapPercent: number;
+    confidence: string | null;
+    status: string | null;
+  };
+
+  @ApiProperty()
+  activeComplaintCount!: number;
+
+  @ApiProperty()
+  hasActiveComplaint!: boolean;
+
+  @ApiProperty({ nullable: true })
+  recommendation!: SessionStatus | null;
+
+  @ApiProperty({ type: String, isArray: true })
+  riskFlags!: string[];
+
+  @ApiProperty({ nullable: true, type: Object })
+  resolutionCase!: { status: string; openedAt: string } | null;
 }
 
 export class AdminSessionsListDataResponseDto {

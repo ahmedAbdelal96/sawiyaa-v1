@@ -32,9 +32,18 @@ export default async function PractitionerAvailabilityPage({ params }: Props) {
         title={t("availability.header.title")}
         description={t("availability.header.subtitle")}
       />
-      <div className="space-y-6">
-        <PresencePanel />
-        <BookingIntakePanel />
+      <div className="space-y-5">
+        {/* Unified Quick Controls (Presence + Instant Booking + Booking Intake) */}
+        <div className="grid gap-4 xl:grid-cols-3">
+          <div className="xl:col-span-2">
+            <PresencePanel />
+          </div>
+          <div className="xl:col-span-1">
+            <BookingIntakePanel />
+          </div>
+        </div>
+
+        {/* Weekly Schedule Management Workspace */}
         <AvailabilityWeeksPanel />
       </div>
     </PractitionerPageShell>

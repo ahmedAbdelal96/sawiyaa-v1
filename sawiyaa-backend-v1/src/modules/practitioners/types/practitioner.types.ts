@@ -9,6 +9,7 @@ import {
   ReviewCaseStatus,
   ReviewRequirementStatus,
 } from '@prisma/client';
+import { ProfessionalContentAuthoringInput } from '../services/practitioner-professional-content-authoring.service';
 
 /**
  * Shared practitioners-module view and input types.
@@ -18,6 +19,8 @@ export interface UpdatePractitionerProfileInput {
   displayName?: string;
   professionalTitle?: string | null;
   bio?: string | null;
+  professionalContent?: ProfessionalContentAuthoringInput['professionalContent'];
+  primaryContentLocale?: ProfessionalContentAuthoringInput['primaryContentLocale'];
   countryCode?: string | null;
   yearsOfExperience?: number | null;
   practitionerType?: PractitionerType;
@@ -51,6 +54,8 @@ export interface PractitionerPayoutDestinationInput {
   iban?: string | null;
   walletProvider?: string | null;
   walletIdentifier?: string | null;
+  instapayIdentifier?: string | null;
+  paypalEmail?: string | null;
   otherDetails?: string | null;
 }
 
@@ -63,6 +68,8 @@ export interface PractitionerPayoutDestinationViewModel {
   iban: string | null;
   walletProvider: string | null;
   walletIdentifier: string | null;
+  instapayIdentifier?: string | null;
+  paypalEmail?: string | null;
   otherDetails: string | null;
 }
 
@@ -103,16 +110,24 @@ export interface PractitionerApplicationStatusViewModel {
   completion: PractitionerApplicationCompletionViewModel;
   reviewCase?: {
     id: string;
+    caseType?: string;
     status: ReviewCaseStatus;
+    submittedAt?: Date | null;
+    dueAt?: Date | null;
     proposedSnapshot: Record<string, unknown> | null;
     sections: Array<{ section: string; status: string }>;
     requirements: Array<{
       id: string;
       section: string;
       fieldPath: string | null;
+      credentialType?: string | null;
       status: string;
       title: string;
       reason: string;
+      instructions?: string | null;
+      dueAt?: Date | null;
+      severity?: string;
+      operationalImpact?: string[];
     }>;
   } | null;
 }
@@ -139,8 +154,7 @@ export type PractitionerBaselineReadinessViewModel = {
   checks: PractitionerReadinessChecks;
 };
 
-export interface PractitionerReadinessViewModel
-  extends PractitionerBaselineReadinessViewModel {
+export interface PractitionerReadinessViewModel extends PractitionerBaselineReadinessViewModel {
   remediationMissingRequirements: string[];
   professionalTitle: {
     approvedValue: string | null;
@@ -212,6 +226,17 @@ export interface PractitionerProfileViewModel {
   avatarUrl: string | null;
   professionalTitle: string | null;
   bio: string | null;
+  professionalContent?: {
+    version: 1;
+    primaryContentLocale: 'ar' | 'en' | null;
+    locales: Partial<
+      Record<
+        'ar' | 'en',
+        { professionalTitle?: string | null; bio?: string | null }
+      >
+    >;
+  } | null;
+  primaryContentLocale?: 'ar' | 'en' | null;
   countryCode: string | null;
   locale: string | null;
   timezone: string | null;

@@ -25,7 +25,7 @@ const PACKAGE_PURCHASE_STATUS_TO_TONE: Record<
 };
 
 const PACKAGE_PURCHASE_SESSION_PRESENTATION_STATUS_TO_TONE: Partial<Record<
-  PatientPackagePurchaseItem["linkedSessions"]["items"][number]["presentationStatus"],
+  PatientPackagePurchaseItem["linkedSessions"]["items"][number]["operational"]["state"],
   "success" | "warning" | "info" | "default"
 >> = {
   UPCOMING: "warning",
@@ -188,7 +188,7 @@ export function getPackagePurchaseStatusTone(
 }
 
 export function getPackagePurchaseSessionPresentationStatusTranslationKey(
-  presentationStatus: PatientPackagePurchaseItem["linkedSessions"]["items"][number]["presentationStatus"],
+  presentationStatus: PatientPackagePurchaseItem["linkedSessions"]["items"][number]["operational"]["state"],
 ) {
   switch (presentationStatus) {
     case "UPCOMING":
@@ -217,7 +217,7 @@ export function getPackagePurchaseSessionPresentationStatusTranslationKey(
 }
 
 export function getPackagePurchaseSessionPresentationStatusTone(
-  presentationStatus: PatientPackagePurchaseItem["linkedSessions"]["items"][number]["presentationStatus"],
+  presentationStatus: PatientPackagePurchaseItem["linkedSessions"]["items"][number]["operational"]["state"],
 ) {
   return PACKAGE_PURCHASE_SESSION_PRESENTATION_STATUS_TO_TONE[presentationStatus] ?? "default";
 }
@@ -256,6 +256,10 @@ export function getPackagePurchaseBookedSessionCount(
 export function getPackagePurchaseUnbookedSessionCount(
   purchase: PatientPackagePurchaseItem,
 ) {
+  if (purchase.progress?.availableSessions !== undefined) {
+    return Math.max(0, purchase.progress.availableSessions);
+  }
+
   return Math.max(
     purchase.sessionCount - getPackagePurchaseBookedSessionCount(purchase),
     0,
@@ -278,14 +282,32 @@ export function getPackagePurchaseUnbookedSessionIndexes(
     }
   }
 
+  // The backend entitlement projection is authoritative. Historical rows can
+  // keep every packageSessionIndex occupied after a RESTORE_TO_PACKAGE
+  // decision, so extend the display-only placeholders beyond the original
+  // range until they represent the returned available count.
+  if (purchase.progress?.availableSessions !== undefined) {
+    const available = Math.max(0, purchase.progress.availableSessions);
+    let nextIndex = purchase.sessionCount + 1;
+    while (missingIndexes.length < available) {
+      missingIndexes.push(nextIndex);
+      nextIndex += 1;
+    }
+    return missingIndexes.slice(0, available);
+  }
+
   return missingIndexes;
 }
 
 export function getPackagePurchaseCompletionCount(
   purchase: PatientPackagePurchaseItem,
 ) {
+  if (purchase.progress?.completedSessions !== undefined) {
+    return Math.max(0, purchase.progress.completedSessions);
+  }
+
   return purchase.linkedSessions.items.filter((session) =>
-    ["COMPLETED"].includes(session.presentationStatus),
+    session.operational.timelineBucket === "COMPLETED",
   ).length;
 }
 
@@ -293,7 +315,7 @@ export function getPackagePurchasePendingCount(
   purchase: PatientPackagePurchaseItem,
 ) {
   return purchase.linkedSessions.items.filter((session) =>
-    ["UPCOMING", "PENDING_PRACTITIONER_CONFIRMATION"].includes(session.status),
+    session.operational.timelineBucket === "PENDING",
   ).length;
 }
 
@@ -301,7 +323,7 @@ export function getPackagePurchaseLiveCount(
   purchase: PatientPackagePurchaseItem,
 ) {
   return purchase.linkedSessions.items.filter((session) =>
-    ["READY_TO_JOIN", "IN_PROGRESS"].includes(session.status),
+    session.operational.timelineBucket === "ACTIONABLE",
   ).length;
 }
 
@@ -309,7 +331,7 @@ export function getPackagePurchaseTerminalCount(
   purchase: PatientPackagePurchaseItem,
 ) {
   return purchase.linkedSessions.items.filter((session) =>
-    ["CANCELLED", "PATIENT_NO_SHOW", "PRACTITIONER_NO_SHOW", "BOTH_NO_SHOW", "EXPIRED", "AWAITING_COMPLETION_CONFIRMATION"].includes(session.status),
+    session.operational.timelineBucket === "TERMINAL",
   ).length;
 }
 
@@ -317,7 +339,7 @@ export function getNextUpcomingPackageSession(
   purchase: PatientPackagePurchaseItem,
 ) {
   return sortPackagePurchaseSessions(purchase.linkedSessions.items).find((session) =>
-    ["UPCOMING", "READY_TO_JOIN", "IN_PROGRESS"].includes(session.status),
+    session.operational.timelineBucket === "ACTIONABLE",
   );
 }
 
@@ -329,14 +351,11 @@ export function groupPackagePurchaseSessions(
     booked: sessions,
     unbooked: getPackagePurchaseUnbookedSessionIndexes(purchase),
     upcoming: sessions.filter((session) =>
-      ["UPCOMING", "READY_TO_JOIN", "IN_PROGRESS", "PENDING_PRACTITIONER_CONFIRMATION"].includes(
-        session.status,
-      ),
+      session.operational.timelineBucket === "ACTIONABLE" ||
+      session.operational.timelineBucket === "PENDING",
     ),
-    completed: sessions.filter((session) => session.presentationStatus === "COMPLETED"),
-    terminal: sessions.filter((session) =>
-      ["CANCELLED", "PATIENT_NO_SHOW", "PRACTITIONER_NO_SHOW", "BOTH_NO_SHOW", "EXPIRED", "AWAITING_COMPLETION_CONFIRMATION"].includes(session.status),
-    ),
+    completed: sessions.filter((session) => session.operational.timelineBucket === "COMPLETED"),
+    terminal: sessions.filter((session) => session.operational.timelineBucket === "TERMINAL"),
   };
 }
 

@@ -3,6 +3,8 @@ import { MatchingSessionAccessPolicy } from '../policies/matching-session-access
 import { MatchingPatientRepository } from '../repositories/matching-patient.repository';
 import { MatchingSessionRepository } from '../repositories/matching-session.repository';
 import { MatchingPresenter } from '../presenters/matching.presenter';
+import { SupportedLocale } from '@common/i18n/types/locale.types';
+import { ResolveMatchingProfessionalContentService } from '../services/resolve-matching-professional-content.service';
 
 @Injectable()
 export class GetMatchingSessionUseCase {
@@ -13,9 +15,14 @@ export class GetMatchingSessionUseCase {
     private readonly matchingSessionRepository: MatchingSessionRepository,
     private readonly matchingSessionAccessPolicy: MatchingSessionAccessPolicy,
     private readonly matchingPresenter: MatchingPresenter,
+    private readonly resolveMatchingProfessionalContentService: ResolveMatchingProfessionalContentService,
   ) {}
 
-  async execute(input: { userId: string; sessionId: string }) {
+  async execute(input: {
+    userId: string;
+    sessionId: string;
+    locale: SupportedLocale;
+  }) {
     const patientProfile = await this.matchingPatientRepository.findByUserId(
       input.userId,
     );
@@ -47,10 +54,19 @@ export class GetMatchingSessionUseCase {
       `Guided matching session fetched (session=${session.id}, patient=${patientProfile.id})`,
     );
 
+    const resolvedProfessionalTitles =
+      await this.resolveMatchingProfessionalContentService.resolveTitles({
+        practitionerProfileIds: session.recommendations.map(
+          (recommendation) => recommendation.practitionerProfile.id,
+        ),
+        requestedLocale: input.locale,
+      });
+
     return this.matchingPresenter.presentSession({
       sessionId: session.id,
       answers: session.answers,
       recommendations: session.recommendations,
+      resolvedProfessionalTitles,
     });
   }
 }

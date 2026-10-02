@@ -75,10 +75,21 @@ describe('GetMyPractitionerSessionsUseCase', () => {
       })),
     } as unknown as SessionMapper;
 
+    const practitionerCommandActions = {
+      resolve: jest.fn().mockResolvedValue({
+        canMarkPatientNoShow: true,
+        noShowReasonCode: null,
+      }),
+    };
+    const operationalInterpreter = {
+      interpret: jest.fn().mockResolvedValue({ state: SessionStatus.UPCOMING }),
+    };
     const useCase = new GetMyPractitionerSessionsUseCase(
       sessionPractitionerRepository,
       sessionRepository,
       sessionMapper,
+      operationalInterpreter as never,
+      practitionerCommandActions as never,
     );
 
     const result = await useCase.execute({
@@ -102,5 +113,19 @@ describe('GetMyPractitionerSessionsUseCase', () => {
     expect(result.pagination.totalItems).toBe(11);
     expect(result.pagination.totalPages).toBe(2);
     expect(result.items).toHaveLength(1);
+    expect(practitionerCommandActions.resolve).toHaveBeenCalledWith(
+      expect.objectContaining({
+        session: expect.objectContaining({ id: 'session_1' }),
+        now: expect.any(Date),
+      }),
+    );
+    expect(operationalInterpreter.interpret).toHaveBeenCalledWith(
+      expect.objectContaining({
+        practitionerCommandActions: {
+          canMarkPatientNoShow: true,
+          noShowReasonCode: null,
+        },
+      }),
+    );
   });
 });

@@ -240,5 +240,38 @@
       "untilHours": "Until {value}h before session",
       "betweenHours": "Between {min}h and {max}h before session"
     }
+  },
+  "reviewWorkspace": {
+    "title": "Session Review",
+    "backToQueue": "Back to Queue",
+    "previousSession": "Previous",
+    "nextSession": "Next",
+    "approvePrimary": "Approve & Send to Accounting",
+    "approveAndNext": "Approve & Go to Next",
+    "needsResolution": "Needs Resolution",
+    "decisionTitle": "Session Review Decision",
+    "level1Evidence": "Attendance, Complaint & Recommendation Evidence",
+    "timelineAccordion": "Attendance Timeline & Events",
+    "roomEvidenceAccordion": "Room Close Evidence & Support Tickets",
+    "packageEntitlementAccordion": "Package Entitlement & Replacement Details",
+    "auditHistoryAccordion": "Admin Decision Audit History",
+    "activeComplaint": "Active complaint",
+    "noActiveComplaint": "No active complaint",
+    "recommendationPrefix": "System Recommendation",
+    "noRecommendation": "No recommendation",
+    "overlapMinutes": "{minutes} min overlap ({percent}%)",
+    "patientAttended": "Patient attended: {minutes} min",
+    "practitionerAttended": "Practitioner attended: {minutes} min",
+    "reasonCodes": {
+      "INSUFFICIENT_EVIDENCE": "Insufficient evidence",
+      "COMPLETION_CANDIDATE": "Recommended for approval",
+      "PATIENT_NO_SHOW_CANDIDATE": "Patient no-show review",
+      "PRACTITIONER_NO_SHOW_CANDIDATE": "Practitioner no-show review",
+      "BOTH_NO_SHOW_CANDIDATE": "Both no-show review",
+      "TECHNICAL_REVIEW_CANDIDATE": "Technical review required",
+      "MANUAL_REVIEW_REQUIRED": "Manual review required",
+      "ACTIVE_COMPLAINT": "Active complaint requires review",
+      "OPEN_RESOLUTION_CASE": "Open resolution case"
+    }
   }
 }

@@ -19,6 +19,17 @@ export async function openSessionGeneralChat(
   return extractData(response.data);
 }
 
+export async function getSessionGeneralChatConversation(sessionId: string) {
+  const response = await httpClient.get<{
+    data: {
+      item: GeneralChatOpenSessionResponse["item"] | null;
+      sessionId: string;
+      chatAvailability: GeneralChatOpenSessionResponse["item"]["chatAvailability"];
+    };
+  }>(`/chat/sessions/${sessionId}/conversation`);
+  return extractData(response.data);
+}
+
 export async function getGeneralChatMessages(
   conversationId: string,
   params: ListGeneralChatMessagesParams = {},

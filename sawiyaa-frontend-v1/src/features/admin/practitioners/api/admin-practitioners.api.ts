@@ -7,6 +7,7 @@ import type {
   ListAdminPractitionersParams,
   UpdateAdminPractitionerAvatarRequest,
   PractitionerPublicationResponse,
+  AdminPractitionerDetails,
 } from "../types/admin-practitioners.types";
 
 /**
@@ -66,7 +67,14 @@ export async function updateAdminPractitionerPublication(
 }
 
 export async function getAdminPractitionerDetails(practitionerId: string) {
-  const response = await httpClient.get<ApiPayload<{ details: any }>>(
+  const response = await httpClient.get<ApiPayload<{ details: AdminPractitionerDetails }>>(
+    `/admin/practitioners/${practitionerId}`,
+  );
+  return extractData(response.data);
+}
+
+export async function deleteIncompleteAdminPractitioner(practitionerId: string) {
+  const response = await httpClient.delete<ApiPayload<{ message: string }>>(
     `/admin/practitioners/${practitionerId}`,
   );
   return extractData(response.data);

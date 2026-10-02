@@ -3,13 +3,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import {
-  LedgerDirection,
-  LedgerEntryType,
-  PaymentPurpose,
-  PaymentStatus,
-  WalletBalanceBucket,
-} from '@prisma/client';
+import { PaymentStatus } from '@prisma/client';
 import { PrismaService } from '@common/prisma/prisma.service';
 import { FinancialOperationsPaymentRepository } from '../repositories/financial-operations-payment.repository';
 import { LedgerRepository } from '../repositories/ledger.repository';
@@ -51,65 +45,22 @@ export class PostPaymentLedgerEntriesUseCase {
       });
     }
 
-    if (payment.paymentPurpose === PaymentPurpose.SESSION_PACKAGE_PURCHASE) {
-      return {
-        items: [],
-        wasAlreadyPosted: true,
-      };
-    }
-
     const breakdown =
       this.extractPaymentLedgerBreakdownService.extract(payment);
 
     const result = await this.prisma.$transaction(async (tx) => {
       await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${payment.id})::bigint)`;
-
-      const existing = await this.ledgerRepository.findByPaymentId(
-        payment.id,
-        tx,
-      );
-      if (existing.length > 0) {
-        return {
-          items: existing,
-          wasAlreadyPosted: true,
-        };
-      }
-
-      await this.ledgerRepository.createManyLedgerEntries(
-        [
-          {
-            practitionerId: null,
-            sessionId: payment.sessionId,
-            paymentId: payment.id,
-            entryType: LedgerEntryType.PLATFORM_COMMISSION,
-            direction: LedgerDirection.CREDIT,
-            amount: breakdown.platformCommissionAmount,
-            currencyCode: breakdown.currencyCode,
-            balanceBucket: WalletBalanceBucket.PENDING,
-            referenceType: 'payment',
-            referenceId: payment.id,
-            description: 'Platform commission from captured payment.',
-            metadataJson: {
-              source: 'payment-captured',
-              commissionRuleId: payment.commissionRuleId ?? null,
-            },
-          },
-        ],
-        tx,
-      );
-
+      const journal =
+        await this.accountingJournalPostingService.postPaymentCaptured({
+          payment,
+          breakdown,
+          tx,
+        });
       return {
         items: await this.ledgerRepository.findByPaymentId(payment.id, tx),
-        wasAlreadyPosted: false,
+        wasAlreadyPosted: journal.wasAlreadyPosted,
       };
     });
-
-    if (!result.wasAlreadyPosted) {
-      await this.accountingJournalPostingService.postPaymentCaptured({
-        payment,
-        breakdown,
-      });
-    }
 
     return result;
   }

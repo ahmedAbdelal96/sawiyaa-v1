@@ -66,6 +66,46 @@ export class PackageSettlementItemDto {
   @ApiProperty()
   discountAppliedAmount!: string;
 
+  @ApiProperty()
+  availableSessions!: number;
+
+  @ApiProperty()
+  reservedSessions!: number;
+
+  @ApiProperty()
+  consumedSessions!: number;
+
+  @ApiProperty({ nullable: true })
+  nextSessionStartAt!: string | null;
+
+  @ApiProperty({ nullable: true, type: Object })
+  payment!: {
+    id: string;
+    status: string;
+    provider: string;
+    reference: string | null;
+    amount: string;
+    currency: string;
+    capturedAt: string | null;
+  } | null;
+
+  @ApiProperty({ type: Object, isArray: true })
+  sessions!: Array<{
+    id: string;
+    sessionCode: string;
+    status: string;
+    packageSessionIndex: number | null;
+    packageSessionCount: number | null;
+    scheduledStartAt: string | null;
+    scheduledEndAt: string | null;
+    paymentCoverageType: string;
+    entitlementDecision: {
+      decisionType: string;
+      reasonCode: string;
+      decidedAt: string;
+    } | null;
+  }>;
+
   @ApiProperty({ nullable: true })
   reviewedAt!: string | null;
 

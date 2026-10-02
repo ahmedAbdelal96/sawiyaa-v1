@@ -7,6 +7,7 @@ import {
   MessageCircle,
   Plug,
   Tag,
+  Zap,
   UserRound,
   UsersRound,
   FileText,
@@ -34,6 +35,7 @@ export const NavigationIcons = {
   ),
   payments: () => <CreditCard className="h-5 w-5" />,
   promoCodes: () => <Tag className="h-5 w-5" />,
+  instantBooking: () => <Zap className="h-5 w-5" />,
   settlements: () => (
     <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
       <path

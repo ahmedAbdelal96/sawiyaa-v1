@@ -4,6 +4,7 @@ import { MatchingSessionAccessPolicy } from '../policies/matching-session-access
 import { MatchingPatientRepository } from '../repositories/matching-patient.repository';
 import { MatchingSessionRepository } from '../repositories/matching-session.repository';
 import { MatchingPresenter } from '../presenters/matching.presenter';
+import { ResolveMatchingProfessionalContentService } from '../services/resolve-matching-professional-content.service';
 
 describe('GetMatchingSessionUseCase', () => {
   const matchingPatientRepository = {
@@ -18,12 +19,16 @@ describe('GetMatchingSessionUseCase', () => {
   const matchingPresenter = {
     presentSession: jest.fn(),
   } as unknown as MatchingPresenter;
+  const resolveMatchingProfessionalContentService = {
+    resolveTitles: jest.fn().mockResolvedValue(new Map()),
+  } as unknown as ResolveMatchingProfessionalContentService;
 
   const useCase = new GetMatchingSessionUseCase(
     matchingPatientRepository,
     matchingSessionRepository,
     matchingSessionAccessPolicy,
     matchingPresenter,
+    resolveMatchingProfessionalContentService,
   );
 
   beforeEach(() => {
@@ -51,6 +56,7 @@ describe('GetMatchingSessionUseCase', () => {
     const result = await useCase.execute({
       userId: 'user-1',
       sessionId: 'session-1',
+      locale: 'ar',
     });
 
     expect(result.sessionId).toBe('session-1');
@@ -68,6 +74,7 @@ describe('GetMatchingSessionUseCase', () => {
       useCase.execute({
         userId: 'user-1',
         sessionId: 'session-x',
+        locale: 'ar',
       }),
     ).rejects.toBeInstanceOf(NotFoundException);
   });
@@ -92,6 +99,7 @@ describe('GetMatchingSessionUseCase', () => {
       useCase.execute({
         userId: 'user-1',
         sessionId: 'session-1',
+        locale: 'ar',
       }),
     ).rejects.toBeInstanceOf(ForbiddenException);
   });

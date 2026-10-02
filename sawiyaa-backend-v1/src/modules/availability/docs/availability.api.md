@@ -69,6 +69,12 @@ This module explicitly does **not** own:
 - unpublished weeks can be created and updated; published weeks are protected by booking rules
 - repeat preview persists a short-lived operation; confirmation creates independent unpublished weeks only
 - recurring weekly slots must not overlap on the same day when they share the same duration
+
+Weekly capacity invariant: `slots[]` accepts at most 504 entries. This is not
+an arbitrary transport limit: the canonical model supports 30-minute and
+60-minute starts on a 30-minute grid, so the full-day upper bound is
+`7 × (1440/30 + 1440/60) = 504`. Clients must reject larger payloads before
+submitting; the API retains the same protection for non-client callers.
 - weekly slot granularity remains enforced at 30 minutes in V1
 - each recurring weekly slot declares an explicit booking duration of `30` or `60` minutes
 - practitioner timezone is the source of truth for week interpretation and slot derivation

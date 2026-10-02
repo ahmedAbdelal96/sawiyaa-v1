@@ -32,6 +32,7 @@ describe('CloseSessionVideoRoomByPractitionerUseCase', () => {
     };
     const sessionRepository = {
       findById: jest.fn().mockResolvedValue(currentSession),
+      findByIdForUpdate: jest.fn().mockResolvedValue(currentSession),
       updateRuntimeFields: jest.fn().mockImplementation(async (_sessionId, data) => ({
         ...currentSession,
         ...data,
@@ -55,6 +56,19 @@ describe('CloseSessionVideoRoomByPractitionerUseCase', () => {
         .fn()
         .mockReturnValue(SessionProvider.DAILY),
     };
+    const outcomeBoundary = {
+      decideRoomClosure: jest.fn().mockReturnValue({
+        kind: 'REQUIRES_ADMIN_RESOLUTION',
+        reason: 'ROOM_CLOSED_OUTCOME_UNRESOLVED',
+      }),
+    };
+    const sessionLifecycleService = {
+      transition: jest.fn().mockImplementation(async ({ session, to, data }) => ({
+        ...session,
+        ...data,
+        status: to,
+      })),
+    };
 
     const useCase = new CloseSessionVideoRoomByPractitionerUseCase(
       prisma as never,
@@ -63,12 +77,15 @@ describe('CloseSessionVideoRoomByPractitionerUseCase', () => {
       new SessionAccessPolicy(),
       sessionVideoProviderRegistryService as never,
       sessionVideoProviderResolverService as never,
+      outcomeBoundary as never,
+      sessionLifecycleService as never,
     );
 
     return {
       useCase,
       sessionRepository,
       sessionVideoProviderRegistryService,
+      sessionLifecycleService,
     };
   }
 
@@ -131,7 +148,7 @@ describe('CloseSessionVideoRoomByPractitionerUseCase', () => {
     });
   });
 
-  it('does not mark the session as completed while closing the room', async () => {
+  it('moves an active room closure to admin resolution rather than leaving it actionable', async () => {
     jest.useFakeTimers().setSystemTime(new Date('2026-04-02T10:50:00.000Z'));
     const setup = buildUseCase();
 
@@ -143,12 +160,8 @@ describe('CloseSessionVideoRoomByPractitionerUseCase', () => {
       },
     });
 
-    expect(setup.sessionRepository.updateRuntimeFields).toHaveBeenCalledWith(
-      'session_1',
-      expect.not.objectContaining({
-        status: SessionStatus.COMPLETED,
-      }),
-      expect.anything(),
+    expect(setup.sessionLifecycleService.transition).toHaveBeenCalledWith(
+      expect.objectContaining({ to: SessionStatus.AWAITING_ADMIN_RESOLUTION }),
     );
   });
 

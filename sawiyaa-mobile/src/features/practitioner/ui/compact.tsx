@@ -3,6 +3,7 @@ import { I18nManager, StyleSheet, TouchableOpacity, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { Text, Button } from "../../../components/ui";
 import { useTheme } from "../../../providers/ThemeProvider";
+import { useAppDirection } from "../../../i18n/direction";
 import type { ThemeShape } from "../../../constants/theme";
 
 export type PractitionerTone =
@@ -177,6 +178,7 @@ export function CompactActionLink({
   onPress: () => void;
 }) {
   const { theme } = useTheme();
+  const { arrowForward } = useAppDirection();
 
   return (
     <TouchableOpacity onPress={onPress} style={styles.actionLink}>
@@ -184,7 +186,7 @@ export function CompactActionLink({
         {label}
       </Text>
       <Ionicons
-        name={I18nManager.isRTL ? "arrow-back" : "arrow-forward"}
+        name={arrowForward}
         size={14}
         color={theme.colors.textBrand}
       />

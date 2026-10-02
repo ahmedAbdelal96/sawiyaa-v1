@@ -16,6 +16,7 @@ import {
   SessionEarningReviewUserSummaryDto,
   SessionEarningReviewAdjustmentDto,
 } from '../dto/admin-session-earning-reviews.dto';
+import { resolvePatientDisplayName } from '@modules/patients/utils/resolve-patient-display-name.util';
 import { SessionEarningReviewFinancialStage } from '../dto/admin-session-earning-reviews.dto';
 import { buildPagination } from '../utils/pagination';
 
@@ -221,18 +222,22 @@ export class SessionEarningReviewPresenter {
     approvedBy: SessionEarningReviewUserSummaryDto | null;
     activeWalletCurrency?: string | null;
   }): AdminSessionEarningReviewListItemDto {
-    const isActionRequired =
-      input.review.reviewStatus === 'PENDING_REVIEW';
+    const isActionRequired = input.review.reviewStatus === 'PENDING_REVIEW';
     const isFinalized = !isActionRequired;
-    const financialStage = input.review.reviewStatus === 'PENDING_REVIEW'
-      ? SessionEarningReviewFinancialStage.PENDING_REVIEW
-      : input.review.reviewStatus === 'DECISION_APPROVED'
-        ? SessionEarningReviewFinancialStage.DECISION_APPROVED
-        : input.review.reviewStatus === 'REJECTED' || input.review.reviewStatus === 'EXCLUDED_FROM_PAYOUT'
-          ? SessionEarningReviewFinancialStage.REJECTED_OR_EXCLUDED
-          : input.review.settlement?.status === PractitionerSettlementStatus.PAID_OUT || input.review.settlement?.status === PractitionerSettlementStatus.PAID
-            ? SessionEarningReviewFinancialStage.EXTERNAL_PAYOUT
-            : SessionEarningReviewFinancialStage.WALLET_CREDITED;
+    const financialStage =
+      input.review.reviewStatus === 'PENDING_REVIEW'
+        ? SessionEarningReviewFinancialStage.PENDING_REVIEW
+        : input.review.reviewStatus === 'DECISION_APPROVED'
+          ? SessionEarningReviewFinancialStage.DECISION_APPROVED
+          : input.review.reviewStatus === 'REJECTED' ||
+              input.review.reviewStatus === 'EXCLUDED_FROM_PAYOUT'
+            ? SessionEarningReviewFinancialStage.REJECTED_OR_EXCLUDED
+            : input.review.settlement?.status ===
+                  PractitionerSettlementStatus.PAID_OUT ||
+                input.review.settlement?.status ===
+                  PractitionerSettlementStatus.PAID
+              ? SessionEarningReviewFinancialStage.EXTERNAL_PAYOUT
+              : SessionEarningReviewFinancialStage.WALLET_CREDITED;
 
     return {
       reviewId: input.review.id,
@@ -252,9 +257,15 @@ export class SessionEarningReviewPresenter {
         input.review.suggestedPlatformAmount,
       ),
       suggestedCurrencyCode: input.review.suggestedCurrencyCode,
-      suggestedPractitionerPercentage: this.optionalDecimalToString(input.review.suggestedPractitionerPercentage),
-      accountantApprovedSourceAmount: this.optionalDecimalToString(input.review.accountantApprovedSourceAmount),
-      accountingAdjustmentAmount: this.optionalDecimalToString(input.review.accountingAdjustmentAmount),
+      suggestedPractitionerPercentage: this.optionalDecimalToString(
+        input.review.suggestedPractitionerPercentage,
+      ),
+      accountantApprovedSourceAmount: this.optionalDecimalToString(
+        input.review.accountantApprovedSourceAmount,
+      ),
+      accountingAdjustmentAmount: this.optionalDecimalToString(
+        input.review.accountingAdjustmentAmount,
+      ),
       accountingAdjustmentType: input.review.accountingAdjustmentType,
       accountingAdjustmentReason: input.review.accountingAdjustmentReason,
       accountingNotes: input.review.accountingNotes,
@@ -266,9 +277,13 @@ export class SessionEarningReviewPresenter {
       ),
       finalCurrencyCode: input.review.finalCurrencyCode,
       patientCountrySnapshot: input.review.patientCountrySnapshot ?? null,
-      practitionerCountrySnapshot: input.review.practitionerCountrySnapshot ?? null,
-      countryRelationshipSnapshot: input.review.countryRelationshipSnapshot ?? null,
-      calculatedPractitionerAmount: this.optionalDecimalToString(input.review.calculatedPractitionerAmount ?? null),
+      practitionerCountrySnapshot:
+        input.review.practitionerCountrySnapshot ?? null,
+      countryRelationshipSnapshot:
+        input.review.countryRelationshipSnapshot ?? null,
+      calculatedPractitionerAmount: this.optionalDecimalToString(
+        input.review.calculatedPractitionerAmount ?? null,
+      ),
       overrideReason: input.review.overrideReason ?? null,
       reviewedAt: input.review.reviewedAt?.toISOString() ?? null,
       approvedAt: input.review.approvedAt?.toISOString() ?? null,
@@ -281,7 +296,10 @@ export class SessionEarningReviewPresenter {
       packagePurchase: input.packagePurchase,
       packageSettlement: input.packageSettlement,
       activeWalletCurrency: input.activeWalletCurrency ?? null,
-      conversionRequired: Boolean(input.activeWalletCurrency && input.activeWalletCurrency !== input.review.paymentCurrencyCode),
+      conversionRequired: Boolean(
+        input.activeWalletCurrency &&
+        input.activeWalletCurrency !== input.review.paymentCurrencyCode,
+      ),
       isActionRequired,
       isFinalized,
       canApprove: isActionRequired,
@@ -330,7 +348,10 @@ export class SessionEarningReviewPresenter {
         currencyCode: adjustment.currencyCode,
         reason: adjustment.reason,
         createdBy: adjustment.createdByUser
-          ? { userId: adjustment.createdByUser.id, displayName: adjustment.createdByUser.displayName }
+          ? {
+              userId: adjustment.createdByUser.id,
+              displayName: adjustment.createdByUser.displayName,
+            }
           : null,
         createdAt: adjustment.createdAt.toISOString(),
       })),
@@ -359,9 +380,8 @@ export class SessionEarningReviewPresenter {
     }
 
     const refundedAmount = input.refundedAmount ?? new Prisma.Decimal(0);
-    const remainingEffectiveAmount = input.payment.amountTotal.sub(
-      refundedAmount,
-    );
+    const remainingEffectiveAmount =
+      input.payment.amountTotal.sub(refundedAmount);
 
     return {
       paymentId: input.payment.id,
@@ -460,7 +480,9 @@ export class SessionEarningReviewPresenter {
     };
   }
 
-  presentSessionSummary(session: SessionEarningReviewSessionRow): SessionEarningReviewSessionSummaryDto {
+  presentSessionSummary(
+    session: SessionEarningReviewSessionRow,
+  ): SessionEarningReviewSessionSummaryDto {
     return {
       sessionId: session.id,
       originalSessionId: session.originalSessionId ?? null,
@@ -476,7 +498,9 @@ export class SessionEarningReviewPresenter {
     };
   }
 
-  presentPractitionerSummary(session: SessionEarningReviewSessionRow): SessionEarningReviewPractitionerSummaryDto {
+  presentPractitionerSummary(
+    session: SessionEarningReviewSessionRow,
+  ): SessionEarningReviewPractitionerSummaryDto {
     return {
       practitionerId: session.practitioner.id,
       displayName: session.practitioner.user?.displayName ?? null,
@@ -485,10 +509,15 @@ export class SessionEarningReviewPresenter {
     };
   }
 
-  presentPatientSummary(session: SessionEarningReviewSessionRow): SessionEarningReviewPatientSummaryDto {
+  presentPatientSummary(
+    session: SessionEarningReviewSessionRow,
+  ): SessionEarningReviewPatientSummaryDto {
     return {
       patientId: session.patient.id,
-      displayName: session.patient.displayName ?? session.patient.user?.displayName ?? null,
+      displayName: resolvePatientDisplayName(
+        session.patient,
+        session.patient.user,
+      ),
     };
   }
 

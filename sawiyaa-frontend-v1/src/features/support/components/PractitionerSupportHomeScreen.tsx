@@ -173,9 +173,7 @@ export default function PractitionerSupportHomeScreen({
           <ChatThreadList
             searchValue={searchQuery}
             onSearchChange={setSearchQuery}
-            searchPlaceholder={
-              locale === "ar" ? "البحث عن تذكرة..." : "Search tickets..."
-            }
+            searchPlaceholder={t("home.searchPlaceholder")}
             header={
               <div className="flex items-center justify-between border-b border-slate-100 pb-3 dark:border-white/5">
                 <div>
@@ -209,7 +207,7 @@ export default function PractitionerSupportHomeScreen({
                 )}
               >
                 <option value="ALL">
-                  {locale === "ar" ? "الحالة" : "Status"}
+                  {t("home.filterStatus")}
                 </option>
                 {STATUS_FILTERS.filter((status) => status !== "ALL").map(
                   (status) => (
@@ -236,7 +234,7 @@ export default function PractitionerSupportHomeScreen({
                 )}
               >
                 <option value="ALL">
-                  {locale === "ar" ? "الفئة" : "Category"}
+                  {t("home.filterCategory")}
                 </option>
                 {CATEGORY_FILTERS.filter((category) => category !== "ALL").map(
                   (category) => (
@@ -263,7 +261,7 @@ export default function PractitionerSupportHomeScreen({
                 )}
               >
                 <option value="ALL">
-                  {locale === "ar" ? "الأولوية" : "Priority"}
+                  {t("home.filterPriority")}
                 </option>
                 {PRIORITY_FILTERS.filter((priority) => priority !== "ALL").map(
                   (priority) => (
@@ -289,7 +287,7 @@ export default function PractitionerSupportHomeScreen({
                   }
                   className="text-[10px] font-bold text-teal-600 transition hover:text-teal-700 dark:text-teal-400"
                 >
-                  {locale === "ar" ? "إعادة تعيين الفلاتر" : "Reset Filters"}
+                  {t("home.resetFilters")}
                 </button>
               </div>
             )}
@@ -328,10 +326,7 @@ export default function PractitionerSupportHomeScreen({
                         typeof t
                       >[0],
                     ),
-                    lastMessage:
-                      locale === "ar"
-                        ? "اضغط لعرض المحادثة..."
-                        : "Click to view conversation...",
+                      lastMessage: t("home.clickToView"),
                     lastMessageAt: formatDateTime(
                       ticket.lastMessageAt || ticket.createdAt,
                       locale,
@@ -363,7 +358,7 @@ export default function PractitionerSupportHomeScreen({
                   }
                   className="rounded-lg border border-slate-200 px-2.5 py-1 hover:bg-slate-50 disabled:opacity-40 dark:border-white/5 dark:hover:bg-white/5"
                 >
-                  {locale.startsWith("ar") ? "السابق" : "Prev"}
+                  {t("home.previous")}
                 </button>
                 <span>
                   {data.pagination.page} / {data.pagination.totalPages}
@@ -375,7 +370,7 @@ export default function PractitionerSupportHomeScreen({
                   }
                   className="rounded-lg border border-slate-200 px-2.5 py-1 hover:bg-slate-50 disabled:opacity-40 dark:border-white/5 dark:hover:bg-white/5"
                 >
-                  {locale.startsWith("ar") ? "التالي" : "Next"}
+                  {t("home.next")}
                 </button>
               </div>
             )}

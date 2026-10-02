@@ -29,7 +29,7 @@ import { toAppError } from "@/lib/api/errors";
 import { useCurrentUserPermissions } from "@/features/users/hooks/use-users";
 import { PermissionKey } from "@/lib/auth/permissions";
 import { getAdminPaymentErrorKey, ADMIN_PAYMENT_STATUS_STYLES, ADMIN_REFUND_STATUS_STYLES } from "../lib/admin-payment-status";
-import { useAdminPaymentOpsDetails, useRequestAdminPaymentRefund, useRetryAdminPaymentRefund } from "../hooks/use-admin-payments";
+import { useAdminPaymentOpsDetails, useManualFinalizeAdminPaymentRefund, useRequestAdminPaymentRefund, useRetryAdminPaymentRefund } from "../hooks/use-admin-payments";
 import { formatAdminMoneyForLocale as formatMoney } from "@/features/admin/finance/lib/finance-formatters";
 import type {
   AdminPaymentEventItem,
@@ -173,11 +173,13 @@ function RefundTimeline({
   refunds,
   currency,
   canRetry,
+  canManuallyFinalize,
 }: {
   paymentId: string;
   refunds: AdminPaymentRefundItem[];
   currency: string;
   canRetry: boolean;
+  canManuallyFinalize: boolean;
 }) {
   const t = useTranslations("admin-area");
   const locale = useLocale();
@@ -310,10 +312,119 @@ function RefundTimeline({
                   : t((feedback.key ?? "payments.errors.generic") as Parameters<typeof t>[0])}
               </p>
             ) : null}
+            {refund.manualProviderFinalizationAvailable && canManuallyFinalize ? (
+              <ManualProviderRefundFinalizationPanel paymentId={paymentId} refund={refund} />
+            ) : null}
           </div>
         );
       })}
     </div>
+  );
+}
+
+function ManualProviderRefundFinalizationPanel({
+  paymentId,
+  refund,
+}: {
+  paymentId: string;
+  refund: AdminPaymentRefundItem;
+}) {
+  const locale = useLocale();
+  const finalizeRefund = useManualFinalizeAdminPaymentRefund();
+  const [outcome, setOutcome] = useState<"SUCCEEDED" | "FAILED">("SUCCEEDED");
+  const [evidenceReference, setEvidenceReference] = useState("");
+  const [reason, setReason] = useState("");
+  const [feedback, setFeedback] = useState<"success" | "error" | null>(null);
+  const isArabic = locale.startsWith("ar");
+
+  const submit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const normalizedReference = evidenceReference.trim();
+    const normalizedReason = reason.trim();
+    if (!normalizedReference || !normalizedReason) {
+      setFeedback("error");
+      return;
+    }
+    try {
+      await finalizeRefund.mutateAsync({
+        paymentId,
+        refundId: refund.id,
+        data: { outcome, evidenceReference: normalizedReference, reason: normalizedReason },
+      });
+      setFeedback("success");
+    } catch {
+      setFeedback("error");
+    }
+  };
+
+  return (
+    <form
+      className="mt-4 space-y-3 rounded-xl border border-amber-300/60 bg-amber-50/60 p-3 dark:border-amber-400/25 dark:bg-amber-400/5"
+      onSubmit={submit}
+    >
+      <div>
+        <p className="text-xs font-semibold text-text-primary dark:text-white/90">
+          {isArabic ? "تسوية موثقة من مزود الدفع" : "Evidence-based provider finalization"}
+        </p>
+        <p className="mt-1 text-xs leading-5 text-text-secondary">
+          {isArabic
+            ? "استخدم هذا الإجراء فقط بعد التحقق من دليل خارجي. لا يعيد إرسال طلب الاسترداد."
+            : "Use only after verifying external evidence. This does not send another provider refund request."}
+        </p>
+      </div>
+      <div className="grid gap-2 sm:grid-cols-2">
+        <label className="text-xs text-text-secondary">
+          {isArabic ? "النتيجة النهائية" : "Final outcome"}
+          <select
+            value={outcome}
+            onChange={(event) => setOutcome(event.target.value as "SUCCEEDED" | "FAILED")}
+            className="mt-1 w-full rounded-lg border border-border-light bg-white px-2.5 py-2 text-sm text-text-primary dark:bg-white/5 dark:text-white"
+          >
+            <option value="SUCCEEDED">{isArabic ? "نجح الاسترداد" : "Refund succeeded"}</option>
+            <option value="FAILED">{isArabic ? "فشل الاسترداد" : "Refund failed"}</option>
+          </select>
+        </label>
+        <label className="text-xs text-text-secondary">
+          {isArabic ? "مرجع الدليل" : "Evidence reference"}
+          <input
+            value={evidenceReference}
+            onChange={(event) => setEvidenceReference(event.target.value)}
+            required
+            maxLength={191}
+            className="mt-1 w-full rounded-lg border border-border-light bg-white px-2.5 py-2 text-sm text-text-primary dark:bg-white/5 dark:text-white"
+          />
+        </label>
+      </div>
+      <label className="block text-xs text-text-secondary">
+        {isArabic ? "سبب التحقق" : "Verification reason"}
+        <textarea
+          value={reason}
+          onChange={(event) => setReason(event.target.value)}
+          required
+          maxLength={500}
+          rows={2}
+          className="mt-1 w-full rounded-lg border border-border-light bg-white px-2.5 py-2 text-sm text-text-primary dark:bg-white/5 dark:text-white"
+        />
+      </label>
+      <div className="grid gap-1 text-[11px] text-text-muted sm:grid-cols-2">
+        <span>{isArabic ? "المعرف: " : "Refund ID: "}{refund.id}</span>
+        <span>{isArabic ? "آخر استعلام: " : "Last inquiry: "}{formatDateTime(refund.providerReconciliationLastAttemptAt, locale)}</span>
+        <span>{isArabic ? "نتيجة الاستعلام: " : "Inquiry result: "}{refund.providerReconciliationOutcome ?? "-"}</span>
+        <span className="truncate">{isArabic ? "تفاصيل المزود: " : "Provider detail: "}{refund.providerReconciliationEvidence ?? "-"}</span>
+      </div>
+      {feedback ? (
+        <p className={`text-xs ${feedback === "success" ? "text-emerald-700 dark:text-emerald-300" : "text-rose-700 dark:text-rose-300"}`}>
+          {feedback === "success"
+            ? (isArabic ? "تم تسجيل التسوية. ستتحدث الحالة من الخادم." : "Finalization recorded. The server state has been refreshed.")
+            : (isArabic ? "يلزم مرجع دليل وسبب، أو لم يعد الاسترداد مؤهلًا للتسوية اليدوية." : "Evidence and reason are required, or the refund is no longer eligible for manual finalization.")}
+        </p>
+      ) : null}
+      <Button type="submit" size="sm" disabled={finalizeRefund.isPending}>
+        {finalizeRefund.isPending
+          ? (isArabic ? "جارٍ تسجيل التسوية…" : "Recording finalization…")
+          : (isArabic ? "تسجيل النتيجة الموثقة" : "Record verified outcome")}
+      </Button>
+    </form>
   );
 }
 
@@ -335,12 +446,16 @@ function EventsTimeline({ events }: { events: AdminPaymentEventItem[] }) {
         case "PAYMENT_CREATED": return "تم إنشاء الدفعة";
         case "PAYMENT_CAPTURED": return "تم التحصيل";
         case "PAYMENT_FAILED": return "فشل الدفع";
+        case "PAYMENT_LATE_SUCCESS_REVIEW_REQUIRED": return "نجاح متأخر يتطلب مراجعة تشغيلية";
         case "REFUND_REQUESTED": return "تم طلب الاسترداد";
         case "REFUND_PROCESSING": return "قيد معالجة الاسترداد";
         case "REFUND_SUCCEEDED": return "تم الاسترداد بنجاح";
         case "REFUND_FAILED": return "فشل الاسترداد";
         default: return type;
       }
+    }
+    if (type === "PAYMENT_LATE_SUCCESS_REVIEW_REQUIRED") {
+      return "Late provider success requires operational review";
     }
     return type;
   };
@@ -476,6 +591,7 @@ export default function AdminPaymentOpsScreen({ paymentId }: Props) {
   const locale = useLocale();
   const router = useRouter();
   const payment = useAdminPaymentOpsDetails(paymentId);
+  const permissionQuery = useCurrentUserPermissions(true);
   const [metadataOpen, setMetadataOpen] = useState(false);
 
   if (payment.isLoading) {
@@ -548,7 +664,6 @@ export default function AdminPaymentOpsScreen({ paymentId }: Props) {
   }
 
   const item = payment.data.item;
-  const permissionQuery = useCurrentUserPermissions(true);
   const permissions = permissionQuery.data?.permissions ?? [];
   const canRequestRefund = permissions.includes(PermissionKey.REFUNDS_APPROVE);
   const canRetryRefund = permissions.includes(PermissionKey.REFUNDS_RETRY);
@@ -621,6 +736,41 @@ export default function AdminPaymentOpsScreen({ paymentId }: Props) {
               <DetailRow label={t("payments.paymentFields.expiredAt")} value={formatDateTime(item.payment.expiredAt, locale)} />
             </div>
           </SectionCard>
+
+          {item.failureDiagnosis ? (
+            <SectionCard title={locale === "ar" ? "تشخيص الدفع" : "Payment diagnosis"} icon={<AlertCircle className="h-5 w-5" />}>
+              <div className="grid gap-x-6 gap-y-1 sm:grid-cols-2 rounded-[20px] border border-amber-200/60 bg-amber-50/50 p-5 dark:border-amber-900/30 dark:bg-amber-950/10">
+                <DetailRow label={locale === "ar" ? "الفئة" : "Category"} value={item.failureDiagnosis.category ?? "-"} />
+                <DetailRow label={locale === "ar" ? "المحاولات" : "Attempts"} value={String(item.failureDiagnosis.attemptNumber)} />
+                <DetailRow label={locale === "ar" ? "آخر محاولة" : "Last attempt"} value={formatDateTime(item.failureDiagnosis.lastAttemptAt, locale)} />
+                <DetailRow label={locale === "ar" ? "الإجراء التالي" : "Next action"} value={item.failureDiagnosis.recommendedNextAction} />
+                <DetailRow label={locale === "ar" ? "إعادة المحاولة متاحة" : "Retry available"} value={item.failureDiagnosis.retryAvailable ? (locale === "ar" ? "نعم" : "Yes") : (locale === "ar" ? "لا" : "No")} />
+              </div>
+            </SectionCard>
+          ) : null}
+
+          <SectionCard title={locale === "ar" ? "السياق المرتبط" : "Related context"} icon={<User className="h-5 w-5" />}>
+            <div className="flex flex-wrap gap-2">
+              {item.payment.patientId ? <Link href={`/admin/patients/${item.payment.patientId}`} className="inline-flex items-center gap-1.5 rounded-xl border border-border-light px-3 py-2 text-xs font-semibold text-primary hover:border-primary/40 hover:underline">{locale === "ar" ? `عرض المريض${item.payment.patientName ? `: ${item.payment.patientName}` : ""}` : `View patient${item.payment.patientName ? `: ${item.payment.patientName}` : ""}`}</Link> : null}
+              {item.packagePurchase ? <Link href={item.packagePurchase.settlementId ? `/admin/package-settlements/${item.packagePurchase.settlementId}` : item.packagePurchase.planCode ? `/admin/package-plans/${item.packagePurchase.planCode}` : "/admin/package-settlements"} className="inline-flex items-center gap-1.5 rounded-xl border border-border-light px-3 py-2 text-xs font-semibold text-primary hover:border-primary/40 hover:underline">{locale === "ar" ? `عرض الباقة${item.packagePurchase.title ? `: ${item.packagePurchase.title}` : ""}` : `View package${item.packagePurchase.title ? `: ${item.packagePurchase.title}` : ""}`}</Link> : null}
+              {item.academyEnrollment ? <Link href={`/admin/academy/programs/${item.academyEnrollment.programId}/learners`} className="inline-flex items-center gap-1.5 rounded-xl border border-border-light px-3 py-2 text-xs font-semibold text-primary hover:border-primary/40 hover:underline">{locale === "ar" ? "عرض التسجيل في التدريب" : "View academy enrollment"}</Link> : null}
+              {item.payment.patientId && item.refunds.some((refund) => Boolean(refund.customerWalletCreditedAt)) ? <Link href={`/admin/patients/${item.payment.patientId}?tab=wallet`} className="inline-flex items-center gap-1.5 rounded-xl border border-border-light px-3 py-2 text-xs font-semibold text-primary hover:border-primary/40 hover:underline"><Wallet className="h-3.5 w-3.5" />{locale === "ar" ? "عرض محفظة المريض" : "View patient wallet"}</Link> : null}
+            </div>
+            {!item.payment.patientId && !item.packagePurchase && !item.academyEnrollment ? <p className="text-sm text-text-muted">{locale === "ar" ? "لا توجد سجلات مرتبطة إضافية." : "No additional related records."}</p> : null}
+          </SectionCard>
+
+          {item.sessionSummary ? (
+            <SectionCard title={locale === "ar" ? "ملخص الجلسة الآمن" : "Support-safe session summary"} icon={<Calendar className="h-5 w-5" />}>
+              <div className="grid gap-x-6 gap-y-1 sm:grid-cols-2 rounded-[20px] border border-border-light bg-surface-secondary/35 p-5 dark:border-white/8 dark:bg-white/[0.005]">
+                <DetailRow label={locale === "ar" ? "الممارس" : "Practitioner"} value={item.sessionSummary.practitionerName ?? "-"} />
+                <DetailRow label={locale === "ar" ? "المدة" : "Duration"} value={`${item.sessionSummary.durationMinutes} min`} />
+                <DetailRow label={locale === "ar" ? "حالة الحجز" : "Booking state"} value={item.sessionSummary.bookingState} />
+                <DetailRow label={locale === "ar" ? "حالة الدفع" : "Payment state"} value={item.sessionSummary.paymentState} />
+                <DetailRow label={locale === "ar" ? "حالة الإلغاء" : "Cancellation"} value={item.sessionSummary.cancellationState} />
+                <DetailRow label={locale === "ar" ? "الموعد" : "Scheduled"} value={formatDateTime(item.sessionSummary.scheduledStartAt, locale)} />
+              </div>
+            </SectionCard>
+          ) : null}
 
           {/* Section 2: Related Customer & Session */}
           <SectionCard title={t("payments.sections.session")} icon={<Calendar className="h-5 w-5" />}>
@@ -722,13 +872,44 @@ export default function AdminPaymentOpsScreen({ paymentId }: Props) {
 
           {/* Refund activity timeline */}
           <SectionCard title={t("payments.sections.refunds")} icon={<RotateCcw className="h-5 w-5" />}>
-          <RefundTimeline paymentId={paymentId} refunds={item.refunds} currency={item.payment.currency} canRetry={canRetryRefund} />
+          <RefundTimeline paymentId={paymentId} refunds={item.refunds} currency={item.payment.currency} canRetry={canRetryRefund} canManuallyFinalize={canRequestRefund} />
           </SectionCard>
 
           {/* Section 5: Events Timeline */}
           <SectionCard title={t("payments.sections.events")} icon={<Clock3 className="h-5 w-5" />}>
             <EventsTimeline events={item.recentEvents} />
           </SectionCard>
+
+          {item.timeline?.length ? (
+            <SectionCard title={locale === "ar" ? "الخط الزمني المالي الموحد" : "Unified financial timeline"} icon={<Clock3 className="h-5 w-5" />}>
+              <div className="space-y-3">
+                {item.timeline.map((entry) => (
+                  <div key={entry.id} className="rounded-xl border border-border-light p-3 dark:border-white/8">
+                    <div className="flex items-center justify-between gap-3 text-xs">
+                      <span className="font-semibold text-text-primary dark:text-white/90">{entry.type}</span>
+                      <span className="text-text-muted">{formatDateTime(entry.occurredAt, locale)}</span>
+                    </div>
+                    {entry.reference ? <p className="mt-1 font-mono text-[11px] text-text-muted">{entry.reference}</p> : null}
+                    {entry.reason ? <p className="mt-1 text-xs text-text-secondary">{entry.reason}</p> : null}
+                  </div>
+                ))}
+              </div>
+            </SectionCard>
+          ) : null}
+
+          {item.exceptions?.length ? (
+            <SectionCard title={locale === "ar" ? "استثناءات الدفع" : "Payment exceptions"} icon={<AlertCircle className="h-5 w-5" />}>
+              <div className="space-y-3">
+                {item.exceptions.map((exception) => (
+                  <div key={exception.id} className="rounded-xl border border-rose-200/70 bg-rose-50/40 p-3 dark:border-rose-900/30 dark:bg-rose-950/10">
+                    <div className="flex items-center justify-between gap-3 text-xs"><span className="font-semibold">{exception.type}</span><span>{exception.status}</span></div>
+                    <p className="mt-1 text-xs text-text-secondary">{exception.reason}</p>
+                    {exception.resolutionNote ? <p className="mt-1 text-xs text-text-muted">{exception.resolutionNote}</p> : null}
+                  </div>
+                ))}
+              </div>
+            </SectionCard>
+          ) : null}
 
           {/* Section 6: Provider Metadata (Collapsed) */}
           <div className="rounded-2xl border border-border-light bg-surface-secondary/40 overflow-hidden dark:border-white/8 dark:bg-white/[0.005]">

@@ -1,0 +1,9 @@
+appId: com.sawiyaa.mobile
+---
+- runFlow: practitioner-login.yaml
+- tapOn:
+    text: "Notifications|الإشعارات"
+- assertVisible:
+    id: "notifications-screen"
+- assertNotVisible:
+    text: "FATAL EXCEPTION"

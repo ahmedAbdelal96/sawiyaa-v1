@@ -47,5 +47,6 @@ export type AcademyProgramEnrollmentItem = {
   certificate?: { status: string; issuedAt: string | null; uploadedAt: string | null; fileName: string | null; downloadAvailable: boolean } | null;
 };
 export type AcademyProgramEnrollmentResponse = { item: AcademyProgramEnrollmentItem };
+export type AcademyProgramEnrollmentsListData = { items: AcademyProgramEnrollmentItem[]; pagination: AcademyPagination };
 export type CreateAcademyProgramEnrollmentInput = { fullName: string; phoneNumber: string; whatsappNumber?: string; email?: string; sourceLabel?: string; declaredCountryCode?: string; returnUrlBase?: string };
 export type ListAcademyProgramsParams = { page?: number; limit?: number; q?: string };

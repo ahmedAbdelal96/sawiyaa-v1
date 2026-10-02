@@ -380,6 +380,20 @@ class RecommendationDto {
   requiresAdminReview!: boolean;
 }
 
+class SessionReviewDecisionDto {
+  @ApiProperty()
+  canApproveNormally!: boolean;
+
+  @ApiProperty()
+  requiresResolution!: boolean;
+
+  @ApiProperty()
+  reasonCode!: string;
+
+  @ApiProperty()
+  recommendation!: string;
+}
+
 class SessionTimingDto {
   @ApiProperty({ nullable: true })
   scheduledStartAt!: string | null;
@@ -418,6 +432,9 @@ class ExtendedSessionSummaryDto {
 
   @ApiProperty({ type: RecommendationDto })
   recommendation!: RecommendationDto;
+
+  @ApiProperty({ type: SessionReviewDecisionDto })
+  reviewDecision!: SessionReviewDecisionDto;
 }
 
 class SessionOutcomeEvidenceSummaryDto {
@@ -468,10 +485,10 @@ class SessionOutcomePolicySnapshotDto {
 class SessionOutcomeEvaluationDto {
   @ApiProperty({
     enum: [
-      'AUTO_COMPLETABLE',
-      'AUTO_PATIENT_NO_SHOW',
-      'AUTO_PRACTITIONER_NO_SHOW',
-      'AUTO_BOTH_NO_SHOW',
+      'COMPLETION_CANDIDATE',
+      'PATIENT_NO_SHOW_CANDIDATE',
+      'PRACTITIONER_NO_SHOW_CANDIDATE',
+      'BOTH_NO_SHOW_CANDIDATE',
       'NEEDS_ADMIN_REVIEW',
       'NOT_READY_FOR_EVALUATION',
     ],
@@ -482,7 +499,7 @@ class SessionOutcomeEvaluationDto {
   confidence!: string;
 
   @ApiProperty()
-  eligibleForAutomaticFinalization!: boolean;
+  eligibleForAdminApproval!: boolean;
 
   @ApiProperty({ nullable: true })
   recommendedTerminalStatus!: string | null;
@@ -562,7 +579,7 @@ class AdminSessionReconciliationDto {
 }
 
 class AdminSessionFinalizationDto {
-  @ApiProperty({ enum: ['AUTOMATIC_COMPLETION', 'MANUAL'] })
+  @ApiProperty({ enum: ['MANUAL'] })
   mode!: string;
 
   @ApiProperty()

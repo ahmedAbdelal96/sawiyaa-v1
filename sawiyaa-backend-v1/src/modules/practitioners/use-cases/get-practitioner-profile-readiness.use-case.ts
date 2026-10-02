@@ -14,6 +14,9 @@ import { PractitionerSpecialtyRepository } from '../repositories/practitioner-sp
 import { PractitionerUserRepository } from '../repositories/practitioner-user.repository';
 import { PractitionerPayoutDestinationInput } from '../types/practitioner.types';
 import { PractitionerRequiredDocumentsService } from '../services/practitioner-required-documents.service';
+import { getPractitionerPayoutCapabilities } from '../services/practitioner-payout-capability.service';
+import { maskPayoutEmail, maskPayoutIdentifier } from '../utils/mask-payout-destination.util';
+import { hasRequiredPractitionerPricing } from '../utils/public-practitioner-pricing-readiness.util';
 
 /**
  * Readiness use case centralizes completion/readiness evaluation logic so other use cases can reuse one deterministic decision source.
@@ -54,6 +57,58 @@ export class GetPractitionerProfileReadinessUseCase {
       this.practitionerUserRepository.findProfileSeed(input.userId),
     ]);
 
+    if (!profile && user) {
+      const application = await this.practitionerApplicationRepository.findLatestByUserId(input.userId);
+      if (!application) throw new NotFoundException({ error: 'PRACTITIONER_APPLICATION_NOT_FOUND' });
+      const snapshot = (application.submissionSnapshot ?? {}) as Record<string, any>;
+      const profileSnapshot = snapshot.profile ?? {};
+      const credentials = await this.practitionerCredentialRepository.listByApplicationId(application.id);
+      const credentialSummary = {
+        totalCredentials: credentials.length,
+        pendingCount: credentials.filter((item) => item.reviewStatus === 'PENDING').length,
+        approvedCount: credentials.filter((item) => item.reviewStatus === 'APPROVED').length,
+        rejectedCount: credentials.filter((item) => item.reviewStatus === 'REJECTED').length,
+        expiredCount: credentials.filter((item) => item.reviewStatus === 'EXPIRED').length,
+      };
+      const completion = this.practitionerApplicationCompletionService.build({
+        displayName: snapshot.applicant?.displayName ?? user.displayName,
+        countryCode: profileSnapshot.countryCode ?? null,
+        practitionerType: profileSnapshot.practitionerType ?? null,
+        practitionerTypeExplicit: profileSnapshot.practitionerTypeExplicit === true,
+        practitionerGender: profileSnapshot.practitionerGender ?? null,
+        professionalTitle: profileSnapshot.professionalTitle ?? null,
+        bio: profileSnapshot.bio ?? null,
+        yearsOfExperience: profileSnapshot.yearsOfExperience ?? null,
+        languageCount: Array.isArray(snapshot.languageCodes) ? snapshot.languageCodes.length : 0,
+        specialtyCount: Array.isArray(snapshot.specialtySelection?.specialties) ? snapshot.specialtySelection.specialties.length : 0,
+        primarySpecialtyCategoryId: snapshot.specialtySelection?.primarySpecialtyCategoryId ?? null,
+        credentialSummary,
+        credentialTypes: credentials.map((item) => item.credentialType),
+        credentialRecords: credentials.map((item) => ({ credentialType: item.credentialType, reviewStatus: item.reviewStatus, expiresAt: item.expiresAt, fileUrl: item.fileUrl })),
+        payoutDestination: null,
+        isAccountActive: input.currentUser.isActive === true,
+        isPractitionerOtpVerified: input.currentUser.isPractitionerOtpVerified === true,
+        applicationStatus: application.status,
+        pricing: { session30: { egp: null, usd: null }, session60: { egp: null, usd: null } },
+      });
+      return {
+        ...completion,
+        isApproved: false,
+        isProfileComplete: false,
+        hasRequiredSpecialty: Array.isArray(snapshot.specialtySelection?.specialties) && snapshot.specialtySelection.specialties.length > 0,
+        hasRequiredNormalPricing: false,
+        canPublish: false,
+        publicationMissingRequirements: ['PRACTITIONER_NOT_APPROVED'],
+        checks: {} as any,
+        isProfileCompleted: completion.canSubmit,
+        canSubmitApplication: completion.canSubmit,
+        missingRequirements: completion.blockers.map((item) => item.field).filter((field): field is string => Boolean(field)),
+        remediationMissingRequirements: [],
+        completion,
+        professionalTitle: { approvedValue: null, proposedValue: profileSnapshot.professionalTitle ?? null, requirementStatus: null, reviewStatus: null, publiclyComplete: false, remediationComplete: false },
+        payoutCapabilities: getPractitionerPayoutCapabilities(),
+      };
+    }
     if (!profile || !user) {
       throw new NotFoundException({
         messageKey: 'practitioners.errors.profileNotFound',
@@ -98,6 +153,8 @@ export class GetPractitionerProfileReadinessUseCase {
               iban: payoutDestination.iban ?? null,
               walletProvider: payoutDestination.walletProvider ?? null,
               walletIdentifier: payoutDestination.walletIdentifier ?? null,
+              instapayIdentifier: payoutDestination.instapayIdentifier ?? null,
+              paypalEmail: payoutDestination.paypalEmail ?? null,
               otherDetails: payoutDestination.otherDetails ?? null,
             }
           : null;
@@ -117,11 +174,13 @@ export class GetPractitionerProfileReadinessUseCase {
             resolvedPayoutDestination.accountHolderName ?? null,
           bankName: resolvedPayoutDestination.bankName ?? null,
           bankAccountNumber:
-            resolvedPayoutDestination.bankAccountNumber ?? null,
-          iban: resolvedPayoutDestination.iban ?? null,
+            maskPayoutIdentifier(resolvedPayoutDestination.bankAccountNumber),
+          iban: maskPayoutIdentifier(resolvedPayoutDestination.iban),
           walletProvider: resolvedPayoutDestination.walletProvider ?? null,
-          walletIdentifier: resolvedPayoutDestination.walletIdentifier ?? null,
-          otherDetails: resolvedPayoutDestination.otherDetails ?? null,
+          walletIdentifier: maskPayoutIdentifier(resolvedPayoutDestination.walletIdentifier),
+          instapayIdentifier: maskPayoutIdentifier(resolvedPayoutDestination.instapayIdentifier),
+          paypalEmail: maskPayoutEmail(resolvedPayoutDestination.paypalEmail),
+          otherDetails: resolvedPayoutDestination.otherDetails ? '[stored]' : null,
         }
       : null;
     const requiredDocuments = this.practitionerRequiredDocumentsService.evaluate(
@@ -131,6 +190,7 @@ export class GetPractitionerProfileReadinessUseCase {
         expiresAt: credential.expiresAt,
         fileUrl: credential.fileUrl,
       })),
+      { countryCode: profile.country?.isoCode ?? null },
     );
     const hasIdentityEvidence = requiredDocuments.groups.identity.complete;
     const hasAcademicCertificate = requiredDocuments.groups.academic.complete;
@@ -185,6 +245,25 @@ export class GetPractitionerProfileReadinessUseCase {
       isPractitionerOtpVerified:
         input.currentUser.isPractitionerOtpVerified === true,
     });
+    const isApproved = profile.status === 'APPROVED';
+    const isProfileComplete = Boolean(
+      user.displayName?.trim() &&
+      profile.publicSlug?.trim() &&
+      profile.professionalTitle?.trim() &&
+      profile.bio?.trim(),
+    );
+    const hasRequiredSpecialty = specialtyCount > 0;
+    const hasRequiredNormalPricing = hasRequiredPractitionerPricing(profile);
+    const publicationMissingRequirements = [
+      ...(isApproved ? [] : ['PRACTITIONER_NOT_APPROVED']),
+      ...(user.status === 'ACTIVE' ? [] : ['ACCOUNT_NOT_ACTIVE']),
+      ...(profile.publicSlug?.trim() ? [] : ['PUBLIC_SLUG_REQUIRED']),
+      ...(user.displayName?.trim() ? [] : ['DISPLAY_NAME_REQUIRED']),
+      ...(profile.professionalTitle?.trim() ? [] : ['PROFESSIONAL_TITLE_REQUIRED']),
+      ...(profile.bio?.trim() ? [] : ['BIO_REQUIRED']),
+      ...(hasRequiredSpecialty ? [] : ['ACTIVE_SPECIALTY_REQUIRED']),
+      ...(hasRequiredNormalPricing ? [] : ['REQUIRED_PRICING_MISSING']),
+    ];
     const remediationReadiness = this.practitionerProfileReadinessPolicy.evaluate({
       displayName:
         input.draft?.displayName !== undefined
@@ -222,6 +301,12 @@ export class GetPractitionerProfileReadinessUseCase {
 
     return {
       ...readiness,
+      isApproved,
+      isProfileComplete,
+      hasRequiredSpecialty,
+      hasRequiredNormalPricing,
+      canPublish: publicationMissingRequirements.length === 0,
+      publicationMissingRequirements,
       remediationMissingRequirements: remediationReadiness.missingRequirements,
       professionalTitle: {
         approvedValue: profile.professionalTitle,
@@ -294,6 +379,7 @@ export class GetPractitionerProfileReadinessUseCase {
           },
         },
       }),
+      payoutCapabilities: getPractitionerPayoutCapabilities(),
     };
   }
 

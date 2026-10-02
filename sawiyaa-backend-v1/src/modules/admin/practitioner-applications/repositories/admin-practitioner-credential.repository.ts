@@ -24,6 +24,7 @@ export class AdminPractitionerCredentialRepository {
         id: true,
         credentialType: true,
         fileUrl: true,
+        storedFileId: true,
         reviewStatus: true,
         reviewedAt: true,
         reviewedByUserId: true,
@@ -39,9 +40,11 @@ export class AdminPractitionerCredentialRepository {
       where: { id },
       select: {
         id: true,
+        applicationId: true,
         practitionerId: true,
         credentialType: true,
         fileUrl: true,
+        storedFileId: true,
         reviewStatus: true,
         reviewedAt: true,
         reviewedByUserId: true,
@@ -54,9 +57,11 @@ export class AdminPractitionerCredentialRepository {
 
   create(
     data: {
-      practitionerId: string;
+      practitionerId?: string | null;
+      applicationId?: string | null;
       credentialType: CredentialType;
       fileUrl: string;
+      storedFileId?: string | null;
       reviewStatus?: CredentialReviewStatus;
       reviewedAt?: Date | null;
       reviewedByUserId?: string | null;
@@ -67,9 +72,11 @@ export class AdminPractitionerCredentialRepository {
   ) {
     return this.getDb(tx).practitionerCredential.create({
       data: {
-        practitionerId: data.practitionerId,
+        practitionerId: data.practitionerId ?? null,
+        applicationId: data.applicationId ?? null,
         credentialType: data.credentialType,
         fileUrl: data.fileUrl,
+        storedFileId: data.storedFileId ?? this.extractStoredFileId(data.fileUrl),
         reviewStatus: data.reviewStatus,
         reviewedAt: data.reviewedAt ?? null,
         reviewedByUserId: data.reviewedByUserId ?? null,
@@ -80,6 +87,7 @@ export class AdminPractitionerCredentialRepository {
         id: true,
         credentialType: true,
         fileUrl: true,
+        storedFileId: true,
         reviewStatus: true,
         reviewedAt: true,
         reviewedByUserId: true,
@@ -95,6 +103,7 @@ export class AdminPractitionerCredentialRepository {
     data: {
       credentialType?: CredentialType;
       fileUrl?: string;
+      storedFileId?: string | null;
       reviewStatus?: CredentialReviewStatus;
       reviewedAt?: Date | null;
       reviewedByUserId?: string | null;
@@ -108,6 +117,7 @@ export class AdminPractitionerCredentialRepository {
       data: {
         credentialType: data.credentialType,
         fileUrl: data.fileUrl,
+        storedFileId: data.storedFileId,
         reviewStatus: data.reviewStatus,
         reviewedAt: data.reviewedAt,
         reviewedByUserId: data.reviewedByUserId,
@@ -118,6 +128,7 @@ export class AdminPractitionerCredentialRepository {
         id: true,
         credentialType: true,
         fileUrl: true,
+        storedFileId: true,
         reviewStatus: true,
         reviewedAt: true,
         reviewedByUserId: true,
@@ -135,5 +146,11 @@ export class AdminPractitionerCredentialRepository {
         id: true,
       },
     });
+  }
+
+  private extractStoredFileId(fileUrl: string): string | null {
+    const name = fileUrl.split('?')[0].split('/').pop() ?? '';
+    const candidate = name.slice(0, name.lastIndexOf('.'));
+    return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(candidate) ? candidate : null;
   }
 }

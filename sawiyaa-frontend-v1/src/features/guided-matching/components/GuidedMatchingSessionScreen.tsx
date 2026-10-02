@@ -4,6 +4,8 @@ import type { ReactNode } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { useMatchingSession } from "../hooks/use-guided-matching";
+import { useSpecialties } from "@/features/specialties/hooks/use-specialties";
+import { getLocalizedSpecialtyName } from "@/features/specialties/utils/localized-specialty";
 import type {
   MatchingRecommendationItem,
   MatchingSession,
@@ -11,28 +13,40 @@ import type {
 import {
   AlertCircle,
   ArrowRight,
+  BadgeCheck,
   CircleDollarSign,
   Globe,
   HeartHandshake,
   LifeBuoy,
+  MessageSquare,
+  RotateCcw,
   Sparkles,
   Stethoscope,
+  Tag,
+  Video,
+  Mic,
+  Clock,
 } from "lucide-react";
 import { ListStateSkeleton, StateCard } from "@/components/shared/ContentStates";
 import {
   getLocalizedLanguageLabel,
   getProfessionalTitleLabel,
 } from "@/constants/reference-data";
+import PractitionerAvatar from "@/components/shared/PractitionerAvatar";
 
 type GuidedMatchingSessionScreenProps = {
   sessionId: string;
 };
 
-type StatCardProps = {
-  label: string;
-  value: ReactNode;
-  helper?: string;
-};
+function avatarInitials(name: string | null | undefined): string {
+  const clean = name?.trim() ?? "";
+  if (!clean) return "DR";
+  const parts = clean.split(/\s+/);
+  if (parts.length >= 2) {
+    return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
+  }
+  return clean.slice(0, 2).toUpperCase();
+}
 
 function formatAmount(
   amount: string | null,
@@ -49,26 +63,28 @@ function formatAmount(
   }).format(Number(amount));
 }
 
-function SummaryChip({ children }: { children: ReactNode }) {
-  return <span className="app-chip rounded-full px-3 py-1.5 text-xs font-medium">{children}</span>;
-}
-
-function StatCard({ label, value, helper }: StatCardProps) {
+function PreferenceTag({
+  icon,
+  label,
+  value,
+}: {
+  icon: ReactNode;
+  label: string;
+  value: ReactNode;
+}) {
   return (
-    <div className="app-panel-soft rounded-2xl p-4">
-      <p className="text-xs font-semibold uppercase tracking-[0.14em] text-text-muted">{label}</p>
-      <div className="mt-2 text-2xl font-semibold tracking-tight text-text-primary dark:text-white/95">
-        {value}
-      </div>
-      {helper ? <p className="mt-1 text-xs leading-6 text-text-secondary">{helper}</p> : null}
+    <div className="inline-flex items-center gap-1.5 rounded-full border border-border-light/80 bg-white/90 px-3 py-1.5 text-xs font-medium text-text-primary shadow-2xs dark:border-border-dark dark:bg-surface-secondary dark:text-white/90">
+      <span className="text-primary dark:text-primary-light">{icon}</span>
+      <span className="text-text-muted">{label}:</span>
+      <span className="font-semibold text-text-primary dark:text-white">{value}</span>
     </div>
   );
 }
 
 function LoadingState() {
   return (
-    <div className="app-max-content mx-auto">
-      <ListStateSkeleton items={3} heightClass="h-40" />
+    <div className="app-max-content mx-auto space-y-4">
+      <ListStateSkeleton items={3} heightClass="h-48" />
     </div>
   );
 }
@@ -112,8 +128,11 @@ export default function GuidedMatchingSessionScreen({
 }: GuidedMatchingSessionScreenProps) {
   const t = useTranslations("guided-matching");
   const locale = useLocale();
-  const numberLocale = locale === "ar" ? "ar-SA" : "en-US";
+  const isArabic = locale === "ar";
+  const numberLocale = isArabic ? "ar-SA" : "en-US";
+
   const { data, isLoading, isError, refetch } = useMatchingSession(sessionId);
+  const { data: specialtiesData } = useSpecialties();
 
   if (isLoading) {
     return <LoadingState />;
@@ -152,165 +171,209 @@ export default function GuidedMatchingSessionScreen({
 
   const totalMatches = data.items.length;
   const topScore = totalMatches > 0 ? data.items[0]?.score ?? null : null;
-  const averageScore =
-    totalMatches > 0
-      ? Math.round(data.items.reduce((sum, item) => sum + item.score, 0) / totalMatches)
-      : null;
+
+  // Resolve localized specialty name if user selected one
+  const resolvedSpecialtyName = (() => {
+    const slug = data.answers.preferredSpecialtySlug;
+    if (!slug) return null;
+    const list = specialtiesData?.specialties ?? [];
+    const found = list.find((item) => item.slug === slug);
+    if (found) {
+      return getLocalizedSpecialtyName(found, locale);
+    }
+    // Pretty fallback if not yet loaded
+    return slug.replace(/-/g, " ");
+  })();
 
   return (
-    <div className="app-max-content mx-auto space-y-5 sm:space-y-6">
-      <section className="app-panel rounded-[32px] p-5 sm:p-7 xl:p-8">
-        <div className="grid gap-6 xl:grid-cols-[minmax(0,1.4fr)_minmax(320px,0.9fr)] xl:items-start">
-          <div className="space-y-5">
-            <div className="max-w-2xl">
-              <p className="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-primary">
-                {t("result.eyebrow")}
-              </p>
-              <h1 className="text-2xl font-semibold tracking-tight text-text-primary dark:text-white/95 sm:text-3xl">
-                {data.items.length > 0 ? t("result.title") : t("result.empty.title")}
+    <div className="app-max-content mx-auto space-y-6">
+      {/* 1. Header & Preferences Summary (Clean, Compact, Supportive) */}
+      <section className="app-panel relative overflow-hidden rounded-[28px] border border-border-light/80 bg-gradient-to-br from-white via-surface-cream/20 to-white p-5 sm:p-7 shadow-xs dark:from-surface-secondary dark:via-surface-secondary dark:to-surface-secondary dark:border-border-dark">
+        {/* Top Decorative Color Accent Bar */}
+        <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-primary via-emerald-500 to-primary/60" />
+
+        <div className="flex flex-col gap-5">
+          {/* Main Title Row + Action */}
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+            <div className="space-y-1.5">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1 text-xs font-bold text-primary dark:bg-primary/20">
+                  <Sparkles className="h-3.5 w-3.5" />
+                  {t("result.eyebrow")}
+                </span>
+                {topScore !== null && (
+                  <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 border border-emerald-200/80 px-2.5 py-0.5 text-xs font-bold text-emerald-700 dark:bg-emerald-950/40 dark:border-emerald-800/40 dark:text-emerald-300">
+                    {t("result.topScoreBadge", { score: topScore })}
+                  </span>
+                )}
+                <span className="rounded-full bg-surface-tertiary px-2.5 py-0.5 text-xs font-semibold text-text-secondary dark:bg-surface-secondary dark:text-text-muted">
+                  {t("result.matchesCount", { count: totalMatches })}
+                </span>
+              </div>
+
+              <h1 className="text-xl font-bold tracking-tight text-text-primary dark:text-white sm:text-2xl">
+                {totalMatches > 0 ? t("result.title") : t("result.empty.title")}
               </h1>
-              <p className="mt-3 text-sm leading-6 text-text-secondary sm:text-base">
-                {data.items.length > 0 ? t("result.note") : t("result.empty.note")}
+
+              <p className="text-xs sm:text-sm leading-relaxed text-text-secondary max-w-2xl">
+                {totalMatches > 0 ? t("result.note") : t("result.empty.note")}
               </p>
             </div>
 
-            <div className="grid gap-3 sm:grid-cols-3">
-              <StatCard
-                label={t("result.stats.matchesLabel")}
-                value={totalMatches}
-                helper={t("result.stats.matchesHint")}
-              />
-              <StatCard
-                label={t("result.stats.topScoreLabel")}
-                value={topScore !== null ? `${topScore}%` : "—"}
-                helper={t("result.stats.topScoreHint")}
-              />
-              <StatCard
-                label={t("result.stats.averageScoreLabel")}
-                value={averageScore !== null ? `${averageScore}%` : "—"}
-                helper={t("result.stats.averageScoreHint")}
-              />
+            {/* Retake / Modify Button */}
+            <div className="shrink-0">
+              <Link
+                href="/patient/matching"
+                className="inline-flex items-center gap-2 rounded-xl border border-border-light bg-white px-3.5 py-2 text-xs font-bold text-text-primary shadow-2xs transition hover:border-primary hover:text-primary active:scale-[0.98] dark:bg-surface-secondary dark:border-border-dark dark:text-white"
+              >
+                <RotateCcw className="h-3.5 w-3.5 text-primary" />
+                <span>{t("result.retake")}</span>
+              </Link>
             </div>
           </div>
 
-          <aside className="xl:sticky xl:top-6">
-            <div className="app-panel-soft rounded-[28px] p-5">
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-[0.16em] text-text-muted">
-                    {t("result.sessionPanel.title")}
-                  </p>
-                  <p className="mt-2 text-sm font-medium text-text-primary dark:text-white/90">
-                    {t("result.sessionId", { id: data.sessionId })}
-                  </p>
-                  <p className="mt-1 text-xs text-text-muted">{t("result.sessionSaved")}</p>
-                </div>
-                <div className="rounded-full bg-primary-light px-3 py-1.5 text-xs font-semibold text-primary dark:bg-primary/15">
-                  {t("result.sessionPanel.quickView")}
-                </div>
-              </div>
-
-              <div className="mt-5 space-y-3">
-                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-text-muted">
-                  {t("result.sessionPanel.preferences")}
-                </p>
-                <div className="flex flex-wrap gap-2">
-                  {data.answers.primaryConcern && (
-                    <SummaryChip>
-                      {t("result.summary.concern", { value: data.answers.primaryConcern })}
-                    </SummaryChip>
+          {/* Preferences Tags Strip */}
+          <div className="pt-2 border-t border-border-light/60 dark:border-border-dark/60">
+            <div className="flex flex-wrap items-center gap-2">
+              {data.answers.primaryConcern && (
+                <PreferenceTag
+                  icon={<MessageSquare className="h-3.5 w-3.5" />}
+                  label={isArabic ? "الاحتياج" : "Concern"}
+                  value={data.answers.primaryConcern}
+                />
+              )}
+              {resolvedSpecialtyName && (
+                <PreferenceTag
+                  icon={<Tag className="h-3.5 w-3.5" />}
+                  label={isArabic ? "التخصص" : "Specialty"}
+                  value={resolvedSpecialtyName}
+                />
+              )}
+              {data.answers.preferredLanguage && (
+                <PreferenceTag
+                  icon={<Globe className="h-3.5 w-3.5" />}
+                  label={isArabic ? "اللغة" : "Language"}
+                  value={getLocalizedLanguageLabel(data.answers.preferredLanguage, locale)}
+                />
+              )}
+              {data.answers.sessionMode && (
+                <PreferenceTag
+                  icon={
+                    data.answers.sessionMode === "VIDEO" ? (
+                      <Video className="h-3.5 w-3.5" />
+                    ) : (
+                      <Mic className="h-3.5 w-3.5" />
+                    )
+                  }
+                  label={isArabic ? "نوع الجلسة" : "Session Mode"}
+                  value={t(
+                    `choices.mode.${data.answers.sessionMode}` as Parameters<typeof t>[0],
                   )}
-                  {data.answers.preferredSpecialtySlug && (
-                    <SummaryChip>
-                      {t("result.summary.specialty", {
-                        value: data.answers.preferredSpecialtySlug,
-                      })}
-                    </SummaryChip>
+                />
+              )}
+              {data.answers.urgency && (
+                <PreferenceTag
+                  icon={<Clock className="h-3.5 w-3.5" />}
+                  label={isArabic ? "التوقيت" : "Timeline"}
+                  value={t(
+                    `choices.urgency.${data.answers.urgency}.title` as Parameters<typeof t>[0],
                   )}
-                  {data.answers.preferredLanguage && (
-                    <SummaryChip>
-                      {t("result.summary.language", {
-                        value: getLocalizedLanguageLabel(data.answers.preferredLanguage, locale),
-                      })}
-                    </SummaryChip>
-                  )}
-                  {data.answers.sessionMode && (
-                    <SummaryChip>
-                      {t("result.summary.mode", {
-                        value: t(
-                          `choices.mode.${data.answers.sessionMode}` as Parameters<
-                            typeof t
-                          >[0],
-                        ),
-                      })}
-                    </SummaryChip>
-                  )}
-                  <SummaryChip>
-                    {t("result.summary.urgency", {
-                      value: t(
-                        `choices.urgency.${data.answers.urgency}.title` as Parameters<typeof t>[0],
-                      ),
-                    })}
-                  </SummaryChip>
-                </div>
-              </div>
+                />
+              )}
             </div>
-          </aside>
+          </div>
         </div>
       </section>
 
+      {/* 2. Recommended Practitioners Cards */}
       {data.items.length > 0 ? (
-        <section className="grid gap-4 xl:grid-cols-2 2xl:grid-cols-3">
+        <section className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
           {data.items.map((item) => {
             const reasons = buildReasonKeys(data, item);
             const price30 = formatAmount(item.practitioner.sessionPrice30, "EGP", numberLocale);
             const price60 = formatAmount(item.practitioner.sessionPrice60, "EGP", numberLocale);
+            const startingPrice = price30 ?? price60;
+            const docName =
+              (isArabic ? item.practitioner.nameAr : item.practitioner.nameEn) ||
+              item.practitioner.displayName ||
+              item.practitioner.slug;
+            const initials = avatarInitials(docName);
+            const rank = item.rank;
 
             return (
-              <article key={item.practitioner.id} className="app-panel h-full rounded-[28px] p-4 sm:p-5">
-                <div className="flex h-full flex-col gap-4">
+              <article
+                key={item.practitioner.id}
+                className="group flex flex-col justify-between rounded-[24px] border border-border-light/80 bg-white p-5 shadow-2xs transition-all duration-200 hover:-translate-y-1 hover:border-primary/40 hover:shadow-md dark:bg-surface-secondary dark:border-border-dark"
+              >
+                <div className="space-y-4">
+                  {/* Top Doctor Identity Header */}
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex min-w-0 items-start gap-3">
-                      <span className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-primary-light text-primary dark:bg-primary/15 dark:text-primary-light">
-                        <Stethoscope className="h-5 w-5" />
-                      </span>
-                      <div className="min-w-0">
-                        <p className="text-lg font-semibold leading-7 text-text-primary dark:text-white/95">
-                          {item.practitioner.displayName ?? item.practitioner.slug}
-                        </p>
-                        {item.practitioner.professionalTitle && (
-                          <p className="mt-1 line-clamp-2 text-sm leading-6 text-text-secondary">
-                            {getProfessionalTitleLabel(item.practitioner.professionalTitle, locale)}
-                          </p>
+                      {/* Avatar */}
+                      <div className="relative h-13 w-13 shrink-0 overflow-hidden rounded-full border-2 border-primary/20 bg-surface-cream p-0.5 dark:bg-surface-secondary">
+                        <PractitionerAvatar
+                          src={item.practitioner.avatarUrl}
+                          alt={docName}
+                          initials={initials}
+                          className="h-full w-full rounded-full object-cover"
+                        />
+                        {item.practitioner.isVerified && (
+                          <span
+                            className="absolute bottom-0 end-0 inline-flex h-4 w-4 items-center justify-center rounded-full border border-white bg-primary text-white"
+                            title="مختص معتمد"
+                          >
+                            <BadgeCheck className="h-3 w-3" />
+                          </span>
                         )}
+                      </div>
+
+                      {/* Name & Title */}
+                      <div className="min-w-0 flex-1">
+                        <h3 className="text-base font-bold text-text-primary dark:text-white leading-snug truncate">
+                          {docName}
+                        </h3>
+                        <p className="text-xs font-medium text-text-secondary dark:text-text-muted line-clamp-1 mt-0.5">
+                          {item.practitioner.professionalTitle
+                            ? getProfessionalTitleLabel(item.practitioner.professionalTitle, locale)
+                            : "مختص نفسي ومعالج معتمد"}
+                        </p>
                       </div>
                     </div>
 
-                    <div className="flex shrink-0 flex-col items-end gap-2">
-                      <span className="app-chip rounded-full px-3 py-1.5 text-xs font-semibold text-primary">
-                        #{item.rank}
+                    {/* Match Score & Rank Badges */}
+                    <div className="flex shrink-0 flex-col items-end gap-1">
+                      <span className="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-700 dark:border-emerald-800/50 dark:bg-emerald-950/50 dark:text-emerald-300">
+                        <Sparkles className="h-3 w-3 text-emerald-600 dark:text-emerald-400" />
+                        <span>{item.score}% توافق</span>
                       </span>
-                      <span className="rounded-full bg-primary-light px-3 py-1.5 text-xs font-semibold text-primary dark:bg-primary/15">
-                        {item.score}%
+                      <span className="text-[10px] font-semibold text-text-muted">
+                        {t("result.card.rankBadge", { rank })}
                       </span>
                     </div>
                   </div>
 
+                  {/* Specialties Pills */}
                   {item.practitioner.specialties.length > 0 && (
-                    <div className="flex flex-wrap gap-2">
+                    <div className="flex flex-wrap gap-1.5">
                       {item.practitioner.specialties.slice(0, 3).map((specialty) => (
-                        <SummaryChip key={specialty}>{specialty}</SummaryChip>
+                        <span
+                          key={specialty}
+                          className="rounded-lg bg-surface-tertiary px-2.5 py-1 text-[11px] font-medium text-text-secondary dark:bg-surface-secondary dark:border dark:border-border-dark dark:text-text-muted"
+                        >
+                          {specialty}
+                        </span>
                       ))}
                     </div>
                   )}
 
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    <div className="app-panel-soft rounded-2xl p-4">
-                      <div className="flex items-center gap-2 text-xs font-medium uppercase tracking-[0.14em] text-text-muted">
-                        <Globe className="h-4 w-4" />
+                  {/* Languages & Price Strip */}
+                  <div className="grid grid-cols-2 gap-2 rounded-xl border border-border-light/60 bg-surface-tertiary/40 p-3 text-xs dark:bg-surface-secondary/40 dark:border-border-dark">
+                    <div className="space-y-0.5">
+                      <div className="flex items-center gap-1 text-[11px] font-medium text-text-muted">
+                        <Globe className="h-3 w-3" />
                         <span>{t("result.card.languagesLabel")}</span>
                       </div>
-                      <p className="mt-2 text-sm font-medium text-text-primary dark:text-white/90">
+                      <p className="font-semibold text-text-primary dark:text-white truncate">
                         {item.practitioner.languages.length > 0
                           ? item.practitioner.languages
                               .map((language) => getLocalizedLanguageLabel(language, locale))
@@ -319,136 +382,168 @@ export default function GuidedMatchingSessionScreen({
                       </p>
                     </div>
 
-                    <div className="app-panel-soft rounded-2xl p-4">
-                      <div className="flex items-center gap-2 text-xs font-medium uppercase tracking-[0.14em] text-text-muted">
-                        <CircleDollarSign className="h-4 w-4" />
-                        <span>{t("result.card.priceLabel")}</span>
+                    <div className="space-y-0.5">
+                      <div className="flex items-center gap-1 text-[11px] font-medium text-text-muted">
+                        <CircleDollarSign className="h-3 w-3" />
+                        <span>{t("result.card.sessionFrom")}</span>
                       </div>
-                      <div className="mt-2 space-y-1 text-sm font-medium text-text-primary dark:text-white/90">
-                        <p>
-                          {t("result.card.price30", {
-                            value: price30 ?? t("result.card.notAvailable"),
-                          })}
-                        </p>
-                        <p>
-                          {t("result.card.price60", {
-                            value: price60 ?? t("result.card.notAvailable"),
-                          })}
-                        </p>
-                      </div>
+                      <p className="font-bold text-primary dark:text-primary-light">
+                        {startingPrice ?? t("result.card.notAvailable")}
+                      </p>
                     </div>
                   </div>
 
+                  {/* Why Matched Reasons */}
                   {reasons.length > 0 && (
-                    <div className="space-y-2.5">
-                      <p className="text-sm font-semibold text-text-primary dark:text-white/95">
+                    <div className="space-y-1.5 pt-1">
+                      <p className="text-[11px] font-bold text-text-muted uppercase tracking-wider">
                         {t("result.card.whyHeading")}
                       </p>
-                      <div className="flex flex-wrap gap-2">
+                      <div className="flex flex-wrap gap-1.5">
                         {reasons.map((key) => (
-                          <SummaryChip key={key}>
-                            {t(`result.reasons.${key}` as Parameters<typeof t>[0])}
-                          </SummaryChip>
+                          <span
+                            key={key}
+                            className="inline-flex items-center gap-1 rounded-full border border-primary/20 bg-primary-light/40 px-2.5 py-0.5 text-[11px] font-semibold text-primary dark:bg-primary/10 dark:text-primary-light"
+                          >
+                            ✓ {t(`result.reasons.${key}` as Parameters<typeof t>[0])}
+                          </span>
                         ))}
                       </div>
                     </div>
                   )}
+                </div>
 
-                  <div className="mt-auto pt-1">
-                    <Link
-                      href={`/patient/practitioners/${item.practitioner.slug}`}
-                      className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-primary px-5 py-3 text-sm font-semibold text-white transition hover:bg-primary-hover"
-                    >
-                      {t("result.card.viewProfile")}
-                      <ArrowRight className="h-4 w-4 rtl:rotate-180" />
-                    </Link>
-                  </div>
+                {/* Primary Action Button */}
+                <div className="pt-4 mt-auto">
+                  <Link
+                    href={`/patient/practitioners/${item.practitioner.slug}`}
+                    className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-xs font-bold text-white shadow-xs transition hover:bg-primary-hover active:scale-[0.98]"
+                  >
+                    <span>{t("result.card.viewProfile")}</span>
+                    <ArrowRight className="h-3.5 w-3.5 rtl:rotate-180" />
+                  </Link>
                 </div>
               </article>
             );
           })}
         </section>
       ) : (
-        <section className="app-panel rounded-[32px] p-6 sm:p-7">
-          <div className="flex items-start gap-3">
-            <span className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-primary-light text-primary dark:bg-primary/15 dark:text-primary-light">
-              <AlertCircle className="h-5 w-5" />
+        <section className="app-panel rounded-[28px] p-6 sm:p-8">
+          <div className="flex items-start gap-4">
+            <span className="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary dark:bg-primary/20">
+              <AlertCircle className="h-6 w-6" />
             </span>
-            <div>
-              <h2 className="text-lg font-semibold text-text-primary dark:text-white/95">
+            <div className="space-y-2">
+              <h2 className="text-lg font-bold text-text-primary dark:text-white">
                 {t("result.empty.heading")}
               </h2>
-              <p className="mt-2 text-sm leading-6 text-text-secondary">
+              <p className="text-sm leading-relaxed text-text-secondary">
                 {t("result.empty.note")}
               </p>
+              <div className="pt-2">
+                <Link
+                  href="/patient/matching"
+                  className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-xs font-bold text-white transition hover:bg-primary-hover"
+                >
+                  <RotateCcw className="h-3.5 w-3.5" />
+                  <span>{t("actions.startAgain")}</span>
+                </Link>
+              </div>
             </div>
           </div>
         </section>
       )}
 
-      <section className="app-panel rounded-[32px] p-5 sm:p-7">
-        <div className="max-w-2xl">
-          <h2 className="text-lg font-semibold text-text-primary dark:text-white/95">
+      {/* 3. Next Steps (Compact, Clean 4-Tile Grid) */}
+      <section className="app-panel rounded-[28px] p-5 sm:p-6 shadow-xs dark:border-border-dark">
+        <div className="mb-4">
+          <h2 className="text-base font-bold text-text-primary dark:text-white">
             {t("result.nextHeading")}
           </h2>
-          <p className="mt-2 text-sm leading-6 text-text-secondary">
+          <p className="text-xs text-text-secondary mt-0.5">
             {t("result.nextNote")}
           </p>
         </div>
 
-        <div className="mt-5 grid gap-4 sm:grid-cols-2">
+        <div className="grid gap-3.5 sm:grid-cols-2 lg:grid-cols-4">
           <Link
             href="/patient/matching"
-            className="app-panel-soft flex items-center justify-between gap-4 rounded-[28px] p-5 transition hover:border-primary/25 hover:text-primary"
+            className="app-panel-soft group flex flex-col justify-between gap-3 rounded-2xl p-4 transition-all duration-150 hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-2xs dark:hover:border-primary/50"
           >
+            <div className="flex items-start justify-between gap-2">
+              <span className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10 text-primary group-hover:bg-primary group-hover:text-white transition-colors dark:bg-primary/20">
+                <RotateCcw className="h-4 w-4" />
+              </span>
+              <ArrowRight className="h-4 w-4 text-text-muted opacity-0 group-hover:opacity-100 transition-opacity rtl:rotate-180" />
+            </div>
             <div>
-              <p className="text-sm font-semibold text-text-primary dark:text-white/95">
+              <p className="text-xs font-bold text-text-primary dark:text-white group-hover:text-primary transition-colors">
                 {t("actions.startAgain")}
               </p>
-              <p className="mt-1 text-sm text-text-secondary">{t("actions.startAgainNote")}</p>
+              <p className="mt-1 text-[11px] leading-relaxed text-text-secondary">
+                {t("actions.startAgainNote")}
+              </p>
             </div>
-            <Sparkles className="h-5 w-5 shrink-0 text-primary" />
           </Link>
 
           <Link
             href="/patient/assessments"
-            className="app-panel-soft flex items-center justify-between gap-4 rounded-[28px] p-5 transition hover:border-primary/25 hover:text-primary"
+            className="app-panel-soft group flex flex-col justify-between gap-3 rounded-2xl p-4 transition-all duration-150 hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-2xs dark:hover:border-primary/50"
           >
+            <div className="flex items-start justify-between gap-2">
+              <span className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700 group-hover:bg-emerald-600 group-hover:text-white transition-colors dark:bg-emerald-950/50 dark:text-emerald-300">
+                <Sparkles className="h-4 w-4" />
+              </span>
+              <ArrowRight className="h-4 w-4 text-text-muted opacity-0 group-hover:opacity-100 transition-opacity rtl:rotate-180" />
+            </div>
             <div>
-              <p className="text-sm font-semibold text-text-primary dark:text-white/95">
+              <p className="text-xs font-bold text-text-primary dark:text-white group-hover:text-primary transition-colors">
                 {t("actions.reviewAssessments")}
               </p>
-              <p className="mt-1 text-sm text-text-secondary">
+              <p className="mt-1 text-[11px] leading-relaxed text-text-secondary">
                 {t("actions.reviewAssessmentsNote")}
               </p>
             </div>
-            <Sparkles className="h-5 w-5 shrink-0 text-primary" />
-          </Link>
-
-          <Link
-            href="/patient/messages?lane=support"
-            className="app-panel-soft flex items-center justify-between gap-4 rounded-[28px] p-5 transition hover:border-primary/25 hover:text-primary"
-          >
-            <div>
-              <p className="text-sm font-semibold text-text-primary dark:text-white/95">
-                {t("actions.openSupport")}
-              </p>
-              <p className="mt-1 text-sm text-text-secondary">{t("actions.openSupportNote")}</p>
-            </div>
-            <LifeBuoy className="h-5 w-5 shrink-0 text-primary" />
           </Link>
 
           <Link
             href="/patient/practitioners"
-            className="app-panel-soft flex items-center justify-between gap-4 rounded-[28px] p-5 transition hover:border-primary/25 hover:text-primary"
+            className="app-panel-soft group flex flex-col justify-between gap-3 rounded-2xl p-4 transition-all duration-150 hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-2xs dark:hover:border-primary/50"
           >
+            <div className="flex items-start justify-between gap-2">
+              <span className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-amber-50 text-amber-700 group-hover:bg-amber-600 group-hover:text-white transition-colors dark:bg-amber-950/50 dark:text-amber-300">
+                <HeartHandshake className="h-4 w-4" />
+              </span>
+              <ArrowRight className="h-4 w-4 text-text-muted opacity-0 group-hover:opacity-100 transition-opacity rtl:rotate-180" />
+            </div>
             <div>
-              <p className="text-sm font-semibold text-text-primary dark:text-white/95">
+              <p className="text-xs font-bold text-text-primary dark:text-white group-hover:text-primary transition-colors">
                 {t("actions.browseAll")}
               </p>
-              <p className="mt-1 text-sm text-text-secondary">{t("actions.browseAllNote")}</p>
+              <p className="mt-1 text-[11px] leading-relaxed text-text-secondary">
+                {t("actions.browseAllNote")}
+              </p>
             </div>
-            <HeartHandshake className="h-5 w-5 shrink-0 text-primary" />
+          </Link>
+
+          <Link
+            href="/patient/messages?lane=support"
+            className="app-panel-soft group flex flex-col justify-between gap-3 rounded-2xl p-4 transition-all duration-150 hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-2xs dark:hover:border-primary/50"
+          >
+            <div className="flex items-start justify-between gap-2">
+              <span className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-blue-50 text-blue-700 group-hover:bg-blue-600 group-hover:text-white transition-colors dark:bg-blue-950/50 dark:text-blue-300">
+                <LifeBuoy className="h-4 w-4" />
+              </span>
+              <ArrowRight className="h-4 w-4 text-text-muted opacity-0 group-hover:opacity-100 transition-opacity rtl:rotate-180" />
+            </div>
+            <div>
+              <p className="text-xs font-bold text-text-primary dark:text-white group-hover:text-primary transition-colors">
+                {t("actions.openSupport")}
+              </p>
+              <p className="mt-1 text-[11px] leading-relaxed text-text-secondary">
+                {t("actions.openSupportNote")}
+              </p>
+            </div>
           </Link>
         </div>
       </section>

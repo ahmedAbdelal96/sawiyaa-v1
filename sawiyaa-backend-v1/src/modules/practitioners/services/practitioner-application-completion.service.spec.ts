@@ -48,11 +48,10 @@ describe('PractitionerApplicationCompletionService', () => {
         'PROFESSIONAL_DETAILS_LANGUAGE_MISSING',
         'PROFESSIONAL_DETAILS_SPECIALTY_MISSING',
         'PROFESSIONAL_DETAILS_PRIMARY_CATEGORY_MISSING',
+        'PROFESSIONAL_DETAILS_TYPE_MISSING',
         'QUALIFICATIONS_CREDENTIAL_REQUIRED',
         'QUALIFICATIONS_ACADEMIC_CERTIFICATE_REQUIRED',
         'DOCUMENTS_CREDENTIAL_REQUIRED',
-        'PAYOUT_DESTINATION_REQUIRED',
-        'PAYOUT_ACCOUNT_HOLDER_REQUIRED',
         'ACCOUNT_INACTIVE',
         'PRACTITIONER_OTP_NOT_VERIFIED',
       ]),
@@ -70,6 +69,7 @@ describe('PractitionerApplicationCompletionService', () => {
       displayName: 'Dr. Nour',
       countryCode: 'EG',
       practitionerType: 'THERAPIST',
+      practitionerTypeExplicit: true,
       practitionerGender: 'FEMALE',
       professionalTitle: 'Psychologist',
       bio: 'Short bio',
@@ -85,6 +85,12 @@ describe('PractitionerApplicationCompletionService', () => {
         expiredCount: 0,
       },
       credentialTypes: ['PASSPORT' as const, 'DEGREE' as const, 'MEMBERSHIP' as const],
+      credentialRecords: [
+        { credentialType: 'NATIONAL_ID_FRONT', reviewStatus: 'APPROVED', fileUrl: 'front' },
+        { credentialType: 'NATIONAL_ID_BACK', reviewStatus: 'APPROVED', fileUrl: 'back' },
+        { credentialType: 'DEGREE', reviewStatus: 'APPROVED', fileUrl: 'degree' },
+        { credentialType: 'MEMBERSHIP', reviewStatus: 'APPROVED', fileUrl: 'membership' },
+      ],
       payoutDestination: {
         methodType: PractitionerPayoutMethodType.BANK_ACCOUNT,
         accountHolderName: 'Dr. Nour',
@@ -111,11 +117,38 @@ describe('PractitionerApplicationCompletionService', () => {
     expect(result.steps.every((step) => step.status === 'complete')).toBe(true);
   });
 
+  it('does not treat the persisted OTHER default as an explicit practitioner type', () => {
+    const result = service.build({
+      displayName: 'Applicant',
+      countryCode: 'EG',
+      practitionerType: 'OTHER',
+      practitionerTypeExplicit: false,
+      practitionerGender: null,
+      professionalTitle: 'Psychologist',
+      bio: 'Short bio',
+      yearsOfExperience: 5,
+      languageCount: 1,
+      specialtyCount: 1,
+      primarySpecialtyCategoryId: 'category-1',
+      credentialSummary: { totalCredentials: 0, approvedCount: 0, pendingCount: 0, rejectedCount: 0, expiredCount: 0 },
+      credentialTypes: [],
+      payoutDestination: null,
+      isAccountActive: true,
+      isPractitionerOtpVerified: true,
+      applicationStatus: 'DRAFT' as never,
+      pricing: { session30: { egp: null, usd: null }, session60: { egp: null, usd: null } },
+    });
+
+    expect(result.blockers.map((issue) => issue.code)).toContain('PROFESSIONAL_DETAILS_TYPE_MISSING');
+    expect(result.canSubmit).toBe(false);
+  });
+
   it('adds conditional payout blockers for wallet payouts missing required fields', () => {
     const result = service.build({
       displayName: 'Dr. Nour',
       countryCode: 'EG',
       practitionerType: 'THERAPIST',
+      practitionerTypeExplicit: true,
       practitionerGender: null,
       professionalTitle: 'Psychologist',
       bio: 'Short bio',
@@ -131,6 +164,12 @@ describe('PractitionerApplicationCompletionService', () => {
         expiredCount: 0,
       },
       credentialTypes: ['PASSPORT' as const],
+      credentialRecords: [
+        { credentialType: 'NATIONAL_ID_FRONT', reviewStatus: 'APPROVED', fileUrl: 'front' },
+        { credentialType: 'NATIONAL_ID_BACK', reviewStatus: 'APPROVED', fileUrl: 'back' },
+        { credentialType: 'DEGREE', reviewStatus: 'APPROVED', fileUrl: 'degree' },
+        { credentialType: 'MEMBERSHIP', reviewStatus: 'APPROVED', fileUrl: 'membership' },
+      ],
       payoutDestination: {
         methodType: PractitionerPayoutMethodType.WALLET,
         accountHolderName: 'Dr. Nour',
@@ -150,7 +189,7 @@ describe('PractitionerApplicationCompletionService', () => {
       },
     });
 
-    expect(result.blockers.map((item) => item.code)).toEqual(
+    expect(result.warnings.map((item) => item.code)).toEqual(
       expect.arrayContaining([
         'PAYOUT_WALLET_PROVIDER_REQUIRED',
         'PAYOUT_WALLET_IDENTIFIER_REQUIRED',
@@ -158,7 +197,7 @@ describe('PractitionerApplicationCompletionService', () => {
     );
     expect(
       result.steps.find((step) => step.key === 'payoutDetails')?.status,
-    ).toBe('incomplete');
+    ).toBe('warning');
   });
 
   it('blocks submission when only one side of national id is uploaded', () => {
@@ -166,6 +205,7 @@ describe('PractitionerApplicationCompletionService', () => {
       displayName: 'Dr. Nour',
       countryCode: 'EG',
       practitionerType: 'THERAPIST',
+      practitionerTypeExplicit: true,
       practitionerGender: null,
       professionalTitle: 'Psychologist',
       bio: 'Short bio',
@@ -211,6 +251,7 @@ describe('PractitionerApplicationCompletionService', () => {
       displayName: 'Dr. Nour',
       countryCode: 'EG',
       practitionerType: 'THERAPIST',
+      practitionerTypeExplicit: true,
       practitionerGender: null,
       professionalTitle: 'Psychologist',
       bio: 'Short bio',

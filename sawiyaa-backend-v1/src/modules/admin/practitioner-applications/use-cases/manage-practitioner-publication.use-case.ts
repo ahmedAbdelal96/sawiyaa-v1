@@ -11,6 +11,7 @@ import { SupportedLocale } from '@common/i18n/types/locale.types';
 import { SecurityAuditService } from '@common/security-audit/security-audit.service';
 import { PublicPractitionerVisibilityPolicy } from '@modules/practitioners/policies/public-practitioner-visibility.policy';
 import { AdminPractitionerPublicationRepository } from '../repositories/admin-practitioner-publication.repository';
+import { hasRequiredPractitionerPricing } from '@modules/practitioners/utils/public-practitioner-pricing-readiness.util';
 
 @Injectable()
 export class ManagePractitionerPublicationUseCase {
@@ -38,6 +39,10 @@ export class ManagePractitionerPublicationUseCase {
       hasProfessionalTitle: Boolean(profile.professionalTitle?.trim()),
       hasBio: Boolean(profile.bio?.trim()),
       hasAtLeastOneActiveSpecialty: profile.specialties.length > 0,
+      sessionPrice30Egp: profile.sessionPrice30Egp,
+      sessionPrice30Usd: profile.sessionPrice30Usd,
+      sessionPrice60Egp: profile.sessionPrice60Egp,
+      sessionPrice60Usd: profile.sessionPrice60Usd,
     });
   }
 
@@ -49,6 +54,17 @@ export class ManagePractitionerPublicationUseCase {
     >,
   ) {
     const visibility = this.evaluate(profile);
+    const isApproved = profile.status === 'APPROVED';
+    const isProfileComplete = Boolean(
+      profile.publicSlug?.trim() &&
+      profile.user.displayName?.trim() &&
+      profile.professionalTitle?.trim() &&
+      profile.bio?.trim(),
+    );
+    const hasRequiredSpecialty = profile.specialties.length > 0;
+    const hasRequiredNormalPricing = hasRequiredPractitionerPricing(profile);
+    const missingRequirements = visibility.blockers.map((blocker) => blocker.code);
+    const canPublish = visibility.blockers.length === 0;
     return {
       practitionerId: profile.id,
       displayName: profile.user.displayName,
@@ -56,7 +72,13 @@ export class ManagePractitionerPublicationUseCase {
       practitionerStatus: profile.status,
       accountStatus: profile.user.status,
       isPublished: profile.isPublicProfilePublished,
-      isReadyForPublication: visibility.blockers.length === 0,
+      isReadyForPublication: canPublish,
+      isApproved,
+      isProfileComplete,
+      hasRequiredSpecialty,
+      hasRequiredNormalPricing,
+      canPublish,
+      missingRequirements,
       blockers: visibility.blockers,
       impact: await this.repository.getImpact(profile.id),
     };

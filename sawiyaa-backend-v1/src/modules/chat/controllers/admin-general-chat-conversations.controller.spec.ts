@@ -119,7 +119,7 @@ describe('AdminGeneralChatConversationsController', () => {
     );
     expect(response.setHeader).toHaveBeenCalledWith(
       'Content-Disposition',
-      'inline; filename="note.pdf"',
+      "inline; filename*=UTF-8''note.pdf",
     );
     expect(securityAuditService.logAsync).toHaveBeenCalledWith(
       expect.objectContaining({

@@ -19,8 +19,18 @@ import { PractitionerManualPayoutBalanceService } from './practitioner-manual-pa
 import { PractitionerRecoveryService } from './practitioner-recovery.service';
 import { RefreshPractitionerWalletService } from './refresh-practitioner-wallet.service';
 import { FINANCIAL_OPS_ERROR_CODES } from '../types/financial-operations.types';
+import { lockPractitionerFinance } from '../utils/lock-practitioner-finance';
 
 type DbClient = PrismaService | Prisma.TransactionClient;
+type ManualPayoutRecord = NonNullable<
+  Awaited<
+    ReturnType<PractitionerManualPayoutRepository['findByTransferReference']>
+  >
+>;
+type ManualPayoutResult = {
+  payoutRecord: ManualPayoutRecord;
+  wasAlreadyRecorded: boolean;
+};
 
 @Injectable()
 export class PractitionerManualPayoutService {
@@ -65,7 +75,18 @@ export class PractitionerManualPayoutService {
     notes?: string | null;
     recordedByUserId?: string | null;
     tx?: Prisma.TransactionClient;
-  }) {
+  }): Promise<ManualPayoutResult> {
+    if (!input.settlementId?.trim()) {
+      throw new BadRequestException({
+        messageKey: 'financialOperations.errors.payoutSettlementRequired',
+        error: 'FINANCIAL_OPERATIONS_PAYOUT_SETTLEMENT_REQUIRED',
+      });
+    }
+    if (!input.tx)
+      return this.prisma.$transaction((tx) => this.record({ ...input, tx }));
+    await lockPractitionerFinance(input.tx, input.practitionerId);
+    await input.tx
+      .$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${input.settlementId})::bigint)`;
     const currencyCode = this.normalizeCurrency(input.currencyCode);
     const effectiveAt = input.paidAt ?? new Date();
     const paymentMethod =
@@ -74,7 +95,7 @@ export class PractitionerManualPayoutService {
     const notes = input.notes?.trim() || null;
     const amountPaid = new Prisma.Decimal(input.amountPaid).toDecimalPlaces(2);
 
-    if (amountPaid.lte(0)) {
+    if (!amountPaid.isFinite() || amountPaid.lte(0)) {
       throw new BadRequestException({
         messageKey: 'financialOperations.errors.payoutAmountInvalid',
         error: FINANCIAL_OPS_ERROR_CODES.payoutAmountInvalid,
@@ -88,6 +109,31 @@ export class PractitionerManualPayoutService {
         messageKey: 'financialOperations.errors.payoutSettlementRequired',
         error: 'FINANCIAL_OPERATIONS_PAYOUT_SETTLEMENT_REQUIRED',
       });
+    }
+
+    if (transferReference) {
+      const existing =
+        await this.manualPayoutRepository.findByTransferReference(
+          transferReference,
+          input.tx,
+        );
+      if (existing) {
+        if (
+          existing.practitionerId !== input.practitionerId ||
+          existing.currencyCode !== currencyCode
+        ) {
+          throw new ConflictException({
+            messageKey:
+              'financialOperations.errors.manualPayoutAlreadyRecorded',
+            error: FINANCIAL_OPS_ERROR_CODES.manualPayoutAlreadyRecorded,
+          });
+        }
+
+        return {
+          payoutRecord: existing,
+          wasAlreadyRecorded: true,
+        };
+      }
     }
 
     const settlement = await db.practitionerSettlement.findUnique({
@@ -122,31 +168,6 @@ export class PractitionerManualPayoutService {
         messageKey: 'financialOperations.errors.payoutAmountExceedsSettlement',
         error: 'FINANCIAL_OPERATIONS_PAYOUT_AMOUNT_EXCEEDS_SETTLEMENT',
       });
-    }
-
-    if (transferReference) {
-      const existing =
-        await this.manualPayoutRepository.findByTransferReference(
-          transferReference,
-          input.tx,
-        );
-      if (existing) {
-        if (
-          existing.practitionerId !== input.practitionerId ||
-          existing.currencyCode !== currencyCode
-        ) {
-          throw new ConflictException({
-            messageKey:
-              'financialOperations.errors.manualPayoutAlreadyRecorded',
-            error: FINANCIAL_OPS_ERROR_CODES.manualPayoutAlreadyRecorded,
-          });
-        }
-
-        return {
-          payoutRecord: existing,
-          wasAlreadyRecorded: true,
-        };
-      }
     }
 
     await db.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${this.advisoryLockKey(
@@ -277,14 +298,7 @@ export class PractitionerManualPayoutService {
       },
     });
 
-    await this.practitionerRecoveryService.applyOpenRecoveriesToPayout({
-      practitionerId: input.practitionerId,
-      currencyCode,
-      payoutId: payoutRecord.id,
-      payoutAmount: amountPaid,
-      operatorUserId: input.recordedByUserId ?? null,
-      tx: input.tx,
-    });
+    // An external payment does not itself collect a recovery receivable.
 
     await this.refreshPractitionerWalletService.refresh(
       input.practitionerId,

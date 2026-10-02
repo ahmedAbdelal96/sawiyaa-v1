@@ -1,290 +1,175 @@
 import { getLocale, getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
-import { Star, BadgeCheck, ArrowRight, Clock3 } from "lucide-react";
-import { fetchPublicFeaturedPractitioners } from "@/features/home/api/featured-practitioners.api";
-import type { FeaturedPractitionerHomeCard } from "@/features/home/api/featured-practitioners.api";
+import { Star, BadgeCheck, ArrowRight, Clock, Globe } from "lucide-react";
 import { fetchPublicPractitioners } from "@/features/practitioners-discovery/api/practitioners-ssr.api";
+import { fetchPublicSpecialties } from "@/features/specialties-public/api/specialties-ssr.api";
+import { getLocalizedSpecialtyName } from "@/features/specialties/utils/localized-specialty";
 import PractitionerAvatar from "@/components/shared/PractitionerAvatar";
-import { getProfessionalTitleLabel } from "@/constants/reference-data";
-
-const TRUST_INDICATORS = [
-  { key: "isVerified", icon: BadgeCheck, color: "text-teal-600", bg: "bg-teal-50", ring: "ring-teal-200" },
-  { key: "reviewCount", icon: Star, color: "text-sky-600", bg: "bg-sky-50", ring: "ring-sky-200" },
-  { key: "yearsExperience", icon: Clock3, color: "text-indigo-600", bg: "bg-indigo-50", ring: "ring-indigo-200" },
-] as const;
-
-function getInitials(name: string | null): string {
-  if (!name) return "?";
-  return name
-    .split(" ")
-    .slice(0, 2)
-    .map((n) => n[0])
-    .join("")
-    .toUpperCase();
-}
-
-interface PractitionerCardProps {
-  practitioner: FeaturedPractitionerHomeCard;
-  locale: string;
-  t: Awaited<ReturnType<typeof getTranslations>>;
-  eyebrow: string;
-}
-
-function FeaturedPractitionerCard({ practitioner, locale, t, eyebrow }: PractitionerCardProps) {
-  const initials = getInitials(practitioner.displayName);
-  const displayTitle = getProfessionalTitleLabel(practitioner.professionalTitle, locale);
-
-  return (
-    <div className="app-panel app-lift group overflow-hidden rounded-[28px] hover:-translate-y-1">
-      <div
-        className="relative flex items-center justify-center bg-sky-50 dark:bg-primary/10"
-        style={{ height: "200px" }}
-      >
-        <div className="absolute inset-0 flex items-center justify-center opacity-10">
-          <div className="h-36 w-36 rounded-full border-2 border-sky-300" />
-          <div className="absolute h-24 w-24 rounded-full border border-sky-300" />
-        </div>
-
-        <PractitionerAvatar
-          src={practitioner.avatarUrl}
-          alt={practitioner.displayName}
-          initials={initials}
-          className="relative z-10 h-20 w-20 rounded-full border-4 border-white/80 object-cover shadow-lg ring-2 ring-sky-200"
-        />
-
-        {practitioner.isVerified && (
-          <div className="absolute end-4 top-4 flex items-center gap-1 rounded-full bg-white/90 px-2.5 py-1 shadow-sm dark:bg-surface-secondary/95">
-            <BadgeCheck size={13} className="text-teal-600" />
-            <span className="text-[11px] font-semibold text-teal-600">
-              {t("verified")}
-            </span>
-          </div>
-        )}
-      </div>
-
-      <div className="px-5 py-5">
-        <div className="mb-3 flex items-start justify-between gap-2">
-          <div>
-            <h4 className="font-bold text-text-primary dark:text-white/90">
-              {practitioner.displayName}
-            </h4>
-            {displayTitle && (
-              <p className="mt-0.5 text-sm text-text-secondary">{displayTitle}</p>
-            )}
-          </div>
-          {practitioner.averageRating != null && practitioner.averageRating > 0 && (
-            <div className="flex shrink-0 items-center gap-1 rounded-xl bg-amber-50 px-2.5 py-1.5 ring-1 ring-inset ring-amber-200">
-              <Star size={13} className="fill-amber-400 text-amber-400" />
-              <span className="text-sm font-bold text-amber-600">
-                {practitioner.averageRating.toFixed(1)}
-              </span>
-            </div>
-          )}
-        </div>
-
-        <div className="mb-4 flex flex-wrap items-center gap-2">
-          {practitioner.badgeLabel && (
-            <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary ring-1 ring-inset ring-primary/20">
-              {practitioner.badgeLabel}
-            </span>
-          )}
-          {practitioner.isVerified && (
-            <span className="inline-flex items-center gap-1 rounded-full bg-teal-50 px-2.5 py-1 text-xs font-medium text-teal-600 ring-1 ring-inset ring-teal-200">
-              <BadgeCheck size={11} />
-              {t("verified")}
-            </span>
-          )}
-          {practitioner.totalReviews > 0 && (
-            <span className="inline-flex items-center gap-1 rounded-full bg-sky-50 px-2.5 py-1 text-xs font-medium text-sky-600 ring-1 ring-inset ring-sky-200">
-              <Star size={11} />
-              {t("reviewsCount", { count: practitioner.totalReviews })}
-            </span>
-          )}
-        </div>
-
-        <Link
-          href={`/practitioners/${practitioner.slug}`}
-          className="flex w-full items-center justify-center gap-2 rounded-2xl border border-border-light bg-white py-2.5 text-sm font-semibold text-primary transition-all hover:border-primary hover:bg-primary hover:text-white dark:bg-surface"
-        >
-          {t("viewProfile")}
-          <ArrowRight size={13} className="rtl:rotate-180" />
-        </Link>
-      </div>
-    </div>
-  );
-}
+import { hasPublicPractitionerRating } from "@/features/practitioners-discovery/lib/practitioner-rating";
+import { getPublicSessionPrices } from "@/features/practitioners-discovery/lib/public-pricing";
+import { mapPractitionerDurationMoney } from "@/features/practitioners-discovery/lib/practitioner-price";
+import { MoneyText } from "@/components/money/MoneyText";
 
 export default async function PractitionersSection() {
   const [t, locale] = await Promise.all([
     getTranslations("home.practitioners"),
     getLocale(),
   ]);
+  const isAr = locale === "ar";
 
-  let featuredPractitioners: FeaturedPractitionerHomeCard[] = [];
+  let practitioners: Awaited<ReturnType<typeof fetchPublicPractitioners>>["items"] = [];
+  let specialtyLabels: Record<string, string> = {};
 
   try {
-    featuredPractitioners = await fetchPublicFeaturedPractitioners(locale);
+    const [practitionersData, specialtiesData] = await Promise.all([
+      fetchPublicPractitioners(locale, { limit: 3, sort: "rating" }),
+      fetchPublicSpecialties(locale),
+    ]);
+    practitioners = practitionersData.items;
+    specialtyLabels = Object.fromEntries(
+      specialtiesData.specialties
+        .filter((s) => s.isActive)
+        .map((s) => [s.slug, getLocalizedSpecialtyName(s, locale)]),
+    );
   } catch {
-    // Fall back to recommended practitioners
+    // Graceful fallback
   }
 
-  const hasFeatured = featuredPractitioners.length > 0;
-  const practitioners = hasFeatured ? featuredPractitioners.slice(0, 5) : [];
-
-  // If no featured practitioners, fall back to recommended
-  let fallbackPractitioners: Awaited<ReturnType<typeof fetchPublicPractitioners>>["items"] = [];
-  if (!hasFeatured) {
-    try {
-      const data = await fetchPublicPractitioners(locale, {
-        sort: "recommended",
-        page: 1,
-        limit: 3,
-      });
-      fallbackPractitioners = data.items.slice(0, 3);
-    } catch {
-      return null;
-    }
-    if (fallbackPractitioners.length === 0) {
-      return null;
-    }
-  }
-
-  const eyebrow = hasFeatured ? t("eyebrow") : t("fallbackTitle");
+  if (practitioners.length === 0) return null;
 
   return (
-    <section className="px-6 py-16 lg:px-12">
+    <section className="px-6 py-12 lg:px-12 lg:py-16 bg-[#FCFAF6] dark:bg-[#101919] border-y border-border-light/50 dark:border-white/5">
       <div className="mx-auto max-w-7xl">
-        <div className="mb-10 text-center">
-          <p className="mb-3 text-sm font-semibold uppercase tracking-[0.18em] text-primary/80">
-            {eyebrow}
-</p>
-          <h2 className="mb-3 text-2xl font-bold text-text-primary md:text-3xl dark:text-white/92">
-            {t("title")}
-          </h2>
-          <p className="mx-auto max-w-2xl text-base leading-7 text-text-secondary">
-            {t("subtitle")}
-          </p>
-        </div>
+        <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
+          <div className="max-w-2xl">
+            <p className="mb-2 text-xs font-bold uppercase tracking-wider text-[#24564F]">
+              {t("eyebrow")}
+            </p>
+            <h2 className="text-2xl sm:text-3xl font-extrabold text-[#1C2F2B] dark:text-white/95">
+              {t("title")}
+            </h2>
+            <p className="mt-2 text-sm sm:text-base text-text-secondary dark:text-white/70">
+              {t("subtitle")}
+            </p>
+          </div>
 
-        <div className="rounded-[32px] bg-surface p-4 ring-1 ring-inset ring-border-light sm:p-6 dark:bg-surface dark:ring-border-light">
-          {practitioners.length > 0 ? (
-            <div className="grid gap-6 md:grid-cols-3">
-              {practitioners.map((p) => (
-                <FeaturedPractitionerCard
-                  key={p.practitionerId}
-                  practitioner={p}
-                  locale={locale}
-                  t={t}
-                  eyebrow={eyebrow}
-                />
-              ))}
-            </div>
-          ) : (
-            <div className="grid gap-6 md:grid-cols-3">
-              {fallbackPractitioners.map((p) => {
-                const initials =
-                  (locale === "ar" ? p.nameAr : p.nameEn)
-                    ?.split(" ")
-                    .slice(0, 2)
-                    .map((n) => n[0])
-                    .join("")
-                    .toUpperCase() ?? "?";
-
-                return (
-                  <div
-                    key={p.id}
-                    className="app-panel app-lift group overflow-hidden rounded-[28px] hover:-translate-y-1"
-                  >
-                    <div
-                      className="relative flex items-center justify-center bg-sky-50 dark:bg-primary/10"
-                      style={{ height: "200px" }}
-                    >
-                      <div className="absolute inset-0 flex items-center justify-center opacity-10">
-                        <div className="h-36 w-36 rounded-full border-2 border-sky-300" />
-                        <div className="absolute h-24 w-24 rounded-full border border-sky-300" />
-                      </div>
-
-                      <PractitionerAvatar
-                        src={undefined}
-                        alt={locale === "ar" ? p.nameAr : p.nameEn}
-                        initials={initials}
-                        className="relative z-10 h-20 w-20 rounded-full border-4 border-white/80 object-cover shadow-lg ring-2 ring-sky-200"
-                      />
-
-                      {p.isVerified && (
-                        <div className="absolute end-4 top-4 flex items-center gap-1 rounded-full bg-white/90 px-2.5 py-1 shadow-sm dark:bg-surface-secondary/95">
-                          <BadgeCheck size={13} className="text-teal-600" />
-                          <span className="text-[11px] font-semibold text-teal-600">
-                            {t("verified")}
-                          </span>
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="px-5 py-5">
-                      <div className="mb-3 flex items-start justify-between gap-2">
-                        <div>
-                          <h4 className="font-bold text-text-primary dark:text-white/90">
-                            {locale === "ar" ? p.nameAr : p.nameEn}
-                          </h4>
-                          <p className="mt-0.5 text-sm text-text-secondary">
-                            {locale === "ar" ? p.titleAr : p.titleEn}
-                          </p>
-                        </div>
-                        {p.rating > 0 && (
-                          <div className="flex shrink-0 items-center gap-1 rounded-xl bg-amber-50 px-2.5 py-1.5 ring-1 ring-inset ring-amber-200">
-                            <Star size={13} className="fill-amber-400 text-amber-400" />
-                            <span className="text-sm font-bold text-amber-600">
-                              {p.rating.toFixed(1)}
-                            </span>
-                          </div>
-                        )}
-                      </div>
-
-                      <div className="mb-4 flex flex-wrap items-center gap-2">
-                        {p.isVerified && (
-                          <span className="inline-flex items-center gap-1 rounded-full bg-teal-50 px-2.5 py-1 text-xs font-medium text-teal-600 ring-1 ring-inset ring-teal-200">
-                            <BadgeCheck size={11} />
-                            {t("verified")}
-                          </span>
-                        )}
-                        {p.reviewCount > 0 && (
-                          <span className="inline-flex items-center gap-1 rounded-full bg-sky-50 px-2.5 py-1 text-xs font-medium text-sky-600 ring-1 ring-inset ring-sky-200">
-                            <Star size={11} />
-                            {t("reviewsCount", { count: p.reviewCount })}
-                          </span>
-                        )}
-                        {p.yearsExperience > 0 && (
-                          <span className="inline-flex items-center gap-1 rounded-full bg-indigo-50 px-2.5 py-1 text-xs font-medium text-indigo-600 ring-1 ring-inset ring-indigo-200">
-                            <Clock3 size={11} />
-                            {t("experience", { years: p.yearsExperience })}
-                          </span>
-                        )}
-                      </div>
-
-                      <Link
-                        href={`/practitioners/${p.slug}`}
-                        className="flex w-full items-center justify-center gap-2 rounded-2xl border border-border-light bg-white py-2.5 text-sm font-semibold text-primary transition-all hover:border-primary hover:bg-primary hover:text-white dark:bg-surface"
-                      >
-                        {t("viewProfile")}
-                        <ArrowRight size={13} className="rtl:rotate-180" />
-                      </Link>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
-
-        <div className="mt-10 text-center">
           <Link
             href="/practitioners"
-            className="inline-flex items-center gap-2 rounded-2xl px-8 py-3 font-semibold text-primary transition-all hover:bg-primary-light"
+            className="inline-flex items-center gap-1.5 text-sm font-bold text-[#24564F] transition hover:text-[#1F4A44] hover:underline"
           >
-            {t("viewAll")}
-            <ArrowRight size={15} className="rtl:rotate-180" />
+            <span>{t("viewAll")}</span>
+            <ArrowRight size={14} className={isAr ? "rotate-180" : ""} />
           </Link>
+        </div>
+
+        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          {practitioners.map((practitioner) => {
+            const name = (isAr ? practitioner.nameAr : practitioner.nameEn) || practitioner.slug;
+            const title = practitioner.professionalTitle?.trim() || "-";
+            const rating = practitioner.rating;
+            const reviewCount = practitioner.reviewCount || 0;
+            const hasRating = hasPublicPractitionerRating(rating, reviewCount);
+            const sessionPrices = getPublicSessionPrices(practitioner);
+            const startingPrice = sessionPrices[0];
+            const visibleSpecialties = practitioner.specialties.slice(0, 2);
+
+            return (
+              <article
+                key={practitioner.id}
+                className="app-lift flex flex-col justify-between rounded-[24px] border border-border-light/70 bg-white p-5 shadow-2xs transition-all duration-200 hover:-translate-y-1 hover:border-[#24564F]/30 hover:shadow-sm dark:bg-surface-secondary dark:border-white/10"
+              >
+                <div>
+                  {/* Top: Avatar + Identity */}
+                  <div className="flex items-start gap-3.5">
+                    <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-full border-2 border-[#24564F]/20 p-0.5 bg-[#FCFAF6] dark:bg-white/5">
+                      <PractitionerAvatar
+                        src={practitioner.avatarUrl}
+                        alt={name}
+                        initials={practitioner.initials}
+                        className="h-full w-full rounded-full object-cover"
+                      />
+                      {practitioner.isVerified ? (
+                        <span className={`absolute bottom-0 inline-flex h-4 min-w-4 items-center justify-center rounded-full border border-white bg-[#24564F] px-0.5 text-white ${isAr ? "start-0" : "end-0"}`}>
+                          <BadgeCheck size={10} />
+                        </span>
+                      ) : null}
+                    </div>
+
+                    <div className="min-w-0 flex-1">
+                      <h3 className="text-base font-bold text-[#1C2F2B] leading-snug dark:text-white/95 break-words">
+                        {name}
+                      </h3>
+                      <p className="text-xs font-semibold text-[#24564F] mt-0.5 dark:text-[#A7BFAE]">
+                        {title}
+                      </p>
+
+                      <div className="mt-2 flex items-center gap-2 text-xs text-text-muted">
+                        {hasRating ? (
+                          <div className="inline-flex items-center gap-1 rounded-md bg-amber-50 px-1.5 py-0.5 text-xs font-bold text-amber-800 dark:bg-amber-950/30 dark:text-amber-300">
+                            <Star size={11} className="fill-amber-400 text-amber-400" />
+                            <span>{rating.toFixed(1)}</span>
+                            {reviewCount > 0 ? (
+                              <span className="font-normal text-[10px] text-amber-700/80">({reviewCount})</span>
+                            ) : null}
+                          </div>
+                        ) : null}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Specialties Pills */}
+                  <div className="mt-4 flex flex-wrap gap-1.5">
+                    {visibleSpecialties.map((specialtySlug) => (
+                      <span
+                        key={specialtySlug}
+                        className="rounded-full bg-[#EEF4EF] border border-[#24564F]/10 px-2.5 py-0.5 text-[11px] font-semibold text-[#24564F] dark:bg-white/5 dark:text-[#A7BFAE]"
+                      >
+                        {specialtyLabels[specialtySlug] ?? specialtySlug}
+                      </span>
+                    ))}
+                  </div>
+
+                  {/* Pricing row */}
+                  {sessionPrices.length > 0 ? (
+                    <div className="mt-4 rounded-xl bg-[#FCFAF6] border border-border-light/60 p-2.5 dark:bg-white/5 space-y-1.5">
+                      {sessionPrices.map((price) => (
+                        <div
+                          key={price.duration}
+                          className="flex items-center justify-between text-xs"
+                        >
+                          <span className="font-medium text-text-secondary">
+                            {price.duration === 30
+                              ? (isAr ? "٣٠ دقيقة" : "30 min")
+                              : (isAr ? "٦٠ دقيقة" : "60 min")}
+                          </span>
+                          <span className="font-bold text-[#24564F] dark:text-white/95">
+                            {(() => {
+                              const money = mapPractitionerDurationMoney({
+                                amount: price.amount,
+                                currencyCode: practitioner.currencyCode,
+                              });
+                              return money ? <MoneyText money={money} /> : "-";
+                            })()}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  ) : null}
+                </div>
+
+                {/* Bottom CTA */}
+                <div className="mt-4">
+                  <Link
+                    href={`/practitioners/${practitioner.slug}`}
+                    className="sawiyaa-btn-press inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#24564F] px-4 py-2.5 text-xs sm:text-sm font-bold text-white shadow-xs transition hover:bg-[#1F4A44]"
+                  >
+                    <span>{t("viewProfile")}</span>
+                    <ArrowRight size={14} className={isAr ? "rotate-180" : ""} />
+                  </Link>
+                </div>
+              </article>
+            );
+          })}
         </div>
       </div>
     </section>

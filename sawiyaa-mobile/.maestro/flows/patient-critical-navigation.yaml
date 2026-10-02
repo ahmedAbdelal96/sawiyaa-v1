@@ -1,0 +1,16 @@
+appId: com.sawiyaa.mobile
+---
+- runFlow: patient-login.yaml
+- tapOn:
+    text: "More|المزيد"
+- assertVisible:
+    text: "Settings|الإعدادات"
+- tapOn:
+    text: "Settings|الإعدادات"
+- assertVisible:
+    text: "Settings|الإعدادات"
+- pressKey: Back
+- tapOn:
+    text: "Support|الدعم"
+- assertVisible:
+    text: "Message Support|مراسلة الدعم"

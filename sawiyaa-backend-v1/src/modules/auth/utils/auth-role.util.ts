@@ -23,6 +23,8 @@ export function mapUserRoleTypeToAppRole(role: UserRoleType): AppRole {
   switch (role) {
     case UserRoleType.PATIENT:
       return AppRole.PATIENT;
+    case UserRoleType.TRAINEE:
+      return AppRole.TRAINEE;
     case UserRoleType.PRACTITIONER:
       return AppRole.PRACTITIONER;
     case UserRoleType.SUPER_ADMIN:
@@ -42,7 +44,7 @@ export function mapUserRoleTypeToAppRole(role: UserRoleType): AppRole {
     case UserRoleType.CONTENT_REVIEWER:
       return AppRole.CONTENT_REVIEWER;
     default:
-      return AppRole.PATIENT;
+      throw new Error(`Unsupported persisted user role: ${String(role)}`);
   }
 }
 

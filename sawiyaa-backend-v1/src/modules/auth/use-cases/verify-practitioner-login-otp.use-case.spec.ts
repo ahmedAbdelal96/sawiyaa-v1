@@ -125,7 +125,7 @@ describe('VerifyPractitionerLoginOtpUseCase', () => {
     });
   });
 
-  it('does not mark online for invalid practitioner OTP attempts', async () => {
+  it('authenticates an application-only practitioner account without marking presence', async () => {
     verifyOtpChallengeUseCase.execute.mockResolvedValue({
       user: {
         id: 'user-1',
@@ -136,6 +136,43 @@ describe('VerifyPractitionerLoginOtpUseCase', () => {
       id: 'user-1',
       status: UserStatus.ACTIVE,
       practitionerProfile: null,
+      practitionerApplications: [{ id: 'application-1', status: 'DRAFT' }],
+    });
+    issueAuthTokensUseCase.execute.mockResolvedValue({
+      tokens: {
+        accessToken: 'access-token',
+        refreshToken: 'refresh-token',
+      },
+    });
+
+    const result = await useCase.execute({
+      challengeId: 'challenge-1',
+      code: '123456',
+      locale: 'en',
+      deviceContext: {
+        deviceId: 'device-1',
+        ipAddress: '127.0.0.1',
+        userAgent: 'jest',
+      },
+    });
+
+    expect(result.nextStep).toBe('AUTHENTICATED');
+    expect(issueAuthTokensUseCase.execute).toHaveBeenCalled();
+    expect(practitionerPresenceRepository.markOnline).not.toHaveBeenCalled();
+  });
+
+  it('rejects an authenticated practitioner challenge when neither profile nor application exists', async () => {
+    verifyOtpChallengeUseCase.execute.mockResolvedValue({
+      user: {
+        id: 'user-1',
+        roles: [{ role: UserRoleType.PRACTITIONER }],
+      },
+    });
+    userRepository.findByIdWithAuthContext.mockResolvedValue({
+      id: 'user-1',
+      status: UserStatus.ACTIVE,
+      practitionerProfile: null,
+      practitionerApplications: [],
     });
 
     await expect(

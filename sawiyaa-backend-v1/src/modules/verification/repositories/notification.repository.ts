@@ -1,6 +1,7 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Optional } from '@nestjs/common';
 import { AuditEventSource, NotificationChannel, Prisma } from '@prisma/client';
 import { PrismaService } from '@common/prisma/prisma.service';
+import { NotificationQueueService } from '@common/queue/notification-queue.service';
 
 /**
  * Verification module uses the notifications tables to record OTP deliveries.
@@ -8,7 +9,10 @@ import { PrismaService } from '@common/prisma/prisma.service';
  */
 @Injectable()
 export class VerificationNotificationRepository {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    @Optional() private readonly notificationQueue?: NotificationQueueService,
+  ) {}
 
   findTypeBySlug(slug: string) {
     return this.prisma.notificationType.findUnique({
@@ -27,6 +31,17 @@ export class VerificationNotificationRepository {
       const created = await tx.notification.create({ data });
       await this.upsertAuditEventFromNotification(tx, created.id);
       return created;
+    }).then((notification) => {
+      if (
+        notification?.id &&
+        data.status === 'PENDING' &&
+        data.relatedEntityType !== 'OTP_CHALLENGE'
+      ) {
+        void this.notificationQueue
+          ?.enqueueNotification(notification.id)
+          .catch(() => undefined);
+      }
+      return notification;
     });
   }
 

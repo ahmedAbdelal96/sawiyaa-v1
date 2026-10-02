@@ -26,6 +26,13 @@ export class PractitionerApplicationRepository {
     });
   }
 
+  findLatestByUserId(userId: string, tx?: Prisma.TransactionClient) {
+    return this.getDb(tx).practitionerApplication.findFirst({
+      where: { userId },
+      orderBy: [{ updatedAt: 'desc' }, { createdAt: 'desc' }],
+    });
+  }
+
   findActiveChangeByPractitionerId(
     practitionerId: string,
     tx?: Prisma.TransactionClient,
@@ -56,13 +63,16 @@ export class PractitionerApplicationRepository {
     });
   }
 
-  createSubmitted(
+  async createSubmitted(
     practitionerId: string,
     submissionSnapshot?: Prisma.InputJsonValue,
     tx?: Prisma.TransactionClient,
   ) {
+    const profile = await this.getDb(tx).practitionerProfile.findUnique({ where: { id: practitionerId }, select: { userId: true } });
+    if (!profile) throw new Error('Practitioner profile not found');
     return this.getDb(tx).practitionerApplication.create({
       data: {
+        userId: profile.userId,
         practitionerId,
         status: PractitionerApplicationStatus.SUBMITTED,
         submittedAt: new Date(),
@@ -70,6 +80,35 @@ export class PractitionerApplicationRepository {
         reviewedByUserId: null,
         reviewDecisionReason: null,
         reviewNotes: null,
+        submissionSnapshot,
+      },
+    });
+  }
+
+  createDraftByUser(
+    userId: string,
+    submissionSnapshot?: Prisma.InputJsonValue,
+    tx?: Prisma.TransactionClient,
+  ) {
+    return this.getDb(tx).practitionerApplication.create({
+      data: {
+        userId,
+        status: PractitionerApplicationStatus.DRAFT,
+        submissionSnapshot,
+      },
+    });
+  }
+
+  createSubmittedByUser(
+    userId: string,
+    submissionSnapshot?: Prisma.InputJsonValue,
+    tx?: Prisma.TransactionClient,
+  ) {
+    return this.getDb(tx).practitionerApplication.create({
+      data: {
+        userId,
+        status: PractitionerApplicationStatus.SUBMITTED,
+        submittedAt: new Date(),
         submissionSnapshot,
       },
     });

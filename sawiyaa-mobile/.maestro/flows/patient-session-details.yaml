@@ -1,0 +1,11 @@
+appId: com.sawiyaa.mobile
+---
+- runFlow: patient-login.yaml
+- tapOn:
+    text: "Sessions|الجلسات"
+- assertVisible:
+    text: "Sessions|الجلسات"
+- tapOn:
+    text: "Upcoming|القادمة"
+- assertNotVisible:
+    text: "FATAL EXCEPTION"

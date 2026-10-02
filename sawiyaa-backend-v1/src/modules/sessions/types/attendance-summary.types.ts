@@ -266,4 +266,10 @@ export interface SessionAttendanceSummary {
   overlap: OverlapSummary;
   evidence: EvidenceFlags;
   recommendation: Recommendation;
+  reviewDecision?: {
+    canApproveNormally: boolean;
+    requiresResolution: boolean;
+    reasonCode: string;
+    recommendation: string;
+  };
 }

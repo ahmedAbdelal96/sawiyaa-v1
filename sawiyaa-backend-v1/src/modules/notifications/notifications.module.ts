@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { forwardRef, Module } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PermissionResolverService } from '@common/guards/authorization/permission-resolver.service';
 import { PermissionsGuard } from '@common/guards/authorization/permissions.guard';
@@ -38,17 +38,26 @@ import { SendDevTestPushNotificationUseCase } from './use-cases/send-dev-test-pu
 import { RegisterNotificationDeviceUseCase } from './use-cases/register-notification-device.use-case';
 import { RevokeNotificationDeviceUseCase } from './use-cases/revoke-notification-device.use-case';
 import { NotificationContextEnrichmentService } from './services/notification-context-enrichment.service';
+import { NotificationRealtimePublisher } from './services/notification-realtime.publisher';
+import { NotificationsGateway } from './gateways/notifications.gateway';
 import { EMAIL_PROVIDER } from './providers/email-provider.token';
 import { EmailProviderAdapter } from './providers/email-provider.adapter';
 import { SmtpEmailProvider } from './providers/smtp-email.provider';
 import { BrevoEmailProvider } from './providers/brevo-email.provider';
+import { createNotificationEmailProvider } from './providers/email-provider.factory';
 import { ConfigModule } from '@modules/config/config.module';
+import { PractitionersModule } from '@modules/practitioners/practitioners.module';
+import { NotificationQueueModule } from '@common/queue/notification-queue.module';
 
 /**
  * Notifications module provides the operational notification stack and the authenticated in-app feed.
  */
 @Module({
-  imports: [ConfigModule],
+  imports: [
+    ConfigModule,
+    NotificationQueueModule,
+    forwardRef(() => PractitionersModule),
+  ],
   controllers: [
     AdminNotificationOpsController,
     AdminAuditLogController,
@@ -65,29 +74,7 @@ import { ConfigModule } from '@modules/config/config.module';
     // Fails fast at startup if provider=brevo but BREVO_API_KEY is missing.
     {
       provide: EMAIL_PROVIDER,
-      useFactory: (configService: ConfigService): EmailProviderAdapter => {
-        const provider =
-          configService
-            .get<string>('notification.mail.provider')
-            ?.toLowerCase()
-            .trim() ?? 'smtp';
-
-        if (provider === 'brevo') {
-          const apiKey = configService
-            .get<string>('notification.brevo.apiKey')
-            ?.trim();
-          if (!apiKey) {
-            throw new Error(
-              '[NotificationsModule] MAIL_PROVIDER=brevo requires BREVO_API_KEY to be set',
-            );
-          }
-          // BrevoEmailProvider is stateless — construct directly without DI
-          return new BrevoEmailProvider(configService);
-        }
-
-        // Default to SMTP
-        return new SmtpEmailProvider(configService);
-      },
+      useFactory: createNotificationEmailProvider,
       inject: [ConfigService],
     },
 
@@ -109,6 +96,7 @@ import { ConfigModule } from '@modules/config/config.module';
     NotificationOpsPresenter,
     UserNotificationsPresenter,
     NotificationContextEnrichmentService,
+    NotificationRealtimePublisher,
     NotificationIntentWriterService,
     AdminAuditPresenter,
     SessionReminderQueueRepository,
@@ -135,6 +123,7 @@ import { ConfigModule } from '@modules/config/config.module';
     OperationalNotificationService,
     NotificationIntentWriterService,
     SessionReminderQueueRepository,
+    NotificationRealtimePublisher,
   ],
 })
 export class NotificationsModule {}

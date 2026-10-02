@@ -18,24 +18,25 @@ export default function PublicNavbar() {
 
   const NAV_LINKS = [
     { href: "/", label: t("home") },
-    { href: "/packages", label: t("packages") },
-    { href: "/specialties", label: t("specialties") },
     { href: "/practitioners", label: t("practitioners") },
-    { href: "/academy", label: t("academy") },
+    { href: "/specialties", label: t("specialties") },
     { href: "/articles", label: t("articles") },
-    { href: "/refund-policies", label: t("policies") },
+    { href: "/packages", label: t("packages") },
   ];
 
   return (
     <header className="fixed top-0 z-50 w-full glass-header shadow-theme-xs dark:shadow-none dark:border-b dark:border-border-light">
       <nav className="app-max-shell-public mx-auto flex items-center justify-between px-6 py-3.5">
         {/* Logo + desktop nav */}
-        <div className="flex items-center gap-10">
+        <div className="flex items-center gap-8">
           <Link
             href="/"
-            className="text-2xl font-bold tracking-tight text-primary"
+            className="text-2xl font-bold tracking-tight text-primary flex items-center gap-2"
           >
-            Sawiyaa
+            <span>سويّة</span>
+            <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-primary-light text-primary dark:bg-primary/20">
+              Sawiyaa
+            </span>
           </Link>
           <ul className="hidden items-center gap-1 md:flex">
             {NAV_LINKS.map((link) => {
@@ -49,7 +50,7 @@ export default function PublicNavbar() {
                     href={link.href}
                     className={
                       isActive
-                        ? "rounded-xl bg-primary-light px-3.5 py-2 text-sm font-semibold text-primary shadow-[inset_0_0_0_1px_rgba(95,143,139,0.12)] dark:bg-primary/14"
+                        ? "rounded-xl bg-primary-light px-3.5 py-2 text-sm font-semibold text-primary shadow-[inset_0_0_0_1px_rgba(36,86,79,0.12)] dark:bg-primary/14"
                         : "rounded-xl px-3.5 py-2 text-sm font-medium text-text-secondary transition-colors hover:bg-surface-tertiary hover:text-primary dark:hover:bg-white/5"
                     }
                   >
@@ -62,23 +63,29 @@ export default function PublicNavbar() {
         </div>
 
         {/* Desktop right-side controls */}
-        <div className="hidden items-center gap-1 md:flex">
+        <div className="hidden items-center gap-2 md:flex">
           <LanguageToggle />
           <ThemeToggle />
-          <div className="mx-2 h-5 w-px bg-border-light" />
+          <div className="mx-1 h-5 w-px bg-border-light" />
           {isAuthenticated ? (
             <UserDropdown />
           ) : (
             <>
               <Link
+                href="/signin/practitioner"
+                className="rounded-xl px-3 py-2 text-xs font-semibold text-text-muted transition-all hover:bg-surface-tertiary hover:text-text-primary dark:hover:bg-white/5"
+              >
+                {t("practitionerPortal")}
+              </Link>
+              <Link
                 href="/signin/patient"
-                className="rounded-xl px-3.5 py-2 text-sm font-medium text-text-secondary transition-all hover:bg-surface-tertiary hover:text-primary dark:hover:bg-white/5"
+                className="rounded-xl px-3.5 py-2 text-sm font-semibold text-text-secondary transition-all hover:bg-surface-tertiary hover:text-primary dark:hover:bg-white/5"
               >
                 {t("login")}
               </Link>
               <Link
                 href="/signup/patient"
-                className="rounded-2xl bg-primary px-5 py-2 text-sm font-semibold text-white shadow-[0_12px_24px_-14px_rgba(95,143,139,0.45)] transition-all hover:bg-primary-hover active:scale-95"
+                className="rounded-2xl bg-primary px-5 py-2 text-sm font-semibold text-white shadow-[0_10px_20px_-10px_rgba(36,86,79,0.45)] transition-all hover:bg-primary-hover active:scale-95"
               >
                 {t("startJourney")}
               </Link>
@@ -138,6 +145,13 @@ export default function PublicNavbar() {
                 onClick={() => setMobileOpen(false)}
               >
                 {t("startJourney")}
+              </Link>
+              <Link
+                href="/signin/practitioner"
+                className="mt-2 text-center text-xs font-medium text-text-muted hover:text-primary"
+                onClick={() => setMobileOpen(false)}
+              >
+                {t("practitionerPortal")}
               </Link>
             </div>
           )}

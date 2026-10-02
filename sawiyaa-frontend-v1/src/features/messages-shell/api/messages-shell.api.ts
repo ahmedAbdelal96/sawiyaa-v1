@@ -10,6 +10,24 @@ import type {
   UnifiedMessagingUnreadSummary,
 } from "../types/messages-shell.types";
 
+export type ChatAttachmentPolicy = {
+  enabled: boolean;
+  imageTypes: string[];
+  documentTypes: string[];
+  maxImageBytes: number;
+  maxDocumentBytes: number;
+  maxFilesPerMessage: number;
+  maxCombinedBytesPerMessage: number;
+};
+
+export type ChatAttachmentUpload = {
+  fileId: string;
+  fileUrl: string;
+  mimeType: string;
+  fileSize: number;
+  originalName: string | null;
+};
+
 function isCanonicalUnreadSummary(value: unknown): value is CanonicalUnreadSummary {
   if (!value || typeof value !== "object") return false;
 
@@ -54,6 +72,26 @@ export async function sendCanonicalMessage(
   const response = await httpClient.post<ApiPayload<{ item: MessagingMessage }>>(
     `/messages/conversations/${conversationId}/messages`,
     payload,
+  );
+  return extractData(response.data);
+}
+
+export async function getChatAttachmentPolicy() {
+  const response = await httpClient.get<ApiPayload<{ item: ChatAttachmentPolicy }>>(
+    "/messages/conversations/attachment-policy",
+  );
+  return extractData(response.data);
+}
+
+export async function uploadCanonicalChatAttachment(
+  conversationId: string,
+  file: File,
+): Promise<{ item: ChatAttachmentUpload }> {
+  const form = new FormData();
+  form.append("file", file);
+  const response = await httpClient.post<ApiPayload<{ item: ChatAttachmentUpload }>>(
+    `/messages/conversations/${conversationId}/attachments`,
+    form,
   );
   return extractData(response.data);
 }

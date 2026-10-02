@@ -7,7 +7,6 @@ import {
 } from '@nestjs/common';
 import {
   PractitionerApplicationStatus,
-  PractitionerPayoutMethodType,
   Prisma,
   SecurityAuditOutcome,
 } from '@prisma/client';
@@ -30,11 +29,17 @@ import { CreatePractitionerProfileUseCase } from './create-practitioner-profile.
 import { SubmitPractitionerApplicationDto } from '../dto/submit-practitioner-application.dto';
 import { normalizeIanaTimeZoneInput } from '@common/utils/timezone.util';
 import { SecurityAuditService } from '@common/security-audit/security-audit.service';
-import { SecurityAuditActorType, SecurityAuditSource } from '@common/security-audit/security-audit.types';
+import {
+  SecurityAuditActorType,
+  SecurityAuditSource,
+} from '@common/security-audit/security-audit.types';
 import { PractitionerPayoutDestinationValidationService } from '../services/practitioner-payout-destination-validation.service';
 import { PractitionerRequiredDocumentsService } from '../services/practitioner-required-documents.service';
 import { normalizeProfessionalTitle } from '../constants/professional-title.constants';
 import { PractitionerReviewCaseService } from '../services/practitioner-review-case.service';
+import { PractitionerProfessionalContentRepository } from '../repositories/practitioner-professional-content.repository';
+import { PractitionerProfessionalContentAuthoringService } from '../services/practitioner-professional-content-authoring.service';
+import { PractitionerSpecialtyIntegrityService } from '../services/practitioner-specialty-integrity.service';
 
 /**
  * Practitioner self-submission is review-gated and snapshot-based.
@@ -59,19 +64,29 @@ export class SubmitPractitionerApplicationUseCase {
     private readonly getPractitionerApplicationStatusUseCase: GetPractitionerApplicationStatusUseCase,
     private readonly practitionerPayoutDestinationValidationService: PractitionerPayoutDestinationValidationService,
     private readonly practitionerReviewCaseService: PractitionerReviewCaseService,
+    private readonly practitionerSpecialtyIntegrityService: PractitionerSpecialtyIntegrityService,
     @Optional() private readonly securityAuditService?: SecurityAuditService,
+    @Optional()
+    private readonly professionalContentRepository?: PractitionerProfessionalContentRepository,
+    @Optional()
+    private readonly professionalContentAuthoringService?: PractitionerProfessionalContentAuthoringService,
   ) {}
 
-    private readonly practitionerRequiredDocumentsService =
+  private readonly practitionerRequiredDocumentsService =
     new PractitionerRequiredDocumentsService();
 
-  private assertRequiredDocumentsComplete(records: Array<{
-    credentialType: string;
-    reviewStatus: string;
-    expiresAt: Date | null;
-    fileUrl: string;
-  }>) {
-    const result = this.practitionerRequiredDocumentsService.evaluate(records);
+  private assertRequiredDocumentsComplete(
+    records: Array<{
+      credentialType: string;
+      reviewStatus: string;
+      expiresAt: Date | null;
+      fileUrl: string;
+    }>,
+    countryCode?: string | null,
+  ) {
+    const result = this.practitionerRequiredDocumentsService.evaluate(records, {
+      countryCode,
+    });
     if (result.complete) return;
     throw new UnprocessableEntityException({
       code: 'PRACTITIONER_REQUIRED_DOCUMENTS_INCOMPLETE',
@@ -81,12 +96,120 @@ export class SubmitPractitionerApplicationUseCase {
     });
   }
 
+  private async submitApplicationOwned(input: {
+    userId: string;
+    locale: SupportedLocale;
+    currentUser: AuthenticatedUser;
+    data: SubmitPractitionerApplicationDto;
+  }) {
+    const current = await this.practitionerApplicationRepository.findLatestByUserId(input.userId);
+    const user = await this.practitionerUserRepository.findProfileSeed(input.userId);
+    if (!current || !user) {
+      throw new BadRequestException({ error: 'PRACTITIONER_APPLICATION_NOT_FOUND' });
+    }
+    const currentSnapshot = (current.submissionSnapshot ?? {}) as Record<string, any>;
+    const currentProfile = (currentSnapshot.profile ?? {}) as Record<string, any>;
+    const currentSpecialties = (currentSnapshot.specialtySelection ?? {}) as Record<string, any>;
+    const mergedProfile = {
+      ...currentProfile,
+      practitionerType: input.data.practitionerType ?? currentProfile.practitionerType ?? 'OTHER',
+      practitionerTypeExplicit:
+        input.data.practitionerType !== undefined
+          ? true
+          : currentProfile.practitionerTypeExplicit === true,
+      practitionerGender: input.data.practitionerGender !== undefined ? input.data.practitionerGender : currentProfile.practitionerGender ?? null,
+      professionalTitle: input.data.professionalTitle !== undefined ? input.data.professionalTitle : currentProfile.professionalTitle ?? null,
+      bio: input.data.bio !== undefined ? input.data.bio : currentProfile.bio ?? null,
+      yearsOfExperience: input.data.yearsOfExperience !== undefined ? input.data.yearsOfExperience : currentProfile.yearsOfExperience ?? null,
+      countryCode: input.data.countryCode !== undefined ? input.data.countryCode?.trim().toUpperCase() ?? null : currentProfile.countryCode ?? null,
+      primaryContentLocale: input.data.primaryContentLocale !== undefined ? input.data.primaryContentLocale : currentProfile.primaryContentLocale ?? null,
+      professionalContent: input.data.professionalContent !== undefined ? input.data.professionalContent : currentProfile.professionalContent ?? null,
+    };
+    const mergedSpecialtySelection = input.data.specialtySelection
+      ? {
+          primarySpecialtyCategoryId: input.data.specialtySelection.primarySpecialtyCategoryId,
+          specialties: input.data.specialtySelection.specialtyIds.map((specialtyId, index) => ({ specialtyId, isPrimary: index === 0 })),
+        }
+      : currentSpecialties;
+    const specialtyIds = Array.isArray(mergedSpecialtySelection.specialtyIds)
+      ? mergedSpecialtySelection.specialtyIds
+      : Array.isArray(mergedSpecialtySelection.specialties)
+        ? mergedSpecialtySelection.specialties
+            .map((item: { specialtyId?: unknown }) => item.specialtyId)
+            .filter((id: unknown): id is string => typeof id === 'string')
+        : [];
+    if (mergedSpecialtySelection.primarySpecialtyCategoryId) {
+      await this.practitionerSpecialtyIntegrityService.validateSelection({
+        primarySpecialtyCategoryId:
+          mergedSpecialtySelection.primarySpecialtyCategoryId,
+        specialtyIds,
+      });
+    }
+    const mergedUser = {
+      ...((currentSnapshot.applicant ?? {}) as Record<string, any>),
+      displayName: input.data.displayName !== undefined ? input.data.displayName : user.displayName,
+      timezone: input.data.timezone !== undefined ? input.data.timezone : user.timezone,
+      locale: input.data.locale !== undefined ? input.data.locale : user.defaultLocale,
+    };
+    const languageCodes = input.data.languageCodes ?? currentSnapshot.languageCodes ?? [];
+    const credentials = await this.practitionerCredentialRepository.listByApplicationId(current.id);
+    this.assertRequiredDocumentsComplete(credentials.map((credential) => ({
+      credentialType: credential.credentialType,
+      reviewStatus: credential.reviewStatus,
+      expiresAt: credential.expiresAt,
+      fileUrl: credential.fileUrl,
+    })), mergedProfile.countryCode);
+    const missing: string[] = [];
+    if (!mergedUser.displayName?.trim()) missing.push('displayName');
+    if (!mergedProfile.countryCode?.trim()) missing.push('countryCode');
+    if (!mergedProfile.professionalTitle?.trim()) missing.push('professionalTitle');
+    if (!mergedProfile.bio?.trim()) missing.push('bio');
+    if (mergedProfile.yearsOfExperience === null || mergedProfile.yearsOfExperience === undefined) missing.push('yearsOfExperience');
+    if (!Array.isArray(languageCodes) || languageCodes.length === 0) missing.push('languages');
+    if (!mergedSpecialtySelection.primarySpecialtyCategoryId) missing.push('primarySpecialtyCategoryId');
+    if (!Array.isArray(mergedSpecialtySelection.specialties) || mergedSpecialtySelection.specialties.length === 0) missing.push('specialties');
+    if (!input.currentUser.isActive) missing.push('activeAccount');
+    if (input.currentUser.isPractitionerOtpVerified === false) missing.push('practitionerOtpVerified');
+    if (missing.length) {
+      throw new UnprocessableEntityException({ error: 'PRACTITIONER_APPLICATION_NOT_ELIGIBLE', missingRequirements: missing });
+    }
+    const snapshot = {
+      applicant: mergedUser,
+      profile: mergedProfile,
+      languageCodes,
+      specialtySelection: mergedSpecialtySelection,
+      credentials: credentials.map((credential) => ({
+        credentialId: credential.id,
+        credentialType: credential.credentialType,
+        reviewStatus: credential.reviewStatus,
+        expiresAt: credential.expiresAt,
+        uploadedAt: credential.createdAt,
+        reviewedAt: credential.reviewedAt,
+        reviewNotes: credential.reviewNotes,
+      })),
+    } as Prisma.InputJsonValue;
+    const blockedStatuses: PractitionerApplicationStatus[] = [PractitionerApplicationStatus.SUBMITTED, PractitionerApplicationStatus.UNDER_REVIEW, PractitionerApplicationStatus.APPROVED, PractitionerApplicationStatus.ARCHIVED];
+    if (blockedStatuses.includes(current.status)) {
+      throw new ConflictException({ error: 'PRACTITIONER_APPLICATION_ALREADY_SUBMITTED' });
+    }
+    await this.prisma.$transaction(async (tx) => {
+      const latest = await this.practitionerApplicationRepository.findLatestByUserId(input.userId, tx);
+      if (!latest || blockedStatuses.includes(latest.status)) throw new ConflictException({ error: 'PRACTITIONER_APPLICATION_ALREADY_SUBMITTED' });
+      await this.practitionerApplicationRepository.resubmit(latest.id, snapshot, tx);
+      await this.practitionerReviewCaseService.ensureOnboardingCase({ applicationId: latest.id, userId: input.userId, proposedSnapshot: snapshot, tx });
+      await this.practitionerReviewCaseService.resubmitApplicationCase({ applicationId: latest.id, proposedSnapshot: snapshot, tx });
+    });
+    return this.getPractitionerApplicationStatusUseCase.execute({ userId: input.userId, locale: input.locale, currentUser: input.currentUser });
+  }
+
   async execute(input: {
     userId: string;
     locale: SupportedLocale;
     currentUser: AuthenticatedUser;
     data: SubmitPractitionerApplicationDto;
   }) {
+    const existingProfile = await this.practitionerProfileRepository.findByUserId(input.userId);
+    if (!existingProfile) return this.submitApplicationOwned(input);
     const profile = await this.createPractitionerProfileUseCase.execute(
       input.userId,
     );
@@ -98,6 +221,7 @@ export class SubmitPractitionerApplicationUseCase {
       specialtyLinks,
       credentials,
       payoutDestination,
+      professionalContentState,
     ] = await Promise.all([
       this.practitionerProfileRepository.findByUserId(input.userId),
       this.practitionerUserRepository.findProfileSeed(input.userId),
@@ -105,6 +229,9 @@ export class SubmitPractitionerApplicationUseCase {
       this.specialtyRepository.listByPractitionerId(profile.id, input.locale),
       this.practitionerCredentialRepository.listByPractitionerId(profile.id),
       this.practitionerPayoutDestinationRepository.findByPractitionerId(
+        profile.id,
+      ),
+      this.professionalContentRepository?.findByPractitionerProfileId(
         profile.id,
       ),
     ]);
@@ -116,13 +243,25 @@ export class SubmitPractitionerApplicationUseCase {
       });
     }
 
-    const requestedTimezone = normalizeIanaTimeZoneInput(
-      input.data.timezone,
-      {
-        messageKey: 'availability.errors.invalidTimezone',
-        error: 'AVAILABILITY_INVALID_TIMEZONE',
-      },
-    );
+    const contentPlan = this.professionalContentAuthoringService
+      ? this.professionalContentAuthoringService.plan(
+          professionalContentState ?? {
+            professionalTitle: profileState.professionalTitle,
+            bio: profileState.bio,
+          },
+          {
+            professionalTitle: input.data.professionalTitle,
+            bio: input.data.bio,
+            professionalContent: input.data.professionalContent,
+            primaryContentLocale: input.data.primaryContentLocale,
+          },
+        )
+      : null;
+
+    const requestedTimezone = normalizeIanaTimeZoneInput(input.data.timezone, {
+      messageKey: 'availability.errors.invalidTimezone',
+      error: 'AVAILABILITY_INVALID_TIMEZONE',
+    });
 
     const mergedUser = {
       displayName:
@@ -134,7 +273,9 @@ export class SubmitPractitionerApplicationUseCase {
           ? input.data.locale
           : userState.defaultLocale,
       timezone:
-        requestedTimezone !== undefined ? requestedTimezone : userState.timezone,
+        requestedTimezone !== undefined
+          ? requestedTimezone
+          : userState.timezone,
     };
 
     const mergedProfile = {
@@ -145,15 +286,24 @@ export class SubmitPractitionerApplicationUseCase {
           ? input.data.practitionerGender
           : (profileState.practitionerGender ?? null),
       professionalTitle:
+        contentPlan?.state.professionalTitle ??
         normalizeProfessionalTitle(
           input.data.professionalTitle !== undefined
             ? input.data.professionalTitle
             : (profileState.professionalTitle ?? null),
         ),
       bio:
-        input.data.bio !== undefined
+        contentPlan?.state.bio ??
+        (input.data.bio !== undefined
           ? input.data.bio
-          : (profileState.bio ?? null),
+          : (profileState.bio ?? null)),
+      ...(contentPlan
+        ? {
+            professionalContent:
+              this.professionalContentAuthoringService!.toSnapshot(contentPlan),
+            primaryContentLocale: contentPlan.state.primaryContentLocale,
+          }
+        : {}),
       yearsOfExperience:
         input.data.yearsOfExperience !== undefined
           ? input.data.yearsOfExperience
@@ -162,38 +312,6 @@ export class SubmitPractitionerApplicationUseCase {
         input.data.countryCode !== undefined
           ? input.data.countryCode
           : (profileState.country?.isoCode ?? null),
-      sessionPrice30Egp:
-        input.data.sessionPrice30Egp !== undefined
-          ? input.data.sessionPrice30Egp
-          : (profileState.sessionPrice30Egp ?? null),
-      sessionPrice30Usd:
-        input.data.sessionPrice30Usd !== undefined
-          ? input.data.sessionPrice30Usd
-          : (profileState.sessionPrice30Usd ?? null),
-      sessionPrice60Egp:
-        input.data.sessionPrice60Egp !== undefined
-          ? input.data.sessionPrice60Egp
-          : (profileState.sessionPrice60Egp ?? null),
-      sessionPrice60Usd:
-        input.data.sessionPrice60Usd !== undefined
-          ? input.data.sessionPrice60Usd
-          : (profileState.sessionPrice60Usd ?? null),
-      instantBookingPrice30Egp:
-        input.data.instantBookingPrice30Egp !== undefined
-          ? input.data.instantBookingPrice30Egp
-          : (profileState.instantBookingPrice30Egp ?? null),
-      instantBookingPrice30Usd:
-        input.data.instantBookingPrice30Usd !== undefined
-          ? input.data.instantBookingPrice30Usd
-          : (profileState.instantBookingPrice30Usd ?? null),
-      instantBookingPrice60Egp:
-        input.data.instantBookingPrice60Egp !== undefined
-          ? input.data.instantBookingPrice60Egp
-          : (profileState.instantBookingPrice60Egp ?? null),
-      instantBookingPrice60Usd:
-        input.data.instantBookingPrice60Usd !== undefined
-          ? input.data.instantBookingPrice60Usd
-          : (profileState.instantBookingPrice60Usd ?? null),
       primarySpecialtyCategoryId:
         profileState.primarySpecialtyCategoryId ?? null,
     };
@@ -234,7 +352,8 @@ export class SubmitPractitionerApplicationUseCase {
     this.practitionerPayoutDestinationValidationService.validate(
       mergedPayoutDestination,
     );
-    const submissionSnapshot = this.practitionerApplicationSnapshotService.build({
+    const submissionSnapshot =
+      this.practitionerApplicationSnapshotService.build({
         user: mergedUser,
         profile: mergedProfile,
         languageCodes: languageLinks.map((item) => item.language.code),
@@ -320,6 +439,7 @@ export class SubmitPractitionerApplicationUseCase {
         expiresAt: credential.expiresAt,
         fileUrl: credential.fileUrl,
       })),
+      profileState.country?.isoCode ?? null,
     );
 
     if (!eligibility.canSubmit) {
@@ -362,6 +482,7 @@ export class SubmitPractitionerApplicationUseCase {
           expiresAt: credential.expiresAt,
           fileUrl: credential.fileUrl,
         })),
+        profileState.country?.isoCode ?? null,
       );
       const latestApplication =
         await this.practitionerApplicationRepository.findLatestByPractitionerId(
@@ -411,7 +532,10 @@ export class SubmitPractitionerApplicationUseCase {
           resourceType: 'PractitionerApplication',
           resourceId: decision.id,
           targetUserId: input.userId,
-          metadata: { previousStatus: latestApplication.status, status: decision.status },
+          metadata: {
+            previousStatus: latestApplication.status,
+            status: decision.status,
+          },
         });
         await this.practitionerReviewCaseService.ensureOnboardingCase({
           practitionerId: profile.id,
@@ -426,11 +550,12 @@ export class SubmitPractitionerApplicationUseCase {
         return;
       }
 
-      const decision = await this.practitionerApplicationRepository.createSubmitted(
-        profile.id,
-        submissionSnapshot,
-        tx,
-      );
+      const decision =
+        await this.practitionerApplicationRepository.createSubmitted(
+          profile.id,
+          submissionSnapshot,
+          tx,
+        );
       await this.securityAuditService?.recordRequired(tx, {
         action: 'security.practitioner.application.submit',
         outcome: SecurityAuditOutcome.SUCCESS,

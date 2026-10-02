@@ -1,34 +1,46 @@
 "use client";
 
+import { useMemo } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import {
+  AlertCircle,
   ArrowRight,
+  Calendar,
   CalendarDays,
+  CheckCircle2,
+  Clock,
   CreditCard,
+  Headphones,
   HeartHandshake,
   LifeBuoy,
+  MessageSquare,
+  Shield,
+  ShieldCheck,
   Sparkles,
   Stethoscope,
-  UserRound,
+  Tag,
+  UserCheck,
+  Users,
+  Video,
+  Wallet,
   Zap,
 } from "lucide-react";
 import Button from "@/components/ui/button/Button";
 import { ListStateSkeleton } from "@/components/shared/ContentStates";
 import { Skeleton } from "@/components/shared/LoadingStates";
-import {
-  PatientPageHeader,
-  PatientSectionCard,
-  PatientStatusBadge,
-} from "@/components/patient/PatientChrome";
 import { usePatientJourney } from "../hooks/use-patient-journey";
 import { isPaymentExpired } from "@/features/payments/lib/payment-status";
+import { usePatientProfile } from "@/features/patients/hooks/use-patients";
+import { usePatientWalletSummary } from "@/features/payments/hooks/use-payments";
+import { useUnifiedUnreadBadge } from "@/features/messages-shell/hooks/use-unified-unread-badge";
+import { formatPatientDateTime } from "@/lib/time-formatting";
+import { formatMoney as formatFinanceMoney } from "@/lib/finance-format";
+import PractitionerAvatar from "@/components/shared/PractitionerAvatar";
 import type {
   PatientJourney,
   PatientJourneyNextStepType,
 } from "../types/patient-journey.types";
-import { usePatientProfile } from "@/features/patients/hooks/use-patients";
-import { formatPatientDateTime } from "@/lib/time-formatting";
 
 type StepConfig = {
   href: string | null;
@@ -36,31 +48,32 @@ type StepConfig = {
   supported: boolean;
 };
 
-function formatAmount(amount: string, currency: string, numLocale: string): string {
-  return new Intl.NumberFormat(numLocale, {
-    style: "currency",
-    currency: currency.toUpperCase(),
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 2,
-  }).format(Number(amount));
-}
-
 function resolveStepConfig(
   journey: PatientJourney,
   type: PatientJourneyNextStepType,
 ): StepConfig {
   switch (type) {
-    case "COMPLETE_PAYMENT":
+    case "COMPLETE_PAYMENT": {
+      const pendingPaymentStep = journey.nextSteps.find(
+        (step) => step.type === "COMPLETE_PAYMENT",
+      );
+      const actionSessionId =
+        pendingPaymentStep?.action?.targetType === "SESSION"
+          ? pendingPaymentStep.action.targetId
+          : null;
       return {
-        href: journey.upcoming.pendingPayment?.sessionId
-          ? `/patient/sessions/${journey.upcoming.pendingPayment.sessionId}/pay`
+        href: actionSessionId || journey.upcoming.pendingPayment?.sessionId
+          ? `/patient/sessions/${actionSessionId ?? journey.upcoming.pendingPayment?.sessionId}/pay`
           : "/patient/payments",
         ctaKey: "nextSteps.types.COMPLETE_PAYMENT.cta",
         supported: true,
       };
+    }
     case "JOIN_UPCOMING_SESSION":
       return {
-        href: journey.upcoming.session ? `/patient/sessions/${journey.upcoming.session.id}` : null,
+        href: journey.upcoming.session
+          ? `/patient/sessions/${journey.upcoming.session.id}`
+          : null,
         ctaKey: "nextSteps.types.JOIN_UPCOMING_SESSION.cta",
         supported: Boolean(journey.upcoming.session),
       };
@@ -95,123 +108,23 @@ function resolveStepConfig(
   }
 }
 
-function StepIcon({ type }: { type: PatientJourneyNextStepType }) {
-  switch (type) {
-    case "COMPLETE_PAYMENT":
-      return <CreditCard className="h-5 w-5" />;
-    case "JOIN_UPCOMING_SESSION":
-      return <CalendarDays className="h-5 w-5" />;
-    case "VIEW_SUPPORT_TICKET":
-      return <LifeBuoy className="h-5 w-5" />;
-    case "TAKE_ASSESSMENT":
-      return <Sparkles className="h-5 w-5" />;
-    case "START_GUIDED_MATCHING":
-      return <HeartHandshake className="h-5 w-5" />;
-    case "BOOK_NEXT_SESSION":
-      return <Stethoscope className="h-5 w-5" />;
-    default:
-      return <ArrowRight className="h-5 w-5" />;
-  }
-}
-
-function PatientJourneySkeleton() {
+function JourneyLoadingSkeleton() {
   return (
-    <div className="app-max-content mx-auto space-y-5 sawiyaa-animate-fade-in">
-      {/* ── Welcome Hero Skeleton ── */}
-      <div className="rounded-[24px] border border-border-light bg-surface-tertiary p-6 md:p-8 border-s-4 border-s-primary shadow-sawiyaa-card">
-        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
-          <div className="space-y-3 max-w-2xl w-full">
-            <div className="flex items-center gap-2">
-              <Skeleton className="h-5 w-24 rounded-full" />
-            </div>
-            <Skeleton className="h-8 w-2/3" />
-            <Skeleton className="h-4 w-5/6" />
-            <Skeleton className="h-4 w-4/5" />
-          </div>
-          {/* Next Action Widget Skeleton */}
-          <div className="shrink-0 flex flex-col items-start gap-4 p-5 rounded-2xl bg-white border border-border-light shadow-theme-sm max-w-sm w-full lg:w-80">
-            <div className="flex items-center gap-2">
-              <Skeleton className="h-9 w-9 rounded-xl" />
-              <Skeleton className="h-3 w-16" />
-            </div>
-            <div className="space-y-1.5 w-full">
-              <Skeleton className="h-4 w-5/6" />
-              <Skeleton className="h-3 w-full" />
-            </div>
-            <Skeleton className="h-9 w-full rounded-xl" />
-          </div>
-        </div>
+    <div className="mx-auto max-w-5xl space-y-6 px-4 py-6 sm:py-8">
+      <div className="rounded-3xl border border-border-light bg-white p-6 sm:p-8 shadow-xs">
+        <Skeleton className="h-5 w-32 rounded-full mb-3" />
+        <Skeleton className="h-8 w-64 rounded-xl mb-2" />
+        <Skeleton className="h-4 w-96 max-w-full rounded-md" />
       </div>
-
-      {/* ── Active Care Timeline Skeleton ── */}
-      <div className="rounded-[24px] border border-border-light bg-white p-4 shadow-sawiyaa-card">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div className="flex items-center gap-3 w-full">
-            <Skeleton className="h-10 w-10 rounded-xl shrink-0" />
-            <div className="space-y-2 w-full max-w-xl">
-              <Skeleton className="h-4 w-1/3" />
-              <Skeleton className="h-3.5 w-3/4" />
-            </div>
-          </div>
-          <Skeleton className="h-9 w-32 rounded-xl shrink-0" />
-        </div>
-      </div>
-
-      {/* ── Instant Booking Pathway Skeleton ── */}
-      <div className="rounded-[24px] border border-border-light bg-white p-6 shadow-sawiyaa-card space-y-4">
-        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
-          <div className="space-y-2 w-full max-w-xl">
-            <Skeleton className="h-4 w-20" />
-            <Skeleton className="h-6 w-3/4" />
-            <Skeleton className="h-3.5 w-5/6" />
-          </div>
-          <Skeleton className="h-10 w-36 rounded-xl shrink-0" />
-        </div>
-        <div className="grid gap-3 sm:grid-cols-3 mt-6 pt-6 border-t border-border-light">
-          <Skeleton className="h-16 rounded-xl" />
-          <Skeleton className="h-16 rounded-xl" />
-          <Skeleton className="h-16 rounded-xl" />
-        </div>
-      </div>
-
-      {/* ── Service Shortcuts Skeleton ── */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <Skeleton className="h-44 w-full rounded-3xl" />
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
         {Array.from({ length: 4 }).map((_, i) => (
-          <div key={i} className="flex items-center gap-4 p-5 rounded-2xl bg-white border border-border-light">
-            <Skeleton className="h-11 w-11 rounded-xl shrink-0" />
-            <div className="space-y-1.5 w-full">
-              <Skeleton className="h-4 w-2/3" />
-              <Skeleton className="h-3 w-5/6" />
-            </div>
-          </div>
+          <Skeleton key={i} className="h-28 rounded-2xl" />
         ))}
       </div>
-
-      {/* ── Care Journey Columns Skeleton ── */}
-      <div className="grid gap-6 lg:grid-cols-2">
-        <div className="rounded-[24px] border border-border-light bg-white p-6 shadow-sawiyaa-card space-y-4">
-          <Skeleton className="h-5 w-24" />
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="p-4 rounded-xl border border-border-light bg-surface-tertiary space-y-3">
-              <Skeleton className="h-8 w-8 rounded-lg" />
-              <Skeleton className="h-4 w-3/4" />
-              <Skeleton className="h-3 w-5/6" />
-            </div>
-            <div className="p-4 rounded-xl border border-border-light bg-surface-tertiary space-y-3">
-              <Skeleton className="h-8 w-8 rounded-lg" />
-              <Skeleton className="h-4 w-3/4" />
-              <Skeleton className="h-3 w-5/6" />
-            </div>
-          </div>
-        </div>
-        <div className="rounded-[24px] border border-border-light bg-white p-6 shadow-sawiyaa-card flex flex-col justify-between">
-          <div className="space-y-3">
-            <Skeleton className="h-5 w-24" />
-            <Skeleton className="h-4 w-5/6" />
-            <Skeleton className="h-6 w-1/3" />
-          </div>
-          <Skeleton className="h-9 w-32 rounded-xl" />
-        </div>
+      <div className="grid gap-5 md:grid-cols-2">
+        <Skeleton className="h-48 rounded-3xl" />
+        <Skeleton className="h-48 rounded-3xl" />
       </div>
     </div>
   );
@@ -222,64 +135,64 @@ export default function PatientJourneyScreen() {
   const tSessions = useTranslations("sessions");
   const tPayments = useTranslations("payments");
   const locale = useLocale();
-  const patientProfileQuery = usePatientProfile();
-  const patientTimeZone = patientProfileQuery.data?.profile.timezone;
   const numLocale = locale === "ar" ? "ar-SA" : "en-US";
+
+  // Authoritative Queries
   const { data: journey, isLoading, isError, refetch } = usePatientJourney();
+  const patientProfileQuery = usePatientProfile();
+  const { data: walletData } = usePatientWalletSummary();
+  const unreadMessagesCount = useUnifiedUnreadBadge("patient");
+
+  const patientProfile = patientProfileQuery.data?.profile;
+  const patientTimeZone = patientProfile?.timezone;
+  const patientName = patientProfile?.displayName || "";
+
+  const walletSummary = walletData?.item ?? null;
+  const walletCurrency = walletSummary?.currencyCode ?? "EGP";
+  const walletBalance = Number(walletSummary?.availableBalance ?? "0");
 
   if (isLoading) {
-    return <PatientJourneySkeleton />;
+    return <JourneyLoadingSkeleton />;
   }
 
   if (isError || !journey) {
     return (
-      <div className="app-max-content mx-auto space-y-5 sm:space-y-6">
-        <PatientPageHeader
-          eyebrow={t("hero.eyebrow")}
-          title={t("hero.title")}
-          description={t("hero.note")}
-        />
-        <PatientSectionCard
-          tone="subtle"
-          eyebrow={t("states.error.eyebrow")}
-          title={t("states.error.heading")}
-          description={t("states.error.note")}
-          actions={
-            <Button onClick={() => refetch()} variant="outline">
-              {t("states.error.retry")}
-            </Button>
-          }
-        >
-          <div />
-        </PatientSectionCard>
+      <div className="mx-auto max-w-2xl py-12 px-4 text-center">
+        <div className="rounded-3xl border border-border-light bg-white p-8 shadow-xs space-y-4">
+          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-danger/10 text-danger">
+            <AlertCircle size={24} />
+          </div>
+          <h2 className="text-lg font-bold text-text-primary">
+            {t("states.error.heading")}
+          </h2>
+          <p className="text-xs text-text-secondary max-w-md mx-auto">
+            {t("states.error.note")}
+          </p>
+          <Button onClick={() => refetch()} variant="outline" size="sm" className="mt-2">
+            {t("states.error.retry")}
+          </Button>
+        </div>
       </div>
     );
   }
 
-  const primaryStep =
-    journey.nextSteps.find((step) => step.type === journey.summary.suggestedNextAction) ??
-    journey.nextSteps[0];
-  const activePendingPayment = Boolean(
-    journey.upcoming.pendingPayment && !isPaymentExpired(journey.upcoming.pendingPayment),
-  );
-  const primaryConfig =
-    primaryStep && !(primaryStep.type === "COMPLETE_PAYMENT" && !activePendingPayment)
-      ? resolveStepConfig(journey, primaryStep.type)
-      : null;
-  const fallbackNextStep =
-    primaryConfig?.supported && primaryConfig.href && primaryConfig.ctaKey
-      ? primaryConfig
-      : {
-          href: "/patient/matching",
-          ctaKey: "nextSteps.types.START_GUIDED_MATCHING.cta",
-          supported: true,
-        };
-
+  // --- Context & Priority Determination ---
   const upcomingSession = journey.upcoming.session;
   const pendingPayment = journey.upcoming.pendingPayment;
   const instantRequest = journey.upcoming.instantBookingRequest;
+  const activePendingPayment = Boolean(
+    pendingPayment && !isPaymentExpired(pendingPayment),
+  );
 
-  const hasUpcomingItems = upcomingSession || pendingPayment || instantRequest;
+  const isSessionJoinable = Boolean(
+    upcomingSession &&
+      (upcomingSession.operational?.actions?.canJoin === true ||
+        upcomingSession.operational?.state === "READY_TO_JOIN"),
+  );
+
+  const hasUpcomingItems = Boolean(
+    upcomingSession || activePendingPayment || instantRequest,
+  );
 
   const hasRecentHistory =
     journey.recentHistory.sessions.length > 0 ||
@@ -287,494 +200,458 @@ export default function PatientJourneyScreen() {
     journey.recentHistory.matching.length > 0 ||
     journey.recentHistory.payments.length > 0;
 
-  // Filter out the upcoming session from recent history to avoid duplication
   const recentSessionsExcludingUpcoming = journey.recentHistory.sessions.filter(
     (s) => s.id !== upcomingSession?.id,
   );
 
-  const summaryBadges: React.ReactNode[] = [];
-  if (activePendingPayment) {
-    summaryBadges.push(
-      <PatientStatusBadge key="pendingPayment">
-        {t("summary.chips.pendingPayment")}
-      </PatientStatusBadge>,
-    );
-  }
-  if (journey.summary.hasUpcomingSession && journey.summary.nextSessionAt) {
-    summaryBadges.push(
-      <PatientStatusBadge key="nextSession">
-        {t("summary.chips.nextSessionAt", {
-          date: formatPatientDateTime(journey.summary.nextSessionAt, patientTimeZone, { locale: numLocale }),
-        })}
-      </PatientStatusBadge>,
-    );
-  }
-  if (journey.summary.hasOpenSupportTicket) {
-    summaryBadges.push(
-      <PatientStatusBadge key="supportOpen">
-        {t("summary.chips.supportOpen")}
-      </PatientStatusBadge>,
-    );
-  }
-  if (journey.summary.lastAssessmentTakenAt) {
-    summaryBadges.push(
-      <PatientStatusBadge key="lastAssessment">
-        {t("summary.chips.lastAssessment", {
-          date: formatPatientDateTime(journey.summary.lastAssessmentTakenAt, patientTimeZone, { locale: numLocale, dateStyle: "medium", timeStyle: undefined }),
-        })}
-      </PatientStatusBadge>,
-    );
-  }
-
   return (
-    <div className="app-max-content mx-auto space-y-5 sawiyaa-animate-fade-in">
-      {/* ── Welcome Hero & Dynamic Journey Action Banner ── */}
-      <div className="rounded-[24px] border border-border-light bg-surface-tertiary p-6 md:p-8 border-s-4 border-s-primary shadow-sawiyaa-card">
-        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
-          <div className="space-y-3 max-w-2xl">
-            <div className="flex items-center gap-2">
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-primary-light px-3 py-1 text-xs font-semibold text-primary">
-                <Sparkles className="h-3.5 w-3.5 text-accent" />
-                {t("hero.eyebrow")}
-              </span>
-            </div>
-            <h1 className="text-2xl md:text-3xl font-extrabold text-text-primary tracking-tight leading-tight">
-              {t("hero.title")}
-            </h1>
-            <p className="text-sm md:text-base text-text-secondary leading-relaxed max-w-xl">
-              {t("hero.note")}
-            </p>
-            
-            {/* Live Context badges */}
-            {summaryBadges.length > 0 && (
-              <div className="flex flex-wrap gap-2 pt-2">
-                {summaryBadges}
-              </div>
-            )}
+    <div className="mx-auto max-w-6xl px-4 py-6 sm:py-8 space-y-7">
+      {/* ── 1. WARM HUMAN GREETING HEADER ── */}
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between border-b border-border-light/60 pb-5">
+        <div>
+          <div className="flex items-center gap-2">
+            <span className="inline-flex items-center gap-1 rounded-full bg-primary-light px-2.5 py-0.5 text-[11px] font-semibold text-text-brand dark:bg-primary/20">
+              <Sparkles size={11} className="text-primary" />
+              <span>{locale === "ar" ? "مرحباً بك" : "Welcome"}</span>
+            </span>
           </div>
+          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-text-primary dark:text-white mt-1">
+            {patientName
+              ? locale === "ar"
+                ? `أهلاً بك، ${patientName}`
+                : `Welcome back, ${patientName}`
+              : t("hero.title")}
+          </h1>
+          <p className="text-xs text-text-secondary mt-0.5 max-w-xl">
+            {locale === "ar"
+              ? "نحن معك خطوة بخطوة في رحلتك نحو صحة نفسية أفضل وحياة أكثر توازناً."
+              : t("hero.note")}
+          </p>
+        </div>
 
-          {/* Next Best Action Widget */}
-          {primaryStep && primaryConfig && (
-            <div className="shrink-0 flex flex-col items-start gap-4 p-5 rounded-2xl bg-white border border-border-light shadow-theme-sm max-w-sm w-full lg:w-80 sawiyaa-hover-lift">
-              <div className="flex items-center gap-2">
-                <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary-light text-primary">
-                  <StepIcon type={primaryStep.type} />
-                </span>
-                <span className="text-xs font-semibold tracking-wider uppercase text-text-muted">
-                  {t("primaryAction.eyebrow")}
-                </span>
-              </div>
-              
-              <div className="space-y-1">
-                <h4 className="text-sm font-bold text-text-primary">
-                  {t(`nextSteps.types.${primaryStep.type}.title` as any)}
-                </h4>
-                <p className="text-xs text-text-secondary leading-relaxed">
-                  {t(`nextSteps.types.${primaryStep.type}.note` as any)}
-                </p>
-              </div>
-
-              <div className="flex flex-col gap-2 w-full pt-1">
-                {primaryConfig.href ? (
-                  <Link
-                    href={primaryConfig.href as any}
-                    className="inline-flex items-center justify-center gap-2 w-full rounded-xl bg-primary px-4 py-2.5 text-xs font-bold text-white shadow-sm transition-all hover:bg-primary-hover sawiyaa-btn-press"
-                  >
-                    {t(primaryConfig.ctaKey as any)}
-                    <ArrowRight size={13} className="rtl:rotate-180" />
-                  </Link>
-                ) : (
-                  <div className="w-full text-center text-xs text-text-muted py-2 bg-surface-tertiary rounded-xl border border-border-light">
-                    {t("nextSteps.unavailable")}
-                  </div>
-                )}
-                
-                {/* Secondary CTAs */}
-                {primaryStep.type === "START_GUIDED_MATCHING" && (
-                  <Link
-                    href="/patient/practitioners"
-                    className="inline-flex items-center justify-center gap-2 w-full rounded-xl border border-primary px-4 py-2 text-xs font-semibold text-primary hover:bg-primary-light transition-all sawiyaa-btn-press"
-                  >
-                    {t("quickLinks.practitioners")}
-                  </Link>
-                )}
-                {primaryStep.type === "COMPLETE_PAYMENT" && (
-                  <Link
-                    href="/patient/payments"
-                    className="inline-flex items-center justify-center gap-2 w-full rounded-xl border border-primary px-4 py-2 text-xs font-semibold text-primary hover:bg-primary-light transition-all sawiyaa-btn-press"
-                  >
-                    {t("quickLinks.payments")}
-                  </Link>
-                )}
-              </div>
-            </div>
-          )}
+        {/* Live Context Pills */}
+        <div className="flex flex-wrap items-center gap-2 self-start sm:self-auto pt-1 sm:pt-0">
+          {isSessionJoinable ? (
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 border border-emerald-300 px-3 py-1 text-xs font-bold text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300">
+              <span className="h-2 w-2 rounded-full bg-emerald-600 animate-ping" />
+              <span>{locale === "ar" ? "جلستك جاهزة الآن" : "Session Ready to Join"}</span>
+            </span>
+          ) : activePendingPayment ? (
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-100 border border-amber-300 px-3 py-1 text-xs font-bold text-amber-800 dark:bg-amber-950/40 dark:text-amber-300">
+              <Clock size={13} className="text-amber-700" />
+              <span>{locale === "ar" ? "دفعة بانتظار التأكيد" : "Pending Payment"}</span>
+            </span>
+          ) : upcomingSession?.scheduledStartAt ? (
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-primary-light border border-primary/20 px-3 py-1 text-xs font-bold text-text-brand dark:bg-primary/20">
+              <Calendar size={13} className="text-primary" />
+              <span>
+                {formatPatientDateTime(upcomingSession.scheduledStartAt, patientTimeZone, {
+                  locale: numLocale,
+                  dateStyle: "short",
+                  timeStyle: "short",
+                })}
+              </span>
+            </span>
+          ) : null}
         </div>
       </div>
 
-      {/* ── Active Care Timeline Panel ── */}
-      {hasUpcomingItems ? (
-        <div className="rounded-[24px] border border-border-light bg-white p-6 shadow-sawiyaa-card">
-          <div className="flex items-center gap-2 mb-6 border-b border-border-light pb-4">
-            <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary-light text-primary">
-              <CalendarDays className="h-5 w-5" />
-            </span>
-            <div>
-              <h2 className="text-lg font-bold text-text-primary">
-                {t("upcoming.session.heading")}
+      {/* ── 2. PRIMARY CONTEXT-AWARE HERO CARD ("إيه أهم حاجة دلوقتي؟") ── */}
+      {isSessionJoinable && upcomingSession ? (
+        /* CASE A: SESSION IS READY TO JOIN RIGHT NOW */
+        <div className="rounded-3xl border-2 border-emerald-500/40 bg-linear-to-r from-emerald-50/80 via-white to-emerald-50/50 p-5 sm:p-7 shadow-sm dark:bg-surface-secondary dark:from-emerald-950/20 dark:to-transparent">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-5">
+            <div className="space-y-2 max-w-xl">
+              <div className="inline-flex items-center gap-1.5 rounded-full bg-emerald-600 px-3 py-0.5 text-xs font-bold text-white shadow-xs">
+                <Video size={13} />
+                <span>{locale === "ar" ? "جلستك جاهزة — ادخل الآن" : "Your session is live — Join now"}</span>
+              </div>
+              <h2 className="text-lg sm:text-xl font-bold text-text-primary dark:text-white">
+                {locale === "ar"
+                  ? `جلستك مع ${upcomingSession.practitioner.displayName ?? upcomingSession.practitioner.slug}`
+                  : `Session with ${upcomingSession.practitioner.displayName ?? upcomingSession.practitioner.slug}`}
               </h2>
-              <p className="text-xs text-text-secondary">
-                {t("upcoming.empty.heading")}
+              <p className="text-xs text-text-secondary leading-relaxed">
+                {locale === "ar"
+                  ? "غرفة الجلسة المباشرة مفتوحة الآن بكامل الخصوصية والأمان. يمكنك الانضمام والتحدث مع المختص مباشرة."
+                  : "The private video room is open. Click below to join your specialist directly."}
               </p>
             </div>
+
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 shrink-0">
+              <Link
+                href={`/patient/sessions/${upcomingSession.id}` as any}
+                className="inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-700 px-6 py-3.5 text-sm font-bold text-white shadow-sm transition hover:bg-emerald-800 active:scale-[0.99]"
+              >
+                <span>{locale === "ar" ? "ادخل الجلسة الآن" : "Join Session Now"}</span>
+                <ArrowRight size={14} className="rtl:rotate-180" />
+              </Link>
+            </div>
           </div>
-
-          <div className="grid gap-4 sm:grid-cols-2">
-            {/* Active Pending payment */}
-            {activePendingPayment && pendingPayment ? (
-              <div className="rounded-[22px] border border-border-light bg-surface-tertiary p-5 relative overflow-hidden sawiyaa-hover-lift">
-                <div className="absolute top-0 start-0 h-1 w-full bg-warning" />
-                <div className="mb-3 flex items-center justify-between">
-                  <p className="text-xs font-semibold uppercase tracking-wider text-text-muted">
-                    {t("upcoming.pendingPayment.heading")}
-                  </p>
-                  <span className="inline-flex items-center rounded-full bg-warning-soft px-2.5 py-0.5 text-xs font-medium text-warning">
-                    {t("summary.chips.pendingPayment")}
-                  </span>
-                </div>
-                <p className="text-2xl font-black text-text-primary">
-                  {formatAmount(pendingPayment.amount, pendingPayment.currency, numLocale)}
-                </p>
-                <p className="mt-1.5 text-xs text-text-secondary">
-                  {tPayments(`history.status.${pendingPayment.status}` as any)}
-                </p>
-                <Link
-                  href={
-                    pendingPayment.sessionId
-                      ? `/patient/sessions/${pendingPayment.sessionId}/pay`
-                      : "/patient/payments"
-                  }
-                  className="mt-4 inline-flex items-center gap-1.5 rounded-xl bg-warning px-4 py-2.5 text-xs font-bold text-white shadow-sm transition-all hover:bg-warning/90 sawiyaa-btn-press"
-                >
-                  {t("upcoming.pendingPayment.cta")}
-                  <ArrowRight size={12} className="rtl:rotate-180" />
-                </Link>
+        </div>
+      ) : activePendingPayment && pendingPayment ? (
+        /* CASE B: PENDING PAYMENT ON A BOOKED SESSION */
+        <div className="rounded-3xl border border-amber-300 bg-linear-to-r from-amber-50/90 via-white to-amber-50/50 p-5 sm:p-6 shadow-sm dark:bg-surface-secondary dark:from-amber-950/20 dark:to-transparent">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-5">
+            <div className="space-y-1.5 max-w-xl">
+              <div className="inline-flex items-center gap-1.5 rounded-full bg-amber-500/15 px-2.5 py-0.5 text-xs font-bold text-amber-800 dark:text-amber-300">
+                <Clock size={13} />
+                <span>{t("upcoming.pendingPayment.heading")}</span>
               </div>
-            ) : null}
+              <h2 className="text-base sm:text-lg font-bold text-text-primary dark:text-white">
+                {locale === "ar"
+                  ? `لديك حجز بانتظار إتمام الدفع (${formatFinanceMoney(numLocale, pendingPayment.amount, pendingPayment.currency)})`
+                  : `Booking pending payment (${formatFinanceMoney(numLocale, pendingPayment.amount, pendingPayment.currency)})`}
+              </h2>
+              <p className="text-xs text-text-secondary leading-relaxed">
+                {locale === "ar"
+                  ? "يُرجى سداد المبلغ المطلوب لتأكيد حجز جلستك وضمان تثبيت الموعد المحدد."
+                  : "Complete payment to secure your scheduled session time."}
+              </p>
+            </div>
 
-            {/* Active Upcoming session */}
-            {upcomingSession ? (
-              <div className="rounded-[22px] border border-border-light bg-surface-tertiary p-5 relative overflow-hidden sawiyaa-hover-lift">
-                <div className="absolute top-0 start-0 h-1 w-full bg-primary" />
-                <div className="mb-3 flex items-center justify-between">
-                  <p className="text-xs font-semibold uppercase tracking-wider text-text-muted">
-                    {t("upcoming.session.heading")}
-                  </p>
-                  <span className="inline-flex items-center rounded-full bg-primary-light px-2.5 py-0.5 text-xs font-medium text-primary">
-                    {tSessions(`status.${upcomingSession.status}` as any)}
+            <div className="shrink-0">
+              <Link
+                href={
+                  pendingPayment.sessionId
+                    ? (`/patient/sessions/${pendingPayment.sessionId}/pay` as any)
+                    : "/patient/payments"
+                }
+                className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-5 py-3 text-xs font-bold text-white shadow-sm transition hover:bg-primary-hover active:scale-[0.99]"
+              >
+                <span>{t("upcoming.pendingPayment.cta")}</span>
+                <ArrowRight size={13} className="rtl:rotate-180" />
+              </Link>
+            </div>
+          </div>
+        </div>
+      ) : upcomingSession ? (
+        /* CASE C: CONFIRMED UPCOMING SESSION */
+        <div className="rounded-3xl border border-border-light/80 bg-white p-5 sm:p-6 shadow-xs dark:bg-surface-secondary dark:border-white/10">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-5">
+            <div className="flex items-center gap-4">
+              <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-full border border-primary/20 bg-surface-secondary dark:bg-white/5">
+                <PractitionerAvatar
+                  src={null}
+                  alt={upcomingSession.practitioner.displayName ?? upcomingSession.practitioner.slug}
+                  initials={upcomingSession.practitioner.displayName?.slice(0, 2) ?? "DR"}
+                  className="h-full w-full object-cover"
+                />
+              </div>
+              <div className="space-y-1 min-w-0">
+                <div className="flex items-center gap-2">
+                  <span className="inline-flex items-center gap-1 rounded-full bg-primary-light px-2 py-0.5 text-[11px] font-semibold text-text-brand dark:bg-primary/15">
+                    <Video size={11} className="text-primary" />
+                    <span>{t("upcoming.session.heading")}</span>
+                  </span>
+                  <span className="inline-flex rounded-full bg-surface-tertiary px-2 py-0.5 text-[11px] font-medium text-text-secondary dark:bg-white/5">
+                    {tSessions(`status.${upcomingSession.operational.state}` as any)}
                   </span>
                 </div>
-                <p className="text-lg font-bold text-text-primary leading-tight">
+                <h2 className="text-base sm:text-lg font-bold text-text-primary dark:text-white truncate">
                   {upcomingSession.practitioner.displayName ?? upcomingSession.practitioner.slug}
-                </p>
-                {upcomingSession.scheduledStartAt ? (
-                  <p className="mt-1 text-xs text-text-secondary">
-                    {formatPatientDateTime(upcomingSession.scheduledStartAt, patientTimeZone, { locale: numLocale })}
+                </h2>
+                {upcomingSession.scheduledStartAt && (
+                  <p className="text-xs font-semibold text-text-secondary">
+                    {formatPatientDateTime(upcomingSession.scheduledStartAt, patientTimeZone, {
+                      locale: numLocale,
+                      dateStyle: "full",
+                      timeStyle: "short",
+                    })}
                   </p>
-                ) : null}
-                <Link
-                  href={`/patient/sessions/${upcomingSession.id}` as any}
-                  className="mt-4 inline-flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2.5 text-xs font-bold text-white shadow-sm transition-all hover:bg-primary-hover sawiyaa-btn-press"
-                >
-                  {t("upcoming.session.cta")}
-                  <ArrowRight size={12} className="rtl:rotate-180" />
-                </Link>
+                )}
               </div>
-            ) : null}
+            </div>
 
-            {/* Instant booking request */}
-            {instantRequest ? (
-              <div className="rounded-[22px] border border-primary/20 bg-primary-light/40 p-5 relative overflow-hidden">
-                <div className="mb-3 flex items-center justify-between">
-                  <p className="text-xs font-semibold uppercase tracking-wider text-primary">
-                    {t("upcoming.instantBooking.heading")}
-                  </p>
-                  <span className="h-2 w-2 rounded-full bg-primary animate-ping" />
-                </div>
-                <p className="text-sm font-bold text-text-primary">
-                  {t("upcoming.instantBooking.note", {
-                    practitioner: instantRequest.practitioner.displayName ?? instantRequest.practitioner.slug,
-                  })}
-                </p>
-                <div className="mt-3 flex flex-wrap gap-2">
-                  <span className="inline-flex items-center rounded-full bg-white px-2.5 py-0.5 text-xs font-medium text-primary border border-primary/10">
-                    {t("upcoming.instantBooking.duration", { n: instantRequest.durationMinutes })}
-                  </span>
-                  <span className="inline-flex items-center rounded-full bg-white px-2.5 py-0.5 text-xs font-medium text-text-muted border border-border-light">
-          {t("upcoming.instantBooking.expiresAt", { date: formatPatientDateTime(instantRequest.expiresAt, patientTimeZone, { locale: numLocale }) })}
-                  </span>
-                </div>
+            <div className="shrink-0 flex items-center gap-2.5">
+              <Link
+                href={`/patient/sessions/${upcomingSession.id}` as any}
+                className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-xs font-bold text-white shadow-xs transition hover:bg-primary-hover active:scale-[0.99]"
+              >
+                <span>{t("upcoming.session.cta")}</span>
+                <ArrowRight size={13} className="rtl:rotate-180" />
+              </Link>
+            </div>
+          </div>
+        </div>
+      ) : instantRequest ? (
+        /* CASE D: ACTIVE INSTANT BOOKING REQUEST */
+        <div className="rounded-3xl border border-primary/30 bg-primary-light/30 p-5 sm:p-6 shadow-xs dark:bg-primary/10">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-5">
+            <div className="space-y-1 max-w-xl">
+              <div className="inline-flex items-center gap-1.5 rounded-full bg-primary px-2.5 py-0.5 text-xs font-bold text-white">
+                <Zap size={13} />
+                <span>{t("upcoming.instantBooking.heading")}</span>
               </div>
-            ) : null}
+              <h2 className="text-base sm:text-lg font-bold text-text-primary dark:text-white">
+                {t("upcoming.instantBooking.note", {
+                  practitioner: instantRequest.practitioner.displayName ?? instantRequest.practitioner.slug,
+                })}
+              </h2>
+              <div className="flex items-center gap-3 text-xs text-text-secondary pt-1">
+                <span>{t("upcoming.instantBooking.duration", { n: instantRequest.durationMinutes })}</span>
+                <span>•</span>
+                <span>{t("upcoming.instantBooking.expiresAt", {
+                  date: formatPatientDateTime(instantRequest.expiresAt, patientTimeZone, { locale: numLocale, timeStyle: "short" })
+                })}</span>
+              </div>
+            </div>
           </div>
         </div>
       ) : (
-        /* Compact empty state visually grouped with primary content */
-        <div className="rounded-[24px] border border-border-light bg-white p-4 shadow-sawiyaa-card sawiyaa-hover-lift">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary-light text-primary">
-                <CalendarDays className="h-5 w-5" />
-              </div>
-              <div className="space-y-0.5 text-start">
-                <h2 className="text-sm font-bold text-text-primary">
-                  {t("upcoming.session.heading")}
-                </h2>
-                <p className="text-xs text-text-secondary leading-normal max-w-xl">
-                  {t("upcoming.empty.note")}
-                </p>
-              </div>
+        /* CASE E: NO ACTIVE SESSIONS — CALM INVITATION */
+        <div className="rounded-3xl border border-border-light/80 bg-linear-to-b from-[#FCFAF6] to-white p-6 sm:p-8 shadow-xs dark:from-white/5 dark:to-transparent">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+            <div className="space-y-2 max-w-xl">
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-primary-light px-2.5 py-0.5 text-xs font-semibold text-text-brand dark:bg-primary/15">
+                <HeartHandshake size={13} className="text-primary" />
+                <span>{locale === "ar" ? "ابدأ خطوتك الأولى" : "Start your journey"}</span>
+              </span>
+              <h2 className="text-lg sm:text-xl font-bold text-text-primary dark:text-white">
+                {locale === "ar"
+                  ? "تحدث مع مختص نفسي موثوق في بيئة آمنة وسرية"
+                  : "Connect with a certified specialist in complete privacy"}
+              </h2>
+              <p className="text-xs text-text-secondary leading-relaxed">
+                {locale === "ar"
+                  ? "سواء كنت ترغب في حجز جلسة مباشرة، أو تحتاج لمساعدتنا في اختيار المعالج الأنسب لحالتك، نحن هنا لمساندتك."
+                  : "Whether you want to browse specialists or get guided matching, we are here to support you."}
+              </p>
             </div>
-            <Link
-              href={fallbackNextStep.href as any}
-              className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-xs font-bold text-white shadow-sm transition-all hover:bg-primary-hover sawiyaa-btn-press shrink-0"
-            >
-              {t(fallbackNextStep.ctaKey as any)}
-              <ArrowRight size={12} className="rtl:rotate-180" />
-            </Link>
+
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 shrink-0">
+              <Link
+                href="/patient/practitioners"
+                className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-5 py-3 text-xs font-bold text-white shadow-xs transition hover:bg-primary-hover active:scale-[0.99]"
+              >
+                <span>{locale === "ar" ? "تصفح المختصين" : "Browse Specialists"}</span>
+                <ArrowRight size={13} className="rtl:rotate-180" />
+              </Link>
+              <Link
+                href="/patient/matching"
+                className="inline-flex items-center justify-center gap-2 rounded-xl border border-border-light bg-white px-4 py-3 text-xs font-semibold text-text-secondary hover:bg-surface-tertiary transition dark:bg-white/5 dark:border-white/10"
+              >
+                <span>{locale === "ar" ? "ساعدني أختار" : "Help Me Choose"}</span>
+              </Link>
+            </div>
           </div>
         </div>
       )}
 
-      {/* ── Instant Booking Pathway ── */}
-      <div className="rounded-[24px] border border-border-light bg-white p-6 shadow-sawiyaa-card relative overflow-hidden sawiyaa-hover-lift">
-        <div className="absolute top-0 end-0 h-full w-32 bg-primary-light/30 rounded-e-[24px] pointer-events-none transform translate-x-12 skew-x-12" />
-        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6 relative z-1">
-          <div className="space-y-2 max-w-xl">
-            <span className="text-xs font-bold uppercase tracking-[0.16em] text-primary">
-              {t("instantBooking.eyebrow")}
-            </span>
-            <h3 className="text-xl font-bold text-text-primary">
+      {/* ── 3. CUSTOMER 360 QUICK PATHWAYS (4 CORE HUMAN DESTINATIONS) ── */}
+      <div className="space-y-3">
+        <h3 className="text-xs font-bold uppercase tracking-wider text-text-secondary">
+          {locale === "ar" ? "الوصول السريع إلى حسابك" : "Quick Access"}
+        </h3>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+          {/* 1. المختصون */}
+          <Link
+            href="/patient/practitioners"
+            className="group flex flex-col justify-between rounded-2xl border border-border-light/80 bg-white p-4.5 shadow-xs transition hover:border-primary/40 hover:shadow-sm dark:bg-surface-secondary dark:border-white/10"
+          >
+            <div className="flex items-start justify-between mb-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary-light text-primary group-hover:scale-105 transition-transform dark:bg-primary/20">
+                <Users size={18} />
+              </div>
+              <ArrowRight size={14} className="text-text-muted rtl:rotate-180 transition group-hover:text-primary group-hover:translate-x-0.5 rtl:group-hover:-translate-x-0.5" />
+            </div>
+            <div>
+              <span className="block text-sm font-bold text-text-primary dark:text-white group-hover:text-primary transition-colors">
+                {t("quickLinks.practitioners")}
+              </span>
+              <span className="block text-[11px] text-text-secondary mt-0.5 leading-snug">
+                {locale === "ar" ? "أطباء ومعالجون نفسيون معتمدون" : "Certified therapists and psychiatrists"}
+              </span>
+            </div>
+          </Link>
+
+          {/* 2. جلساتي */}
+          <Link
+            href="/patient/sessions"
+            className="group flex flex-col justify-between rounded-2xl border border-border-light/80 bg-white p-4.5 shadow-xs transition hover:border-primary/40 hover:shadow-sm dark:bg-surface-secondary dark:border-white/10"
+          >
+            <div className="flex items-start justify-between mb-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary-light text-primary group-hover:scale-105 transition-transform dark:bg-primary/20">
+                <CalendarDays size={18} />
+              </div>
+              <ArrowRight size={14} className="text-text-muted rtl:rotate-180 transition group-hover:text-primary group-hover:translate-x-0.5 rtl:group-hover:-translate-x-0.5" />
+            </div>
+            <div>
+              <span className="block text-sm font-bold text-text-primary dark:text-white group-hover:text-primary transition-colors">
+                {t("quickLinks.sessions")}
+              </span>
+              <span className="block text-[11px] text-text-secondary mt-0.5 leading-snug">
+                {locale === "ar" ? "متابعة المواعيد والجلسات السابقة" : "Upcoming appointments & session history"}
+              </span>
+            </div>
+          </Link>
+
+          {/* 3. الرسائل */}
+          <Link
+            href="/patient/messages"
+            className="group flex flex-col justify-between rounded-2xl border border-border-light/80 bg-white p-4.5 shadow-xs transition hover:border-primary/40 hover:shadow-sm dark:bg-surface-secondary dark:border-white/10 relative"
+          >
+            <div className="flex items-start justify-between mb-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary-light text-primary group-hover:scale-105 transition-transform dark:bg-primary/20">
+                <MessageSquare size={18} />
+              </div>
+              {unreadMessagesCount > 0 ? (
+                <span className="inline-flex items-center justify-center rounded-full bg-danger px-2 py-0.5 text-[10px] font-bold text-white">
+                  {unreadMessagesCount}
+                </span>
+              ) : (
+                <ArrowRight size={14} className="text-text-muted rtl:rotate-180 transition group-hover:text-primary group-hover:translate-x-0.5 rtl:group-hover:-translate-x-0.5" />
+              )}
+            </div>
+            <div>
+              <span className="block text-sm font-bold text-text-primary dark:text-white group-hover:text-primary transition-colors">
+                {locale === "ar" ? "الرسائل والمحادثات" : "Messages"}
+              </span>
+              <span className="block text-[11px] text-text-secondary mt-0.5 leading-snug">
+                {locale === "ar" ? "محادثات المختصين وفريق المتابعة" : "Direct chats with specialists & care"}
+              </span>
+            </div>
+          </Link>
+
+          {/* 4. المدفوعات والمحفظة */}
+          <Link
+            href="/patient/payments"
+            className="group flex flex-col justify-between rounded-2xl border border-border-light/80 bg-white p-4.5 shadow-xs transition hover:border-primary/40 hover:shadow-sm dark:bg-surface-secondary dark:border-white/10"
+          >
+            <div className="flex items-start justify-between mb-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary-light text-primary group-hover:scale-105 transition-transform dark:bg-primary/20">
+                <Wallet size={18} />
+              </div>
+              <ArrowRight size={14} className="text-text-muted rtl:rotate-180 transition group-hover:text-primary group-hover:translate-x-0.5 rtl:group-hover:-translate-x-0.5" />
+            </div>
+            <div>
+              <span className="block text-sm font-bold text-text-primary dark:text-white group-hover:text-primary transition-colors">
+                {locale === "ar" ? "المدفوعات والمحفظة" : "Payments & Wallet"}
+              </span>
+              <span className="block text-[11px] text-text-secondary mt-0.5 leading-snug">
+                {walletBalance > 0
+                  ? locale === "ar"
+                    ? `رصيد المحفظة: ${formatFinanceMoney(numLocale, String(walletBalance), walletCurrency)}`
+                    : `Wallet Balance: ${formatFinanceMoney(numLocale, String(walletBalance), walletCurrency)}`
+                  : locale === "ar"
+                    ? "سجل المعاملات ورصيد المحفظة"
+                    : "Billing history & wallet balance"}
+              </span>
+            </div>
+          </Link>
+        </div>
+      </div>
+
+      {/* ── 4. INSTANT BOOKING & GUIDED MATCHING SECTION ── */}
+      <div className="grid gap-5 md:grid-cols-2 items-stretch">
+        {/* Instant Booking Card */}
+        <div className="rounded-3xl border border-border-light/80 bg-white p-5 sm:p-6 shadow-xs dark:bg-surface-secondary dark:border-white/10 flex flex-col justify-between space-y-4">
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-300 px-2.5 py-0.5 text-[11px] font-bold dark:bg-emerald-950/40 dark:text-emerald-300">
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-600 animate-ping" />
+                <span>{t("instantBooking.chips.availableNow")}</span>
+              </span>
+            </div>
+            <h3 className="text-base font-bold text-text-primary dark:text-white">
               {t("instantBooking.title")}
             </h3>
             <p className="text-xs text-text-secondary leading-relaxed">
-              {t("instantBooking.note")}
+              {locale === "ar"
+                ? "تحدث اليوم مع مختص متاح مباشرة دون الحاجة لانتظار مواعيد لاحقة. جلسات مرنة مدتها 30 أو 60 دقيقة."
+                : t("instantBooking.note")}
             </p>
           </div>
-          <div className="shrink-0">
+
+          <div className="pt-2">
             <Link
-              href="/patient/instant-booking"
-              className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-5 py-3 text-xs font-bold text-white shadow-sm transition-all hover:bg-primary-hover sawiyaa-btn-press"
+              href="/patient/practitioners?onlineNow=true&instantBookingEnabled=true"
+              className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-xs font-bold text-white shadow-xs transition hover:bg-primary-hover active:scale-[0.99]"
             >
-              {t("instantBooking.cta")}
+              <span>{t("instantBooking.cta")}</span>
               <ArrowRight size={13} className="rtl:rotate-180" />
             </Link>
           </div>
         </div>
 
-        {/* Feature info */}
-        <div className="grid gap-3 sm:grid-cols-3 mt-6 pt-6 border-t border-border-light">
-          <div className="rounded-xl bg-primary-light/50 p-4 border border-primary/10">
-            <div className="flex items-center gap-2 text-xs font-bold uppercase text-primary">
-              <Zap className="h-4 w-4" />
-              <span>{t("instantBooking.chips.availableNow")}</span>
+        {/* Guided Matching & Assessment Card */}
+        <div className="rounded-3xl border border-border-light/80 bg-white p-5 sm:p-6 shadow-xs dark:bg-surface-secondary dark:border-white/10 flex flex-col justify-between space-y-4">
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <span className="inline-flex items-center gap-1 rounded-full bg-indigo-50 text-indigo-800 border border-indigo-200 px-2.5 py-0.5 text-[11px] font-bold dark:bg-indigo-950/40 dark:text-indigo-300">
+                <Sparkles size={11} className="text-indigo-600" />
+                <span>{locale === "ar" ? "توجيه واختيار" : "Guided Care"}</span>
+              </span>
             </div>
-            <p className="mt-1 text-[11px] leading-relaxed text-text-secondary">
-              {t("instantBooking.note")}
+            <h3 className="text-base font-bold text-text-primary dark:text-white">
+              {locale === "ar" ? "محتار تختار المختص الأنسب؟" : "Need help choosing the right specialist?"}
+            </h3>
+            <p className="text-xs text-text-secondary leading-relaxed">
+              {locale === "ar"
+                ? "أجب عن بعض الأسئلة البسيطة لنقترح عليك أفضل الأطباء والمعالجين المتخصصين في نوع التحدي الذي تواجهه."
+                : "Answer simple questions to get personalized practitioner recommendations."}
             </p>
           </div>
-          <div className="rounded-xl bg-surface-tertiary p-4 border border-border-light">
-            <span className="text-xs font-bold uppercase text-text-muted">
-              {t("instantBooking.chips.duration")}
-            </span>
-            <p className="mt-1 text-[11px] leading-relaxed text-text-secondary">
-              {t("instantBooking.chips.durationNote")}
-            </p>
-          </div>
-          <div className="rounded-xl bg-surface-tertiary p-4 border border-border-light">
-            <span className="text-xs font-bold uppercase text-text-muted">
-              {t("instantBooking.chips.pricing")}
-            </span>
-            <p className="mt-1 text-[11px] leading-relaxed text-text-secondary">
-              {t("instantBooking.chips.pricingNote")}
-            </p>
-          </div>
-        </div>
-      </div>
 
-      {/* ── Service Shortcuts ── */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <Link
-          href="/patient/practitioners"
-          className="group flex items-center gap-4 p-5 rounded-2xl bg-white border border-border-light sawiyaa-hover-lift sawiyaa-btn-press"
-        >
-          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary-light text-primary group-hover:scale-105 transition-transform">
-            <Stethoscope className="h-5 w-5" />
-          </span>
-          <div className="min-w-0">
-            <span className="block text-sm font-bold text-text-primary group-hover:text-primary transition-colors">
-              {t("quickLinks.practitioners")}
-            </span>
-            <span className="block text-[11px] text-text-secondary truncate">
-              {t("nextSteps.types.BOOK_NEXT_SESSION.note")}
-            </span>
-          </div>
-        </Link>
-        
-        <Link
-          href="/patient/sessions"
-          className="group flex items-center gap-4 p-5 rounded-2xl bg-white border border-border-light sawiyaa-hover-lift sawiyaa-btn-press"
-        >
-          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary-light text-primary group-hover:scale-105 transition-transform">
-            <CalendarDays className="h-5 w-5" />
-          </span>
-          <div className="min-w-0">
-            <span className="block text-sm font-bold text-text-primary group-hover:text-primary transition-colors">
-              {t("quickLinks.sessions")}
-            </span>
-            <span className="block text-[11px] text-text-secondary truncate">
-              {t("nextSteps.types.JOIN_UPCOMING_SESSION.note")}
-            </span>
-          </div>
-        </Link>
-        
-        <Link
-          href="/patient/payments"
-          className="group flex items-center gap-4 p-5 rounded-2xl bg-white border border-border-light sawiyaa-hover-lift sawiyaa-btn-press"
-        >
-          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary-light text-primary group-hover:scale-105 transition-transform">
-            <CreditCard className="h-5 w-5" />
-          </span>
-          <div className="min-w-0">
-            <span className="block text-sm font-bold text-text-primary group-hover:text-primary transition-colors">
-              {t("quickLinks.payments")}
-            </span>
-            <span className="block text-[11px] text-text-secondary truncate">
-              {t("nextSteps.types.COMPLETE_PAYMENT.note")}
-            </span>
-          </div>
-        </Link>
-        
-        <Link
-          href="/patient/messages?lane=support"
-          className="group flex items-center gap-4 p-5 rounded-2xl bg-white border border-border-light sawiyaa-hover-lift sawiyaa-btn-press"
-        >
-          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary-light text-primary group-hover:scale-105 transition-transform">
-            <LifeBuoy className="h-5 w-5" />
-          </span>
-          <div className="min-w-0">
-            <span className="block text-sm font-bold text-text-primary group-hover:text-primary transition-colors">
-              {t("support.heading")}
-            </span>
-            <span className="block text-[11px] text-text-secondary truncate">
-              {t("support.chatCta")}
-            </span>
-          </div>
-        </Link>
-      </div>
-
-      {/* ── Care Journey & Support columns ── */}
-      <div className="grid gap-6 lg:grid-cols-2">
-        {/* Care Journey Cards */}
-        <div className="rounded-[24px] border border-border-light bg-white p-6 shadow-sawiyaa-card">
-          <h3 className="text-lg font-bold text-text-primary mb-4 pb-2 border-b border-border-light">
-            {t("quickLinks.careHeading")}
-          </h3>
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className="flex flex-wrap items-center gap-2.5 pt-2">
             <Link
               href="/patient/matching"
-              className="group flex flex-col justify-between p-4 rounded-xl border border-border-light bg-surface-tertiary sawiyaa-hover-lift sawiyaa-btn-press"
+              className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-xs font-bold text-white shadow-xs transition hover:bg-primary-hover active:scale-[0.99]"
             >
-              <div>
-                <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600 mb-3 group-hover:scale-105 transition-transform">
-                  <HeartHandshake className="h-4 w-4" />
-                </span>
-                <h4 className="text-sm font-bold text-text-primary group-hover:text-primary transition-colors">
-                  {t("nextSteps.types.START_GUIDED_MATCHING.cta")}
-                </h4>
-                <p className="mt-1 text-[11px] leading-normal text-text-secondary">
-                  {t("nextSteps.types.START_GUIDED_MATCHING.note")}
-                </p>
-              </div>
-              <span className="mt-4 text-xs font-semibold text-primary inline-flex items-center gap-1">
-                {t("nextSteps.types.START_GUIDED_MATCHING.cta")}
-                <ArrowRight size={10} className="rtl:rotate-180 group-hover:translate-x-0.5 transition-transform" />
-              </span>
+              <span>{locale === "ar" ? "ساعدني أختار" : "Guided Matching"}</span>
+              <ArrowRight size={13} className="rtl:rotate-180" />
             </Link>
-
             <Link
               href="/patient/assessments"
-              className="group flex flex-col justify-between p-4 rounded-xl border border-border-light bg-surface-tertiary sawiyaa-hover-lift sawiyaa-btn-press"
+              className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-border-light bg-[#FCFAF6] px-3.5 py-2.5 text-xs font-semibold text-text-secondary hover:bg-surface-tertiary transition dark:bg-white/5 dark:border-white/10"
             >
-              <div>
-                <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600 mb-3 group-hover:scale-105 transition-transform">
-                  <Sparkles className="h-4 w-4" />
-                </span>
-                <h4 className="text-sm font-bold text-text-primary group-hover:text-primary transition-colors">
-                  {t("nextSteps.types.TAKE_ASSESSMENT.cta")}
-                </h4>
-                <p className="mt-1 text-[11px] leading-normal text-text-secondary">
-                  {t("nextSteps.types.TAKE_ASSESSMENT.note")}
-                </p>
-              </div>
-              <span className="mt-4 text-xs font-semibold text-primary inline-flex items-center gap-1">
-                {t("nextSteps.types.TAKE_ASSESSMENT.cta")}
-                <ArrowRight size={10} className="rtl:rotate-180 group-hover:translate-x-0.5 transition-transform" />
-              </span>
+              <span>{t("nextSteps.types.TAKE_ASSESSMENT.cta")}</span>
             </Link>
           </div>
         </div>
+      </div>
 
-        {/* Support ticket card */}
-        <div className="rounded-[24px] border border-border-light bg-white p-6 shadow-sawiyaa-card flex flex-col justify-between">
-          <div>
-            <h3 className="text-lg font-bold text-text-primary mb-4 pb-2 border-b border-border-light">
-              {t("support.heading")}
-            </h3>
-            
-            {journey.support.latestOpenTicket ? (
-              <div className="space-y-4">
-                <p className="text-sm text-text-secondary leading-relaxed">
-                  {t("support.openTicket")}
+      {/* ── 5. SUPPORT CHANNEL SECTION ── */}
+      <div className="rounded-3xl border border-border-light/80 bg-white p-5 sm:p-6 shadow-xs dark:bg-surface-secondary dark:border-white/10">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div className="flex items-start gap-3.5">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary-light text-primary dark:bg-primary/20">
+              <Headphones size={18} />
+            </div>
+            <div className="space-y-0.5">
+              <h3 className="text-sm font-bold text-text-primary dark:text-white">
+                {t("support.heading")}
+              </h3>
+              {journey.support.latestOpenTicket ? (
+                <p className="text-xs text-text-secondary leading-relaxed">
+                  {locale === "ar"
+                    ? `لديك طلب دعم قيد المتابعة (${t(`support.categories.${journey.support.latestOpenTicket.category}` as any)} • ${t(`support.statuses.${journey.support.latestOpenTicket.status}` as any)})`
+                    : t("support.openTicket")}
                 </p>
-                <div className="flex flex-wrap gap-2">
-                  <PatientStatusBadge>
-                    {t(`support.categories.${journey.support.latestOpenTicket.category}` as any)}
-                  </PatientStatusBadge>
-                  <PatientStatusBadge>
-                    {t(`support.statuses.${journey.support.latestOpenTicket.status}` as any)}
-                  </PatientStatusBadge>
-                  <span className="inline-flex items-center rounded-full bg-surface-tertiary border border-border-soft px-3 py-1.5 text-xs font-medium text-text-secondary">
-                    {t("support.updatedAt", {
-                      date: formatPatientDateTime(journey.support.latestOpenTicket.updatedAt, patientTimeZone, { locale: numLocale, dateStyle: "medium", timeStyle: undefined }),
-                    })}
-                  </span>
-                </div>
-              </div>
-            ) : (
-              <div className="space-y-2">
-                <p className="text-sm text-text-secondary leading-relaxed">
+              ) : (
+                <p className="text-xs text-text-secondary leading-relaxed">
                   {t("support.empty")}
                 </p>
-              </div>
-            )}
+              )}
+            </div>
           </div>
 
-          <div className="mt-6 pt-4 border-t border-border-light">
+          <div className="shrink-0">
             {journey.support.latestOpenTicket ? (
               <Link
-                href={`/patient/messages?lane=support&id=${journey.support.latestOpenTicket.id}` as any}
-                className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-xs font-bold text-white shadow-sm transition-all hover:bg-primary-hover sawiyaa-btn-press"
+                href={`/patient/messages?lane=support&id=${journey.support.latestOpenTicket.id}&focusComposer=true` as any}
+                className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-xs font-bold text-white shadow-xs transition hover:bg-primary-hover active:scale-[0.99]"
               >
-                {t("support.viewTicket")}
+                <span>{t("support.sendMessage")}</span>
                 <ArrowRight size={13} className="rtl:rotate-180" />
               </Link>
             ) : (
               <Link
-                href="/patient/messages?lane=support"
-                className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-xs font-bold text-white shadow-sm transition-all hover:bg-primary-hover sawiyaa-btn-press"
+                href="/patient/messages?lane=support&new=true"
+                className="inline-flex items-center justify-center gap-2 rounded-xl border border-border-light bg-[#FCFAF6] px-4 py-2.5 text-xs font-bold text-text-secondary hover:bg-primary-light hover:text-text-brand hover:border-primary/40 transition dark:bg-white/5 dark:border-white/10"
               >
-                {t("support.chatCta")}
+                <span>{t("support.chatCta")}</span>
                 <ArrowRight size={13} className="rtl:rotate-180" />
               </Link>
             )}
@@ -782,84 +659,91 @@ export default function PatientJourneyScreen() {
         </div>
       </div>
 
-      {/* ── Recent Activity Section ── */}
-      <div className="rounded-[24px] border border-border-light bg-white p-6 shadow-sawiyaa-card">
-        <div className="space-y-1 mb-6 pb-4 border-b border-border-light">
-          <h3 className="text-lg font-bold text-text-primary">
-            {t("recent.heading")}
-          </h3>
-          <p className="text-xs text-text-secondary">
-            {t("recent.note")}
-          </p>
-        </div>
+      {/* ── 6. RECENT ACTIVITY & CONTEXT (ONLY IF AVAILABLE) ── */}
+      {hasRecentHistory && (
+        <div className="space-y-3 pt-2">
+          <div className="flex items-center justify-between">
+            <h3 className="text-xs font-bold uppercase tracking-wider text-text-secondary">
+              {t("recent.heading")}
+            </h3>
+            <p className="text-[11px] text-text-muted">
+              {t("recent.note")}
+            </p>
+          </div>
 
-        {hasRecentHistory ? (
-          <div className="grid gap-6 md:grid-cols-2">
-            {/* Sessions */}
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {/* Recent Sessions */}
             {recentSessionsExcludingUpcoming.length > 0 && (
-              <div className="rounded-xl border border-border-light bg-surface-tertiary p-5">
-                <div className="mb-4 flex items-center justify-between">
-                  <h4 className="text-sm font-bold text-text-primary">
+              <div className="rounded-2xl border border-border-light/80 bg-white p-4 shadow-xs dark:bg-surface-secondary dark:border-white/10 space-y-3">
+                <div className="flex items-center justify-between border-b border-border-light/40 pb-2">
+                  <span className="text-xs font-bold text-text-primary dark:text-white">
                     {t("recent.sessions.heading")}
-                  </h4>
-                  <Link href="/patient/sessions" className="text-xs font-bold text-primary hover:underline">
+                  </span>
+                  <Link href="/patient/sessions" className="text-[11px] font-semibold text-primary hover:underline">
                     {t("recent.sessions.viewAll")}
                   </Link>
                 </div>
-                <div className="space-y-3">
-                  {recentSessionsExcludingUpcoming.slice(0, 3).map((session) => (
+                <div className="space-y-2">
+                  {recentSessionsExcludingUpcoming.slice(0, 2).map((s) => (
                     <Link
-                      key={session.id}
-                      href={`/patient/sessions/${session.id}` as any}
-                      className="flex items-center justify-between gap-4 rounded-xl bg-white p-3 border border-border-light sawiyaa-hover-lift sawiyaa-btn-press"
+                      key={s.id}
+                      href={`/patient/sessions/${s.id}` as any}
+                      className="block rounded-xl bg-[#FCFAF6] p-2.5 transition hover:bg-primary-light/40 dark:bg-white/5"
                     >
-                      <div className="min-w-0">
-                        <p className="text-xs font-bold text-text-primary truncate">
-                          {session.practitioner.displayName ?? session.practitioner.slug}
-                        </p>
-                        {session.scheduledStartAt && (
-                          <p className="mt-0.5 text-[10px] text-text-secondary">
-                            {formatPatientDateTime(session.scheduledStartAt, patientTimeZone, { locale: numLocale })}
-                          </p>
-                        )}
+                      <div className="flex items-center justify-between text-xs font-bold text-text-primary dark:text-white">
+                        <span className="truncate">{s.practitioner.displayName ?? s.practitioner.slug}</span>
+                        <span className="text-[10px] font-medium text-text-secondary">
+                          {tSessions(`status.${s.operational.state}` as any)}
+                        </span>
                       </div>
-                      <span className="shrink-0 inline-flex rounded-full bg-primary-light px-2.5 py-1 text-[10px] font-semibold text-primary border border-primary/10">
-                        {tSessions(`status.${session.status}` as any)}
-                      </span>
+                      {s.scheduledStartAt && (
+                        <p className="mt-0.5 text-[10px] text-text-secondary">
+                          {formatPatientDateTime(s.scheduledStartAt, patientTimeZone, {
+                            locale: numLocale,
+                            dateStyle: "short",
+                          })}
+                        </p>
+                      )}
                     </Link>
                   ))}
                 </div>
               </div>
             )}
 
-            {/* Payments */}
+            {/* Recent Payments */}
             {journey.recentHistory.payments.length > 0 && (
-              <div className="rounded-xl border border-border-light bg-surface-tertiary p-5">
-                <div className="mb-4 flex items-center justify-between">
-                  <h4 className="text-sm font-bold text-text-primary">
+              <div className="rounded-2xl border border-border-light/80 bg-white p-4 shadow-xs dark:bg-surface-secondary dark:border-white/10 space-y-3">
+                <div className="flex items-center justify-between border-b border-border-light/40 pb-2">
+                  <span className="text-xs font-bold text-text-primary dark:text-white">
                     {t("recent.payments.heading")}
-                  </h4>
-                  <Link href="/patient/payments" className="text-xs font-bold text-primary hover:underline">
+                  </span>
+                  <Link href="/patient/payments" className="text-[11px] font-semibold text-primary hover:underline">
                     {t("recent.payments.viewAll")}
                   </Link>
                 </div>
-                <div className="space-y-3">
-                  {journey.recentHistory.payments.slice(0, 3).map((payment) => (
-                    <div key={payment.id} className="rounded-xl bg-white p-3 border border-border-light">
-                      <div className="flex items-center justify-between gap-4">
-                        <span className="text-xs font-bold text-text-primary">
-                          {formatAmount(payment.amount, payment.currency, numLocale)}
-                        </span>
-                        <span className="inline-flex rounded-full bg-primary-light px-2.5 py-1 text-[10px] font-semibold text-primary border border-primary/10">
-                          {tPayments(`history.status.${payment.status}` as any)}
+                <div className="space-y-2">
+                  {journey.recentHistory.payments.slice(0, 2).map((p) => (
+                    <div
+                      key={p.id}
+                      className="rounded-xl bg-[#FCFAF6] p-2.5 dark:bg-white/5 text-xs space-y-1"
+                    >
+                      <div className="flex items-center justify-between font-bold text-text-primary dark:text-white">
+                        <span>{formatFinanceMoney(numLocale, p.amount, p.currency)}</span>
+                        <span className="text-[10px] font-medium text-text-secondary">
+                          {tPayments(`history.status.${p.status}` as any)}
                         </span>
                       </div>
-                      <div className="mt-2 flex items-center justify-between text-[10px] text-text-secondary">
-                        <span>{formatPatientDateTime(payment.createdAt, patientTimeZone, { locale: numLocale, dateStyle: "medium", timeStyle: undefined })}</span>
-                        {payment.sessionId && (
+                      <div className="flex items-center justify-between text-[10px] text-text-secondary">
+                        <span>
+                          {formatPatientDateTime(p.createdAt, patientTimeZone, {
+                            locale: numLocale,
+                            dateStyle: "short",
+                          })}
+                        </span>
+                        {p.sessionId && (
                           <Link
-                            href={`/patient/sessions/${payment.sessionId}` as any}
-                            className="font-bold text-primary hover:underline"
+                            href={`/patient/sessions/${p.sessionId}` as any}
+                            className="font-semibold text-primary hover:underline"
                           >
                             {t("recent.payments.viewSession")}
                           </Link>
@@ -871,78 +755,53 @@ export default function PatientJourneyScreen() {
               </div>
             )}
 
-            {/* Assessments */}
-            {journey.recentHistory.assessments.length > 0 && (
-              <div className="rounded-xl border border-border-light bg-surface-tertiary p-5">
-                <div className="mb-4 flex items-center justify-between">
-                  <h4 className="text-sm font-bold text-text-primary">
-                    {t("recent.assessments.heading")}
-                  </h4>
-                  <Link href="/patient/assessments" className="text-xs font-bold text-primary hover:underline">
+            {/* Recent Assessments / Matching */}
+            {(journey.recentHistory.assessments.length > 0 || journey.recentHistory.matching.length > 0) && (
+              <div className="rounded-2xl border border-border-light/80 bg-white p-4 shadow-xs dark:bg-surface-secondary dark:border-white/10 space-y-3">
+                <div className="flex items-center justify-between border-b border-border-light/40 pb-2">
+                  <span className="text-xs font-bold text-text-primary dark:text-white">
+                    {locale === "ar" ? "التقييمات والمطابقة" : "Assessments & Matching"}
+                  </span>
+                  <Link href="/patient/assessments" className="text-[11px] font-semibold text-primary hover:underline">
                     {t("recent.assessments.viewAll")}
                   </Link>
                 </div>
-                <div className="space-y-3">
-                  {journey.recentHistory.assessments.slice(0, 3).map((assessment) => (
-                    <div key={assessment.id} className="rounded-xl bg-white p-3 border border-border-light">
-                      <p className="text-xs font-bold text-text-primary line-clamp-1">
-                        {assessment.assessmentTitle}
-                      </p>
-                      <div className="mt-2 flex items-center justify-between text-[10px] text-text-secondary">
-                        {assessment.completedAt && (
-                          <span>
-                            {t("recent.assessments.completedAt", {
-                              date: formatPatientDateTime(assessment.completedAt, patientTimeZone, { locale: numLocale, dateStyle: "medium", timeStyle: undefined }),
+                <div className="space-y-2">
+                  {journey.recentHistory.assessments.slice(0, 1).map((a) => (
+                    <div key={a.id} className="rounded-xl bg-[#FCFAF6] p-2.5 dark:bg-white/5 text-xs space-y-1">
+                      <p className="font-bold text-text-primary dark:text-white truncate">{a.assessmentTitle}</p>
+                      <div className="flex items-center justify-between text-[10px] text-text-secondary">
+                        <span>
+                          {a.completedAt &&
+                            formatPatientDateTime(a.completedAt, patientTimeZone, {
+                              locale: numLocale,
+                              dateStyle: "short",
                             })}
-                          </span>
-                        )}
+                        </span>
                         <Link
-                          href={`/patient/assessments/submissions/${assessment.id}` as any}
-                          className="font-bold text-primary hover:underline"
+                          href={`/patient/assessments/submissions/${a.id}` as any}
+                          className="font-semibold text-primary hover:underline"
                         >
                           {t("recent.assessments.viewResult")}
                         </Link>
                       </div>
                     </div>
                   ))}
-                </div>
-              </div>
-            )}
-
-            {/* Matching */}
-            {journey.recentHistory.matching.length > 0 && (
-              <div className="rounded-xl border border-border-light bg-surface-tertiary p-5">
-                <div className="mb-4 flex items-center justify-between">
-                  <h4 className="text-sm font-bold text-text-primary">
-                    {t("recent.matching.heading")}
-                  </h4>
-                  <Link href="/patient/matching" className="text-xs font-bold text-primary hover:underline">
-                    {t("recent.matching.viewAll")}
-                  </Link>
-                </div>
-                <div className="space-y-3">
-                  {journey.recentHistory.matching.slice(0, 3).map((matching) => (
-                    <div key={matching.id} className="rounded-xl bg-white p-3 border border-border-light">
-                      <p className="text-xs font-bold text-text-primary line-clamp-1">
-                        {matching.topRecommendation
+                  {journey.recentHistory.matching.slice(0, 1).map((m) => (
+                    <div key={m.id} className="rounded-xl bg-[#FCFAF6] p-2.5 dark:bg-white/5 text-xs space-y-1">
+                      <p className="font-bold text-text-primary dark:text-white truncate">
+                        {m.topRecommendation
                           ? t("recent.matching.recommendation", {
                               practitioner:
-                                matching.topRecommendation.practitionerDisplayName ??
-                                matching.topRecommendation.practitionerSlug,
+                                m.topRecommendation.practitionerDisplayName ??
+                                m.topRecommendation.practitionerSlug,
                             })
                           : t("recent.matching.noRecommendation")}
                       </p>
-                      <div className="mt-2 flex items-center justify-between text-[10px] text-text-secondary">
-                        {matching.completedAt && (
-                          <span>
-                            {t("recent.matching.completedAt", {
-                              date: formatPatientDateTime(matching.completedAt, patientTimeZone, { locale: numLocale, dateStyle: "medium", timeStyle: undefined }),
-                            })}
-                          </span>
-                        )}
+                      <div className="flex items-center justify-between text-[10px] text-text-secondary">
                         <Link
-                          href={`/patient/matching/${matching.id}` as any}
-                          className="font-bold text-primary hover:underline"
+                          href={`/patient/matching/${m.id}` as any}
+                          className="font-semibold text-primary hover:underline"
                         >
                           {t("recent.matching.viewMatching")}
                         </Link>
@@ -953,27 +812,8 @@ export default function PatientJourneyScreen() {
               </div>
             )}
           </div>
-        ) : (
-          <div className="rounded-xl border border-border-light bg-surface-tertiary p-4 text-center max-w-sm mx-auto my-2">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary-light text-primary mx-auto mb-2">
-              <Zap className="h-5 w-5" />
-            </div>
-            <h4 className="text-xs font-bold text-text-primary">
-              {t("recent.empty.heading")}
-            </h4>
-            <p className="mt-1 text-[11px] text-text-secondary leading-relaxed">
-              {t("recent.empty.note")}
-            </p>
-            <Link
-              href={fallbackNextStep.href as any}
-              className="mt-3 inline-flex items-center justify-center gap-1.5 text-[11px] font-semibold text-primary hover:underline"
-            >
-              {t(fallbackNextStep.ctaKey as any)}
-              <ArrowRight size={10} className="rtl:rotate-180" />
-            </Link>
-          </div>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 }

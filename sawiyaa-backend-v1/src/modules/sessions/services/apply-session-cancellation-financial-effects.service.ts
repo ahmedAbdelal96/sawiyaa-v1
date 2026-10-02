@@ -37,9 +37,13 @@ export class ApplySessionCancellationFinancialEffectsService {
     session: Pick<Session, 'id' | 'patientId' | 'scheduledStartAt'>;
     evaluation: SessionCancellationEvaluation;
     cancellationReason?: string | null;
+    paymentIdOverride?: string;
+    refundAmountOverride?: string;
+    refundCurrencyCodeOverride?: string;
+    preservePendingEarningReview?: boolean;
   }): Promise<CancellationFinancialEffect> {
     const payment = await input.tx.payment.findFirst({
-      where: { sessionId: input.session.id },
+      where: input.paymentIdOverride ? { id: input.paymentIdOverride } : { sessionId: input.session.id },
       orderBy: [{ createdAt: 'desc' }],
     });
 
@@ -51,6 +55,17 @@ export class ApplySessionCancellationFinancialEffectsService {
         actions: { paymentFound: false },
       };
     }
+
+    await input.tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${payment.id})::bigint)`;
+    const currentPayment = await input.tx.payment.findUniqueOrThrow({ where: { id: payment.id } });
+    Object.assign(payment, currentPayment);
+    if (input.refundCurrencyCodeOverride && input.refundCurrencyCodeOverride !== payment.currencyCode) {
+      throw new ConflictException({ error: 'SESSION_REFUND_CURRENCY_MISMATCH' });
+    }
+    const activeRefund = await input.tx.refund.findFirst({
+      where: { paymentId: payment.id, status: { in: [RefundStatus.REQUESTED, RefundStatus.PROCESSING] } }, select: { id: true },
+    });
+    if (activeRefund) throw new ConflictException({ error: 'PAYMENT_REFUND_ALREADY_IN_PROGRESS' });
 
     if (
       payment.status === PaymentStatus.CREATED ||
@@ -120,13 +135,23 @@ export class ApplySessionCancellationFinancialEffectsService {
       };
     }
 
-    const refundableAmount = await this.resolveRefundAmount({
+    const refundableAmount = input.refundAmountOverride
+      ? new Prisma.Decimal(input.refundAmountOverride)
+      : await this.resolveRefundAmount({
       tx: input.tx,
       paymentId: payment.id,
       paymentAmountTotal: payment.amountTotal,
       refundMode: input.evaluation.refundMode,
       refundPercent: input.evaluation.refundPercent,
-    });
+        });
+
+    if (input.refundAmountOverride) {
+      const prior = await input.tx.refund.aggregate({ where: { paymentId: payment.id, status: RefundStatus.SUCCEEDED }, _sum: { amount: true } });
+      const remaining = payment.amountTotal.sub(prior._sum.amount ?? new Prisma.Decimal(0));
+      if (refundableAmount.gt(remaining)) {
+        throw new ConflictException({ error: 'SESSION_RESOLUTION_REFUND_AMOUNT_EXCEEDS_REMAINING' });
+      }
+    }
 
     if (refundableAmount.lte(0)) {
       return {
@@ -162,7 +187,7 @@ export class ApplySessionCancellationFinancialEffectsService {
         destination: RefundDestination.CUSTOMER_WALLET,
         status: RefundStatus.SUCCEEDED,
         amount: refundableAmount.toFixed(2),
-        currencyCode: payment.currencyCode,
+        currencyCode: input.refundCurrencyCodeOverride ?? payment.currencyCode,
         refundReason:
           input.cancellationReason ??
           'Session cancelled based on active cancellation policy.',
@@ -268,11 +293,13 @@ export class ApplySessionCancellationFinancialEffectsService {
       },
     });
 
-    await this.sessionEarningReviewService.invalidatePendingReviewsForPayment({
-      paymentId: payment.id,
-      internalReason: 'SESSION_CANCELLATION_REFUND_BEFORE_REVIEW_APPROVAL',
-      tx: input.tx,
-    });
+    if (!input.preservePendingEarningReview) {
+      await this.sessionEarningReviewService.invalidatePendingReviewsForPayment({
+        paymentId: payment.id,
+        internalReason: 'SESSION_CANCELLATION_REFUND_BEFORE_REVIEW_APPROVAL',
+        tx: input.tx,
+      });
+    }
 
     return {
       cancelledPaymentId: payment.id,

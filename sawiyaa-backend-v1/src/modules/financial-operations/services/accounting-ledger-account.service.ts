@@ -57,6 +57,18 @@ export class AccountingLedgerAccountService {
     const byCode = new Map(entries.map((item) => [item.code, item.id]));
 
     return {
+      deferredSessionFundsAccountId: byCode.get(
+        PLATFORM_LEDGER_ACCOUNT_CODES.deferredSessionFunds,
+      )!,
+      foreignExchangeClearingAccountId: byCode.get(
+        PLATFORM_LEDGER_ACCOUNT_CODES.foreignExchangeClearing,
+      )!,
+      practitionerRecoveryReceivableAccountId: byCode.get(
+        PLATFORM_LEDGER_ACCOUNT_CODES.practitionerRecoveryReceivable,
+      )!,
+      earningAdjustmentsAccountId: byCode.get(
+        PLATFORM_LEDGER_ACCOUNT_CODES.earningAdjustments,
+      )!,
       platformCashAccountId: byCode.get(
         PLATFORM_LEDGER_ACCOUNT_CODES.platformCash,
       )!,

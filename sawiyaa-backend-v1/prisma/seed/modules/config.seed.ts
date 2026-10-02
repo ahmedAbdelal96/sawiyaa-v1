@@ -6,7 +6,7 @@ import {
   Prisma,
   PrismaClient,
 } from '@prisma/client';
-import { CONFIG_DEFINITIONS } from '../../../src/modules/config/registry/config.definitions';
+import { PLATFORM_DEFAULTS } from '../../../src/modules/config/registry/platform-defaults';
 import { ConfigKey } from '../../../src/modules/config/registry/config-key.constants';
 import { ConfigDefinition } from '../../../src/modules/config/registry/config-definition.types';
 import { SeedModule } from '../shared/seed.types';
@@ -36,6 +36,13 @@ type ConfigSeedDb = Pick<PrismaClient, '$transaction'> & {
     create: (args: {
       data: Prisma.ConfigValueUncheckedCreateInput;
     }) => Promise<Record<string, unknown>>;
+    // This is intentionally the only bulk mutation exposed by the seed
+    // adapter. It deactivates legacy database-config rows; it never deletes
+    // records and does not change active operator-owned configuration.
+    updateMany: (args: {
+      where: Prisma.ConfigValueWhereInput;
+      data: Prisma.ConfigValueUpdateManyMutationInput;
+    }) => Promise<{ count: number }>;
   };
 };
 
@@ -135,7 +142,7 @@ async function seedConfigOnce(db: ConfigSeedDb): Promise<ConfigSeedSummary> {
   };
   const keyRows = new Map<ConfigKey, CatalogRow>();
 
-  for (const definition of CONFIG_DEFINITIONS) {
+  for (const definition of PLATFORM_DEFAULTS.configDefinitions) {
     const existing = await db.configKeyCatalog.findUnique({
       where: { key: definition.key },
     });
@@ -172,7 +179,7 @@ async function seedConfigOnce(db: ConfigSeedDb): Promise<ConfigSeedSummary> {
         });
         summary.catalog.metadataSynchronized += 1;
       }
-      keyRows.set(definition.key, existing);
+      keyRows.set(definition.key as ConfigKey, existing);
       summary.catalog.preserved += 1;
       continue;
     }
@@ -194,13 +201,13 @@ async function seedConfigOnce(db: ConfigSeedDb): Promise<ConfigSeedSummary> {
             : undefined,
       },
     });
-    keyRows.set(definition.key, created);
+    keyRows.set(definition.key as ConfigKey, created);
     summary.catalog.created += 1;
   }
 
-  for (const definition of CONFIG_DEFINITIONS) {
+  for (const definition of PLATFORM_DEFAULTS.databaseConfig) {
     if (definition.seed.createInitialValue !== true) continue;
-    const row = keyRows.get(definition.key);
+    const row = keyRows.get(definition.key as ConfigKey);
     if (!row)
       throw new Error(`Config catalog row missing for "${definition.key}"`);
     const existing = await db.configValue.findFirst({
@@ -219,6 +226,18 @@ async function seedConfigOnce(db: ConfigSeedDb): Promise<ConfigSeedSummary> {
       data: { configKeyId: row.id, ...buildInitialValue(definition) },
     });
     summary.initialValues.created += 1;
+  }
+
+  // Historical database-config values must not remain an alternate source of
+  // runtime policy after their registry definition is marked LEGACY.
+  for (const definition of PLATFORM_DEFAULTS.configDefinitions) {
+    if (definition.status !== 'LEGACY' || definition.owner !== 'DATABASE_CONFIG') continue;
+    const row = keyRows.get(definition.key as ConfigKey);
+    if (!row) continue;
+    await db.configValue.updateMany({
+      where: { configKeyId: row.id, scopeType: ConfigScopeType.GLOBAL },
+      data: { isActive: false },
+    });
   }
   return summary;
 }

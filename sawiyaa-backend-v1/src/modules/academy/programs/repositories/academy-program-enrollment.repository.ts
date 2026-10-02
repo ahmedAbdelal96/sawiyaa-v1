@@ -354,6 +354,10 @@ export class AcademyProgramEnrollmentRepository {
               sessions: true,
             },
           },
+          sessions: {
+            select: { endsAt: true },
+            orderBy: { startsAt: 'asc' },
+          },
           category: {
             include: {
               translations: {

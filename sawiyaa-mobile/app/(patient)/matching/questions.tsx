@@ -20,6 +20,7 @@ import { resolveDeviceTimeZone } from "../../../src/lib/time-formatting";
 import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 import { listSpecialties } from "../../../src/features/specialties/api";
+import type { Specialty } from "../../../src/features/specialties/contracts";
 import { extractApiErrorMessage } from "../../../src/lib/api";
 import { useCreateMatchingSession } from "../../../src/features/patient/matching/api";
 import { getLocalizedSpecialtyName } from "../../../src/features/specialties/localized";
@@ -36,6 +37,8 @@ type ChoiceItem<T extends string> = {
   subtitle?: string;
   icon: keyof typeof Ionicons.glyphMap;
 };
+
+type SpecialtyChoice = Pick<ChoiceItem<string>, "id" | "title">;
 
 export default function MatchingQuestionsScreen() {
   const router = useRouter();
@@ -61,13 +64,16 @@ export default function MatchingQuestionsScreen() {
   const [primaryConcern, setPrimaryConcern] = useState("");
   const [errorText, setErrorText] = useState<string | null>(null);
 
-  const specialtiesQuery = useQuery({
+  const specialtiesQuery = useQuery<
+    { message: string; specialties: Specialty[] },
+    Error
+  >({
     queryKey: ["public-specialties", i18n.language],
     queryFn: listSpecialties,
   });
 
-  const specialtyChoices = useMemo(() => {
-    return (specialtiesQuery.data?.specialties ?? [])
+  const specialtyChoices = useMemo<SpecialtyChoice[]>(() => {
+    return ((specialtiesQuery.data?.specialties ?? []) as Specialty[])
       .filter((item) => item.isActive)
       .slice(0, 8)
       .map((item) => ({

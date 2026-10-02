@@ -1,4 +1,8 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import {
   LedgerDirection,
   LedgerEntryType,
@@ -20,6 +24,8 @@ import { LedgerRepository } from '../repositories/ledger.repository';
 import { RefreshPractitionerWalletService } from './refresh-practitioner-wallet.service';
 import { ApprovePractitionerSettlementService } from './approve-practitioner-settlement.service';
 import { WalletRepository } from '../repositories/wallet.repository';
+import { WalletBalanceBucket } from '@prisma/client';
+import { AccountingJournalPostingService } from './accounting-journal-posting.service';
 import { SecurityAuditService } from '@common/security-audit/security-audit.service';
 import {
   SecurityAuditActorType,
@@ -27,6 +33,7 @@ import {
 } from '@common/security-audit/security-audit.types';
 
 import { ConfigResolverService } from '../../config/services/config-resolver.service';
+import { OperationalNotificationService } from '@modules/notifications/services/operational-notification.service';
 
 type DbClient = PrismaService | Prisma.TransactionClient;
 
@@ -73,16 +80,21 @@ export class SessionEarningReviewService {
     private readonly calculatePackageSessionAllocationService: CalculatePackageSessionAllocationService,
     private readonly refreshPractitionerWalletService: RefreshPractitionerWalletService,
     private readonly approvePractitionerSettlementService: ApprovePractitionerSettlementService,
+    private readonly accountingJournalPostingService: AccountingJournalPostingService,
     private readonly walletRepository?: WalletRepository,
     private readonly securityAuditService?: SecurityAuditService,
     private readonly configResolverService?: ConfigResolverService,
+    private readonly operationalNotificationService?: OperationalNotificationService,
   ) {}
 
   private async lockPaymentReviewScope(db: DbClient, paymentId: string) {
     await db.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${paymentId})::bigint)`;
   }
 
-  private async lockEntitlementScope(db: DbClient, earningEntitlementId: string) {
+  private async lockEntitlementScope(
+    db: DbClient,
+    earningEntitlementId: string,
+  ) {
     await db.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`earning-entitlement:${earningEntitlementId}`})::bigint)`;
   }
 
@@ -139,14 +151,22 @@ export class SessionEarningReviewService {
   async syncForAdminResolution(input: {
     sessionId: string;
     tx?: Prisma.TransactionClient;
+    allowPendingResolution?: boolean;
   }): Promise<SessionEarningReviewSyncResult> {
     const statuses = [
       SessionStatus.PATIENT_NO_SHOW,
       SessionStatus.PRACTITIONER_NO_SHOW,
       SessionStatus.BOTH_NO_SHOW,
+      ...(input.allowPendingResolution
+        ? [SessionStatus.AWAITING_ADMIN_RESOLUTION]
+        : []),
     ];
     if (input.tx) {
-      return this.syncForSessionOutcomeInDb(input.tx, input.sessionId, statuses);
+      return this.syncForSessionOutcomeInDb(
+        input.tx,
+        input.sessionId,
+        statuses,
+      );
     }
     return this.prisma.$transaction((tx) =>
       this.syncForSessionOutcomeInDb(tx, input.sessionId, statuses),
@@ -180,7 +200,10 @@ export class SessionEarningReviewService {
     // This method is retained only for the non-posting rejection/exclusion
     // compatibility path.  Approvals must always cross the explicit
     // accountant-decision (Stage A) and wallet-credit (Stage B) boundaries.
-    if (input.action === 'APPROVE_AS_IS' || input.action === 'EDIT_AND_APPROVE') {
+    if (
+      input.action === 'APPROVE_AS_IS' ||
+      input.action === 'EDIT_AND_APPROVE'
+    ) {
       throw new BadRequestException({
         messageKey: 'financialOperations.errors.legacyCombinedApprovalDisabled',
         error: 'LEGACY_COMBINED_APPROVAL_DISABLED',
@@ -243,19 +266,23 @@ export class SessionEarningReviewService {
       }
       review = lockedReview;
 
-      const idempotencyKey = input.idempotencyKey?.trim() || `review:${review.id}`;
-      const existingOperation = await db.financialOperationIdempotency.findFirst({
-        where: {
-          earningEntitlementId: review.earningEntitlementId,
-          operationType: FinancialOperationType.RECORD_ACCOUNTANT_DECISION,
-        },
-        include: { review: true },
-      });
+      const idempotencyKey =
+        input.idempotencyKey?.trim() || `review:${review.id}`;
+      const existingOperation =
+        await db.financialOperationIdempotency.findFirst({
+          where: {
+            earningEntitlementId: review.earningEntitlementId,
+            operationType: FinancialOperationType.RECORD_ACCOUNTANT_DECISION,
+          },
+          include: { review: true },
+        });
       if (existingOperation) {
         return { item: existingOperation.review, wasAlreadyPosted: true };
       }
 
-      if (review.reviewStatus === SessionEarningReviewStatus.DECISION_APPROVED) {
+      if (
+        review.reviewStatus === SessionEarningReviewStatus.DECISION_APPROVED
+      ) {
         return {
           item: review,
           wasAlreadyPosted: true,
@@ -263,13 +290,20 @@ export class SessionEarningReviewService {
       }
 
       if (review.reviewStatus !== SessionEarningReviewStatus.PENDING_REVIEW) {
-        throw new BadRequestException(`Cannot record decision for review in status ${review.reviewStatus}`);
+        throw new BadRequestException(
+          `Cannot record decision for review in status ${review.reviewStatus}`,
+        );
       }
+      await this.assertPaymentAvailableForReview(db, review.paymentId);
 
       const suggestedAmount = review.suggestedPractitionerAmount;
-      const sourceCurrencyCode = review.paymentCurrencyCode.trim().toUpperCase();
+      const sourceCurrencyCode = review.paymentCurrencyCode
+        .trim()
+        .toUpperCase();
 
-      const explicitOverride = input.accountantApprovedSourceAmount !== undefined && input.accountantApprovedSourceAmount !== null;
+      const explicitOverride =
+        input.accountantApprovedSourceAmount !== undefined &&
+        input.accountantApprovedSourceAmount !== null;
       const overrideAmount = explicitOverride
         ? new Prisma.Decimal(input.accountantApprovedSourceAmount!)
         : null;
@@ -281,36 +315,58 @@ export class SessionEarningReviewService {
         for (const adj of input.adjustments) {
           const amt = new Prisma.Decimal(adj.amount);
           if (amt.lte(0)) {
-            throw new BadRequestException('Adjustment amount must be greater than zero');
+            throw new BadRequestException(
+              'Adjustment amount must be greater than zero',
+            );
           }
           if (adj.type === 'ADDITION') {
             totalAdditions = totalAdditions.add(amt);
           } else if (adj.type === 'DEDUCTION') {
             totalDeductions = totalDeductions.add(amt);
           } else {
-            throw new BadRequestException(`Invalid adjustment type: ${adj.type}`);
+            throw new BadRequestException('Invalid adjustment type');
           }
           if (adj.currencyCode.trim().toUpperCase() !== sourceCurrencyCode) {
-            throw new BadRequestException('Adjustment currency must equal the accountant decision source currency');
+            throw new BadRequestException(
+              'Adjustment currency must equal the accountant decision source currency',
+            );
           }
           if (!adj.description.trim() || !adj.reason?.trim()) {
-            throw new BadRequestException('Adjustment description and reason are required');
+            throw new BadRequestException(
+              'Adjustment description and reason are required',
+            );
           }
         }
       }
 
       const netAdjustments = totalAdditions.sub(totalDeductions);
-      const calculatedDecisionAmount = suggestedAmount.add(netAdjustments).toDecimalPlaces(2);
-      const finalPractitionerAmount = (overrideAmount ?? calculatedDecisionAmount).toDecimalPlaces(2);
-      if (overrideAmount && !overrideAmount.equals(calculatedDecisionAmount) && !input.overrideReason?.trim()) {
-        throw new BadRequestException('Override reason is required when approved source amount differs from calculated decision amount');
+      const calculatedDecisionAmount = suggestedAmount
+        .add(netAdjustments)
+        .toDecimalPlaces(2);
+      const finalPractitionerAmount = (
+        overrideAmount ?? calculatedDecisionAmount
+      ).toDecimalPlaces(2);
+      if (
+        overrideAmount &&
+        !overrideAmount.equals(calculatedDecisionAmount) &&
+        !input.overrideReason?.trim()
+      ) {
+        throw new BadRequestException(
+          'Override reason is required when approved source amount differs from calculated decision amount',
+        );
       }
       if (finalPractitionerAmount.lt(0)) {
-        throw new BadRequestException('Final practitioner amount cannot be negative');
+        throw new BadRequestException(
+          'Final practitioner amount cannot be negative',
+        );
       }
 
-      const finalPlatformAmount = review.paymentAmount.sub(finalPractitionerAmount).toDecimalPlaces(2);
-      const isEdited = !finalPractitionerAmount.equals(suggestedAmount) || (input.adjustments && input.adjustments.length > 0);
+      const finalPlatformAmount = review.paymentAmount
+        .sub(finalPractitionerAmount)
+        .toDecimalPlaces(2);
+      const isEdited =
+        !finalPractitionerAmount.equals(suggestedAmount) ||
+        (input.adjustments && input.adjustments.length > 0);
       const decision = isEdited
         ? SessionEarningReviewDecision.EDITED_AND_APPROVED
         : SessionEarningReviewDecision.APPROVED_AS_IS;
@@ -348,9 +404,10 @@ export class SessionEarningReviewService {
           finalPractitionerAmount,
           finalPlatformAmount,
           finalCurrencyCode: sourceCurrencyCode,
-          overrideReason: overrideAmount && !overrideAmount.equals(calculatedDecisionAmount)
-            ? input.overrideReason!.trim()
-            : null,
+          overrideReason:
+            overrideAmount && !overrideAmount.equals(calculatedDecisionAmount)
+              ? input.overrideReason!.trim()
+              : null,
           reviewedByUserId: input.reviewerUserId,
           reviewedAt: new Date(),
           internalReason: input.internalReason?.trim() || null,
@@ -368,22 +425,25 @@ export class SessionEarningReviewService {
         },
       });
 
-      await this.securityAuditService?.recordRequired(db as Prisma.TransactionClient, {
-        action: 'finance.session-earning-review.financial-decision',
-        outcome: SecurityAuditOutcome.SUCCESS,
-        actorUserId: input.reviewerUserId,
-        actorRoles: input.actorRoles,
-        resourceType: 'SessionEarningReview',
-        resourceId: review.id,
-        metadata: {
-          decision,
-          accountantApprovedSourceAmount: finalPractitionerAmount.toFixed(2),
-          finalPlatformAmount: finalPlatformAmount.toFixed(2),
-          currencyCode: sourceCurrencyCode,
-          adjustmentsCount: input.adjustments?.length ?? 0,
-          idempotencyKey,
+      await this.securityAuditService?.recordRequired(
+        db as Prisma.TransactionClient,
+        {
+          action: 'finance.session-earning-review.financial-decision',
+          outcome: SecurityAuditOutcome.SUCCESS,
+          actorUserId: input.reviewerUserId,
+          actorRoles: input.actorRoles,
+          resourceType: 'SessionEarningReview',
+          resourceId: review.id,
+          metadata: {
+            decision,
+            accountantApprovedSourceAmount: finalPractitionerAmount.toFixed(2),
+            finalPlatformAmount: finalPlatformAmount.toFixed(2),
+            currencyCode: sourceCurrencyCode,
+            adjustmentsCount: input.adjustments?.length ?? 0,
+            idempotencyKey,
+          },
         },
-      });
+      );
 
       return {
         item: updated,
@@ -391,7 +451,11 @@ export class SessionEarningReviewService {
       };
     };
 
-    return input.tx ? executeInTx(input.tx) : this.prisma.$transaction(executeInTx);
+    const result = input.tx
+      ? await executeInTx(input.tx)
+      : await this.prisma.$transaction(executeInTx);
+
+    return result;
   }
 
   async creditPractitionerWallet(input: {
@@ -426,18 +490,24 @@ export class SessionEarningReviewService {
         include: this.reviewInclude,
       });
 
-      const idempotencyKey = input.idempotencyKey?.trim() || `review:${review.id}`;
-      const existingOperation = await txClient.financialOperationIdempotency.findFirst({
-        where: {
-          earningEntitlementId: review.earningEntitlementId,
-          operationType: FinancialOperationType.CREDIT_PRACTITIONER_WALLET,
-        },
-        include: { review: true },
-      });
-      if (existingOperation) return { item: existingOperation.review, wasAlreadyPosted: true };
+      const idempotencyKey =
+        input.idempotencyKey?.trim() || `review:${review.id}`;
+      const existingOperation =
+        await txClient.financialOperationIdempotency.findFirst({
+          where: {
+            earningEntitlementId: review.earningEntitlementId,
+            operationType: FinancialOperationType.CREDIT_PRACTITIONER_WALLET,
+          },
+          include: { review: true },
+        });
+      if (existingOperation)
+        return { item: existingOperation.review, wasAlreadyPosted: true };
 
       if (review.reviewStatus === SessionEarningReviewStatus.APPROVED) {
-        if (review.settlementId) {
+        if (
+          review.settlementId ||
+          review.accountantApprovedSourceAmount?.isZero()
+        ) {
           return { item: review, wasAlreadyPosted: true };
         }
         throw new BadRequestException({
@@ -445,18 +515,27 @@ export class SessionEarningReviewService {
         });
       }
 
-      if (review.reviewStatus !== SessionEarningReviewStatus.DECISION_APPROVED) {
+      if (
+        review.reviewStatus !== SessionEarningReviewStatus.DECISION_APPROVED
+      ) {
         throw new BadRequestException(
           `Cannot credit wallet for review in status ${review.reviewStatus}. Review must be DECISION_APPROVED first.`,
         );
       }
+      await this.assertPaymentAvailableForReview(txClient, review.paymentId);
 
       const finalPractitionerAmount = review.accountantApprovedSourceAmount;
       if (finalPractitionerAmount === null) {
-        throw new BadRequestException('Accountant approved source amount is required before wallet credit');
+        throw new BadRequestException(
+          'Accountant approved source amount is required before wallet credit',
+        );
       }
-      const finalPlatformAmount = review.paymentAmount.sub(finalPractitionerAmount).toDecimalPlaces(2);
-      const sourceCurrencyCode = review.paymentCurrencyCode.trim().toUpperCase();
+      const finalPlatformAmount = review.paymentAmount
+        .sub(finalPractitionerAmount)
+        .toDecimalPlaces(2);
+      const sourceCurrencyCode = review.paymentCurrencyCode
+        .trim()
+        .toUpperCase();
 
       const activeWallet = await txClient.practitionerWallet.findFirst({
         where: { practitionerId: review.practitionerId, status: 'ACTIVE' },
@@ -470,14 +549,16 @@ export class SessionEarningReviewService {
       }
 
       const walletCurrencyCode = activeWallet.currencyCode.trim().toUpperCase();
-      const targetAmount = input.approvedWalletCreditAmount !== undefined && input.approvedWalletCreditAmount !== null
-        ? this.resolveDecimal(
-            input.approvedWalletCreditAmount,
-            finalPractitionerAmount,
-          ).toDecimalPlaces(2)
-        : walletCurrencyCode === sourceCurrencyCode.trim().toUpperCase()
-          ? finalPractitionerAmount
-          : null;
+      const targetAmount =
+        input.approvedWalletCreditAmount !== undefined &&
+        input.approvedWalletCreditAmount !== null
+          ? this.resolveDecimal(
+              input.approvedWalletCreditAmount,
+              finalPractitionerAmount,
+            ).toDecimalPlaces(2)
+          : walletCurrencyCode === sourceCurrencyCode.trim().toUpperCase()
+            ? finalPractitionerAmount
+            : null;
 
       if (targetAmount === null || targetAmount.lt(0)) {
         throw new BadRequestException({
@@ -486,13 +567,60 @@ export class SessionEarningReviewService {
       }
 
       if (finalPractitionerAmount.isZero()) {
+        if (review.paymentId)
+          await this.accountingJournalPostingService.postSessionEarningRecognized(
+            {
+              reviewId: review.id,
+              paymentId: review.paymentId,
+              practitionerId: review.practitionerId,
+              allocatedAmount: review.paymentAmount,
+              practitionerSourceAmount: finalPractitionerAmount,
+              sourceCurrency: sourceCurrencyCode,
+              walletCurrency: walletCurrencyCode,
+              walletCredit: new Prisma.Decimal(0),
+              occurredAt: new Date(),
+              tx: txClient,
+            },
+          );
+        if (finalPlatformAmount.gt(0)) {
+          await this.ledgerRepository.createLedgerEntry(
+            {
+              practitionerId: null,
+              sessionId: review.sessionId,
+              paymentId: review.paymentId,
+              sessionEarningReviewId: review.id,
+              actorUserId: input.approvedByUserId,
+              actorType: 'USER',
+              entryType: LedgerEntryType.PLATFORM_COMMISSION,
+              direction: LedgerDirection.CREDIT,
+              amount: finalPlatformAmount,
+              currencyCode: sourceCurrencyCode,
+              balanceBucket: WalletBalanceBucket.AVAILABLE,
+              referenceType: 'session-earning-review',
+              referenceId: review.id,
+              description:
+                'Platform allocation approved with zero practitioner entitlement.',
+              effectiveAt: new Date(),
+            },
+            txClient,
+          );
+        }
         const updatedZero = await txClient.sessionEarningReview.update({
           where: { id: review.id },
-          data: { reviewStatus: SessionEarningReviewStatus.APPROVED, approvedByUserId: input.approvedByUserId, approvedAt: new Date() },
+          data: {
+            reviewStatus: SessionEarningReviewStatus.APPROVED,
+            approvedByUserId: input.approvedByUserId,
+            approvedAt: new Date(),
+          },
           include: this.reviewInclude,
         });
         await txClient.financialOperationIdempotency.create({
-          data: { earningEntitlementId: review.earningEntitlementId, operationType: FinancialOperationType.CREDIT_PRACTITIONER_WALLET, idempotencyKey, reviewId: review.id },
+          data: {
+            earningEntitlementId: review.earningEntitlementId,
+            operationType: FinancialOperationType.CREDIT_PRACTITIONER_WALLET,
+            idempotencyKey,
+            reviewId: review.id,
+          },
         });
         await this.securityAuditService?.recordRequired(txClient, {
           action: 'finance.session-earning-review.wallet-credit',
@@ -559,6 +687,22 @@ export class SessionEarningReviewService {
         include: this.reviewInclude,
       });
 
+      if (review.paymentId)
+        await this.accountingJournalPostingService.postSessionEarningRecognized(
+          {
+            reviewId: review.id,
+            paymentId: review.paymentId,
+            practitionerId: review.practitionerId,
+            allocatedAmount: review.paymentAmount,
+            practitionerSourceAmount: finalPractitionerAmount,
+            sourceCurrency: sourceCurrencyCode,
+            walletCurrency: walletCurrencyCode,
+            walletCredit: targetAmount,
+            occurredAt: new Date(),
+            tx: txClient,
+          },
+        );
+
       await txClient.financialOperationIdempotency.create({
         data: {
           earningEntitlementId: review.earningEntitlementId,
@@ -587,9 +731,40 @@ export class SessionEarningReviewService {
       return { item: updated, wasAlreadyPosted: false };
     };
 
-    return input.tx
-      ? executeInTx(input.tx)
-      : this.prisma.$transaction(executeInTx);
+    const result = input.tx
+      ? await executeInTx(input.tx)
+      : await this.prisma.$transaction(executeInTx);
+
+    if (
+      !input.tx &&
+      !result.wasAlreadyPosted &&
+      result.item.reviewStatus === SessionEarningReviewStatus.APPROVED &&
+      result.item.settlementId &&
+      this.operationalNotificationService
+    ) {
+      const settlement = await this.prisma.practitionerSettlement.findUnique({
+        where: { id: result.item.settlementId },
+        select: {
+          id: true,
+          practitionerId: true,
+          finalWalletCredit: true,
+          amountNet: true,
+          walletCurrencyCode: true,
+          sourceReview: { select: { sessionId: true } },
+        },
+      });
+      if (settlement) {
+        await this.operationalNotificationService.notifyPractitionerEarningCredited({
+          practitionerProfileId: settlement.practitionerId,
+          reviewId: result.item.id,
+          sessionId: settlement.sourceReview?.sessionId ?? result.item.sessionId,
+          amount: (settlement.finalWalletCredit ?? settlement.amountNet).toString(),
+          currencyCode: settlement.walletCurrencyCode,
+        });
+      }
+    }
+
+    return result;
   }
 
   private async syncForSessionOutcomeInDb(
@@ -621,16 +796,17 @@ export class SessionEarningReviewService {
       return null;
     }
 
-    const replacementResolution = 'sessionResolution' in db && db.sessionResolution
-      ? await db.sessionResolution.findFirst({
-          where: {
-            sessionId: session.id,
-            patientRemedy: 'CREATE_REPLACEMENT_SESSION',
-            replacementSessionId: { not: null },
-          },
-          select: { id: true },
-        })
-      : null;
+    const replacementResolution =
+      'sessionResolution' in db && db.sessionResolution
+        ? await db.sessionResolution.findFirst({
+            where: {
+              sessionId: session.id,
+              patientRemedy: 'CREATE_REPLACEMENT_SESSION',
+              replacementSessionId: { not: null },
+            },
+            select: { id: true },
+          })
+        : null;
     if (replacementResolution) return null;
 
     const sourceType = session.packagePurchaseId
@@ -641,6 +817,12 @@ export class SessionEarningReviewService {
       return null;
     }
 
+    await this.lockPaymentReviewScope(db, payment.id);
+    const currentPayment = await db.payment.findUnique({
+      where: { id: payment.id },
+      select: { status: true },
+    });
+    if (currentPayment?.status !== PaymentStatus.CAPTURED) return null;
     const reviewPayload = await this.buildReviewPayload(db, {
       session,
       sourceType,
@@ -702,13 +884,18 @@ export class SessionEarningReviewService {
       suggestedPractitionerAmount: reviewPayload.suggestedPractitionerAmount,
       suggestedPlatformAmount: reviewPayload.suggestedPlatformAmount,
       suggestedCurrencyCode: reviewPayload.suggestedCurrencyCode,
-      suggestedPractitionerPercentage: reviewPayload.suggestedPractitionerPercentage ?? null,
+      suggestedPractitionerPercentage:
+        reviewPayload.suggestedPractitionerPercentage ?? null,
       accountantApprovedSourceAmount: null,
       calculatedPractitionerAmount: null,
       patientCountrySnapshot: reviewPayload.patientCountrySnapshot ?? null,
-      practitionerCountrySnapshot: reviewPayload.practitionerCountrySnapshot ?? null,
-      countryRelationshipSnapshot: reviewPayload.countryRelationshipSnapshot ?? null,
-      policySnapshotJson: (reviewPayload.policySnapshotJson as Prisma.InputJsonValue) ?? Prisma.DbNull,
+      practitionerCountrySnapshot:
+        reviewPayload.practitionerCountrySnapshot ?? null,
+      countryRelationshipSnapshot:
+        reviewPayload.countryRelationshipSnapshot ?? null,
+      policySnapshotJson:
+        (reviewPayload.policySnapshotJson as Prisma.InputJsonValue) ??
+        Prisma.DbNull,
       finalPractitionerAmount: null,
       finalPlatformAmount: null,
       finalCurrencyCode: null,
@@ -734,13 +921,18 @@ export class SessionEarningReviewService {
       suggestedPractitionerAmount: reviewPayload.suggestedPractitionerAmount,
       suggestedPlatformAmount: reviewPayload.suggestedPlatformAmount,
       suggestedCurrencyCode: reviewPayload.suggestedCurrencyCode,
-      suggestedPractitionerPercentage: reviewPayload.suggestedPractitionerPercentage ?? null,
+      suggestedPractitionerPercentage:
+        reviewPayload.suggestedPractitionerPercentage ?? null,
       accountantApprovedSourceAmount: null,
       calculatedPractitionerAmount: null,
       patientCountrySnapshot: reviewPayload.patientCountrySnapshot ?? null,
-      practitionerCountrySnapshot: reviewPayload.practitionerCountrySnapshot ?? null,
-      countryRelationshipSnapshot: reviewPayload.countryRelationshipSnapshot ?? null,
-      policySnapshotJson: (reviewPayload.policySnapshotJson as Prisma.InputJsonValue) ?? Prisma.DbNull,
+      practitionerCountrySnapshot:
+        reviewPayload.practitionerCountrySnapshot ?? null,
+      countryRelationshipSnapshot:
+        reviewPayload.countryRelationshipSnapshot ?? null,
+      policySnapshotJson:
+        (reviewPayload.policySnapshotJson as Prisma.InputJsonValue) ??
+        Prisma.DbNull,
       finalPractitionerAmount: null,
       finalPlatformAmount: null,
       finalCurrencyCode: null,
@@ -764,7 +956,6 @@ export class SessionEarningReviewService {
       update: updateData,
       include: this.reviewInclude,
     });
-
 
     return {
       reviewId: review.id,
@@ -864,7 +1055,8 @@ export class SessionEarningReviewService {
         suggestedPractitionerAmount: reviewPayload.suggestedPractitionerAmount,
         suggestedPlatformAmount: reviewPayload.suggestedPlatformAmount,
         suggestedCurrencyCode: reviewPayload.suggestedCurrencyCode,
-        suggestedPractitionerPercentage: reviewPayload.suggestedPractitionerPercentage ?? null,
+        suggestedPractitionerPercentage:
+          reviewPayload.suggestedPractitionerPercentage ?? null,
         finalPractitionerAmount: null,
         finalPlatformAmount: null,
         finalCurrencyCode: null,
@@ -889,7 +1081,8 @@ export class SessionEarningReviewService {
         suggestedPractitionerAmount: reviewPayload.suggestedPractitionerAmount,
         suggestedPlatformAmount: reviewPayload.suggestedPlatformAmount,
         suggestedCurrencyCode: reviewPayload.suggestedCurrencyCode,
-        suggestedPractitionerPercentage: reviewPayload.suggestedPractitionerPercentage ?? null,
+        suggestedPractitionerPercentage:
+          reviewPayload.suggestedPractitionerPercentage ?? null,
         finalPractitionerAmount: null,
         finalPlatformAmount: null,
         finalCurrencyCode: null,
@@ -991,25 +1184,19 @@ export class SessionEarningReviewService {
             : SessionEarningReviewDecision.EXCLUDED_FROM_PAYOUT;
 
     const isEditedApproval = input.action === 'EDIT_AND_APPROVE';
-    const sourceCurrencyCode = review.paymentCurrencyCode ?? review.suggestedCurrencyCode;
-    const finalCurrencyCode = sourceCurrencyCode;
     const finalPractitionerAmount = isEditedApproval
       ? this.resolveDecimal(
           input.finalPractitionerAmount,
           review.suggestedPractitionerAmount,
         )
       : review.suggestedPractitionerAmount;
-    const finalPlatformAmount = isEditedApproval
-      ? this.resolveDecimal(
-          input.finalPlatformAmount,
-        review.suggestedPlatformAmount,
-      )
-      : review.suggestedPlatformAmount;
     const accountingAdjustmentAmount = finalPractitionerAmount
       .sub(review.suggestedPractitionerAmount)
       .toDecimalPlaces(2);
     if (!accountingAdjustmentAmount.isZero() && !input.internalReason?.trim()) {
-      throw new BadRequestException('An adjustment reason is required when the approved amount differs from the suggestion');
+      throw new BadRequestException(
+        'An adjustment reason is required when the approved amount differs from the suggestion',
+      );
     }
     const finalStatus =
       input.action === 'APPROVE_AS_IS' || input.action === 'EDIT_AND_APPROVE'
@@ -1047,7 +1234,10 @@ export class SessionEarningReviewService {
           internalReason: input.internalReason?.trim() || null,
           practitionerFacingNote: input.practitionerFacingNote?.trim() || null,
           accountingAdjustmentAmount,
-          accountingAdjustmentType: accountingAdjustmentAmount.isZero() ? 'NONE' : input.accountingAdjustmentType?.trim() || (accountingAdjustmentAmount.lt(0) ? 'DEDUCTION' : 'ADDITION'),
+          accountingAdjustmentType: accountingAdjustmentAmount.isZero()
+            ? 'NONE'
+            : input.accountingAdjustmentType?.trim() ||
+              (accountingAdjustmentAmount.lt(0) ? 'DEDUCTION' : 'ADDITION'),
           accountingAdjustmentReason: input.internalReason?.trim() || null,
           accountingNotes: input.accountingNotes?.trim() || null,
         },
@@ -1091,7 +1281,12 @@ export class SessionEarningReviewService {
     const pendingReviews = await db.sessionEarningReview.findMany({
       where: {
         paymentId: input.paymentId,
-        reviewStatus: SessionEarningReviewStatus.PENDING_REVIEW,
+        reviewStatus: {
+          in: [
+            SessionEarningReviewStatus.PENDING_REVIEW,
+            SessionEarningReviewStatus.DECISION_APPROVED,
+          ],
+        },
       },
       select: {
         id: true,
@@ -1128,7 +1323,12 @@ export class SessionEarningReviewService {
         id: {
           in: reviewIds,
         },
-        reviewStatus: SessionEarningReviewStatus.PENDING_REVIEW,
+        reviewStatus: {
+          in: [
+            SessionEarningReviewStatus.PENDING_REVIEW,
+            SessionEarningReviewStatus.DECISION_APPROVED,
+          ],
+        },
       },
       data: {
         reviewStatus: SessionEarningReviewStatus.EXCLUDED_FROM_PAYOUT,
@@ -1354,9 +1554,11 @@ export class SessionEarningReviewService {
           platformFinalShare: purchase.platformFinalShareSnapshot!,
           practitionerFinalShare: purchase.practitionerFinalShareSnapshot!,
           platformOriginalShare: purchase.platformOriginalShareSnapshot!,
-          practitionerOriginalShare: purchase.practitionerOriginalShareSnapshot!,
+          practitionerOriginalShare:
+            purchase.practitionerOriginalShareSnapshot!,
           platformDiscountShare: purchase.platformDiscountShareSnapshot!,
-          practitionerDiscountShare: purchase.practitionerDiscountShareSnapshot!,
+          practitionerDiscountShare:
+            purchase.practitionerDiscountShareSnapshot!,
           discountAmount: purchase.discountAmountSnapshot!,
           sessionCount: purchase.sessionCountSnapshot,
           sessionIndex: input.session.packageSessionIndex,
@@ -1374,8 +1576,13 @@ export class SessionEarningReviewService {
         suggestedPractitionerAmount: allocation.practitionerFinalShareAmount,
         suggestedPlatformAmount: allocation.platformFinalShareAmount,
         suggestedCurrencyCode,
-        suggestedPractitionerPercentage: new Prisma.Decimal(allocation.patientPayableAmount).gt(0)
-          ? new Prisma.Decimal(allocation.practitionerFinalShareAmount).div(new Prisma.Decimal(allocation.patientPayableAmount)).mul(100).toDecimalPlaces(2)
+        suggestedPractitionerPercentage: new Prisma.Decimal(
+          allocation.patientPayableAmount,
+        ).gt(0)
+          ? new Prisma.Decimal(allocation.practitionerFinalShareAmount)
+              .div(new Prisma.Decimal(allocation.patientPayableAmount))
+              .mul(100)
+              .toDecimalPlaces(2)
           : null,
         packageSettlementId: purchase.packageSettlement?.id ?? null,
         idempotencyKey: `session-earning-review:${input.sourceType}:${input.session.id}`,
@@ -1384,13 +1591,16 @@ export class SessionEarningReviewService {
 
     // Completion consumes booking-time snapshots only.  Current profile or
     // current configuration values are not a valid basis for historical pay.
-    let patientCountry = input.session.patientCountrySnapshot;
-    let practitionerCountry = input.session.practitionerCountrySnapshot;
+    const patientCountry = input.session.patientCountrySnapshot;
+    const practitionerCountry = input.session.practitionerCountrySnapshot;
     let countryRelationship = input.session.countryRelationshipSnapshot;
-    let suggestedPercentage = input.session.suggestedPractitionerPercentageSnapshot;
+    let suggestedPercentage =
+      input.session.suggestedPractitionerPercentageSnapshot;
 
     if (patientCountry && practitionerCountry) {
-      const isSame = patientCountry.trim().toUpperCase() === practitionerCountry.trim().toUpperCase();
+      const isSame =
+        patientCountry.trim().toUpperCase() ===
+        practitionerCountry.trim().toUpperCase();
       countryRelationship = isSame ? 'SAME_COUNTRY' : 'CROSS_COUNTRY';
     } else {
       countryRelationship = 'UNRESOLVED';
@@ -1398,13 +1608,25 @@ export class SessionEarningReviewService {
       suggestedPercentage = suggestedPercentage ?? null;
     }
 
-    const suggestedPractitionerPercentage = suggestedPercentage;
-    const suggestedPractitionerAmount = suggestedPractitionerPercentage
-      ? input.payment.amountTotal
-          .mul(suggestedPractitionerPercentage)
-          .div(100)
-          .toDecimalPlaces(2)
-      : new Prisma.Decimal(0);
+    // The collection snapshot is the default economic allocation. Preserve
+    // an explicit legacy booking recommendation when no payment rate exists.
+    const paymentSplit =
+      input.payment.commissionPlatformRatePercent !== null
+        ? this.extractPaymentLedgerBreakdownService.extract(input.payment)
+        : null;
+    const suggestedPractitionerPercentage = paymentSplit
+      ? new Prisma.Decimal(100).sub(
+          input.payment.commissionPlatformRatePercent!,
+        )
+      : suggestedPercentage;
+    const suggestedPractitionerAmount = paymentSplit
+      ? new Prisma.Decimal(paymentSplit.practitionerShareAmount)
+      : suggestedPractitionerPercentage
+        ? input.payment.amountTotal
+            .mul(suggestedPractitionerPercentage)
+            .div(100)
+            .toDecimalPlaces(2)
+        : new Prisma.Decimal(0);
     const suggestedPlatformAmount = input.payment.amountTotal
       .sub(suggestedPractitionerAmount)
       .toDecimalPlaces(2);
@@ -1442,6 +1664,36 @@ export class SessionEarningReviewService {
     return value instanceof Prisma.Decimal ? value : new Prisma.Decimal(value);
   }
 
+  private async assertPaymentAvailableForReview(
+    db: DbClient,
+    paymentId: string | null,
+  ) {
+    if (!paymentId)
+      throw new BadRequestException({
+        error: 'FINANCIAL_OPERATIONS_PAYMENT_SNAPSHOTS_INCOMPLETE',
+      });
+    const payment = await db.payment.findUnique({
+      where: { id: paymentId },
+      select: { status: true },
+    });
+    if (payment?.status !== PaymentStatus.CAPTURED) {
+      throw new BadRequestException({
+        error: 'FINANCIAL_OPERATIONS_PAYMENT_NOT_CAPTURED',
+      });
+    }
+    const activeRefund = await db.refund.findFirst({
+      where: {
+        paymentId,
+        status: { in: ['REQUESTED', 'PROCESSING', 'SUCCEEDED'] },
+      },
+      select: { id: true },
+    });
+    if (activeRefund)
+      throw new BadRequestException({
+        error: 'FINANCIAL_OPERATIONS_PAYMENT_REFUND_BLOCKS_CREDIT',
+      });
+  }
+
   private async ensureSettlementCandidate(
     db: DbClient,
     review: {
@@ -1465,8 +1717,12 @@ export class SessionEarningReviewService {
     });
     if (!activeWallet) return null;
     const walletCurrencyCode = activeWallet.currencyCode;
-    const isCrossCurrency = review.paymentCurrencyCode.trim().toUpperCase() !== walletCurrencyCode.trim().toUpperCase();
-    const candidateAmount = isCrossCurrency ? new Prisma.Decimal(0) : review.suggestedPractitionerAmount;
+    const isCrossCurrency =
+      review.paymentCurrencyCode.trim().toUpperCase() !==
+      walletCurrencyCode.trim().toUpperCase();
+    const candidateAmount = isCrossCurrency
+      ? new Prisma.Decimal(0)
+      : review.suggestedPractitionerAmount;
     const now = new Date();
     const batch = await db.settlementBatch.upsert({
       where: {
@@ -1486,36 +1742,6 @@ export class SessionEarningReviewService {
       },
       update: { status: 'GENERATED' },
     });
-    const existingBatchSettlement = await db.practitionerSettlement.findUnique({
-      where: {
-        batchId_practitionerId: {
-          batchId: batch.id,
-          practitionerId: review.practitionerId,
-        },
-      },
-      select: { id: true, status: true },
-    });
-    if (existingBatchSettlement) {
-      if (!['DRAFT', 'UNDER_REVIEW'].includes(existingBatchSettlement.status)) return existingBatchSettlement;
-      return db.practitionerSettlement.update({
-        where: { id: existingBatchSettlement.id },
-        data: {
-          sourceReviewId: review.id,
-          walletId: activeWallet.id,
-          amountGross: candidateAmount,
-          amountNet: candidateAmount,
-          currencyCode: walletCurrencyCode,
-          originalAmount: review.paymentAmount,
-          originalCurrencyCode: review.paymentCurrencyCode,
-          walletCurrencyCode,
-          exchangeRate: null,
-          exchangeRateSource: null,
-          exchangeRateAt: null,
-          convertedAmount: candidateAmount,
-          finalWalletCredit: 0,
-        },
-      });
-    }
     const settlement = await db.practitionerSettlement.create({
       data: {
         batchId: batch.id,

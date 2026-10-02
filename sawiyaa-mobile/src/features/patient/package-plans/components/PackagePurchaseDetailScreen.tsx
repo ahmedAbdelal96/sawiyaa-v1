@@ -15,6 +15,7 @@ import { useTheme } from "../../../../providers/ThemeProvider";
 import { resolveSupportedCurrencyCode } from "../../../../lib/currency";
 import { useMyPackagePurchase } from "../hooks";
 import { useAppDirection } from "../../../../i18n/direction";
+import type { PatientPackagePurchaseItem } from "../types";
 import {
   canContinuePackagePurchasePayment,
   formatDatetime,
@@ -43,14 +44,11 @@ function SessionTimelineRow({
 }: {
   session: {
     id: string;
-    presentationStatus: Parameters<
-      typeof getPackagePurchaseSessionPresentationStatusTranslationKey
-    >[0];
-    joinAvailability: {
-      canJoin: boolean;
-      blockedReason: string | null;
-      availableAt: string | null;
-      expiresAt: string | null;
+    operational: {
+      state: Parameters<
+        typeof getPackagePurchaseSessionPresentationStatusTranslationKey
+      >[0];
+      join: { allowed: boolean; opensAt: string | null };
     };
     scheduledStartAt: string | null;
     scheduledEndAt: string | null;
@@ -66,17 +64,22 @@ function SessionTimelineRow({
   const { theme } = useTheme();
   const { rowDirection, textAlign, chevronForward } = useAppDirection();
   const statusLabel = t(
-    getPackagePurchaseSessionPresentationStatusTranslationKey(session.presentationStatus),
+    getPackagePurchaseSessionPresentationStatusTranslationKey(
+      session.operational.state,
+    ),
     {
-      defaultValue: session.presentationStatus,
+      defaultValue: session.operational.state,
     },
   );
   const statusTone = getPackagePurchaseSessionPresentationStatusTone(
-    session.presentationStatus,
+    session.operational.state,
   );
-  const sessionModeLabel = t(getPackagePurchaseSessionModeTranslationKey(session.sessionMode), {
-    defaultValue: session.sessionMode,
-  });
+  const sessionModeLabel = t(
+    getPackagePurchaseSessionModeTranslationKey(session.sessionMode),
+    {
+      defaultValue: session.sessionMode,
+    },
+  );
   const durationLabel = t("packagePurchases.detail.duration", {
     count: session.durationMinutes,
   });
@@ -85,12 +88,12 @@ function SessionTimelineRow({
     session.scheduledEndAt,
     locale,
   );
-  const joinAvailabilityNote = session.joinAvailability.canJoin
+  const joinAvailabilityNote = session.operational.join.allowed
     ? null
-    : session.joinAvailability.availableAt &&
-      new Date(session.joinAvailability.availableAt).getTime() > Date.now()
+    : session.operational.join.opensAt &&
+        new Date(session.operational.join.opensAt).getTime() > Date.now()
       ? t("packagePurchases.detail.joinAvailableAt", {
-          datetime: formatDatetime(session.joinAvailability.availableAt, locale),
+          datetime: formatDatetime(session.operational.join.opensAt, locale),
         })
       : null;
 
@@ -121,14 +124,23 @@ function SessionTimelineRow({
           </Text>
           <StatusChip label={statusLabel} tone={statusTone} showDot={false} />
         </View>
-        <Text color={theme.colors.textSecondary} style={[styles.rowTime, { textAlign }]}>
+        <Text
+          color={theme.colors.textSecondary}
+          style={[styles.rowTime, { textAlign }]}
+        >
           {dateTimeRange}
         </Text>
-        <Text color={theme.colors.textMuted} style={[styles.rowMetaText, { textAlign }]}>
+        <Text
+          color={theme.colors.textMuted}
+          style={[styles.rowMetaText, { textAlign }]}
+        >
           {sessionModeLabel} {" · "} {durationLabel}
         </Text>
         {joinAvailabilityNote ? (
-          <Text color={theme.colors.textMuted} style={[styles.rowMetaText, { textAlign }]}>
+          <Text
+            color={theme.colors.textMuted}
+            style={[styles.rowMetaText, { textAlign }]}
+          >
             {joinAvailabilityNote}
           </Text>
         ) : null}
@@ -168,7 +180,13 @@ function UnbookedSessionTimelineRow({
     >
       <View style={styles.rowMeta}>
         <View style={[styles.rowTop, { flexDirection: rowDirection }]}>
-          <Text weight="600" style={[styles.rowTitle, { textAlign, color: theme.colors.textSecondary }]}>
+          <Text
+            weight="600"
+            style={[
+              styles.rowTitle,
+              { textAlign, color: theme.colors.textSecondary },
+            ]}
+          >
             {t("packagePurchases.detail.sessionIndex", {
               current: sessionIndex,
               total: purchaseSessionCount,
@@ -176,7 +194,10 @@ function UnbookedSessionTimelineRow({
           </Text>
           <StatusChip label={placeholderLabel} tone="default" showDot={false} />
         </View>
-        <Text color={theme.colors.textMuted} style={[styles.rowTime, { textAlign }]}>
+        <Text
+          color={theme.colors.textMuted}
+          style={[styles.rowTime, { textAlign }]}
+        >
           {t("packagePurchases.detail.unbookedSessionSubtitle")}
         </Text>
       </View>
@@ -195,12 +216,14 @@ export default function PackagePurchaseDetailScreen({
   const { rowDirection, textAlign } = useAppDirection();
   const locale = i18n.language?.startsWith("ar") ? "ar-SA" : "en-US";
   const purchaseQuery = useMyPackagePurchase(purchaseId);
-  const purchase = purchaseQuery.data?.item ?? null;
-  const planCountFromCode = purchase ? resolvePackagePurchasePlanCount(purchase.planCode) : null;
+  const purchase = (purchaseQuery.data?.item ?? null) as PatientPackagePurchaseItem | null;
+  const planCountFromCode = purchase
+    ? resolvePackagePurchasePlanCount(purchase.planCode)
+    : null;
   const hasPlanMismatch = Boolean(
     purchase &&
-      planCountFromCode !== null &&
-      planCountFromCode !== purchase.sessionCount,
+    planCountFromCode !== null &&
+    planCountFromCode !== purchase.sessionCount,
   );
 
   useEffect(() => {
@@ -230,7 +253,9 @@ export default function PackagePurchaseDetailScreen({
           title={t("packagePurchases.detail.notFoundTitle")}
           description={t("packagePurchases.detail.notFoundDescription")}
           actionLabel={t("packagePurchases.detail.back")}
-          onAction={() => router.replace("/(patient)/package-purchases" as never)}
+          onAction={() =>
+            router.replace("/(patient)/package-purchases" as never)
+          }
         />
       </DetailPageScaffold>
     );
@@ -268,16 +293,19 @@ export default function PackagePurchaseDetailScreen({
   const completedCount = getPackagePurchaseCompletionCount(purchase);
   const paymentExpired = isPackagePurchasePaymentExpired(purchase);
   const canContinuePayment = canContinuePackagePurchasePayment(purchase);
-  const bookedSessions = sortPackagePurchaseSessions(purchase.linkedSessions.items);
+  const bookedSessions = sortPackagePurchaseSessions(
+    purchase.linkedSessions.items,
+  );
   const bookedSessionCount = getPackagePurchaseBookedSessionCount(purchase);
   const unbookedSessionCount = getPackagePurchaseUnbookedSessionCount(purchase);
-  const unbookedSessionIndexes = getPackagePurchaseUnbookedSessionIndexes(purchase);
+  const unbookedSessionIndexes =
+    getPackagePurchaseUnbookedSessionIndexes(purchase);
   const currency = resolveSupportedCurrencyCode({
     currencyCode: purchase.selectedCurrencyCode,
     regionalPricingMode: purchase.regionalPricingMode,
     resolvedCountryIsoCode: purchase.resolvedCountryIsoCode,
   });
-  const title = t("packagePurchases.plans.generic", {
+  const title = purchase.title || t("packagePurchases.plans.generic", {
     count: purchase.sessionCount,
     defaultValue: `${purchase.sessionCount} session package`,
   });
@@ -293,6 +321,8 @@ export default function PackagePurchaseDetailScreen({
     booked: bookedSessionCount,
     total: purchase.sessionCount,
   });
+  const availableSessions = purchase.progress?.availableSessions ?? 0;
+  const reservedCount = purchase.progress?.reservedSessions ?? bookedSessionCount;
   const priceSummary = t("packagePurchases.detail.priceSummary", {
     value: formatMoney(purchase.patientPayableTotal, currency, locale),
     discount: `${purchase.discountPercent}%`,
@@ -311,36 +341,95 @@ export default function PackagePurchaseDetailScreen({
               <Text weight="600" style={[styles.summaryTitle, { textAlign }]}>
                 {title}
               </Text>
-              <Text color={theme.colors.textSecondary} style={[styles.summarySubtitle, { textAlign }]}>
-                {t("packagePurchases.detail.subtitle")}
+              <Text
+                color={theme.colors.textSecondary}
+                style={[styles.summarySubtitle, { textAlign }]}
+              >
+                {purchase.practitioner?.displayName
+                  ? `${purchase.practitioner.displayName} · ${t("packagePurchases.detail.subtitle")}`
+                  : t("packagePurchases.detail.subtitle")}
               </Text>
             </View>
             <StatusChip
-              label={t(getPackagePurchaseStatusTranslationKey(purchase.status), {
-                defaultValue: purchase.status,
-              })}
+              label={t(
+                getPackagePurchaseStatusTranslationKey(purchase.status),
+                {
+                  defaultValue: purchase.status,
+                },
+              )}
               tone={getPackagePurchaseStatusTone(purchase.status)}
               showDot={false}
             />
           </View>
 
           <View style={styles.summaryLines}>
-            <View style={[styles.summaryMetaRow, { flexDirection: rowDirection }]}>
-              <Ionicons name="calendar-outline" size={15} color={theme.colors.textSecondary} style={styles.metaIcon} />
-              <Text color={theme.colors.textSecondary} style={[styles.summaryLine, { textAlign }]}>
+            <View
+              style={[styles.summaryMetaRow, { flexDirection: rowDirection }]}
+            >
+              <Ionicons
+                name="calendar-outline"
+                size={15}
+                color={theme.colors.textSecondary}
+                style={styles.metaIcon}
+              />
+              <Text
+                color={theme.colors.textSecondary}
+                style={[styles.summaryLine, { textAlign }]}
+              >
                 {usageSummary}
               </Text>
             </View>
-            <View style={[styles.summaryMetaRow, { flexDirection: rowDirection }]}>
-              <Ionicons name="bookmark-outline" size={15} color={theme.colors.textSecondary} style={styles.metaIcon} />
-              <Text color={theme.colors.textSecondary} style={[styles.summaryLine, { textAlign }]}>
+            <View
+              style={[styles.summaryMetaRow, { flexDirection: rowDirection }]}
+            >
+              <Ionicons
+                name="bookmark-outline"
+                size={15}
+                color={theme.colors.textSecondary}
+                style={styles.metaIcon}
+              />
+              <Text
+                color={theme.colors.textSecondary}
+                style={[styles.summaryLine, { textAlign }]}
+              >
                 {bookedSummary}
               </Text>
             </View>
-            <View style={[styles.summaryMetaRow, { flexDirection: rowDirection }]}>
-              <Ionicons name="cash-outline" size={15} color={theme.colors.textSecondary} style={styles.metaIcon} />
-              <Text color={theme.colors.textSecondary} style={[styles.summaryLine, { textAlign }]}>
+            <View
+              style={[styles.summaryMetaRow, { flexDirection: rowDirection }]}
+            >
+              <Ionicons
+                name="cash-outline"
+                size={15}
+                color={theme.colors.textSecondary}
+                style={styles.metaIcon}
+              />
+              <Text
+                color={theme.colors.textSecondary}
+                style={[styles.summaryLine, { textAlign }]}
+              >
                 {priceSummary}
+              </Text>
+            </View>
+            <View
+              style={[styles.summaryMetaRow, { flexDirection: rowDirection }]}
+            >
+              <Ionicons
+                name="layers-outline"
+                size={15}
+                color={theme.colors.primary}
+                style={styles.metaIcon}
+              />
+              <Text
+                color={theme.colors.primary}
+                style={[styles.summaryLine, { textAlign }]}
+              >
+                {t("packagePurchases.detail.balanceSummary", {
+                  available: availableSessions,
+                  reserved: reservedCount,
+                  completed: completedCount,
+                  total: purchase.sessionCount,
+                })}
               </Text>
             </View>
           </View>
@@ -352,13 +441,19 @@ export default function PackagePurchaseDetailScreen({
               <Text weight="600" style={[styles.paymentTitle, { textAlign }]}>
                 {t("packagePurchases.detail.paymentTitle")}
               </Text>
-              <Text color={theme.colors.textSecondary} style={[styles.paymentNote, { textAlign }]}>
+              <Text
+                color={theme.colors.textSecondary}
+                style={[styles.paymentNote, { textAlign }]}
+              >
                 {paymentExpired
                   ? t("packagePurchases.detail.paymentExpired")
                   : t("packagePurchases.detail.paymentDueHelper")}
               </Text>
             </View>
-            <Text color={theme.colors.textMuted} style={[styles.paymentSummary, { textAlign }]}>
+            <Text
+              color={theme.colors.textMuted}
+              style={[styles.paymentSummary, { textAlign }]}
+            >
               {t("packagePurchases.detail.paymentDueSummary", {
                 value: paymentDueDate,
               })}
@@ -366,27 +461,101 @@ export default function PackagePurchaseDetailScreen({
             {canContinuePayment ? (
               <CompactActionRow
                 label={t("packagePurchases.detail.continuePayment")}
-                accessibilityLabel={t("packagePurchases.detail.continuePayment")}
-                onPress={() => router.push(`/(patient)/package-purchases/${purchase.id}/pay` as never)}
-                style={[styles.paymentAction, { alignSelf: rowDirection === "row" ? "flex-start" : "flex-end" }]}
+                accessibilityLabel={t(
+                  "packagePurchases.detail.continuePayment",
+                )}
+                onPress={() =>
+                  router.push(
+                    `/(patient)/package-purchases/${purchase.id}/pay` as never,
+                  )
+                }
+                style={[
+                  styles.paymentAction,
+                  {
+                    alignSelf:
+                      rowDirection === "row" ? "flex-start" : "flex-end",
+                  },
+                ]}
               />
             ) : null}
           </Card>
         ) : null}
+
+        <Card variant="outlined" padding="sm" style={styles.paymentCard}>
+          <Text weight="600" style={[styles.paymentTitle, { textAlign }]}>
+            {t("packagePurchases.detail.financialHistory", { defaultValue: "Payment history" })}
+          </Text>
+          {purchase.payment ? (
+            <View style={styles.summaryLines}>
+              <Text color={theme.colors.textSecondary} style={{ textAlign }}>
+                {t("packagePurchases.detail.paymentStatus", { defaultValue: "Payment status" })}: {purchase.payment.status}
+              </Text>
+              <Text color={theme.colors.textSecondary} style={{ textAlign }}>
+                {formatMoney(purchase.payment.amountTotal, purchase.payment.currency, locale)}
+              </Text>
+              {purchase.payment.refunds.map((refund) => (
+                <Text key={refund.id} color={theme.colors.textSecondary} style={{ textAlign }}>
+                  {t("packagePurchases.detail.refundLine", { defaultValue: "Refund" })}: {formatMoney(refund.amount, refund.currency, locale)} · {refund.status}
+                </Text>
+              ))}
+              {purchase.payment.refunds.some((refund) => refund.destination === "CUSTOMER_WALLET") ? (
+                <CompactActionRow
+                  label={t("packagePurchases.detail.viewWallet", { defaultValue: "View wallet activity" })}
+                  accessibilityLabel={t("packagePurchases.detail.viewWallet", { defaultValue: "View wallet activity" })}
+                  onPress={() => router.push("/(patient)/payments/transactions" as never)}
+                />
+              ) : null}
+            </View>
+          ) : null}
+          {purchase.entitlementHistory.length > 0 ? (
+            <View style={styles.summaryLines}>
+              <Text weight="600" style={{ textAlign }}>
+                {t("packagePurchases.detail.entitlementHistory", { defaultValue: "Entitlement decisions" })}
+              </Text>
+              {purchase.entitlementHistory.map((decision) => (
+                <Text key={decision.id} color={theme.colors.textSecondary} style={{ textAlign }}>
+                  {decision.sessionCode ?? decision.sessionId} · {decision.decisionType} · {formatDatetime(decision.decidedAt, locale)}
+                </Text>
+              ))}
+            </View>
+          ) : null}
+        </Card>
 
         <Card variant="outlined" padding="sm" style={styles.timelineCard}>
           <View style={styles.timelineHeader}>
             <Text weight="600" style={[styles.timelineTitle, { textAlign }]}>
               {t("packagePurchases.detail.timelineTitle")}
             </Text>
-            <Text color={theme.colors.textSecondary} style={[styles.timelineSubtitle, { textAlign }]}>
+            <Text
+              color={theme.colors.textSecondary}
+              style={[styles.timelineSubtitle, { textAlign }]}
+            >
               {t("packagePurchases.detail.timelineSubtitle")}
             </Text>
           </View>
 
+          {purchase.status === "ACTIVE" && availableSessions > 0 ? (
+            <CompactActionRow
+              label={t("packagePurchases.list.bookSession", "Book session")}
+              accessibilityLabel={t(
+                "packagePurchases.list.bookSession",
+                "Book session",
+              )}
+              onPress={() =>
+                router.push(
+                  `/(patient)/package-purchases/${purchase.id}/book` as never,
+                )
+              }
+              style={styles.bookAction}
+            />
+          ) : null}
+
           {bookedSessions.length > 0 ? (
             <View style={styles.sectionStack}>
-              <Text color={theme.colors.textMuted} style={[styles.sectionTitle, { textAlign }]}>
+              <Text
+                color={theme.colors.textMuted}
+                style={[styles.sectionTitle, { textAlign }]}
+              >
                 {t("packagePurchases.detail.bookedSessionsTitle")}
               </Text>
               <View style={styles.rowStack}>
@@ -396,7 +565,9 @@ export default function PackagePurchaseDetailScreen({
                     session={session}
                     purchaseSessionCount={purchase.sessionCount}
                     locale={locale}
-                    onPress={() => router.push(`/(patient)/sessions/${session.id}` as never)}
+                    onPress={() =>
+                      router.push(`/(patient)/sessions/${session.id}` as never)
+                    }
                   />
                 ))}
               </View>
@@ -405,10 +576,16 @@ export default function PackagePurchaseDetailScreen({
 
           {unbookedSessionIndexes.length > 0 ? (
             <View style={styles.sectionStack}>
-              <Text color={theme.colors.textMuted} style={[styles.sectionTitle, { textAlign }]}>
+              <Text
+                color={theme.colors.textMuted}
+                style={[styles.sectionTitle, { textAlign }]}
+              >
                 {t("packagePurchases.detail.unbookedSessionsTitle")}
               </Text>
-              <Text color={theme.colors.textSecondary} style={[styles.sectionBody, { textAlign }]}>
+              <Text
+                color={theme.colors.textSecondary}
+                style={[styles.sectionBody, { textAlign }]}
+              >
                 {t("packagePurchases.detail.unbookedSessionsBody", {
                   count: unbookedSessionCount,
                 })}
@@ -505,6 +682,9 @@ const styles = StyleSheet.create({
     marginHorizontal: 0,
     gap: 14,
     borderRadius: 20,
+  },
+  bookAction: {
+    marginTop: 4,
   },
   timelineHeader: {
     gap: 2,

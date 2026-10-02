@@ -22,6 +22,7 @@ import {
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 import type { Response } from 'express';
+import { setStoredFileResponseHeaders } from '@modules/files/file-response.utils';
 import { RequireAccountStates } from '@common/decorators/account-state.decorator';
 import { CurrentUser } from '@common/decorators/current-user.decorator';
 import { Permissions } from '@common/decorators/permissions.decorator';
@@ -231,15 +232,7 @@ export class AdminGeneralChatConversationsController {
       fileId,
     });
 
-    response.setHeader('Content-Type', result.mimeType);
-    response.setHeader('Cache-Control', 'private, max-age=300');
-    if (result.originalFileName) {
-      response.setHeader(
-        'Content-Disposition',
-        `inline; filename="${result.originalFileName}"`,
-      );
-    }
-
+    setStoredFileResponseHeaders(response, { mimeType: result.mimeType, originalFileName: result.originalFileName, isPrivate: true });
     this.securityAuditService.logAsync({
       action: 'privacy.session_chat.attachment.read.admin',
       outcome: SecurityAuditOutcome.SUCCESS,

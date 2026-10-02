@@ -6,5 +6,5 @@ type Props = {
 
 export default async function PatientSessionChatPage({ params }: Props) {
   const { locale, id } = await params;
-  redirect(`/${locale}/patient/messages?lane=session&id=${id}`);
+  redirect(`/${locale}/patient/messages?lane=session&sessionId=${id}`);
 }

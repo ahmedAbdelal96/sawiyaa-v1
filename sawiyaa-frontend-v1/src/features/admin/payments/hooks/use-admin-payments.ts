@@ -4,10 +4,13 @@ import {
   getAdminPaymentRefunds,
   requestAdminPaymentRefund,
   retryAdminPaymentRefund,
+  manuallyFinalizeAdminPaymentRefund,
   listAdminIncomingPayments,
+  listAdminPaymentExceptions,
+  createAdminPaymentException,
 } from "../api/admin-payments.api";
 import { adminPaymentsQueryKeys } from "../constants/query-keys";
-import type { AdminIncomingPaymentsQuery, RequestAdminRefundInput } from "../types/admin-payments.types";
+import type { AdminIncomingPaymentsQuery, ManualFinalizeAdminRefundInput, RequestAdminRefundInput, CreateAdminPaymentExceptionInput } from "../types/admin-payments.types";
 
 export function useAdminIncomingPayments(params: AdminIncomingPaymentsQuery) {
   return useQuery({
@@ -77,6 +80,41 @@ export function useRetryAdminPaymentRefund() {
       queryClient.invalidateQueries({
         queryKey: adminPaymentsQueryKeys.refunds(variables.paymentId),
       });
+    },
+  });
+}
+
+export function useAdminPaymentExceptions(params?: Record<string, string>) {
+  return useQuery({
+    queryKey: ["admin", "payment-exceptions", params ?? {}],
+    queryFn: () => listAdminPaymentExceptions(params),
+    staleTime: 15_000,
+  });
+}
+
+export function useOpenAdminPaymentException() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: CreateAdminPaymentExceptionInput) => createAdminPaymentException(input),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["admin", "payment-exceptions"] }),
+  });
+}
+
+export function useManualFinalizeAdminPaymentRefund() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      paymentId,
+      refundId,
+      data,
+    }: {
+      paymentId: string;
+      refundId: string;
+      data: ManualFinalizeAdminRefundInput;
+    }) => manuallyFinalizeAdminPaymentRefund(paymentId, refundId, data),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: adminPaymentsQueryKeys.details(variables.paymentId) });
+      queryClient.invalidateQueries({ queryKey: adminPaymentsQueryKeys.refunds(variables.paymentId) });
     },
   });
 }

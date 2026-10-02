@@ -69,6 +69,16 @@
       "title": "Articles that support your next step",
       "description": "Read published articles in a calm, practical way while staying close to matching, practitioners, and your ongoing care journey."
     },
+    "filters": {
+      "mainSpecialty": "Main specialty",
+      "subSpecialty": "Sub-specialty",
+      "searchLabel": "Search by article title",
+      "searchPlaceholder": "e.g. anxiety, sleep, depression...",
+      "apply": "Apply",
+      "reset": "Reset",
+      "allMain": "All main specialties",
+      "allSub": "All sub-specialties"
+    },
     "boundary": {
       "heading": "What this page includes",
       "note": "This patient view is read-only. It helps you consume published guidance; it does not include saved lists or personalized feeds."

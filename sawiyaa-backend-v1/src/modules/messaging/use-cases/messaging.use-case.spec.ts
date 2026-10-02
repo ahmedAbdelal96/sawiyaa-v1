@@ -134,4 +134,22 @@ describe('MessagingUseCase canonical send publication', () => {
 
     expect(publisher.publishNewMessage).not.toHaveBeenCalled();
   });
+
+  it('allows an attachment-only message while preserving the canonical send path', async () => {
+    const { useCase, repository, publisher } = createUseCase({ created: true });
+
+    await useCase.sendMessage(actor, 'conversation-1', '', [{
+      fileId: 'stored-file-1',
+      fileUrl: '/api/v1/messages/conversations/conversation-1/attachments/stored-file-1',
+      mimeType: 'application/pdf',
+      fileSize: 2048,
+      originalName: 'report.pdf',
+    }], 'attachment-message-key');
+
+    expect(repository.appendMessage).toHaveBeenCalledWith(expect.objectContaining({
+      message: '',
+      attachments: [expect.objectContaining({ fileId: 'stored-file-1' })],
+    }));
+    expect(publisher.publishNewMessage).toHaveBeenCalledTimes(1);
+  });
 });

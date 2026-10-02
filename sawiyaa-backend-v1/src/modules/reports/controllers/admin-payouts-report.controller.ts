@@ -13,6 +13,9 @@ import { AccountStateRequirement } from '@common/enums/account-state-requirement
 import { AppRole } from '@common/enums/app-role.enum';
 import { JwtAccessAuthGuard } from '@common/guards/authentication/jwt-access-auth.guard';
 import { RolesGuard } from '@common/guards/authorization/roles.guard';
+import { PermissionsGuard } from '@common/guards/authorization/permissions.guard';
+import { Permissions } from '@common/decorators/permissions.decorator';
+import { PermissionKey } from '@common/enums/permission-key.enum';
 import {
   GetAdminPayoutsReportOverviewDto,
   ListAdminPayoutsReportRowsDto,
@@ -22,8 +25,9 @@ import { ListAdminPayoutsReportRowsUseCase } from '../use-cases/list-admin-payou
 
 @ApiTags('Admin - Reports')
 @ApiBearerAuth()
-@UseGuards(JwtAccessAuthGuard, RolesGuard)
-@Roles(AppRole.ADMIN, AppRole.SUPER_ADMIN, AppRole.SUPPORT_AGENT)
+@UseGuards(JwtAccessAuthGuard, RolesGuard, PermissionsGuard)
+@Roles(AppRole.ADMIN, AppRole.SUPER_ADMIN, AppRole.FINANCE_STAFF)
+@Permissions(PermissionKey.PRACTITIONER_PAYOUTS_READ)
 @RequireAccountStates(AccountStateRequirement.ACTIVE_ACCOUNT)
 @Controller('admin/reports/payouts')
 export class AdminPayoutsReportController {
@@ -41,7 +45,8 @@ export class AdminPayoutsReportController {
   @ApiResponse({ status: 200, description: 'Payouts report overview' })
   @ApiUnauthorizedResponse({ description: 'Access token is required' })
   @ApiForbiddenResponse({
-    description: 'Admin or support active account is required',
+    description:
+      'Admin or finance staff account with practitioner payout read access is required',
   })
   async overview(@Query() query: GetAdminPayoutsReportOverviewDto) {
     const data = await this.getOverviewUseCase.execute(query);
@@ -56,7 +61,8 @@ export class AdminPayoutsReportController {
   @ApiResponse({ status: 200, description: 'Payouts report rows' })
   @ApiUnauthorizedResponse({ description: 'Access token is required' })
   @ApiForbiddenResponse({
-    description: 'Admin or support active account is required',
+    description:
+      'Admin or finance staff account with practitioner payout read access is required',
   })
   async rows(@Query() query: ListAdminPayoutsReportRowsDto) {
     const data = await this.listRowsUseCase.execute(query);

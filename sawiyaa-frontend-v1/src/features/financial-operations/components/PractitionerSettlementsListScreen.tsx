@@ -50,21 +50,21 @@ export default function PractitionerSettlementsListScreen() {
   const query = usePractitionerSettlements(params);
   const timeZone = profileQuery.data?.profile.timezone ?? null;
   const columns = useMemo<ColumnDef<PractitionerSettlementItem>[]>(() => [
-    { id: "session", header: locale === "ar" ? "الجلسة" : "Session", cell: (row) => <div><SessionCodeReference sessionId={row.sessionId ?? ""} sessionCode={row.sessionCode} copyable /><p className="text-xs text-text-muted">{row.sessionType ?? "-"}</p></div> },
-    { id: "date", header: locale === "ar" ? "التاريخ" : "Date", cell: (row) => date(locale, row.date) },
-    { id: "amount", header: locale === "ar" ? "المضاف للمحفظة" : "Added to wallet", cell: (row) => <strong>{money(locale, row.amountAdded, row.currency)}</strong> },
-    { id: "currency", header: locale === "ar" ? "العملة" : "Currency", cell: (row) => row.currency },
-    { id: "status", header: locale === "ar" ? "حالة التسوية" : "Settlement status", cell: (row) => <span className="app-chip">{t(`settlements.statuses.${row.status}` as Parameters<typeof t>[0])}</span> },
-    { id: "payoutStatus", header: locale === "ar" ? "حالة الصرف" : "Payout status", cell: (row) => <span className="app-chip">{t(`settlements.payoutStatuses.${row.payoutStatus}` as Parameters<typeof t>[0])}</span> },
+    { id: "session", header: t("ui.session"), cell: (row) => <div><SessionCodeReference sessionId={row.sessionId ?? ""} sessionCode={row.sessionCode} copyable /><p className="text-xs text-text-muted">{row.sessionType ?? "-"}</p></div> },
+    { id: "date", header: t("ui.date"), cell: (row) => date(locale, row.date) },
+    { id: "amount", header: t("ui.addedToEarnings"), cell: (row) => <strong>{money(locale, row.amountAdded, row.currency)}</strong> },
+    { id: "currency", header: t("ui.currency"), cell: (row) => row.currency },
+    { id: "status", header: t("ui.settlementStatus"), cell: (row) => <span className="app-chip">{t(`settlements.statuses.${row.status}` as Parameters<typeof t>[0])}</span> },
+    { id: "payoutStatus", header: t("ui.payoutStatus"), cell: (row) => <span className="app-chip">{t(`settlements.payoutStatuses.${row.payoutStatus}` as Parameters<typeof t>[0])}</span> },
   ], [locale, t]);
   return <div className="space-y-4">
     <PractitionerPageHeader eyebrow={t("settlements.eyebrow")} title={t("settlements.title")} description={t("settlements.note")} />
-    <PractitionerFilterCard title={locale === "ar" ? "فلاتر السجل" : "History filters"}>
+    <PractitionerFilterCard title={t("ui.historyFilters")}>
       <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-        <select className="app-control w-full" value={status} onChange={(e) => updateQuery({ status: e.target.value === "ALL" ? null : e.target.value, page: 1 })}>{STATUS_FILTERS.map((value) => <option key={value} value={value}>{value === "ALL" ? (locale === "ar" ? "كل الحالات" : "All statuses") : t(`settlements.statuses.${value}` as Parameters<typeof t>[0])}</option>)}</select>
+        <select className="app-control w-full" value={status} onChange={(e) => updateQuery({ status: e.target.value === "ALL" ? null : e.target.value, page: 1 })}>{STATUS_FILTERS.map((value) => <option key={value} value={value}>{value === "ALL" ? t("ui.allStatuses") : t(`settlements.statuses.${value}` as Parameters<typeof t>[0])}</option>)}</select>
         <input className="app-control w-full" value={currency} onChange={(e) => updateQuery({ currencyCode: e.target.value || null, page: 1 })} placeholder="EGP / USD" />
-        <DateField label={locale === "ar" ? "من تاريخ" : "From date"} value={createdFrom} onChange={(value) => updateQuery({ createdFrom: value || null, page: 1 })} />
-        <DateField label={locale === "ar" ? "إلى تاريخ" : "To date"} value={createdTo} onChange={(value) => updateQuery({ createdTo: value || null, page: 1 })} />
+        <DateField label={t("ui.fromDate")} value={createdFrom} onChange={(value) => updateQuery({ createdFrom: value || null, page: 1 })} />
+        <DateField label={t("ui.toDate")} value={createdTo} onChange={(value) => updateQuery({ createdTo: value || null, page: 1 })} />
         <div className="md:col-span-2 xl:col-span-4 flex justify-end"><FilterClearButton disabled={!status && !currency && !createdFrom && !createdTo && page === 1} onClick={() => updateQuery({ status: null, currencyCode: null, createdFrom: null, createdTo: null, page: 1 })} /></div>
       </div>
     </PractitionerFilterCard>

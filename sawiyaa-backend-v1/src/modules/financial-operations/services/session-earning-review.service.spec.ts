@@ -26,6 +26,7 @@ describe('SessionEarningReviewService', () => {
       },
       payment: {
         findFirst: jest.fn(),
+        findUnique: jest.fn().mockResolvedValue({ status: 'CAPTURED' }),
       },
       patientPackagePurchase: {
         findUnique: jest.fn(),
@@ -59,6 +60,7 @@ describe('SessionEarningReviewService', () => {
       calculatePackageSessionAllocationService,
       { refresh: jest.fn() } as unknown as RefreshPractitionerWalletService,
       approvePractitionerSettlementService,
+      { postSessionEarningRecognized: jest.fn().mockResolvedValue(undefined) } as never,
     );
 
     return {
@@ -152,8 +154,8 @@ describe('SessionEarningReviewService', () => {
           reviewDecision: 'AUTO_CREATED',
           paymentAmount: new Prisma.Decimal('100'),
           paymentCurrencyCode: 'USD',
-           suggestedPractitionerAmount: new Prisma.Decimal('0'),
-           suggestedPlatformAmount: new Prisma.Decimal('100'),
+           suggestedPractitionerAmount: new Prisma.Decimal('70'),
+           suggestedPlatformAmount: new Prisma.Decimal('30'),
           suggestedCurrencyCode: 'USD',
           finalPractitionerAmount: null,
           finalPlatformAmount: null,
@@ -563,7 +565,7 @@ describe('SessionEarningReviewService', () => {
       expect.objectContaining({
         where: expect.objectContaining({
           paymentId: 'payment-1',
-          reviewStatus: 'PENDING_REVIEW',
+          reviewStatus: { in: ['PENDING_REVIEW', 'DECISION_APPROVED'] },
         }),
       }),
     );
@@ -608,6 +610,7 @@ describe('SessionEarningReviewService', () => {
       {} as CalculatePackageSessionAllocationService,
       {} as RefreshPractitionerWalletService,
       {} as ApprovePractitionerSettlementService,
+      { postSessionEarningRecognized: jest.fn().mockResolvedValue(undefined) } as never,
       undefined,
       audit as never,
     );
@@ -666,6 +669,7 @@ describe('SessionEarningReviewService', () => {
       {} as CalculatePackageSessionAllocationService,
       {} as RefreshPractitionerWalletService,
       {} as ApprovePractitionerSettlementService,
+      { postSessionEarningRecognized: jest.fn().mockResolvedValue(undefined) } as never,
       undefined,
       audit as never,
     );

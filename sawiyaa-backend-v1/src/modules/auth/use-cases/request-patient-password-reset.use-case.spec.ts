@@ -1,9 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import {
-  BadRequestException,
-  ConflictException,
-  ForbiddenException,
-} from '@nestjs/common';
+import { BadRequestException, ForbiddenException } from '@nestjs/common';
 import { OtpChannel, OtpPurpose, UserRoleType } from '@prisma/client';
 import { I18nService } from '@common/i18n/services/i18n.service';
 import { RequestPatientPasswordResetUseCase } from './request-patient-password-reset.use-case';
@@ -98,19 +94,17 @@ describe('RequestPatientPasswordResetUseCase', () => {
   });
 
   describe('execute', () => {
-    it('should throw conflict when email does not exist', async () => {
+    it('keeps the public response generic for an unknown email without creating an OTP', async () => {
       userEmailRepository.findByEmailForAuth.mockResolvedValue(null);
 
-      await expect(
-        useCase.execute({
-          email: 'unknown@example.com',
-          locale: 'en',
-        }),
-      ).rejects.toBeInstanceOf(ConflictException);
+      await expect(useCase.execute({ email: 'unknown@example.com', locale: 'en' })).resolves.toEqual({
+        message: 'localized.auth.success.patientPasswordResetRequested',
+        nextStep: 'VERIFY_OTP',
+      });
       expect(createOtpChallengeUseCase.execute).not.toHaveBeenCalled();
     });
 
-    it('should throw conflict when user has no patient role', async () => {
+    it('keeps the public response generic for another role without creating an OTP', async () => {
       const userEmail = {
         user: {
           id: 'user-123',
@@ -123,12 +117,10 @@ describe('RequestPatientPasswordResetUseCase', () => {
         userEmail as any,
       );
 
-      await expect(
-        useCase.execute({
-          email: 'practitioner@example.com',
-          locale: 'en',
-        }),
-      ).rejects.toBeInstanceOf(ConflictException);
+      await expect(useCase.execute({ email: 'practitioner@example.com', locale: 'en' })).resolves.toEqual({
+        message: 'localized.auth.success.patientPasswordResetRequested',
+        nextStep: 'VERIFY_OTP',
+      });
       expect(createOtpChallengeUseCase.execute).not.toHaveBeenCalled();
     });
 
@@ -218,7 +210,7 @@ describe('RequestPatientPasswordResetUseCase', () => {
       );
     });
 
-    it('should propagate OTP channel resolution failures', async () => {
+    it('maps an unavailable verified email to a typed recovery error', async () => {
       const userEmail = {
         user: {
           id: 'patient-456',
@@ -243,19 +235,23 @@ describe('RequestPatientPasswordResetUseCase', () => {
           email: 'patient@example.com',
           locale: 'en',
         }),
-      ).rejects.toBeInstanceOf(ForbiddenException);
+      ).resolves.toEqual({
+        message: 'localized.auth.success.patientPasswordResetRequested',
+        nextStep: 'VERIFY_OTP',
+      });
       expect(createOtpChallengeUseCase.execute).not.toHaveBeenCalled();
     });
 
     it('should normalize email before lookup', async () => {
       userEmailRepository.findByEmailForAuth.mockResolvedValue(null);
 
-      await expect(
-        useCase.execute({
-          email: '  PATIENT@EXAMPLE.COM  ',
-          locale: 'en',
-        }),
-      ).rejects.toBeInstanceOf(ConflictException);
+      await expect(useCase.execute({
+        email: '  PATIENT@EXAMPLE.COM  ',
+        locale: 'en',
+      })).resolves.toEqual({
+        message: 'localized.auth.success.patientPasswordResetRequested',
+        nextStep: 'VERIFY_OTP',
+      });
 
       expect(userEmailRepository.findByEmailForAuth).toHaveBeenCalledWith(
         'patient@example.com',
@@ -298,9 +294,10 @@ describe('RequestPatientPasswordResetUseCase', () => {
       it('does not call rate limit check when email is not found', async () => {
         userEmailRepository.findByEmailForAuth.mockResolvedValue(null);
 
-        await expect(
-          useCase.execute({ email: 'unknown@example.com', locale: 'en' }),
-        ).rejects.toBeInstanceOf(ConflictException);
+        await expect(useCase.execute({ email: 'unknown@example.com', locale: 'en' })).resolves.toEqual({
+          message: 'localized.auth.success.patientPasswordResetRequested',
+          nextStep: 'VERIFY_OTP',
+        });
 
         expect(rateLimitService.check).not.toHaveBeenCalled();
       });
@@ -315,9 +312,10 @@ describe('RequestPatientPasswordResetUseCase', () => {
           },
         } as any);
 
-        await expect(
-          useCase.execute({ email: 'doctor@example.com', locale: 'en' }),
-        ).rejects.toBeInstanceOf(ConflictException);
+        await expect(useCase.execute({ email: 'doctor@example.com', locale: 'en' })).resolves.toEqual({
+          message: 'localized.auth.success.patientPasswordResetRequested',
+          nextStep: 'VERIFY_OTP',
+        });
 
         expect(rateLimitService.check).not.toHaveBeenCalled();
       });

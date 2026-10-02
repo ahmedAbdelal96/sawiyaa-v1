@@ -35,7 +35,7 @@ export class UpdateSpecialtyUseCase {
     sortOrder?: number;
     isActive?: boolean;
   }) {
-    const existing = await this.specialtyRepository.findById(input.id, input.locale);
+    const existing = await this.specialtyRepository.findByIdForAdmin(input.id);
 
     if (!existing) {
       throw new NotFoundException({

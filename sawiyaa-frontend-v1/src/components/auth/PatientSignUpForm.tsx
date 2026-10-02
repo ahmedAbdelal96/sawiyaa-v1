@@ -415,7 +415,11 @@ export default function PatientSignUpForm({
         <p className="text-sm text-text-secondary dark:text-text-secondary">
           {labels.alreadyHaveAccount}{" "}
           <Link
-            href="/signin/patient"
+            href={
+              normalizedCallbackUrl
+                ? `/signin/patient?callbackUrl=${encodeURIComponent(normalizedCallbackUrl)}`
+                : "/signin/patient"
+            }
             className="font-semibold text-primary hover:text-primary-hover transition-colors"
           >
             {labels.signIn}

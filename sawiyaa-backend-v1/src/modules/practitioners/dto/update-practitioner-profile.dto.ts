@@ -17,6 +17,7 @@ import {
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { PractitionerPayoutDestinationInputDto } from './practitioner-payout-destination.dto';
+import { PractitionerProfessionalContentDto } from './practitioner-professional-content.dto';
 
 /**
  * Phase 1 practitioner profile update DTO keeps the write surface focused on baseline profile readiness fields.
@@ -39,6 +40,20 @@ export class UpdatePractitionerProfileDto {
   @IsString()
   @MaxLength(4000)
   bio?: string | null;
+
+  @ApiPropertyOptional({
+    type: PractitionerProfessionalContentDto,
+    nullable: true,
+  })
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => PractitionerProfessionalContentDto)
+  professionalContent?: PractitionerProfessionalContentDto | null;
+
+  @ApiPropertyOptional({ enum: ['ar', 'en'], nullable: true })
+  @IsOptional()
+  @IsEnum(['ar', 'en'])
+  primaryContentLocale?: 'ar' | 'en' | null;
 
   @ApiPropertyOptional({
     description: 'Active country ISO code for practitioner profile linkage',

@@ -22,7 +22,10 @@ import {
 } from "../../../src/features/practitioner/support/hooks";
 import { extractApiErrorMessage } from "../../../src/lib/api";
 import { formatViewerTime } from "../../../src/lib/time-formatting";
-import type { SupportTicketStatus } from "../../../src/features/practitioner/support/types";
+import type {
+  SupportTicketDetailsDto,
+  SupportTicketStatus,
+} from "../../../src/features/practitioner/support/types";
 import { useAuth } from "../../../src/providers/AuthProvider";
 import {
   ConversationBubble,
@@ -37,7 +40,10 @@ export default function PractitionerSupportConversationScreen() {
   const { theme } = useTheme();
   const { t, i18n } = useTranslation();
   const { user } = useAuth();
-  const { id, returnTo } = useLocalSearchParams<{ id: string; returnTo?: string }>();
+  const { id, returnTo } = useLocalSearchParams<{
+    id: string;
+    returnTo?: string;
+  }>();
   const returnToRoute =
     typeof returnTo === "string" && returnTo.trim().length > 0
       ? returnTo
@@ -47,7 +53,9 @@ export default function PractitionerSupportConversationScreen() {
 
   React.useEffect(() => {
     if (ticketQuery.data?.conversationId) {
-      router.replace(`/(practitioner)/messages/${ticketQuery.data.conversationId}`);
+      router.replace(
+        `/(practitioner)/messages/${ticketQuery.data.conversationId}`,
+      );
     }
   }, [ticketQuery.data?.conversationId, router]);
 
@@ -57,7 +65,7 @@ export default function PractitionerSupportConversationScreen() {
   const [sendError, setSendError] = useState<string | null>(null);
   const scrollRef = useRef<ScrollView>(null);
 
-  const ticket = ticketQuery.data;
+  const ticket = ticketQuery.data as SupportTicketDetailsDto | undefined;
   const isClosed = ticket ? CLOSED_STATUSES.includes(ticket.status) : false;
   const canReply = Boolean(ticket) && !isClosed;
 
@@ -156,7 +164,10 @@ export default function PractitionerSupportConversationScreen() {
             ]}
           >
             <Text color={theme.colors.textMuted} style={styles.closedText}>
-              {t("support.detail.closedNotice", "هذه المحادثة لا تقبل رسائل جديدة حاليًا.")}
+              {t(
+                "support.detail.closedNotice",
+                "هذه المحادثة لا تقبل رسائل جديدة حاليًا.",
+              )}
             </Text>
           </View>
         ) : null}

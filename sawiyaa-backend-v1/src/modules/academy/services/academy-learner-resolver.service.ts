@@ -42,7 +42,7 @@ export class AcademyLearnerResolverService {
     const normalizedFullName = input.payload.fullName.trim();
     const normalizedWhatsappNumber =
       input.payload.whatsappNumber?.trim() || null;
-    const normalizedEmail = input.payload.email?.trim() || null;
+    const normalizedEmail = this.normalizeEmail(input.payload.email);
     const normalizedSourceLabel =
       input.payload.sourceLabel?.trim() || 'public-academy';
 
@@ -236,33 +236,41 @@ export class AcademyLearnerResolverService {
     };
   }): Promise<LearnerRecord> {
     try {
-      if (input.existingLearner) {
-        return (await this.prisma.academyLearner.update({
-          where: { id: input.existingLearner.id },
-          data: {
-            userId: input.input.userId,
-            fullName: input.input.fullName,
-            phoneNumber: input.input.phoneNumber,
-            whatsappNumber: input.input.whatsappNumber,
-            email: input.input.email,
-            countryCode: input.input.countryCode,
-            countryCodeDeclared: input.input.countryCodeDeclared,
-            countryCodeSource: input.input.countryCodeSource,
-            countryCodeMismatch: input.input.countryCodeMismatch,
-            sourceLabel: input.input.sourceLabel,
-          },
-        })) as LearnerRecord;
-      }
+      return await this.prisma.$transaction(async (tx) => {
+        const learner = (input.existingLearner
+          ? await tx.academyLearner.update({
+              where: { id: input.existingLearner.id },
+              data: {
+                userId: input.input.userId,
+                fullName: input.input.fullName,
+                phoneNumber: input.input.phoneNumber,
+                whatsappNumber: input.input.whatsappNumber,
+                email: input.input.email,
+                countryCode: input.input.countryCode,
+                countryCodeDeclared: input.input.countryCodeDeclared,
+                countryCodeSource: input.input.countryCodeSource,
+                countryCodeMismatch: input.input.countryCodeMismatch,
+                sourceLabel: input.input.sourceLabel,
+              },
+            })
+          : await tx.academyLearner.create({ data: input.input })) as LearnerRecord;
 
-      return (await this.prisma.academyLearner.create({
-        data: input.input,
-      })) as LearnerRecord;
+        await tx.academyProgramEnrollment.updateMany({
+          where: { academyLearnerId: learner.id },
+          data: { userId: input.input.userId },
+        });
+        return learner;
+      });
     } catch (error) {
       if (this.isUniqueConstraintError(error)) {
         const byUserId = await this.prisma.academyLearner.findUnique({
           where: { userId: input.input.userId },
         });
         if (byUserId) {
+          await this.prisma.academyProgramEnrollment.updateMany({
+            where: { academyLearnerId: byUserId.id },
+            data: { userId: input.input.userId },
+          });
           return byUserId as LearnerRecord;
         }
 
@@ -277,21 +285,28 @@ export class AcademyLearnerResolverService {
           where: { phoneNumber: input.input.phoneNumber },
         });
         if (byPhoneNumber) {
-          return (await this.prisma.academyLearner.update({
-            where: { id: byPhoneNumber.id },
-            data: {
-              userId: input.input.userId,
-              fullName: input.input.fullName,
-              phoneNumber: input.input.phoneNumber,
-              whatsappNumber: input.input.whatsappNumber,
-              email: input.input.email,
-              countryCode: input.input.countryCode,
-              countryCodeDeclared: input.input.countryCodeDeclared,
-              countryCodeSource: input.input.countryCodeSource,
-              countryCodeMismatch: input.input.countryCodeMismatch,
-              sourceLabel: input.input.sourceLabel,
-            },
-          })) as LearnerRecord;
+          return this.prisma.$transaction(async (tx) => {
+            const learner = (await tx.academyLearner.update({
+              where: { id: byPhoneNumber.id },
+              data: {
+                userId: input.input.userId,
+                fullName: input.input.fullName,
+                phoneNumber: input.input.phoneNumber,
+                whatsappNumber: input.input.whatsappNumber,
+                email: input.input.email,
+                countryCode: input.input.countryCode,
+                countryCodeDeclared: input.input.countryCodeDeclared,
+                countryCodeSource: input.input.countryCodeSource,
+                countryCodeMismatch: input.input.countryCodeMismatch,
+                sourceLabel: input.input.sourceLabel,
+              },
+            })) as LearnerRecord;
+            await tx.academyProgramEnrollment.updateMany({
+              where: { academyLearnerId: learner.id },
+              data: { userId: input.input.userId },
+            });
+            return learner;
+          });
         }
 
         throw new ConflictException({
@@ -309,8 +324,17 @@ export class AcademyLearnerResolverService {
     return normalized ? normalized : null;
   }
 
+  private normalizeEmail(value: string | null | undefined): string | null {
+    const normalized = value?.trim().toLowerCase();
+    return normalized ? normalized : null;
+  }
+
   private canUseLearnerEnrollment(roles: AppRole[]): boolean {
-    return roles.includes(AppRole.PATIENT) || roles.includes(AppRole.PRACTITIONER);
+    return (
+      roles.includes(AppRole.PATIENT) ||
+      roles.includes(AppRole.PRACTITIONER) ||
+      roles.includes(AppRole.TRAINEE)
+    );
   }
 
   private isUniqueConstraintError(error: unknown): boolean {

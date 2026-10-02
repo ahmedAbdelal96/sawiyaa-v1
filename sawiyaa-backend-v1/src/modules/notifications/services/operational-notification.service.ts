@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Optional } from '@nestjs/common';
 import {
   ConversationParticipantRole,
   NotificationCategory,
@@ -18,6 +18,7 @@ import {
 } from '../repositories/session-reminder-queue.repository';
 import { OperationalNotificationRepository } from '../repositories/operational-notification.repository';
 import { SessionSchedulePolicyService } from '@modules/config/services/session-schedule-policy.service';
+import { NotificationRealtimePublisher } from './notification-realtime.publisher';
 
 type Recipient = {
   userId: string;
@@ -55,6 +56,7 @@ type SessionReminderNotificationInput = {
 type InstantBookingRequestNotificationInput = {
   patientProfileId: string;
   requestId: string;
+  createdSessionId?: string | null;
 };
 
 type CareChatDecisionNotificationInput = {
@@ -77,13 +79,42 @@ export class OperationalNotificationService {
     private readonly sessionReminderQueueRepository: SessionReminderQueueRepository,
     private readonly i18nService: I18nService,
     private readonly sessionSchedulePolicyService: SessionSchedulePolicyService,
+    @Optional()
+    private readonly notificationRealtimePublisher?: NotificationRealtimePublisher,
   ) {}
+
+  async notifyPatientPasswordChanged(input: {
+    userId: string;
+    eventId: string;
+  }): Promise<void> {
+    await this.notifyPatientSecurityEvent({
+      ...input,
+      slug: 'auth.password-changed',
+      titleKey: 'auth.notifications.passwordChangedTitle',
+      bodyKey: 'auth.notifications.passwordChangedBody',
+    });
+  }
+
+  async notifyPatientPasswordReset(input: {
+    userId: string;
+    eventId: string;
+  }): Promise<void> {
+    await this.notifyPatientSecurityEvent({
+      ...input,
+      slug: 'auth.password-reset-completed',
+      titleKey: 'auth.notifications.passwordResetCompletedTitle',
+      bodyKey: 'auth.notifications.passwordResetCompletedBody',
+    });
+  }
 
   async notifyPaymentSucceeded(input: {
     patientProfileId: string;
     paymentId: string;
     amount: string;
     currencyCode: string;
+    routePath?: string | null;
+    financialEventType?: string;
+    context?: string | null;
   }): Promise<void> {
     await this.notifyPatientBySlug({
       patientProfileId: input.patientProfileId,
@@ -97,6 +128,16 @@ export class OperationalNotificationService {
       relatedEntityType: 'PAYMENT',
       relatedEntityId: input.paymentId,
       category: NotificationCategory.PAYMENT,
+      idempotencyKey: `payments.payment-succeeded:${input.paymentId}`,
+      payload: {
+        amount: input.amount,
+        currencyCode: input.currencyCode,
+        ...(input.financialEventType
+          ? { financialEventType: input.financialEventType }
+          : {}),
+        ...(input.context ? { context: input.context } : {}),
+      },
+      routePath: input.routePath,
     });
   }
 
@@ -133,6 +174,10 @@ export class OperationalNotificationService {
       relatedEntityType: 'REFUND',
       relatedEntityId: input.refundId,
       category: NotificationCategory.PAYMENT,
+      payload: {
+        amount: input.amount,
+        currencyCode: input.currencyCode,
+      },
     });
   }
 
@@ -141,9 +186,15 @@ export class OperationalNotificationService {
     refundId: string;
     amount: string;
     currencyCode: string;
+    routePath?: string | null;
+    financialEventType?: string;
+    context?: string | null;
   }): Promise<void> {
-    await this.notifyPatientBySlug({
-      patientProfileId: input.patientProfileId,
+    const recipient = await this.resolvePatientRecipient(
+      input.patientProfileId,
+    );
+    await this.sendBySlug({
+      recipient,
       slug: 'payments.refund-succeeded',
       titleKey: 'payments.notifications.refundSucceededTitle',
       bodyKey: 'payments.notifications.refundSucceededBody',
@@ -154,6 +205,16 @@ export class OperationalNotificationService {
       relatedEntityType: 'REFUND',
       relatedEntityId: input.refundId,
       category: NotificationCategory.PAYMENT,
+      idempotencyKey: `payments.refund-succeeded:${input.refundId}`,
+      payload: {
+        amount: input.amount,
+        currencyCode: input.currencyCode,
+        financialEventType: input.financialEventType ?? 'REFUND_COMPLETED',
+        ...(input.context ? { context: input.context } : {}),
+      },
+      routePath:
+        input.routePath ??
+        (recipient ? `/${recipient.locale}/patient/wallet` : null),
     });
   }
 
@@ -350,7 +411,21 @@ export class OperationalNotificationService {
   async notifyInstantBookingAccepted(
     input: InstantBookingRequestNotificationInput,
   ): Promise<void> {
-    const recipient = await this.resolvePatientRecipient(input.patientProfileId);
+    const recipient = await this.resolvePatientRecipient(
+      input.patientProfileId,
+    );
+    const paymentPath = input.createdSessionId
+      ? this.buildPatientInstantBookingPaymentRoutePath(
+          recipient?.locale ?? null,
+          input.createdSessionId,
+        )
+      : null;
+    const routePath =
+      paymentPath ??
+      this.buildInstantBookingRoutePath(
+        recipient?.locale ?? null,
+        input.requestId,
+      );
 
     await this.sendBySlug({
       recipient,
@@ -360,23 +435,195 @@ export class OperationalNotificationService {
       relatedEntityType: 'INSTANT_BOOKING_REQUEST',
       relatedEntityId: input.requestId,
       category: NotificationCategory.SESSION,
-      routePath: this.buildInstantBookingRoutePath(
-        recipient?.locale ?? null,
-        input.requestId,
-      ),
+      routePath,
       idempotencyKey: this.buildInstantBookingNotificationIdempotencyKey(
         'instant-booking.request-accepted',
         input.requestId,
         recipient?.userId ?? null,
       ),
       targetRole: 'PATIENT',
+      payload: {
+        requestId: input.requestId,
+        ...(input.createdSessionId
+          ? { createdSessionId: input.createdSessionId }
+          : {}),
+      },
+    });
+  }
+
+  async notifyPackagePurchaseSucceeded(input: {
+    patientProfileId: string;
+    packagePurchaseId: string;
+    amount: string;
+    currencyCode: string;
+    packageName?: string | null;
+  }): Promise<void> {
+    const recipient = await this.resolvePatientRecipient(
+      input.patientProfileId,
+    );
+    await this.sendBySlug({
+      recipient,
+      slug: 'payments.package-purchase-succeeded',
+      titleKey: 'payments.notifications.packagePurchaseSucceededTitle',
+      bodyKey: 'payments.notifications.packagePurchaseSucceededBody',
+      params: { amount: input.amount, currencyCode: input.currencyCode },
+      relatedEntityType: 'PACKAGE_PURCHASE',
+      relatedEntityId: input.packagePurchaseId,
+      category: NotificationCategory.PAYMENT,
+      routePath: recipient
+        ? `/${recipient.locale}/patient/package-purchases/${encodeURIComponent(input.packagePurchaseId)}`
+        : null,
+      idempotencyKey: recipient
+        ? `payments.package-purchase-succeeded:${input.packagePurchaseId}:${recipient.userId}`
+        : null,
+      payload: {
+        amount: input.amount,
+        currencyCode: input.currencyCode,
+        packagePurchaseId: input.packagePurchaseId,
+        packageName: input.packageName ?? null,
+        financialEventType: 'PACKAGE_PURCHASE',
+      },
+    });
+  }
+
+  async notifyAcademyPaymentSucceeded(input: {
+    patientProfileId: string;
+    enrollmentId: string;
+    amount: string;
+    currencyCode: string;
+    trainingName?: string | null;
+  }): Promise<void> {
+    const recipient = await this.resolvePatientRecipient(
+      input.patientProfileId,
+    );
+    await this.sendBySlug({
+      recipient,
+      slug: 'payments.academy-payment-succeeded',
+      titleKey: 'payments.notifications.academyPaymentSucceededTitle',
+      bodyKey: 'payments.notifications.academyPaymentSucceededBody',
+      params: { amount: input.amount, currencyCode: input.currencyCode },
+      relatedEntityType: 'ACADEMY_ENROLLMENT',
+      relatedEntityId: input.enrollmentId,
+      category: NotificationCategory.PAYMENT,
+      routePath: recipient
+        ? `/${recipient.locale}/patient/academy/program-enrollments/${encodeURIComponent(input.enrollmentId)}`
+        : null,
+      idempotencyKey: recipient
+        ? `payments.academy-payment-succeeded:${input.enrollmentId}:${recipient.userId}`
+        : null,
+      payload: {
+        amount: input.amount,
+        currencyCode: input.currencyCode,
+        enrollmentId: input.enrollmentId,
+        trainingName: input.trainingName ?? null,
+        financialEventType: 'ACADEMY_PAYMENT',
+      },
+    });
+  }
+
+  async notifyPractitionerEarningCredited(input: {
+    practitionerProfileId: string;
+    reviewId: string;
+    sessionId: string;
+    amount: string;
+    currencyCode: string;
+  }): Promise<void> {
+    const recipient = await this.resolvePractitionerRecipient(
+      input.practitionerProfileId,
+    );
+    await this.sendBySlug({
+      recipient,
+      slug: 'financial.practitioner-earning-credited',
+      titleKey: 'financialOperations.notifications.earningCreditedTitle',
+      bodyKey: 'financialOperations.notifications.earningCreditedBody',
+      params: { amount: input.amount, currencyCode: input.currencyCode },
+      relatedEntityType: 'SESSION_EARNING_REVIEW',
+      relatedEntityId: input.reviewId,
+      category: NotificationCategory.PAYMENT,
+      routePath: recipient ? `/${recipient.locale}/practitioner/wallet` : null,
+      idempotencyKey: recipient
+        ? `financial.practitioner-earning-credited:${input.reviewId}:${recipient.userId}`
+        : null,
+      targetRole: 'PRACTITIONER',
+      payload: {
+        amount: input.amount,
+        currencyCode: input.currencyCode,
+        sessionId: input.sessionId,
+        financialEventType: 'PRACTITIONER_EARNING_CREDITED',
+      },
+    });
+  }
+
+  async notifyPractitionerPayoutCompleted(input: {
+    practitionerProfileId: string;
+    payoutId: string;
+    amount: string;
+    currencyCode: string;
+  }): Promise<void> {
+    const recipient = await this.resolvePractitionerRecipient(
+      input.practitionerProfileId,
+    );
+    await this.sendBySlug({
+      recipient,
+      slug: 'financial.practitioner-payout-completed',
+      titleKey: 'financialOperations.notifications.payoutCompletedTitle',
+      bodyKey: 'financialOperations.notifications.payoutCompletedBody',
+      params: { amount: input.amount, currencyCode: input.currencyCode },
+      relatedEntityType: 'SETTLEMENT_PAYOUT',
+      relatedEntityId: input.payoutId,
+      category: NotificationCategory.PAYMENT,
+      routePath: recipient
+        ? `/${recipient.locale}/practitioner/settlements`
+        : null,
+      idempotencyKey: recipient
+        ? `financial.practitioner-payout-completed:${input.payoutId}:${recipient.userId}`
+        : null,
+      targetRole: 'PRACTITIONER',
+      payload: {
+        amount: input.amount,
+        currencyCode: input.currencyCode,
+        payoutId: input.payoutId,
+        financialEventType: 'PRACTITIONER_PAYOUT_COMPLETED',
+      },
+    });
+  }
+
+  async notifyInstantBookingCreated(input: {
+    practitionerProfileId: string;
+    requestId: string;
+  }): Promise<void> {
+    const recipient = await this.resolvePractitionerRecipient(
+      input.practitionerProfileId,
+    );
+    const routePath = this.buildPractitionerInstantBookingRoutePath(
+      recipient?.locale ?? null,
+    );
+
+    await this.sendBySlug({
+      recipient,
+      slug: 'instant-booking.request-created',
+      titleKey: 'instantBooking.notifications.requestCreatedTitle',
+      bodyKey: 'instantBooking.notifications.requestCreatedBody',
+      relatedEntityType: 'INSTANT_BOOKING_REQUEST',
+      relatedEntityId: input.requestId,
+      category: NotificationCategory.SESSION,
+      routePath,
+      idempotencyKey: this.buildInstantBookingNotificationIdempotencyKey(
+        'instant-booking.request-created',
+        input.requestId,
+        recipient?.userId ?? null,
+      ),
+      targetRole: 'PRACTITIONER',
+      payload: { requestId: input.requestId },
     });
   }
 
   async notifyInstantBookingRejected(
     input: InstantBookingRequestNotificationInput,
   ): Promise<void> {
-    const recipient = await this.resolvePatientRecipient(input.patientProfileId);
+    const recipient = await this.resolvePatientRecipient(
+      input.patientProfileId,
+    );
 
     await this.sendBySlug({
       recipient,
@@ -402,7 +649,9 @@ export class OperationalNotificationService {
   async notifyInstantBookingExpired(
     input: InstantBookingRequestNotificationInput,
   ): Promise<void> {
-    const recipient = await this.resolvePatientRecipient(input.patientProfileId);
+    const recipient = await this.resolvePatientRecipient(
+      input.patientProfileId,
+    );
 
     await this.sendBySlug({
       recipient,
@@ -491,7 +740,11 @@ export class OperationalNotificationService {
           actionType: 'DETAILS',
           action: {
             type: 'INTERNAL_LINK',
-            href: this.buildSessionRoutePath(patient?.locale ?? null, 'PATIENT', input.sessionId),
+            href: this.buildSessionRoutePath(
+              patient?.locale ?? null,
+              'PATIENT',
+              input.sessionId,
+            ),
             semanticType: 'OPEN_SESSION_DETAILS',
           },
         },
@@ -501,7 +754,8 @@ export class OperationalNotificationService {
         slug: 'sessions.session-confirmed-practitioner',
         titleKey: 'sessions.notifications.sessionConfirmedPractitionerTitle',
         bodyKey: 'sessions.notifications.sessionConfirmedPractitionerBody',
-        pushBodyKey: 'sessions.notifications.sessionConfirmedPractitionerPushBody',
+        pushBodyKey:
+          'sessions.notifications.sessionConfirmedPractitionerPushBody',
         params: {
           sessionAt,
           packageContext: practitionerPackageContextText,
@@ -529,7 +783,11 @@ export class OperationalNotificationService {
           actionType: 'DETAILS',
           action: {
             type: 'INTERNAL_LINK',
-            href: this.buildSessionRoutePath(practitioner?.locale ?? null, 'PRACTITIONER', input.sessionId),
+            href: this.buildSessionRoutePath(
+              practitioner?.locale ?? null,
+              'PRACTITIONER',
+              input.sessionId,
+            ),
             semanticType: 'OPEN_SESSION_DETAILS',
           },
         },
@@ -591,8 +849,15 @@ export class OperationalNotificationService {
           actionType: 'CANCELLATION_DETAILS',
           action: {
             type: 'INTERNAL_LINK',
-            href: this.buildSessionRoutePath(patient?.locale ?? null, 'PATIENT', input.sessionId),
-            label: this.i18nService.t('sessions.notifications.sessionCancelledDetailsCta', patient?.locale ?? 'en'),
+            href: this.buildSessionRoutePath(
+              patient?.locale ?? null,
+              'PATIENT',
+              input.sessionId,
+            ),
+            label: this.i18nService.t(
+              'sessions.notifications.sessionCancelledDetailsCta',
+              patient?.locale ?? 'en',
+            ),
             semanticType: 'OPEN_SESSION_CANCELLATION',
           },
         },
@@ -602,7 +867,8 @@ export class OperationalNotificationService {
         slug: 'sessions.session-cancelled-practitioner',
         titleKey: 'sessions.notifications.sessionCancelledPractitionerTitle',
         bodyKey: 'sessions.notifications.sessionCancelledPractitionerBody',
-        pushBodyKey: 'sessions.notifications.sessionCancelledPractitionerPushBody',
+        pushBodyKey:
+          'sessions.notifications.sessionCancelledPractitionerPushBody',
         params: { sessionAt },
         relatedEntityType: 'SESSION',
         relatedEntityId: input.sessionId,
@@ -626,8 +892,15 @@ export class OperationalNotificationService {
           actionType: 'CANCELLATION_DETAILS',
           action: {
             type: 'INTERNAL_LINK',
-            href: this.buildSessionRoutePath(practitioner?.locale ?? null, 'PRACTITIONER', input.sessionId),
-            label: this.i18nService.t('sessions.notifications.sessionCancelledDetailsCta', practitioner?.locale ?? 'en'),
+            href: this.buildSessionRoutePath(
+              practitioner?.locale ?? null,
+              'PRACTITIONER',
+              input.sessionId,
+            ),
+            label: this.i18nService.t(
+              'sessions.notifications.sessionCancelledDetailsCta',
+              practitioner?.locale ?? 'en',
+            ),
             semanticType: 'OPEN_SESSION_CANCELLATION',
           },
         },
@@ -744,9 +1017,11 @@ export class OperationalNotificationService {
         });
       }
     }
-    const replacePlan = this.sessionReminderQueueRepository.replaceSessionPlan;
-    if (typeof replacePlan === 'function') {
-      await replacePlan.call(this.sessionReminderQueueRepository, {
+    if (
+      typeof this.sessionReminderQueueRepository.replaceSessionPlan ===
+      'function'
+    ) {
+      await this.sessionReminderQueueRepository.replaceSessionPlan({
         sessionId: input.sessionId,
         reminders: candidates,
         cancelledAt: now,
@@ -830,10 +1105,11 @@ export class OperationalNotificationService {
       reminder.reminderType === SessionReminderType.STARTING_NOW ||
       reminder.reminderType === SessionReminderType.LATE_JOIN
     ) {
-      const joined = await this.sessionReminderQueueRepository.hasParticipantJoined({
-        sessionId: reminder.sessionId,
-        recipientUserId: reminder.recipientUserId,
-      });
+      const joined =
+        await this.sessionReminderQueueRepository.hasParticipantJoined({
+          sessionId: reminder.sessionId,
+          recipientUserId: reminder.recipientUserId,
+        });
       if (joined) {
         return { delivered: false, skipReason: 'PARTICIPANT_ALREADY_JOINED' };
       }
@@ -841,8 +1117,8 @@ export class OperationalNotificationService {
 
     const recipientProfileId =
       reminder.recipientRole === 'PATIENT'
-        ? session.patient?.id ?? null
-        : session.practitioner?.id ?? null;
+        ? (session.patient?.id ?? null)
+        : (session.practitioner?.id ?? null);
 
     if (!recipientProfileId) {
       return {
@@ -1029,6 +1305,7 @@ export class OperationalNotificationService {
     category: NotificationCategory;
     routePath?: string | null;
     idempotencyKey?: string | null;
+    payload?: Record<string, unknown> | null;
   }): Promise<void> {
     const recipient = await this.resolvePatientRecipient(
       input.patientProfileId,
@@ -1044,6 +1321,7 @@ export class OperationalNotificationService {
       category: input.category,
       routePath: input.routePath ?? null,
       idempotencyKey: input.idempotencyKey ?? null,
+      payload: input.payload ?? null,
     });
   }
 
@@ -1240,9 +1518,44 @@ export class OperationalNotificationService {
     }
   }
 
-  private resolveSessionReminderCtaKey(
-    type: SessionReminderType,
-  ): string {
+  private async notifyPatientSecurityEvent(input: {
+    userId: string;
+    eventId: string;
+    slug: string;
+    titleKey: string;
+    bodyKey: string;
+  }): Promise<void> {
+    const recipient = await this.resolveUserRecipient(input.userId);
+    await this.sendBySlug({
+      recipient,
+      slug: input.slug,
+      titleKey: input.titleKey,
+      bodyKey: input.bodyKey,
+      relatedEntityType: 'SECURITY_EVENT',
+      relatedEntityId: input.eventId,
+      category: NotificationCategory.SECURITY,
+      idempotencyKey: `${input.slug}:${input.eventId}:${input.userId}`,
+    });
+  }
+
+  private buildPatientInstantBookingPaymentRoutePath(
+    locale: SupportedLocale | null,
+    sessionId: string,
+  ): string | null {
+    if (!locale) {
+      return null;
+    }
+
+    return `/${locale}/patient/sessions/${encodeURIComponent(sessionId)}/pay`;
+  }
+
+  private buildPractitionerInstantBookingRoutePath(
+    locale: SupportedLocale | null,
+  ): string | null {
+    return locale ? `/${locale}/practitioner/instant-booking` : null;
+  }
+
+  private resolveSessionReminderCtaKey(type: SessionReminderType): string {
     switch (type) {
       case SessionReminderType.REMINDER_60:
       case SessionReminderType.PRE_START:
@@ -1317,7 +1630,9 @@ export class OperationalNotificationService {
       : 'sessions.notifications.sessionLateJoinPractitionerBody';
   }
 
-  private resolveReminderOffsetMinutes(reminder: SessionReminderQueueItem): number {
+  private resolveReminderOffsetMinutes(
+    reminder: SessionReminderQueueItem,
+  ): number {
     return reminder.offsetMinutesSnapshot ?? 0;
   }
 
@@ -1388,11 +1703,16 @@ export class OperationalNotificationService {
       // Push-specific body: use pushBodyKey i18n string if provided, otherwise same as body
       // This prevents PHI (e.g. {{sessionAt}} ISO timestamps) from appearing on lock screen
       const pushBody = input.pushBodyKey
-        ? this.i18nService.t(input.pushBodyKey, input.recipient.locale, input.params)
+        ? this.i18nService.t(
+            input.pushBodyKey,
+            input.recipient.locale,
+            input.params,
+          )
         : body;
 
       if (notificationType.supportsInApp && (input.channels?.inApp ?? true)) {
         await this.queueInApp({
+          typeSlug: input.slug,
           userId: input.recipient.userId,
           notificationTypeId: notificationType.id,
           templateId:
@@ -1558,6 +1878,7 @@ export class OperationalNotificationService {
   }
 
   private async queueInApp(input: {
+    typeSlug: string;
     userId: string;
     notificationTypeId: string;
     templateId: string | null;
@@ -1594,7 +1915,7 @@ export class OperationalNotificationService {
       return;
     }
 
-    await this.repository.createNotification({
+    const notification = await this.repository.createNotification({
       userId: input.userId,
       notificationTypeId: input.notificationTypeId,
       templateId: input.templateId,
@@ -1608,6 +1929,14 @@ export class OperationalNotificationService {
       relatedEntityType: input.relatedEntityType,
       relatedEntityId: input.relatedEntityId,
       idempotencyKey: input.idempotencyKey ?? null,
+    });
+
+    this.notificationRealtimePublisher?.publish(input.userId, {
+      notificationId: notification.id,
+      typeSlug: input.typeSlug,
+      relatedEntityType: input.relatedEntityType,
+      relatedEntityId: input.relatedEntityId,
+      createdAt: notification.createdAt.toISOString(),
     });
   }
 
@@ -1786,7 +2115,11 @@ export class OperationalNotificationService {
       // Push-specific body: use pushBodyKey i18n string if provided, otherwise same as body
       // This prevents PHI (e.g. {{sessionAt}} ISO timestamps) from appearing on lock screen
       const pushBody = input.pushBodyKey
-        ? this.i18nService.t(input.pushBodyKey, input.recipient.locale, input.params)
+        ? this.i18nService.t(
+            input.pushBodyKey,
+            input.recipient.locale,
+            input.params,
+          )
         : body;
 
       if (notificationType.supportsInApp && (input.channels?.inApp ?? true)) {

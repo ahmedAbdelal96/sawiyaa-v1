@@ -6,6 +6,8 @@ import type {
   PackageSettlementDetailResponseData,
   PackageSettlementListResponseData,
   ReleasePackageSettlementResponseData,
+  PackageRefundPreviewResponseData,
+  FinalizePackageRefundInput,
 } from "../types/admin-package-settlements.types";
 
 export async function listAdminPackageSettlements(
@@ -32,5 +34,23 @@ export async function releaseAdminPackageSettlement(id: string) {
     `/admin/package-settlements/${id}/release`,
   );
 
+  return extractData(response.data);
+}
+
+export async function getAdminPackageRefundPreview(paymentId: string) {
+  const response = await httpClient.get<ApiPayload<PackageRefundPreviewResponseData>>(
+    `/admin/payments/${paymentId}/package-refund-preview`,
+  );
+  return extractData(response.data);
+}
+
+export async function finalizeAdminPackageRefund(
+  paymentId: string,
+  input: FinalizePackageRefundInput,
+) {
+  const response = await httpClient.post<ApiPayload<{ item: unknown }>>(
+    `/admin/payments/${paymentId}/package-refund`,
+    input,
+  );
   return extractData(response.data);
 }

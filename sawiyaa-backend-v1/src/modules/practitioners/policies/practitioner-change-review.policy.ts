@@ -1,23 +1,21 @@
 import { Injectable } from '@nestjs/common';
 
 export type ReviewableProfileField =
+  | 'displayName'
   | 'professionalTitle'
   | 'bio'
-  | 'yearsOfExperience'
-  | 'practitionerType'
-  | 'practitionerGender'
-  | 'countryCode';
+  | 'professionalContent'
+  | 'primaryContentLocale';
 
 /** Central source of truth for profile fields that must remain staged until review. */
 @Injectable()
 export class PractitionerChangeReviewPolicy {
   readonly reviewableProfileFields: readonly ReviewableProfileField[] = [
+    'displayName',
     'professionalTitle',
     'bio',
-    'yearsOfExperience',
-    'practitionerType',
-    'practitionerGender',
-    'countryCode',
+    'professionalContent',
+    'primaryContentLocale',
   ];
 
   getChangedProfileFields(input: Record<string, unknown>) {

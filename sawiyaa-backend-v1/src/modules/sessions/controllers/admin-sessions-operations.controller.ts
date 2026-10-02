@@ -61,6 +61,8 @@ import { GetSessionCancellationPoliciesUseCase } from '../use-cases/get-session-
 import { UpdateSessionCancellationPolicyUseCase } from '../use-cases/update-session-cancellation-policy.use-case';
 import { AdminSessionResolutionService } from '../services/admin-session-resolution.service';
 import { ExecuteAdminSessionResolutionDto } from '../dto/admin-session-resolution.dto';
+import { AdminSessionResolutionPolicyService } from '../services/admin-session-resolution-policy.service';
+import { GetAdminSessionSupportSummaryUseCase } from '../use-cases/get-admin-session-support-summary.use-case';
 
 @ApiTags('Sessions')
 @ApiBearerAuth()
@@ -86,7 +88,16 @@ export class AdminSessionsOperationsController {
     private readonly createAdminSessionPackageEntitlementDecisionUseCase: CreateAdminSessionPackageEntitlementDecisionUseCase,
     private readonly listAdminSessionManualDecisionsUseCase: ListAdminSessionManualDecisionsUseCase,
     private readonly adminSessionResolutionService: AdminSessionResolutionService,
+    private readonly adminSessionResolutionPolicyService: AdminSessionResolutionPolicyService,
+    private readonly getAdminSessionSupportSummaryUseCase: GetAdminSessionSupportSummaryUseCase,
   ) {}
+
+  @Get(':id/support-summary')
+  @Permissions(PermissionKey.SESSIONS_READ_SUPPORT_SUMMARY)
+  @ApiOperation({ summary: 'Get a support-safe session summary' })
+  getSupportSummary(@Param('id') sessionId: string) {
+    return this.getAdminSessionSupportSummaryUseCase.execute(sessionId);
+  }
 
   @Get('resolution-cases')
   @Permissions(PermissionKey.SESSIONS_READ_ADMIN)
@@ -126,6 +137,14 @@ export class AdminSessionsOperationsController {
       requestId: request.requestId ?? null,
       command: body,
     });
+  }
+
+  @Post(':id/resolution/preview')
+  @Roles(AppRole.ADMIN, AppRole.SUPER_ADMIN)
+  @Permissions(PermissionKey.SESSIONS_RESOLUTION_WRITE)
+  @ApiOperation({ summary: 'Preview an admin resolution without side effects' })
+  previewResolution(@Param('id') sessionId: string, @Body() body: ExecuteAdminSessionResolutionDto) {
+    return this.adminSessionResolutionPolicyService.buildPlan({ sessionId, decision: body });
   }
 
   @Get()
@@ -248,6 +267,7 @@ export class AdminSessionsOperationsController {
       confirmNoAutomaticRefund: body.confirmNoAutomaticRefund,
       confirmNoAutomaticPayout: body.confirmNoAutomaticPayout,
       supersedePrevious: body.supersedePrevious,
+      resolveOpenCase: body.resolveOpenCase,
       actorRoles: user.roles,
       requestId: request.requestId ?? null,
       correlationId: request.requestId ?? null,

@@ -25,6 +25,9 @@ import { AppRole } from '@common/enums/app-role.enum';
 import { Roles } from '@common/decorators/roles.decorator';
 import { JwtAccessAuthGuard } from '@common/guards/authentication/jwt-access-auth.guard';
 import { RolesGuard } from '@common/guards/authorization/roles.guard';
+import { PermissionsGuard } from '@common/guards/authorization/permissions.guard';
+import { Permissions } from '@common/decorators/permissions.decorator';
+import { PermissionKey } from '@common/enums/permission-key.enum';
 import { UpdatePackagePlanDto } from '../dto/admin-package-plan.dto';
 import { GetPackagePlanUseCase } from '../use-cases/get-package-plan.use-case';
 import { ListPackagePlansUseCase } from '../use-cases/list-package-plans.use-case';
@@ -38,9 +41,9 @@ import { AuthenticatedUser } from '@common/interfaces/authenticated-user.interfa
 
 @ApiTags('Admin - Package Plans')
 @ApiBearerAuth()
-@UseGuards(JwtAccessAuthGuard, RolesGuard)
+@UseGuards(JwtAccessAuthGuard, RolesGuard, PermissionsGuard)
 @RequireAccountStates(AccountStateRequirement.ACTIVE_ACCOUNT)
-@Roles(AppRole.ADMIN, AppRole.SUPER_ADMIN)
+@Roles(AppRole.ADMIN, AppRole.SUPER_ADMIN, AppRole.FINANCE_STAFF)
 @Controller('admin/package-plans')
 export class AdminPackagePlansController {
   constructor(
@@ -50,6 +53,7 @@ export class AdminPackagePlansController {
   ) {}
 
   @Get()
+  @Permissions(PermissionKey.PACKAGE_PLANS_READ)
   @ApiOperation({
     summary: 'List standardized package plans',
     description:
@@ -65,6 +69,7 @@ export class AdminPackagePlansController {
   }
 
   @Get(':code')
+  @Permissions(PermissionKey.PACKAGE_PLANS_READ)
   @ApiOperation({
     summary: 'Get a standardized package plan',
     description: 'Returns one platform package plan by its stable code.',
@@ -81,6 +86,7 @@ export class AdminPackagePlansController {
   }
 
   @Patch(':code')
+  @Permissions(PermissionKey.PACKAGE_PLANS_MANAGE)
   @ApiOperation({
     summary: 'Update a standardized package plan',
     description:
@@ -113,6 +119,7 @@ export class AdminPackagePlansController {
   }
 
   @Post(':code/enable')
+  @Permissions(PermissionKey.PACKAGE_PLANS_MANAGE)
   @ApiOperation({
     summary: 'Enable a standardized package plan',
     description: 'Marks a standard package plan active again for public use.',
@@ -136,6 +143,7 @@ export class AdminPackagePlansController {
   }
 
   @Post(':code/disable')
+  @Permissions(PermissionKey.PACKAGE_PLANS_MANAGE)
   @ApiOperation({
     summary: 'Disable a standardized package plan',
     description:

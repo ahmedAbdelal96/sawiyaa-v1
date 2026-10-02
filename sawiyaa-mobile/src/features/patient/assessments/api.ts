@@ -10,21 +10,23 @@ import {
   SubmitAssessmentRequest,
 } from "./types";
 
-export async function fetchPublicAssessments() {
+export async function fetchPublicAssessments(): Promise<AssessmentsListResponse> {
   const response = await apiClient.get<AssessmentsListResponse>("/assessments");
-  return response.data;
+  return response.data as AssessmentsListResponse;
 }
 
-export async function fetchAssessmentDefinition(slug: string) {
+export async function fetchAssessmentDefinition(
+  slug: string,
+): Promise<AssessmentDefinitionResponse> {
   const response = await apiClient.get<AssessmentDefinitionResponse>(
     `/assessments/${slug}`,
   );
-  return response.data;
+  return response.data as AssessmentDefinitionResponse;
 }
 
 export async function fetchMyAssessmentsHistory(
   params: AssessmentsHistoryParams = {},
-) {
+): Promise<PatientAssessmentsHistoryResponse> {
   const response = await apiClient.get<PatientAssessmentsHistoryResponse>(
     "/patients/me/assessments",
     {
@@ -35,26 +37,28 @@ export async function fetchMyAssessmentsHistory(
       },
     },
   );
-  return response.data;
+  return response.data as PatientAssessmentsHistoryResponse;
 }
 
-export async function fetchMyAssessmentSubmission(submissionId: string) {
+export async function fetchMyAssessmentSubmission(
+  submissionId: string,
+): Promise<PatientAssessmentSubmissionDetailsResponse> {
   const response =
     await apiClient.get<PatientAssessmentSubmissionDetailsResponse>(
       `/patients/me/assessments/${submissionId}`,
     );
-  return response.data;
+  return response.data as PatientAssessmentSubmissionDetailsResponse;
 }
 
 export async function submitAssessmentPayload(
   slug: string,
   payload: SubmitAssessmentRequest,
-) {
+): Promise<AssessmentSubmissionResponse> {
   const response = await apiClient.post<AssessmentSubmissionResponse>(
     `/assessments/${slug}/submissions`,
     payload,
   );
-  return response.data;
+  return response.data as AssessmentSubmissionResponse;
 }
 
 const assessmentQueryKeys = {
@@ -68,7 +72,7 @@ const assessmentQueryKeys = {
 };
 
 export const useGetPublicAssessments = () => {
-  return useQuery({
+  return useQuery<AssessmentsListResponse>({
     queryKey: assessmentQueryKeys.list,
     queryFn: fetchPublicAssessments,
     staleTime: 60_000,
@@ -76,7 +80,7 @@ export const useGetPublicAssessments = () => {
 };
 
 export const useGetAssessmentDefinition = (slug: string | null) => {
-  return useQuery({
+  return useQuery<AssessmentDefinitionResponse>({
     queryKey: assessmentQueryKeys.detail(slug),
     queryFn: () => fetchAssessmentDefinition(slug!),
     enabled: !!slug,
@@ -87,7 +91,7 @@ export const useGetAssessmentDefinition = (slug: string | null) => {
 export const useSubmitAssessment = (slug: string) => {
   const queryClient = useQueryClient();
 
-  return useMutation({
+  return useMutation<AssessmentSubmissionResponse, Error, SubmitAssessmentRequest>({
     mutationFn: (payload: SubmitAssessmentRequest) =>
       submitAssessmentPayload(slug, payload),
     onSuccess: () => {
@@ -101,7 +105,7 @@ export const useSubmitAssessment = (slug: string) => {
 export const useGetMyAssessmentsHistory = (
   params: AssessmentsHistoryParams = {},
 ) => {
-  return useQuery({
+  return useQuery<PatientAssessmentsHistoryResponse>({
     queryKey: assessmentQueryKeys.history(params),
     queryFn: () => fetchMyAssessmentsHistory(params),
     staleTime: 60_000,
@@ -109,7 +113,7 @@ export const useGetMyAssessmentsHistory = (
 };
 
 export const useGetMyAssessmentSubmission = (submissionId: string | null) => {
-  return useQuery({
+  return useQuery<PatientAssessmentSubmissionDetailsResponse>({
     queryKey: assessmentQueryKeys.submission(submissionId),
     queryFn: () => fetchMyAssessmentSubmission(submissionId!),
     enabled: !!submissionId,

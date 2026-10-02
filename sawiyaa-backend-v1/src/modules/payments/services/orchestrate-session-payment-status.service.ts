@@ -36,6 +36,7 @@ export class OrchestrateSessionPaymentStatusService {
       scheduleRevision?: number;
     };
     actorUserId?: string | null;
+    tx?: Prisma.TransactionClient;
   }) {
     const schedulePolicy = this.sessionSchedulePolicyService.withScheduleRevision(
       await this.sessionSchedulePolicyService.resolve(),
@@ -54,7 +55,7 @@ export class OrchestrateSessionPaymentStatusService {
         )
       : null;
 
-    const transitionResult = await this.prisma.$transaction(async (tx) => {
+    const run = async (tx: Prisma.TransactionClient) => {
       const result =
         await this.sessionLifecycleService.transitionIfCurrentStatus({
           sessionId: input.session.id,
@@ -82,7 +83,11 @@ export class OrchestrateSessionPaymentStatusService {
       }
 
       return result;
-    });
+    };
+    const transitionResult = input.tx ? await run(input.tx) : await this.prisma.$transaction(run);
+
+    // The capture caller dispatches notifications after its transaction commits.
+    if (input.tx) return transitionResult.session;
 
     const sessionId = transitionResult.session?.id ?? input.session.id;
     const hydratedSession = await this.sessionRepository.findById(sessionId);
@@ -103,6 +108,20 @@ export class OrchestrateSessionPaymentStatusService {
 
   async expireSessionFromPayment(sessionId: string) {
     return this.expireUnpaidSessionUseCase.execute({ sessionId });
+  }
+
+  async notifySessionConfirmedAfterCommit(sessionId: string) {
+    const session = await this.sessionRepository.findById(sessionId);
+    if (!session) return;
+    await this.operationalNotificationService.notifySessionConfirmed({
+      sessionId: session.id,
+      patientProfileId: session.patient.id,
+      practitionerProfileId: session.practitioner.id,
+      scheduledStartAt: session.scheduledStartAt,
+      scheduledEndAt: session.scheduledEndAt,
+      scheduleRevision: session.scheduleRevision,
+      schedulePolicySnapshot: session.schedulePolicySnapshotJson,
+    });
   }
 
   createPaymentEventTypeForFailure(

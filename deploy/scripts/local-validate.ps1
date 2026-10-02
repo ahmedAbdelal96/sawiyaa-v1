@@ -4,6 +4,7 @@ param(
 
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
+$env:COMPOSE_PROJECT_NAME = 'sawiyaa'
 
 function Write-Info {
   param([string]$Message)
@@ -54,14 +55,10 @@ Set-Location -LiteralPath $repoRoot
 
 $backendDir = Join-Path $repoRoot 'sawiyaa-backend-v1'
 $frontendDir = Join-Path $repoRoot 'sawiyaa-frontend-v1'
-$backendEnv = Join-Path $backendDir '.env.production.backend'
-$backendEnvExample = Join-Path $backendDir '.env.production.backend.example'
-$rootBackendEnv = Join-Path $repoRoot '.env.production.backend'
-$frontendEnv = Join-Path $frontendDir '.env.production.frontend'
-$frontendEnvExample = Join-Path $frontendDir '.env.production.frontend.example'
-$rootFrontendEnv = Join-Path $repoRoot '.env.production.frontend'
-$dbEnv = Join-Path $repoRoot '.env.production.db'
-$dbEnvExample = Join-Path $repoRoot '.env.production.db.example'
+$backendEnv = Join-Path $backendDir '.env'
+$backendEnvExample = Join-Path $backendDir '.env.example'
+$frontendEnv = Join-Path $frontendDir '.env'
+$frontendEnvExample = Join-Path $frontendDir '.env.example'
 
 try {
   Write-Info "Repo root: $repoRoot"
@@ -77,10 +74,7 @@ try {
   Invoke-Checked 'docker compose version' { docker compose version }
 
   Ensure-FileFromExample -TargetPath $backendEnv -ExamplePath $backendEnvExample
-  Ensure-FileFromExample -TargetPath $rootBackendEnv -ExamplePath $backendEnvExample
   Ensure-FileFromExample -TargetPath $frontendEnv -ExamplePath $frontendEnvExample
-  Ensure-FileFromExample -TargetPath $rootFrontendEnv -ExamplePath $frontendEnvExample
-  Ensure-FileFromExample -TargetPath $dbEnv -ExamplePath $dbEnvExample
 
   Write-Info "Running backend checks..."
   Push-Location $backendDir
@@ -104,15 +98,25 @@ try {
   }
 
   Write-Info "Validating Docker Compose configuration..."
-  Invoke-Checked 'docker compose -f docker-compose.prod.yml config' {
-    docker compose -f docker-compose.prod.yml config | Out-Null
+  $previousBackendRuntimeEnvFile = $env:SAWIYAA_BACKEND_RUNTIME_ENV_FILE
+  $previousFrontendRuntimeEnvFile = $env:SAWIYAA_FRONTEND_RUNTIME_ENV_FILE
+  $env:SAWIYAA_BACKEND_RUNTIME_ENV_FILE = $backendEnv
+  $env:SAWIYAA_FRONTEND_RUNTIME_ENV_FILE = $frontendEnv
+  try {
+  Invoke-Checked 'docker compose --env-file sawiyaa-backend-v1/.env --env-file sawiyaa-frontend-v1/.env -f docker-compose.prod.yml config' {
+    docker compose --env-file $backendEnv --env-file $frontendEnv -f docker-compose.prod.yml config | Out-Null
   }
 
   if ($BuildDocker) {
     Write-Info "Building Docker images for local validation..."
-    Invoke-Checked 'docker compose -f docker-compose.prod.yml build' {
-      docker compose -f docker-compose.prod.yml build
+    Invoke-Checked 'docker compose --env-file sawiyaa-backend-v1/.env --env-file sawiyaa-frontend-v1/.env -f docker-compose.prod.yml build' {
+      docker compose --env-file $backendEnv --env-file $frontendEnv -f docker-compose.prod.yml build
     }
+  }
+  }
+  finally {
+    $env:SAWIYAA_BACKEND_RUNTIME_ENV_FILE = $previousBackendRuntimeEnvFile
+    $env:SAWIYAA_FRONTEND_RUNTIME_ENV_FILE = $previousFrontendRuntimeEnvFile
   }
 
   Write-Info "Local validation completed successfully."

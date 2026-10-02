@@ -6,12 +6,18 @@ import {
 } from '@prisma/client';
 import { Prisma } from '@prisma/client';
 import { AppLoggerService } from '@common/logging/app-logger.service';
+import {
+  SecurityAuditActorType as AuditActorType,
+  SecurityAuditSource,
+} from '@common/security-audit/security-audit.types';
 import { PaymentRepository } from '../repositories/payment.repository';
 import { PaymentProviderRegistryService } from '../services/payment-provider-registry.service';
 import { ExpirePaymentUseCase } from './expire-payment.use-case';
 import { MarkPaymentFailedUseCase } from './mark-payment-failed.use-case';
 import { MarkPaymentSucceededUseCase } from './mark-payment-succeeded.use-case';
 import { gatewayMoneyMatchesPayment } from '../utils/money-units.util';
+import { PaymentOperationalExceptionService } from '../services/payment-operational-exception.service';
+import { PaymentOperationalExceptionType } from '@prisma/client';
 
 @Injectable()
 export class HandleStripeWebhookUseCase {
@@ -22,6 +28,7 @@ export class HandleStripeWebhookUseCase {
     private readonly markPaymentFailedUseCase: MarkPaymentFailedUseCase,
     private readonly expirePaymentUseCase: ExpirePaymentUseCase,
     private readonly logger: AppLoggerService,
+    private readonly paymentOperationalExceptionService?: PaymentOperationalExceptionService,
   ) {}
 
   async execute(input: {
@@ -42,11 +49,25 @@ export class HandleStripeWebhookUseCase {
       };
     }
 
-    const duplicate = await this.paymentRepository.findEventByProviderEventRef(
+    const duplicate = await this.paymentRepository.findWebhookReceipt(
+      PaymentProvider.STRIPE,
       webhook.providerEventRef,
     );
 
     if (duplicate) {
+      const duplicatePayment = await this.paymentRepository.findById(
+        duplicate.paymentId,
+      );
+      if (
+        webhook.outcome === 'SUCCEEDED' &&
+        duplicatePayment?.status === PaymentStatus.CAPTURED
+      ) {
+        await this.markPaymentSucceededUseCase.execute({
+          paymentId: duplicate.paymentId,
+          providerEventRef: webhook.providerEventRef,
+          payload: webhook.payload,
+        });
+      }
       return {
         received: true,
         handled: true,
@@ -83,10 +104,21 @@ export class HandleStripeWebhookUseCase {
       !gatewayMoneyMatchesPayment({
         amountMinor: webhook.amountMinor,
         currencyCode: webhook.currencyCode,
-        expectedAmount: payment.amountTotal,
+        expectedAmount: payment.amountFromGateway,
         expectedCurrencyCode: payment.currencyCode,
       })
     ) {
+      const receipt = await this.createReceiptOrFindDuplicate(
+        payment.id,
+        webhook.providerEventRef,
+      );
+      if (receipt.duplicate) {
+        return {
+          received: true,
+          handled: true,
+          paymentId: receipt.paymentId,
+        };
+      }
       await this.paymentRepository.createEvent({
         paymentId: payment.id,
         eventType: PaymentEventType.PROVIDER_WEBHOOK_RECEIVED,
@@ -94,10 +126,29 @@ export class HandleStripeWebhookUseCase {
         reason: 'FINANCIAL_MISMATCH_AMOUNT_OR_CURRENCY',
         payloadJson: webhook.payload as Prisma.InputJsonValue,
       });
+      await this.paymentOperationalExceptionService?.createAutomatic({
+        paymentId: payment.id,
+        type: PaymentOperationalExceptionType.WEBHOOK_CONFLICT,
+        reason: 'Provider success amount or currency did not match the payment snapshot.',
+        dedupeKey: `webhook-conflict:STRIPE:${webhook.providerEventRef}`,
+        source: SecurityAuditSource.PAYMENT_WEBHOOK,
+        metadata: { providerEventRef: webhook.providerEventRef, conflict: 'AMOUNT_OR_CURRENCY_MISMATCH' },
+      });
       return { received: true, handled: false, paymentId: payment.id };
     }
 
     if (payment.status === targetStatus) {
+      const receipt = await this.createReceiptOrFindDuplicate(
+        payment.id,
+        webhook.providerEventRef,
+      );
+      if (receipt.duplicate) {
+        return {
+          received: true,
+          handled: true,
+          paymentId: receipt.paymentId,
+        };
+      }
       await this.paymentRepository.createEvent({
         paymentId: payment.id,
         eventType: PaymentEventType.PROVIDER_WEBHOOK_RECEIVED,
@@ -112,29 +163,83 @@ export class HandleStripeWebhookUseCase {
       };
     }
 
-    switch (webhook.outcome) {
-      case 'SUCCEEDED':
-        await this.markPaymentSucceededUseCase.execute({
-          paymentId: payment.id,
-          providerEventRef: webhook.providerEventRef,
-          payload: webhook.payload,
-        });
-        break;
-      case 'EXPIRED':
-        await this.expirePaymentUseCase.execute({
-          paymentId: payment.id,
-          providerEventRef: webhook.providerEventRef,
-          payload: webhook.payload,
-        });
-        break;
-      case 'FAILED':
-      default:
-        await this.markPaymentFailedUseCase.execute({
-          paymentId: payment.id,
-          providerEventRef: webhook.providerEventRef,
-          payload: webhook.payload,
-        });
-        break;
+    if (
+      payment.status === PaymentStatus.EXPIRED &&
+      webhook.outcome === 'SUCCEEDED'
+    ) {
+      const receipt = await this.createReceiptOrFindDuplicate(
+        payment.id,
+        webhook.providerEventRef,
+      );
+      if (receipt.duplicate) {
+        return {
+          received: true,
+          handled: true,
+          paymentId: receipt.paymentId,
+        };
+      }
+      await this.paymentRepository.createEvent({
+        paymentId: payment.id,
+        eventType: PaymentEventType.PAYMENT_LATE_SUCCESS_REVIEW_REQUIRED,
+        actorType: AuditActorType.PAYMENT_WEBHOOK,
+        source: SecurityAuditSource.PAYMENT_WEBHOOK,
+        providerEventRef: webhook.providerEventRef,
+        reason: 'PAYMENT_SUCCESS_RECEIVED_AFTER_EXPIRY',
+        payloadJson: webhook.payload as Prisma.InputJsonValue,
+      });
+      await this.paymentOperationalExceptionService?.createAutomatic({
+        paymentId: payment.id,
+        type: PaymentOperationalExceptionType.LATE_PROVIDER_SUCCESS,
+        reason: 'Provider success was received after the payment expired.',
+        dedupeKey: `late-success:${payment.id}:${webhook.providerEventRef}`,
+        source: SecurityAuditSource.PAYMENT_WEBHOOK,
+        metadata: { providerEventRef: webhook.providerEventRef },
+      });
+      return {
+        received: true,
+        handled: false,
+        paymentId: payment.id,
+      };
+    }
+
+    try {
+      switch (webhook.outcome) {
+        case 'SUCCEEDED':
+          await this.markPaymentSucceededUseCase.execute({
+            paymentId: payment.id,
+            providerEventRef: webhook.providerEventRef,
+            payload: webhook.payload,
+          });
+          break;
+        case 'EXPIRED':
+          await this.expirePaymentUseCase.execute({
+            paymentId: payment.id,
+            providerEventRef: webhook.providerEventRef,
+            payload: webhook.payload,
+          });
+          break;
+        case 'FAILED':
+        default:
+          await this.markPaymentFailedUseCase.execute({
+            paymentId: payment.id,
+            providerEventRef: webhook.providerEventRef,
+            payload: webhook.payload,
+          });
+          break;
+      }
+    } catch (error) {
+      if (this.isWebhookReceiptConflict(error)) {
+        const receipt = await this.paymentRepository.findWebhookReceipt(
+          PaymentProvider.STRIPE,
+          webhook.providerEventRef,
+        );
+        return {
+          received: true,
+          handled: true,
+          paymentId: receipt?.paymentId ?? payment.id,
+        };
+      }
+      throw error;
     }
 
     return {
@@ -155,6 +260,45 @@ export class HandleStripeWebhookUseCase {
       case 'FAILED':
       default:
         return PaymentStatus.FAILED;
+    }
+  }
+
+  private isWebhookReceiptConflict(error: unknown): boolean {
+    if ((error as { code?: string } | null)?.code !== 'P2002') {
+      return false;
+    }
+
+    const target = (error as { meta?: { target?: unknown } } | null)?.meta
+      ?.target;
+    return Array.isArray(target)
+      ? target.some((value) => value === 'providerEventRef')
+      : true;
+  }
+
+  private async createReceiptOrFindDuplicate(
+    paymentId: string,
+    providerEventRef: string,
+  ): Promise<{ duplicate: boolean; paymentId: string }> {
+    try {
+      await this.paymentRepository.createWebhookReceipt({
+        provider: PaymentProvider.STRIPE,
+        providerEventRef,
+        paymentId,
+      });
+      return { duplicate: false, paymentId };
+    } catch (error) {
+      if (!this.isWebhookReceiptConflict(error)) {
+        throw error;
+      }
+
+      const receipt = await this.paymentRepository.findWebhookReceipt(
+        PaymentProvider.STRIPE,
+        providerEventRef,
+      );
+      return {
+        duplicate: true,
+        paymentId: receipt?.paymentId ?? paymentId,
+      };
     }
   }
 }

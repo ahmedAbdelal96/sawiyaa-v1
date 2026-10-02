@@ -4,7 +4,11 @@ import {
   Optional,
   UnauthorizedException,
 } from '@nestjs/common';
-import { SecurityAuditOutcome, UserRoleType } from '@prisma/client';
+import {
+  SecurityAuditOutcome,
+  UserRoleType,
+  UserStatus,
+} from '@prisma/client';
 import { AuthSessionDeviceContext } from '../types/auth-session.types';
 import { AuthUserContextMapper } from '../mappers/auth-user-context.mapper';
 import { AuthTokenService } from '../services/auth-token.service';
@@ -61,6 +65,28 @@ export class RefreshAuthSessionUseCase {
       throw new UnauthorizedException({
         messageKey: 'auth.errors.authRoleRevoked',
         error: 'AUTH_ROLE_REVOKED',
+      });
+    }
+
+    const practitionerIsIneligible =
+      payload.role === UserRoleType.PRACTITIONER &&
+      ((!session.user.practitionerProfile && !session.user.practitionerApplications?.[0]) ||
+      (Boolean(session.user.practitionerProfile) &&
+        [
+          'REJECTED',
+          'SUSPENDED',
+          'INACTIVE',
+        ].includes(
+          session.user.practitionerProfile?.status as
+            | 'REJECTED'
+            | 'SUSPENDED'
+            | 'INACTIVE',
+        )));
+
+    if (session.user.status !== UserStatus.ACTIVE || practitionerIsIneligible) {
+      throw new UnauthorizedException({
+        messageKey: 'auth.errors.accountNotActive',
+        error: 'ACCOUNT_NOT_ACTIVE',
       });
     }
 

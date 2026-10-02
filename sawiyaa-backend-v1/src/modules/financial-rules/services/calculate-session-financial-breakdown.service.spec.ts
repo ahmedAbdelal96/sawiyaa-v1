@@ -1,6 +1,12 @@
 import { BadRequestException } from '@nestjs/common';
-import { PaymentPurpose, PaymentProvider, SessionFlowType, SessionMode } from '@prisma/client';
+import {
+  PaymentPurpose,
+  PaymentProvider,
+  SessionFlowType,
+  SessionMode,
+} from '@prisma/client';
 import { CouponRepository } from '../repositories/coupon.repository';
+import { CountryRepository } from '@modules/patients/repositories/country.repository';
 import { CalculateCouponDiscountService } from './calculate-coupon-discount.service';
 import { CalculateSessionFinancialBreakdownService } from './calculate-session-financial-breakdown.service';
 import { MoneyMathService } from './money-math.service';
@@ -20,17 +26,29 @@ describe('CalculateSessionFinancialBreakdownService', () => {
   const calculateCouponDiscountService = {
     calculate: jest.fn(),
   } as unknown as CalculateCouponDiscountService;
+  const countryRepository = {
+    findByIsoCode: jest.fn(),
+  } as unknown as CountryRepository;
   const service = new CalculateSessionFinancialBreakdownService(
     couponRepository,
     resolveCommissionRuleService,
     validateCouponEligibilityService,
     calculateCouponDiscountService,
     new MoneyMathService(),
+    countryRepository,
   );
 
   beforeEach(() => {
     jest.clearAllMocks();
-    (resolveCommissionRuleService.resolveForSession as jest.Mock).mockResolvedValue({
+    (countryRepository.findByIsoCode as jest.Mock).mockImplementation(
+      async (isoCode: string) =>
+        isoCode === 'EG'
+          ? { id: 'country-egy', isoCode: 'EG' }
+          : { id: 'country-us', isoCode: 'US' },
+    );
+    (
+      resolveCommissionRuleService.resolveForSession as jest.Mock
+    ).mockResolvedValue({
       rule: {
         id: 'rule-1',
         slug: 'default',
@@ -41,7 +59,9 @@ describe('CalculateSessionFinancialBreakdownService', () => {
       platformRatePercent: '20.00',
       practitionerRatePercent: '80.00',
     });
-    (validateCouponEligibilityService.validateForSession as jest.Mock).mockResolvedValue(null);
+    (
+      validateCouponEligibilityService.validateForSession as jest.Mock
+    ).mockResolvedValue(null);
     (calculateCouponDiscountService.calculate as jest.Mock).mockReturnValue({
       discountAmount: '0.00',
       platformDiscountShareAmount: '0.00',
@@ -62,6 +82,12 @@ describe('CalculateSessionFinancialBreakdownService', () => {
     flowType: SessionFlowType.SCHEDULED,
     sessionMode: SessionMode.VIDEO,
     durationMinutes: 30,
+    pricingPolicySnapshotJson: {
+      pricingSnapshot: {
+        EGP: { 30: '500.00' },
+        USD: { 30: '20.00' },
+      },
+    },
     practitioner: {
       id: 'practitioner-1',
       publicSlug: 'dr-youssef',
@@ -129,46 +155,136 @@ describe('CalculateSessionFinancialBreakdownService', () => {
     expect(result.amountTotal).toBe('555.00');
   });
 
-  it('falls back to instant practitioner pricing when no snapshot exists', async () => {
+  it('does not require an internal commission rule to quote an instant session', async () => {
+    (
+      resolveCommissionRuleService.resolveForSession as jest.Mock
+    ).mockRejectedValue(
+      new BadRequestException({
+        error: 'FINANCIAL_RULE_COMMISSION_RULE_NOT_FOUND',
+      }),
+    );
+
     const result = await service.calculate({
       requestCountryIsoCode: 'EG',
       session: {
-        id: 'session-1',
+        id: 'session-instant-no-rule',
         flowType: SessionFlowType.INSTANT,
         sessionMode: SessionMode.VIDEO,
-        durationMinutes: 60,
+        durationMinutes: 30,
         practitioner: {
           id: 'practitioner-1',
           publicSlug: 'dr-youssef',
-          sessionPrice30: '300.00',
-          sessionPrice60: '500.00',
-          sessionPrice30Egp: '300.00',
-          sessionPrice30Usd: '18.00',
-          sessionPrice60Egp: '500.00',
-          sessionPrice60Usd: '30.00',
-          instantBookingPrice30Egp: '380.00',
-          instantBookingPrice30Usd: '24.00',
-          instantBookingPrice60Egp: '620.00',
-          instantBookingPrice60Usd: '38.00',
+          instantBookingPrice30Egp: '555.00',
+          instantBookingPrice30Usd: '35.00',
+          instantBookingPrice60Egp: '777.00',
+          instantBookingPrice60Usd: '49.00',
           countryId: 'country-egy',
-          country: {
-            isoCode: 'EGY',
-            currencyCode: 'EGP',
-          },
+          country: { isoCode: 'EGY', currencyCode: 'EGP' },
           specialties: [],
         },
         patient: {
           id: 'patient-1',
           countryId: 'country-egy',
-          country: {
-            isoCode: 'EGY',
+          country: { isoCode: 'EGY' },
+        },
+        instantBookingRequest: {
+          metadataJson: {
+            pricingSnapshot: {
+              EGP: { 30: '555.00' },
+              USD: { 30: '35.00' },
+            },
           },
         },
       },
     });
 
-    expect(result.amountSubtotal).toBe('620.00');
-    expect(result.amountTotal).toBe('620.00');
+    expect(
+      resolveCommissionRuleService.resolveForSession,
+    ).not.toHaveBeenCalled();
+    expect(result.amountTotal).toBe('555.00');
+    expect(result.commissionRuleId).toBeNull();
+    expect(result.breakdown.platformCommissionAmount).toBeNull();
+    expect(result.breakdown.practitionerShareAmount).toBeNull();
+    expect(result.breakdown.commissionRule).toBeNull();
+
+    await expect(
+      service.calculate({
+        requestCountryIsoCode: 'EG',
+        requireCommissionRule: true,
+        session: {
+          id: 'session-instant-payment-readiness',
+          flowType: SessionFlowType.INSTANT,
+          sessionMode: SessionMode.VIDEO,
+          durationMinutes: 30,
+          practitioner: {
+            id: 'practitioner-1',
+            publicSlug: 'dr-youssef',
+            instantBookingPrice30Egp: '555.00',
+            instantBookingPrice30Usd: '35.00',
+            instantBookingPrice60Egp: '777.00',
+            instantBookingPrice60Usd: '49.00',
+            countryId: 'country-egy',
+            country: { isoCode: 'EGY', currencyCode: 'EGP' },
+            specialties: [],
+          },
+          patient: {
+            id: 'patient-1',
+            countryId: 'country-egy',
+            country: { isoCode: 'EGY' },
+          },
+          instantBookingRequest: {
+            metadataJson: {
+              pricingSnapshot: { EGP: { 30: '555.00' } },
+            },
+          },
+        },
+      }),
+    ).rejects.toMatchObject({
+      response: { error: 'FINANCIAL_RULE_COMMISSION_RULE_NOT_FOUND' },
+    });
+  });
+
+  it('rejects an old instant booking without a quote instead of using current practitioner pricing', async () => {
+    await expect(
+      service.calculate({
+        requestCountryIsoCode: 'EG',
+        session: {
+          id: 'session-1',
+          flowType: SessionFlowType.INSTANT,
+          sessionMode: SessionMode.VIDEO,
+          durationMinutes: 60,
+          practitioner: {
+            id: 'practitioner-1',
+            publicSlug: 'dr-youssef',
+            sessionPrice30: '300.00',
+            sessionPrice60: '500.00',
+            sessionPrice30Egp: '300.00',
+            sessionPrice30Usd: '18.00',
+            sessionPrice60Egp: '500.00',
+            sessionPrice60Usd: '30.00',
+            instantBookingPrice30Egp: '380.00',
+            instantBookingPrice30Usd: '24.00',
+            instantBookingPrice60Egp: '620.00',
+            instantBookingPrice60Usd: '38.00',
+            countryId: 'country-egy',
+            country: {
+              isoCode: 'EGY',
+              currencyCode: 'EGP',
+            },
+            specialties: [],
+          },
+          patient: {
+            id: 'patient-1',
+            countryId: 'country-egy',
+            country: {
+              isoCode: 'EGY',
+            },
+          },
+        },
+      }),
+    ).rejects.toMatchObject({
+      response: { error: 'FINANCIAL_RULE_PRICING_UNAVAILABLE' },
+    });
   });
 
   it('prefers the latest payment snapshot when the session already has an active payment', async () => {
@@ -179,6 +295,12 @@ describe('CalculateSessionFinancialBreakdownService', () => {
         flowType: SessionFlowType.INSTANT,
         sessionMode: SessionMode.VIDEO,
         durationMinutes: 30,
+        pricingPolicySnapshotJson: {
+          pricingSnapshot: {
+            EGP: { 30: '300.00', 60: '500.00' },
+            USD: { 30: '18.00', 60: '30.00' },
+          },
+        },
         practitioner: {
           id: 'practitioner-1',
           publicSlug: 'dr-youssef',
@@ -290,6 +412,14 @@ describe('CalculateSessionFinancialBreakdownService', () => {
         requestCountryIsoCode,
         session: {
           ...session,
+          practitioner: {
+            ...session.practitioner,
+            country: null,
+          },
+          patient: {
+            ...session.patient,
+            country: null,
+          },
           payments: [],
         },
       });
@@ -298,6 +428,123 @@ describe('CalculateSessionFinancialBreakdownService', () => {
       expect(result.amountSubtotal).toBe(expectedAmount);
     },
   );
+
+  it('uses the trusted request country for new pricing when the stored profile country differs', async () => {
+    const result = await service.calculate({
+      requestCountryIsoCode: 'US',
+      requireCommissionRule: true,
+      session: {
+        id: 'session-request-country-wins',
+        flowType: SessionFlowType.SCHEDULED,
+        sessionMode: SessionMode.VIDEO,
+        durationMinutes: 30,
+        pricingPolicySnapshotJson: {
+          pricingSnapshot: {
+            EGP: { 30: '500.00' },
+            USD: { 30: '20.00' },
+          },
+        },
+        practitioner: {
+          id: 'practitioner-1',
+          publicSlug: 'dr-youssef',
+          sessionPrice30Egp: '500.00',
+          sessionPrice30Usd: '20.00',
+          countryId: 'country-egy',
+          country: { isoCode: 'EG', currencyCode: 'EGP' },
+          specialties: [],
+        },
+        patient: {
+          id: 'patient-1',
+          countryId: 'country-egy',
+          country: { isoCode: 'EG' },
+        },
+      },
+    });
+
+    expect(result).toMatchObject({
+      currencyCode: 'USD',
+      amountTotal: '20.00',
+    });
+    expect(
+      resolveCommissionRuleService.resolveForSession,
+    ).toHaveBeenCalledWith(
+      expect.objectContaining({ pricingPatientCountryId: 'country-us' }),
+    );
+  });
+
+  it('keeps the snapshotted pricing country for commission after the request country changes', async () => {
+    await service.calculate({
+      requestCountryIsoCode: 'US',
+      requireCommissionRule: true,
+      session: {
+        id: 'session-snapshotted-country',
+        flowType: SessionFlowType.SCHEDULED,
+        sessionMode: SessionMode.VIDEO,
+        durationMinutes: 30,
+        pricingPolicySnapshotJson: {
+          selectedCurrencyCode: 'EGP',
+          pricingCountryIsoCode: 'EG',
+          pricingSnapshot: { EGP: { 30: '500.00' }, USD: { 30: '20.00' } },
+        },
+        practitioner: {
+          id: 'practitioner-1',
+          publicSlug: 'dr-youssef',
+          sessionPrice30Egp: '500.00',
+          sessionPrice30Usd: '20.00',
+          countryId: 'country-egy',
+          country: { isoCode: 'EG', currencyCode: 'EGP' },
+          specialties: [],
+        },
+        patient: {
+          id: 'patient-1',
+          countryId: 'country-us',
+          country: { isoCode: 'US' },
+        },
+      },
+    });
+
+    expect(
+      resolveCommissionRuleService.resolveForSession,
+    ).toHaveBeenCalledWith(
+      expect.objectContaining({ pricingPatientCountryId: 'country-egy' }),
+    );
+  });
+
+  it('uses the session selected currency snapshot before participant-country re-resolution', async () => {
+    const session = buildSessionWithPayment({
+      amountSubtotal: '999.00',
+      amountDiscount: '0.00',
+      amountTotal: '999.00',
+      currencyCode: 'EGP',
+      provider: PaymentProvider.PAYMOB,
+    });
+
+    const result = await service.calculate({
+      requestCountryIsoCode: 'US',
+      session: {
+        ...session,
+        patient: {
+          ...session.patient,
+          country: { isoCode: 'EG' },
+        },
+        practitioner: {
+          ...session.practitioner,
+          country: { isoCode: 'SA' },
+        },
+        payments: [],
+        pricingPolicySnapshotJson: {
+          selectedCurrencyCode: 'EGP',
+          pricingSnapshot: {
+            EGP: { 30: '520.00' },
+            USD: { 30: '25.00' },
+          },
+        },
+      },
+    });
+
+    expect(result.currencyCode).toBe('EGP');
+    expect(result.amountTotal).toBe('520.00');
+  });
 
   it('fails safely for an unsupported persisted payment currency instead of repricing it', async () => {
     await expect(
@@ -322,6 +569,12 @@ describe('CalculateSessionFinancialBreakdownService', () => {
         flowType: SessionFlowType.SCHEDULED,
         sessionMode: SessionMode.VIDEO,
         durationMinutes: 30,
+        pricingPolicySnapshotJson: {
+          pricingSnapshot: {
+            EGP: { 30: '300.00', 60: '500.00' },
+            USD: { 30: '18.00', 60: '30.00' },
+          },
+        },
         practitioner: {
           id: 'practitioner-1',
           publicSlug: 'dr-youssef',

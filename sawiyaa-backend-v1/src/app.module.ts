@@ -67,6 +67,13 @@ import { CorporateSponsorshipModule } from './modules/corporate-sponsorship/corp
 import { MessagingModule } from './modules/messaging/messaging.module';
 import { TrustedCountryResolutionMiddleware } from './common/country-resolution/trusted-country-resolution.middleware';
 import { TrustedCountryResolutionService } from './common/country-resolution/trusted-country-resolution.service';
+import { FilesModule } from './modules/files/files.module';
+import { NotificationsModule } from './modules/notifications/notifications.module';
+import { NotificationsGateway } from './modules/notifications/gateways/notifications.gateway';
+import notificationQueueConfig from './config/notification-queue.config';
+import { NotificationQueueModule } from './common/queue/notification-queue.module';
+import operationsQueueConfig from './config/operations-queue.config';
+import { OperationsQueueModule } from './common/queue/operations-queue.module';
 
 @Module({
   imports: [
@@ -88,6 +95,8 @@ import { TrustedCountryResolutionService } from './common/country-resolution/tru
         throttleConfig,
         geoipConfig,
         availabilityConfig,
+        notificationQueueConfig,
+        operationsQueueConfig,
       ],
     }),
     LoggingModule,
@@ -98,6 +107,7 @@ import { TrustedCountryResolutionService } from './common/country-resolution/tru
     CommonAuthModule,
     HealthModule,
     ConfigModule,
+    FilesModule,
     AuthModule,
     AdminModule,
     AssessmentsModule,
@@ -130,8 +140,12 @@ import { TrustedCountryResolutionService } from './common/country-resolution/tru
     ReportsModule,
     CorporateSponsorshipModule,
     MessagingModule,
+    NotificationsModule,
+    NotificationQueueModule,
+    OperationsQueueModule,
   ],
   providers: [
+    NotificationsGateway,
     TrustedCountryResolutionService,
     TrustedCountryResolutionMiddleware,
     AllExceptionsFilter,

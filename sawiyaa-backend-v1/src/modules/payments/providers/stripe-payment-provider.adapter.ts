@@ -8,6 +8,7 @@ import { PaymentProvider, PaymentStatus } from '@prisma/client';
 import {
   PaymentProviderAdapter,
   PaymentProviderInitiationResult,
+  PaymentProviderReconciliationResult,
   PaymentProviderRefundResult,
   PaymentWebhookResult,
 } from './payment-provider-adapter.interface';
@@ -16,6 +17,9 @@ import { PaymentRuntimeConfigService } from '../services/payment-runtime-config.
 type StripePaymentIntentResponse = {
   id: string;
   status: string;
+  amount?: number;
+  amount_received?: number;
+  currency?: string;
   client_secret?: string | null;
   metadata?: Record<string, string>;
 };
@@ -37,7 +41,13 @@ type StripeWebhookEvent = {
 type StripeRefundResponse = {
   id: string;
   status: string;
+  amount?: number;
+  currency?: string;
+  payment_intent?: string | null;
+  metadata?: Record<string, string>;
 };
+
+type StripeSearchResponse<T> = { data?: T[] };
 
 @Injectable()
 export class StripePaymentProviderAdapter implements PaymentProviderAdapter {
@@ -78,6 +88,7 @@ export class StripePaymentProviderAdapter implements PaymentProviderAdapter {
       headers: {
         Authorization: `Bearer ${stripeConfig.secretKey}`,
         'Content-Type': 'application/x-www-form-urlencoded',
+        'Idempotency-Key': `payment:${input.paymentId}`,
       },
       body: form.toString(),
     });
@@ -101,6 +112,132 @@ export class StripePaymentProviderAdapter implements PaymentProviderAdapter {
       metadata: {
         stripeIntentStatus: payload.status,
       },
+    };
+  }
+
+  async reconcilePayment(input: {
+    paymentId: string;
+    providerPaymentRef: string | null;
+    providerOrderRef: string | null;
+    amountMinor: number;
+    currency: string;
+  }): Promise<PaymentProviderReconciliationResult> {
+    const stripeConfig = this.paymentRuntimeConfigService.getStripeConfig();
+    const base = stripeConfig.apiBaseUrl!;
+    const url = input.providerPaymentRef
+      ? `${base}/v1/payment_intents/${encodeURIComponent(input.providerPaymentRef)}`
+      : `${base}/v1/payment_intents/search?${new URLSearchParams({ query: `metadata['paymentId']:'${input.paymentId}'`, limit: '2' }).toString()}`;
+    const response = await fetch(url, {
+      headers: { Authorization: `Bearer ${stripeConfig.secretKey}` },
+    });
+    if (response.status === 404)
+      return {
+        outcome: 'NOT_FOUND',
+        evidence: { source: 'stripe-payment-intent-query', httpStatus: 404 },
+      };
+    if (!response.ok)
+      return {
+        outcome: 'UNKNOWN',
+        evidence: {
+          source: 'stripe-payment-intent-query',
+          httpStatus: response.status,
+        },
+      };
+    const body = (await response.json()) as
+      | StripePaymentIntentResponse
+      | StripeSearchResponse<StripePaymentIntentResponse>;
+    const matches: StripePaymentIntentResponse[] = Array.isArray(
+      (body as StripeSearchResponse<StripePaymentIntentResponse>).data,
+    )
+      ? (body as StripeSearchResponse<StripePaymentIntentResponse>).data!
+      : [body as StripePaymentIntentResponse];
+    const intent =
+      matches.find((item) => item.metadata?.paymentId === input.paymentId) ??
+      (input.providerPaymentRef ? matches[0] : null);
+    if (!intent)
+      return {
+        outcome: 'NOT_FOUND',
+        evidence: {
+          source: 'stripe-payment-intent-query',
+          matchCount: matches.length,
+        },
+      };
+    return {
+      outcome: this.mapProviderStatus(intent.status),
+      providerPaymentRef: intent.id,
+      amountMinor: intent.amount_received ?? intent.amount ?? null,
+      currencyCode: intent.currency?.toUpperCase() ?? null,
+      clientSecret: intent.client_secret ?? null,
+      evidence: {
+        source: 'stripe-payment-intent-query',
+        stripeStatus: intent.status,
+      },
+    };
+  }
+
+  async reconcileRefund(input: {
+    refundId: string;
+    paymentId: string;
+    providerPaymentRef: string | null;
+    providerOrderRef: string | null;
+    providerTransactionRef?: string | null;
+    providerRefundRef: string | null;
+    amountMinor: number;
+    priorSucceededRefundMinor: number;
+    currency: string;
+  }): Promise<PaymentProviderReconciliationResult> {
+    const stripeConfig = this.paymentRuntimeConfigService.getStripeConfig();
+    const base = stripeConfig.apiBaseUrl!;
+    if (!input.providerRefundRef && !input.providerPaymentRef)
+      return {
+        outcome: 'UNKNOWN',
+        evidence: {
+          source: 'stripe-refund-query',
+          reason: 'missing-provider-reference',
+        },
+      };
+    const url = input.providerRefundRef
+      ? `${base}/v1/refunds/${encodeURIComponent(input.providerRefundRef)}`
+      : `${base}/v1/refunds?${new URLSearchParams({ payment_intent: input.providerPaymentRef!, limit: '100' }).toString()}`;
+    const response = await fetch(url, {
+      headers: { Authorization: `Bearer ${stripeConfig.secretKey}` },
+    });
+    if (response.status === 404)
+      return {
+        outcome: 'NOT_FOUND',
+        evidence: { source: 'stripe-refund-query', httpStatus: 404 },
+      };
+    if (!response.ok)
+      return {
+        outcome: 'UNKNOWN',
+        evidence: {
+          source: 'stripe-refund-query',
+          httpStatus: response.status,
+        },
+      };
+    const body = (await response.json()) as
+      | StripeRefundResponse
+      | StripeSearchResponse<StripeRefundResponse>;
+    const matches: StripeRefundResponse[] = Array.isArray(
+      (body as StripeSearchResponse<StripeRefundResponse>).data,
+    )
+      ? (body as StripeSearchResponse<StripeRefundResponse>).data!
+      : [body as StripeRefundResponse];
+    const refund =
+      matches.find((item) => item.metadata?.refundId === input.refundId) ??
+      (input.providerRefundRef ? matches[0] : null);
+    if (!refund)
+      return {
+        outcome: 'NOT_FOUND',
+        evidence: { source: 'stripe-refund-query', matchCount: matches.length },
+      };
+    return {
+      outcome: this.mapProviderStatus(refund.status),
+      providerRefundRef: refund.id,
+      providerPaymentRef: refund.payment_intent ?? input.providerPaymentRef,
+      amountMinor: refund.amount ?? null,
+      currencyCode: refund.currency?.toUpperCase() ?? null,
+      evidence: { source: 'stripe-refund-query', stripeStatus: refund.status },
     };
   }
 
@@ -188,6 +325,7 @@ export class StripePaymentProviderAdapter implements PaymentProviderAdapter {
   }
 
   async refundPayment(input: {
+    refundId: string;
     paymentId: string;
     providerPaymentRef: string | null;
     providerOrderRef: string | null;
@@ -219,12 +357,14 @@ export class StripePaymentProviderAdapter implements PaymentProviderAdapter {
       form.set('metadata[refundReason]', input.reason.trim());
     }
     form.set('metadata[paymentId]', input.paymentId);
+    form.set('metadata[refundId]', input.refundId);
 
     const response = await fetch(`${stripeApiBaseUrl}/v1/refunds`, {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${stripeConfig.secretKey}`,
         'Content-Type': 'application/x-www-form-urlencoded',
+        'Idempotency-Key': `refund:${input.refundId}`,
       },
       body: form.toString(),
     });
@@ -306,5 +446,24 @@ export class StripePaymentProviderAdapter implements PaymentProviderAdapter {
       default:
         return 'FAILED';
     }
+  }
+
+  private mapProviderStatus(
+    status: string,
+  ): PaymentProviderReconciliationResult['outcome'] {
+    if (status === 'succeeded') return 'SUCCEEDED';
+    if (status === 'requires_capture') return 'AUTHORIZED';
+    if (
+      [
+        'processing',
+        'pending',
+        'requires_action',
+        'requires_confirmation',
+        'requires_payment_method',
+      ].includes(status)
+    )
+      return 'PROCESSING';
+    if (['failed', 'canceled'].includes(status)) return 'FAILED';
+    return 'UNKNOWN';
   }
 }

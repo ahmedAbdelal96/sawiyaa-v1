@@ -1,5 +1,8 @@
 import { NotFoundException } from '@nestjs/common';
 import { GetAdminPractitionerDetailsUseCase } from './get-admin-practitioner-details.use-case';
+import { PractitionerProfessionalContentAuthoringService } from '@modules/practitioners/services/practitioner-professional-content-authoring.service';
+import { PractitionerProfessionalContentResolver } from '@modules/practitioners/services/practitioner-professional-content-resolver.service';
+import { AdminPractitionerProfessionalContentReadinessService } from '../services/admin-practitioner-professional-content-readiness.service';
 
 describe('GetAdminPractitionerDetailsUseCase', () => {
   const prismaMock = {
@@ -17,22 +20,29 @@ describe('GetAdminPractitionerDetailsUseCase', () => {
     },
   };
 
-  const i18nServiceMock = {
-    t: jest.fn((key: string) => key),
+  const presenceRepositoryMock = {
+    getByPractitionerProfileId: jest.fn(),
   };
 
-  const mapperMock = {
-    toDetails: jest.fn((input) => input),
+  const i18nServiceMock = {
+    t: jest.fn((key: string) => key),
   };
 
   const useCase = new GetAdminPractitionerDetailsUseCase(
     prismaMock as any,
     i18nServiceMock as any,
-    mapperMock as any,
+    new AdminPractitionerProfessionalContentReadinessService(
+      new PractitionerProfessionalContentResolver(),
+      new PractitionerProfessionalContentAuthoringService(),
+    ),
+    presenceRepositoryMock as never,
   );
 
   beforeEach(() => {
     jest.clearAllMocks();
+    presenceRepositoryMock.getByPractitionerProfileId.mockResolvedValue({
+      isInstantBookingEnabled: false,
+    });
   });
 
   it('fetches aggregated admin practitioner details correctly', async () => {
@@ -43,6 +53,15 @@ describe('GetAdminPractitionerDetailsUseCase', () => {
       practitionerType: 'PSYCHOLOGIST',
       practitionerGender: 'MALE',
       status: 'APPROVED',
+      isInstantBookingEnabled: true,
+      sessionPrice30Egp: '250.00',
+      sessionPrice30Usd: '8.00',
+      sessionPrice60Egp: '450.00',
+      sessionPrice60Usd: '15.00',
+      instantBookingPrice30Egp: '300.00',
+      instantBookingPrice30Usd: '10.00',
+      instantBookingPrice60Egp: '500.00',
+      instantBookingPrice60Usd: '16.00',
       createdAt: new Date(),
       updatedAt: new Date(),
       user: {
@@ -116,6 +135,15 @@ describe('GetAdminPractitionerDetailsUseCase', () => {
     expect(result.details.operations.totalSessions).toBe(10);
     expect(result.details.payoutDestination?.bankAccountNumber).toBe('1234****');
     expect(result.details.payoutDestination?.iban).toBe('EG1234******5678');
+    expect(result.details.professionalContentReadiness.bilingualComplete).toBe(false);
+    expect(result.details.pricing).toEqual({
+      session30: { egp: 250, usd: 8 },
+      session60: { egp: 450, usd: 15 },
+      instantBooking30: { egp: 300, usd: 10 },
+      instantBooking60: { egp: 500, usd: 16 },
+    });
+    expect(result.details.isInstantBookingEnabled).toBe(false);
+    expect(presenceRepositoryMock.getByPractitionerProfileId).toHaveBeenCalledWith('prac-1');
   });
 
   it('throws NotFoundException when practitioner profile does not exist', async () => {

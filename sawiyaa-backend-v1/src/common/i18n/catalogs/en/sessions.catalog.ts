@@ -61,6 +61,7 @@ export const enSessionsCatalog = {
       ' Session {{packageSessionIndex}} of {{packageSessionCount}} in your package.',
   },
   errors: {
+    adminResolutionRequired: 'Admin resolution is required for this case',
     patientNotFound: 'Patient profile was not found',
     practitionerNotFound: 'Practitioner profile was not found',
     practitionerNotBookable:

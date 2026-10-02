@@ -4,13 +4,13 @@ import {
   useQuery,
   useQueryClient,
 } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import { useAuthenticatedQueryEnabled } from "../../auth/query-auth";
 import {
   closePractitionerSessionRuntime,
   getPractitionerSession,
   getPractitionerSessions,
   getPractitionerSessionSummary,
-  markPractitionerSessionCompleted,
   markPractitionerSessionNoShow,
   preparePractitionerSessionRuntime,
   resolvePractitionerSessionJoinContract,
@@ -27,8 +27,8 @@ export const practitionerSessionQueryKeys = {
   infiniteList: (params?: Omit<ListSessionsQuery, "page">) =>
     [...practitionerSessionQueryKeys.all, "infinite-list", params ?? {}] as const,
   summary: () => [...practitionerSessionQueryKeys.all, "summary"] as const,
-  detail: (sessionId: string) =>
-    [...practitionerSessionQueryKeys.all, "detail", sessionId] as const,
+  detail: (sessionId: string, locale = "ar") =>
+    [...practitionerSessionQueryKeys.all, "detail", sessionId, locale] as const,
 };
 
 export function usePractitionerSessions(params?: ListSessionsQuery) {
@@ -39,6 +39,7 @@ export function usePractitionerSessions(params?: ListSessionsQuery) {
     queryFn: () => getPractitionerSessions(params),
     enabled,
     staleTime: 30_000,
+    refetchOnWindowFocus: true,
   });
 }
 
@@ -53,6 +54,7 @@ export function usePractitionerSessionSummary() {
     },
     enabled,
     staleTime: 30_000,
+    refetchOnWindowFocus: true,
   });
 }
 
@@ -79,17 +81,21 @@ export function useInfinitePractitionerSessions(
     },
     enabled,
     staleTime: 30_000,
+    refetchOnWindowFocus: true,
   });
 }
 
 export function usePractitionerSession(sessionId: string | null) {
   const enabled = useAuthenticatedQueryEnabled("practitioner");
+  const { i18n } = useTranslation();
+  const locale = i18n.language?.startsWith("ar") ? "ar" : "en";
 
   return useQuery({
-    queryKey: practitionerSessionQueryKeys.detail(sessionId ?? ""),
+    queryKey: practitionerSessionQueryKeys.detail(sessionId ?? "", locale),
     queryFn: () => getPractitionerSession(sessionId!),
     enabled: enabled && Boolean(sessionId),
     staleTime: 30_000,
+    refetchOnWindowFocus: true,
   });
 }
 
@@ -147,34 +153,22 @@ export function useClosePractitionerSessionRuntime() {
   });
 }
 
-export function useMarkPractitionerSessionCompleted() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: (sessionId: string) =>
-      markPractitionerSessionCompleted(sessionId),
-    onSuccess: (data) => {
-      queryClient.setQueryData(
-        practitionerSessionQueryKeys.detail(data.item.id),
-        data,
-      );
-      queryClient.invalidateQueries({
-        queryKey: practitionerSessionQueryKeys.all,
-      });
-    },
-  });
-}
-
 export function useMarkPractitionerSessionNoShow() {
   const queryClient = useQueryClient();
+  const { i18n } = useTranslation();
+  const locale = i18n.language?.startsWith("ar") ? "ar" : "en";
   return useMutation({
     mutationFn: (sessionId: string) => markPractitionerSessionNoShow(sessionId),
     onSuccess: (data) => {
       queryClient.setQueryData(
-        practitionerSessionQueryKeys.detail(data.item.id),
-        data,
+        practitionerSessionQueryKeys.detail(data.item.id, locale),
+        data.item,
       );
       queryClient.invalidateQueries({
         queryKey: practitionerSessionQueryKeys.all,
+      });
+      queryClient.invalidateQueries({
+        queryKey: practitionerSessionQueryKeys.detail(data.item.id),
       });
     },
   });

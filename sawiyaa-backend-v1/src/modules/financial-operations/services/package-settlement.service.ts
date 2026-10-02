@@ -54,6 +54,7 @@ type PackagePurchaseSettlementSource = {
     status: SessionStatus;
     packageSessionIndex?: number | null;
     packageSessionCount?: number | null;
+    packageEntitlementDecision?: { decisionType: string } | null;
   }>;
 };
 
@@ -135,7 +136,9 @@ export class PackageSettlementService {
     const settlement = await this.ensureForPurchase(purchase, tx);
     const db = this.getDb(tx);
     const completedSessionsCount = purchase.sessions.filter(
-      (session) => session.status === SessionStatus.COMPLETED,
+      (session) =>
+        session.status === SessionStatus.COMPLETED ||
+        session.packageEntitlementDecision?.decisionType === 'COUNT_AS_USED',
     ).length;
 
     const normalEquivalentUsedAmount = this.multiply(

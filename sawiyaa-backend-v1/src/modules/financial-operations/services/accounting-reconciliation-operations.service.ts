@@ -11,6 +11,8 @@ import {
   RefundStatus,
 } from '@prisma/client';
 import { PrismaService } from '@common/prisma/prisma.service';
+import { PaymentOperationalExceptionService } from '@modules/payments/services/payment-operational-exception.service';
+import { SecurityAuditSource } from '@common/security-audit/security-audit.types';
 import { AccountingReconciliationDiagnosticsService } from './accounting-reconciliation-diagnostics.service';
 import { AccountingReconciliationAlertService } from './accounting-reconciliation-alert.service';
 import { FinanceReconciliationActionRepository } from '../repositories/finance-reconciliation-action.repository';
@@ -66,6 +68,8 @@ export class AccountingReconciliationOperationsService {
     private readonly configService: ConfigService,
     @Optional()
     private readonly actionRepository?: FinanceReconciliationActionRepository,
+    @Optional()
+    private readonly paymentOperationalExceptionService?: PaymentOperationalExceptionService,
   ) {}
 
   async runPayments(
@@ -574,6 +578,18 @@ export class AccountingReconciliationOperationsService {
           totalCritical += 1;
         }
 
+        const metadata = issue.metadata ?? {
+          expectedState: issue.expected ?? null,
+          actualState: issue.actual ?? null,
+          entityIds: {
+            paymentId: issue.entityType === 'Payment' ? issue.entityId : null,
+            sessionId: null,
+            walletReservationId: null,
+            receiptId: null,
+          },
+          detectedAt: result.checkedAt.toISOString(),
+          safeMetadata: {},
+        };
         seeds.push({
           runId,
           scope: target.scope ?? scope,
@@ -585,7 +601,7 @@ export class AccountingReconciliationOperationsService {
           message: issue.message,
           expectedValue: issue.expected == null ? null : String(issue.expected),
           actualValue: issue.actual == null ? null : String(issue.actual),
-          metadataJson: issue.metadata ?? null,
+          metadataJson: metadata,
         });
       }
     }
@@ -628,8 +644,19 @@ export class AccountingReconciliationOperationsService {
             entityId: target.entityId,
             currencyCode: target.currencyCode,
             metadata: {
+              expectedState: null,
+              actualState: null,
+              entityIds: {
+                paymentId: target.entityType === 'Payment' ? target.entityId : null,
+                sessionId: target.entityType === 'Session' ? target.entityId : null,
+                walletReservationId: null,
+                receiptId: null,
+              },
+              detectedAt: new Date().toISOString(),
+              safeMetadata: {
               scope: target.scope,
               errorType: error instanceof Error ? error.name : 'UnknownError',
+              },
             },
           },
         ],
@@ -771,13 +798,18 @@ export class AccountingReconciliationOperationsService {
     const where: Prisma.PaymentWhereInput = {
       status: {
         in: [
+          PaymentStatus.PENDING,
           PaymentStatus.CAPTURED,
           PaymentStatus.REFUND_PENDING,
           PaymentStatus.PARTIALLY_REFUNDED,
           PaymentStatus.REFUNDED,
         ],
       },
-      capturedAt: this.buildDateWindow(input),
+      OR: [
+        { initiatedAt: this.buildDateWindow(input) },
+        { capturedAt: this.buildDateWindow(input) },
+        { updatedAt: this.buildDateWindow(input) },
+      ],
       currencyCode: this.normalizeCurrency(input.currencyCode) ?? undefined,
       practitionerId: input.practitionerId ?? undefined,
       sessionId: input.entityId ?? undefined,
@@ -799,9 +831,20 @@ export class AccountingReconciliationOperationsService {
   private async findRefundTargets(
     input: AccountingReconciliationRunRequest,
   ): Promise<EntityListItem[]> {
+    const dateWindow = this.buildDateWindow(input);
     const where: Prisma.RefundWhereInput = {
-      status: RefundStatus.SUCCEEDED,
-      processedAt: this.buildDateWindow(input),
+      status: {
+        in: [
+          RefundStatus.REQUESTED,
+          RefundStatus.PROCESSING,
+          RefundStatus.SUCCEEDED,
+        ],
+      },
+      OR: [
+        { processedAt: dateWindow },
+        { requestedAt: dateWindow },
+        { updatedAt: dateWindow },
+      ],
       currencyCode: this.normalizeCurrency(input.currencyCode) ?? undefined,
       payment: {
         practitionerId: input.practitionerId ?? undefined,
@@ -1047,6 +1090,25 @@ export class AccountingReconciliationOperationsService {
             },
             tx,
           );
+        }
+
+        if (
+          this.paymentOperationalExceptionService &&
+          seed.scope === 'PAYMENTS' &&
+          seed.entityType === 'Payment'
+        ) {
+          await this.paymentOperationalExceptionService.createAutomaticInTransaction(tx, {
+            paymentId: seed.entityId,
+            type: 'RECONCILIATION_ISSUE',
+            reason: `Reconciliation issue ${seed.issueCode}: ${seed.message}`,
+            dedupeKey: `reconciliation:${issue.id}`,
+            source: SecurityAuditSource.SYSTEM,
+            metadata: {
+              reconciliationIssueId: issue.id,
+              issueCode: seed.issueCode,
+              detectedAt: issue.lastDetectedAt.toISOString(),
+            },
+          });
         }
       }
     });

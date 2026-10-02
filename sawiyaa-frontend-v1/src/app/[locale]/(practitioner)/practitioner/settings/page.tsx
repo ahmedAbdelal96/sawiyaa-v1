@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import PractitionerPackageAvailabilitySettingsCard from "@/features/practitioners/components/PractitionerPackageAvailabilitySettingsCard";
 import { PractitionerPageShell } from "@/components/shared/practitioner/PractitionerWorkspaceKit";
+import ChangePasswordForm from "@/components/auth/ChangePasswordForm";
 
 type Props = {
   params: Promise<{ locale: string }>;
@@ -23,6 +24,7 @@ export default async function PractitionerSettingsPage({ params }: Props) {
   return (
     <PractitionerPageShell>
       <PractitionerPackageAvailabilitySettingsCard />
+      <div className="mt-6"><ChangePasswordForm role="practitioner" /></div>
     </PractitionerPageShell>
   );
 }

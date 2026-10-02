@@ -18,10 +18,10 @@ import { usePatientProfile } from "../../features/patient/profile/hooks";
 import { usePatientUnreadNotificationCount } from "../../features/patient/notifications/hooks";
 import { usePractitionerUnreadNotificationCount } from "../../features/practitioner/notifications/hooks";
 import { useNavigationHistory } from "../../providers/NavigationHistoryProvider";
-import { getAppDirection } from "../../i18n/direction";
+import { getAppDirection, getDirectionalIcon } from "../../i18n/direction";
 
 const BackIcon = ({ color, isRTL }: { color: string; isRTL: boolean }) => (
-  <Ionicons name={isRTL ? "arrow-forward" : "arrow-back"} size={24} color={color} />
+  <Ionicons name={getDirectionalIcon("back", isRTL)} size={24} color={color} />
 );
 
 export interface AppHeaderProps {
@@ -33,6 +33,7 @@ export interface AppHeaderProps {
   rightElement?: React.ReactNode;
   variant?: "home" | "tab" | "stack";
   hideQuickActions?: boolean;
+  hideMessages?: boolean;
 }
 
 export const AppHeader = ({
@@ -44,6 +45,7 @@ export const AppHeader = ({
   rightElement,
   variant = "tab",
   hideQuickActions = false,
+  hideMessages = false,
 }: AppHeaderProps) => {
   const { theme } = useTheme();
   const { i18n } = useTranslation();
@@ -64,9 +66,16 @@ export const AppHeader = ({
   const hasTitleRow = Boolean(title || (!showIdentityRow && showBack));
   const messagesRole = role === "practitioner" ? "practitioner" : "patient";
 
+  // Patient owns Messages in the bottom tab bar. Keep the global Messages
+  // utility for Practitioner, but do not create a second Patient owner.
+  const showMessagesUtility =
+    isAuthenticatedRole &&
+    !hideQuickActions &&
+    !hideMessages &&
+    role !== "patient";
   const unreadMessagesQuery = useGeneralChatUnreadSummary(
     messagesRole,
-    isAuthenticatedRole && !hideQuickActions,
+    showMessagesUtility,
     { refetchInterval: 30_000 },
   );
   const unreadPatientNotificationsQuery = usePatientUnreadNotificationCount({
@@ -249,32 +258,34 @@ export const AppHeader = ({
         { flexDirection: isRTL ? "row-reverse" : "row" },
       ]}
     >
-      <TouchableOpacity
-        onPress={handleOpenMessages}
-        style={[
-          styles.iconButton,
-          {
-            backgroundColor: theme.colors.surfaceContainerLow,
-            borderColor: theme.colors.divider,
-          },
-        ]}
-        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-        accessibilityRole="button"
-        accessibilityLabel={
-          isRTL
-            ? `الرسائل${unreadMessages > 0 ? `، لديك ${unreadMessages} رسائل غير مقروءة` : ""}`
-            : `Messages${unreadMessages > 0 ? `, you have ${unreadMessages} unread messages` : ""}`
-        }
-      >
-        <View style={styles.iconContainer}>
-          <Ionicons
-            name="chatbubble-ellipses-outline"
-            size={21}
-            color={theme.colors.textPrimary}
-          />
-          {renderMessagesCountBadge(unreadMessages)}
-        </View>
-      </TouchableOpacity>
+      {showMessagesUtility ? (
+        <TouchableOpacity
+          onPress={handleOpenMessages}
+          style={[
+            styles.iconButton,
+            {
+              backgroundColor: theme.colors.surfaceContainerLow,
+              borderColor: theme.colors.divider,
+            },
+          ]}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          accessibilityRole="button"
+          accessibilityLabel={
+            isRTL
+              ? `الرسائل${unreadMessages > 0 ? `، لديك ${unreadMessages} رسائل غير مقروءة` : ""}`
+              : `Messages${unreadMessages > 0 ? `, you have ${unreadMessages} unread messages` : ""}`
+          }
+        >
+          <View style={styles.iconContainer}>
+            <Ionicons
+              name="chatbubble-ellipses-outline"
+              size={21}
+              color={theme.colors.textPrimary}
+            />
+            {renderMessagesCountBadge(unreadMessages)}
+          </View>
+        </TouchableOpacity>
+      ) : null}
 
       <TouchableOpacity
         onPress={handleOpenNotifications}

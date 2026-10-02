@@ -2,12 +2,16 @@
 
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { useLocale, useTranslations } from "next-intl";
-import { usePathname, useRouter } from "@/i18n/navigation";
+import { Link, usePathname, useRouter } from "@/i18n/navigation";
 import { useSearchParams } from "next/navigation";
 import {
   BadgeCheck,
   CheckCircle2,
+  Copy,
   Download,
+  Mail,
+  MessageCircle,
+  Phone,
   Plus,
   Search,
   CircleOff,
@@ -17,7 +21,7 @@ import Button from "@/components/ui/button/Button";
 import Select from "@/components/form/Select";
 import FilterClearButton from "@/components/ui/filters/FilterClearButton";
 import { Drawer, ModalBody, ModalFooter, ModalHeader, DestructiveConfirmModal } from "@/components/ui/modal";
-import { DataTable, exportToExcel, buildUpdatedSearchParams, parseEnumParam, parsePositiveIntParam, parseTextParam, type ColumnDef, type SortConfig } from "@/components/ui/data-table";
+import { DataTable, exportToPdf, buildUpdatedSearchParams, parseEnumParam, parsePositiveIntParam, parseTextParam, type ColumnDef, type SortConfig } from "@/components/ui/data-table";
 import { DEFAULT_PAGE_LIMIT, DEFAULT_PAGE_SIZE_OPTIONS } from "@/constants/pagination";
 import { useDebouncedValue } from "@/hooks/use-debounce";
 import AdminOperationalListShell, { AdminSummaryCard } from "@/components/shared/admin/AdminOperationalListShell";
@@ -28,7 +32,14 @@ import { useCurrentUserPermissions } from "@/features/users/hooks/use-users";
 import { getAcademyProgramErrorKey } from "../lib/academy-program-errors";
 import {
   useCreateAdminAcademyProgramEnrollment,
+  useAdminAcademyProgram,
   useAdminAcademyProgramEnrollments,
+  useAdminAcademyProgramEnrollment,
+  useAdminAcademyEnrollmentAccountStatus,
+  useLookupAdminAcademyEnrollmentAccount,
+  useCreateAdminAcademyEnrollmentAccount,
+  useLinkAdminAcademyEnrollmentAccount,
+  useResetAdminAcademyTraineePassword,
   useCancelAdminAcademyProgramEnrollment,
   useBulkAdminAcademyProgramEnrollments,
   useExportAdminAcademyProgramEnrollments,
@@ -39,6 +50,8 @@ import {
 } from "../hooks/use-academy-programs";
 import type {
   AcademyProgramEnrollmentItem,
+  AcademyAdminEnrollmentAccountStatus,
+  AcademyAdminEnrollmentAccountResponse,
   AcademyProgramEnrollmentPaymentStatus,
   AcademyProgramEnrollmentStatus,
   ListAdminAcademyProgramEnrollmentsParams,
@@ -49,6 +62,7 @@ import { resolveAcademyCertificateDownloadUrl } from "../lib/academy-certificate
 import { resolveAcademyProgramCertificateStatusLabel } from "../lib/academy-program-localization";
 import AcademyProgramTabs from "./AcademyProgramTabs";
 import { toAppError } from "@/lib/api/errors";
+import { normalizeWhatsAppNumber } from "../lib/contact-utils";
 
 type Props = {
   programId: string;
@@ -61,7 +75,7 @@ const SORTABLE_COLUMNS: EnrollmentSortColumn[] = ["registeredAt", "fullName"];
 const ENROLLMENT_STATUS_OPTIONS: Array<AcademyProgramEnrollmentStatus | "ALL"> = [
   "ALL",
   "PENDING_PAYMENT",
-  "UPCOMING",
+  "CONFIRMED",
   "CANCELLED",
   "EXPIRED",
 ];
@@ -141,7 +155,7 @@ function resolveEnrollmentSourceLabel(sourceLabel: string | null | undefined, t:
 }
 
 function badgeTone(status: string) {
-  if (status === "UPCOMING" || status === "CAPTURED" || status === "ISSUED") {
+  if (status === "CONFIRMED" || status === "CAPTURED" || status === "ISSUED" || status === "UPLOADED") {
     return "border-emerald-200 bg-emerald-50 text-emerald-700";
   }
   if (status === "CANCELLED" || status === "FAILED" || status === "EXPIRED") {
@@ -157,10 +171,11 @@ function resolveLearnerCountryLabel(
   item: AcademyProgramEnrollmentItem | null | undefined,
   countries: CountryListItem[],
   locale: string,
+  missingLabel = "-",
 ) {
-  if (!item) return "-";
+  if (!item) return missingLabel;
   const code = item.learner.countryCode ?? item.learner.countryCodeDeclared ?? item.contactCountry ?? item.submittedCountry;
-  if (!code) return "-";
+  if (!code) return missingLabel;
   return resolveCountryLabel(code, countries, locale) || code;
 }
 
@@ -190,6 +205,97 @@ function LearnerDetailField({
     <div className="rounded-2xl border border-border-light bg-white px-4 py-3">
       <p className="text-xs font-medium text-text-muted">{label}</p>
       <p className="mt-1 text-sm font-semibold text-text-primary break-words">{value}</p>
+    </div>
+  );
+}
+
+export function LearnerContactField({
+  label,
+  value,
+  kind,
+  copyLabel,
+  copiedLabel,
+  actionLabel,
+}: {
+  label: string;
+  value: string | null | undefined;
+  kind: "phone" | "email";
+  copyLabel: string;
+  copiedLabel: string;
+  actionLabel: string;
+}) {
+  const [copied, setCopied] = useState(false);
+  const normalizedValue = value?.trim() ?? "";
+
+  const handleCopy = async () => {
+    if (!normalizedValue) {
+      return;
+    }
+
+    try {
+      await navigator.clipboard?.writeText(normalizedValue);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 1500);
+    } catch {
+      setCopied(false);
+    }
+  };
+
+  return (
+    <div className="rounded-2xl border border-border-light bg-white px-4 py-3">
+      <p className="text-xs font-medium text-text-muted">{label}</p>
+      <div className="mt-1.5 flex flex-wrap items-center gap-2">
+        {normalizedValue ? (
+          <a
+            href={kind === "phone" ? `tel:${normalizedValue}` : `mailto:${normalizedValue}`}
+            className="inline-flex min-w-0 items-center gap-1.5 break-all text-sm font-semibold text-primary underline-offset-2 hover:underline"
+          >
+            {kind === "phone" ? <Phone className="h-3.5 w-3.5 shrink-0" /> : <Mail className="h-3.5 w-3.5 shrink-0" />}
+            {normalizedValue}
+          </a>
+        ) : (
+          <span className="text-sm font-semibold text-text-primary">-</span>
+        )}
+        {normalizedValue ? (
+          <button
+            type="button"
+            onClick={() => void handleCopy()}
+            className="inline-flex items-center gap-1 rounded-lg border border-border-light bg-surface-tertiary px-2.5 py-1.5 text-xs font-semibold text-text-secondary transition hover:border-primary/30 hover:text-primary"
+          >
+            <Copy className="h-3.5 w-3.5" />
+            {copied ? copiedLabel : actionLabel || copyLabel}
+          </button>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
+export function LearnerWhatsAppField({
+  label,
+  value,
+  countryCode,
+  copyLabel,
+  whatsappLabel,
+  unavailableLabel,
+}: {
+  label: string;
+  value: string | null | undefined;
+  countryCode?: string | null;
+  copyLabel: string;
+  whatsappLabel: string;
+  unavailableLabel: string;
+}) {
+  const normalizedValue = value?.trim() ?? "";
+  const whatsappNumber = normalizeWhatsAppNumber(normalizedValue, countryCode);
+  return (
+    <div className="rounded-2xl border border-border-light bg-white px-4 py-3">
+      <p className="text-xs font-medium text-text-muted">{label}</p>
+      <div className="mt-1.5 flex flex-wrap items-center gap-2">
+        {normalizedValue ? <span className="text-sm font-semibold text-text-primary">{normalizedValue}</span> : <span className="text-sm font-semibold text-text-primary">-</span>}
+        {normalizedValue ? <button type="button" onClick={() => void navigator.clipboard?.writeText(normalizedValue)} className="inline-flex items-center gap-1 rounded-lg border border-border-light bg-surface-tertiary px-2.5 py-1.5 text-xs font-semibold text-text-secondary transition hover:border-primary/30 hover:text-primary"><Copy className="h-3.5 w-3.5" />{copyLabel}</button> : null}
+        {whatsappNumber ? <a href={`https://wa.me/${whatsappNumber}`} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 py-1.5 text-xs font-semibold text-emerald-700 transition hover:bg-emerald-100"><MessageCircle className="h-3.5 w-3.5" />{whatsappLabel}</a> : normalizedValue ? <span className="text-xs text-text-muted">{unavailableLabel}</span> : null}
+      </div>
     </div>
   );
 }
@@ -395,6 +501,12 @@ function LearnerDetailDrawer({
   canManageCertificate,
   certificateUploading,
   onUploadCertificate,
+  accountStatus,
+  accountLoading,
+  onLookupAccount,
+  onCreateAccount,
+  onLinkAccount,
+  onResetAccount,
   busy,
 }: {
   isOpen: boolean;
@@ -409,6 +521,12 @@ function LearnerDetailDrawer({
   canManageCertificate: boolean;
   certificateUploading: boolean;
   onUploadCertificate: (file: File) => Promise<boolean>;
+  accountStatus: AcademyAdminEnrollmentAccountStatus | null;
+  accountLoading: boolean;
+  onLookupAccount: (email: string) => Promise<AcademyAdminEnrollmentAccountResponse | null>;
+  onCreateAccount: (email: string) => Promise<{ email: string; password: string } | null>;
+  onLinkAccount: (email: string) => Promise<void>;
+  onResetAccount: (password: string) => Promise<void>;
   busy: boolean;
 }) {
   const t = useTranslations("academy");
@@ -417,6 +535,11 @@ function LearnerDetailDrawer({
     tone: "success" | "error";
     text: string;
   } | null>(null);
+  const [accountEmail, setAccountEmail] = useState("");
+  const [accountMessage, setAccountMessage] = useState<string | null>(null);
+  const [temporaryCredentials, setTemporaryCredentials] = useState<{ email: string; password: string } | null>(null);
+  const [existingAccount, setExistingAccount] = useState<AcademyAdminEnrollmentAccountResponse | null>(null);
+  const [newPassword, setNewPassword] = useState("");
 
   useEffect(() => {
     if (!isOpen) {
@@ -427,6 +550,11 @@ function LearnerDetailDrawer({
 
     setCertificateFile(null);
     setCertificateMessage(null);
+    setAccountEmail(item?.learner.email ?? "");
+    setAccountMessage(null);
+    setTemporaryCredentials(null);
+    setExistingAccount(null);
+    setNewPassword("");
   }, [isOpen, item?.id]);
 
   const certificateDownloadUrl =
@@ -436,6 +564,8 @@ function LearnerDetailDrawer({
           surface: "admin",
         })
       : null;
+  const certificateProgramEnded =
+    !item?.program.endAt || new Date(item.program.endAt).getTime() <= Date.now();
 
   const handleUpload = async () => {
     if (!certificateFile) {
@@ -476,10 +606,31 @@ function LearnerDetailDrawer({
             <LearnerSection title={t("programs.learners.sections.personal")}>
               <div className="grid gap-3 sm:grid-cols-2">
                 <LearnerDetailField label={t("programs.learners.fields.fullName")} value={item.learner.fullName || "-"} />
-                <LearnerDetailField label={t("programs.learners.fields.email")} value={item.learner.email || "-"} />
-                <LearnerDetailField label={t("programs.learners.fields.phoneNumber")} value={item.learner.phoneNumber || "-"} />
-                <LearnerDetailField label={t("programs.learners.fields.whatsappNumber")} value={item.learner.whatsappNumber || "-"} />
-                <LearnerDetailField label={t("programs.learners.fields.country")} value={resolveLearnerCountryLabel(item, countries, locale)} />
+                <LearnerContactField
+                  label={t("programs.learners.fields.email")}
+                  value={item.learner.email ?? item.contactEmail}
+                  kind="email"
+                  copyLabel={t("programs.learners.contact.copy")}
+                  copiedLabel={t("programs.learners.contact.copied")}
+                  actionLabel={t("programs.learners.contact.email")}
+                />
+                <LearnerContactField
+                  label={t("programs.learners.fields.phoneNumber")}
+                  value={item.learner.phoneNumber ?? item.contactPhone}
+                  kind="phone"
+                  copyLabel={t("programs.learners.contact.copy")}
+                  copiedLabel={t("programs.learners.contact.copied")}
+                  actionLabel={t("programs.learners.contact.call")}
+                />
+                <LearnerWhatsAppField
+                  label={t("programs.learners.fields.whatsappNumber")}
+                  value={item.learner.whatsappNumber ?? item.contactWhatsapp}
+                  countryCode={item.learner.countryCode ?? item.contactCountry}
+                  copyLabel={t("programs.learners.contact.copy")}
+                  whatsappLabel={t("programs.learners.contact.whatsapp")}
+                  unavailableLabel={t("programs.learners.contact.whatsappUnavailable")}
+                />
+                <LearnerDetailField label={t("programs.learners.fields.country")} value={resolveLearnerCountryLabel(item, countries, locale, t("programs.learners.countryUnknown"))} />
                 <LearnerDetailField label={t("programs.learners.fields.city")} value={item.learner.city || "-"} />
                 <LearnerDetailField label={t("programs.learners.fields.jobTitle")} value={item.learner.jobTitle || "-"} />
                 <LearnerDetailField label={t("programs.learners.fields.employer")} value={item.learner.employer || "-"} />
@@ -496,7 +647,10 @@ function LearnerDetailDrawer({
                 <LearnerDetailField label={t("programs.learners.fields.program")} value={item.program.title ?? item.program.titleEn ?? "-"} />
                 <LearnerDetailField label={t("programs.learners.fields.registrationDate")} value={formatDateTime(item.registeredAt, locale)} />
                 <LearnerDetailField label={t("programs.learners.fields.enrollmentStatus")} value={t(`programs.learners.statuses.${item.status}` as Parameters<typeof t>[0])} />
-                <LearnerDetailField label={t("programs.learners.fields.paymentStatus")} value={t(`statuses.payment.${item.paymentStatus}` as Parameters<typeof t>[0])} />
+                <LearnerDetailField
+                  label={t("programs.learners.fields.paymentStatus")}
+                  value={!item.payment && item.learner.sourceLabel === "admin-manual" ? t("programs.learners.payment.manual") : Number(item.selectedAmountSnapshot) === 0 ? t("programs.learners.payment.free") : t(`statuses.payment.${item.paymentStatus}` as Parameters<typeof t>[0])}
+                />
                 <LearnerDetailField label={t("programs.learners.fields.source")} value={resolveEnrollmentSourceLabel(item.learner.sourceLabel, t)} />
               </div>
             </LearnerSection>
@@ -505,11 +659,11 @@ function LearnerDetailDrawer({
               <div className="grid gap-3 sm:grid-cols-2">
                 <LearnerMetric
                   label={t("programs.learners.payment.status")}
-                  value={t(`statuses.payment.${item.paymentStatus}` as Parameters<typeof t>[0])}
+                  value={!item.payment && item.learner.sourceLabel === "admin-manual" ? t("programs.learners.payment.manual") : Number(item.selectedAmountSnapshot) === 0 ? t("programs.learners.payment.free") : t(`statuses.payment.${item.paymentStatus}` as Parameters<typeof t>[0])}
                 />
                 <LearnerDetailField
                   label={t("programs.learners.payment.amount")}
-                  value={formatMoney(item.selectedAmountSnapshot, item.selectedCurrencyCode, locale)}
+                  value={Number(item.selectedAmountSnapshot) === 0 ? t("programs.learners.payment.free") : !item.payment && item.learner.sourceLabel === "admin-manual" ? t("programs.learners.payment.manual") : item.payment ? formatMoney(item.payment.amountTotal, item.payment.currencyCode, locale) : t("programs.learners.payment.noAmount")}
                 />
               </div>
               {!item.payment ? (
@@ -519,6 +673,7 @@ function LearnerDetailDrawer({
                   </p>
                 </div>
               ) : null}
+              {item.payment?.id ? <Link href={`/admin/payments/${item.payment.id}`} className="inline-flex items-center rounded-xl border border-primary/20 bg-primary/5 px-3 py-2 text-xs font-semibold text-primary hover:underline">{locale === "ar" ? "عرض الدفع" : "View payment"}</Link> : null}
             </LearnerSection>
 
             <LearnerSection title={t("programs.learners.sections.attendance")}>
@@ -528,6 +683,131 @@ function LearnerDetailDrawer({
                 <LearnerMetric label={t("admin.detail.learners.attendance.absentSessions")} value={item.attendanceSummary.absentSessions} />
                 <LearnerMetric label={t("admin.detail.learners.attendance.percentage")} value={formatPercent(item.attendanceSummary.attendancePercentage)} />
               </div>
+            </LearnerSection>
+
+            <LearnerSection title={t("programs.learners.sections.account")}>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <LearnerDetailField
+                  label={t("programs.learners.account.type")}
+                  value={accountLoading ? t("programs.learners.account.loading") : accountStatus?.account.type ?? "NONE"}
+                />
+                <LearnerDetailField
+                  label={t("programs.learners.account.email")}
+                  value={accountStatus?.account.email ?? item.learner.email ?? "-"}
+                />
+              </div>
+              {accountStatus?.canCreate || accountStatus?.canLink ? (
+                <div className="space-y-3 rounded-2xl border border-border-light bg-white p-4">
+                  <p className="text-xs text-text-secondary">{t("programs.learners.account.note")}</p>
+                  <input
+                    type="email"
+                    value={accountEmail}
+                    onChange={(event) => setAccountEmail(event.target.value)}
+                    placeholder={t("programs.learners.account.emailPlaceholder")}
+                    className="h-11 w-full rounded-xl border border-border-light bg-white px-3 text-sm text-text-primary outline-none focus:border-primary"
+                  />
+                  <div className="flex flex-wrap gap-2">
+                    {accountStatus.canCreate ? (
+                      <Button
+                        variant="outline"
+                        disabled={!accountEmail.trim() || accountLoading}
+                        onClick={async () => {
+                          try {
+                            const result = await onCreateAccount(accountEmail.trim());
+                            if (result) {
+                              setTemporaryCredentials(result);
+                              setAccountMessage(t("programs.learners.account.created"));
+                            }
+                          } catch {
+                            setAccountMessage(t("programs.learners.account.failure"));
+                          }
+                        }}
+                      >
+                        {t("programs.learners.account.create")}
+                      </Button>
+                    ) : null}
+                    {accountStatus.canLink ? (
+                      <Button
+                        variant="outline"
+                        disabled={!accountEmail.trim() || accountLoading}
+                        onClick={async () => {
+                          try {
+                            const result = await onLookupAccount(accountEmail.trim());
+                            setExistingAccount(result);
+                            setAccountMessage(result ? t("programs.learners.account.confirmLink") : t("programs.learners.account.failure"));
+                          } catch {
+                            setAccountMessage(t("programs.learners.account.failure"));
+                          }
+                        }}
+                      >
+                        {t("programs.learners.account.link")}
+                      </Button>
+                    ) : null}
+                  </div>
+                  {existingAccount ? (
+                    <div className="space-y-3 rounded-xl border border-primary/20 bg-primary/5 p-3 text-sm text-text-primary">
+                      <p className="font-semibold">{existingAccount.account.name ?? "-"}</p>
+                      <p className="text-xs text-text-secondary">{existingAccount.account.email ?? accountEmail}</p>
+                      <p className="text-xs text-text-secondary">{existingAccount.account.type}</p>
+                      <Button
+                        variant="outline"
+                        disabled={accountLoading}
+                        onClick={async () => {
+                          try {
+                            await onLinkAccount(accountEmail.trim());
+                            setAccountMessage(t("programs.learners.account.linked"));
+                            setExistingAccount(null);
+                          } catch {
+                            setAccountMessage(t("programs.learners.account.failure"));
+                          }
+                        }}
+                      >
+                        {t("programs.learners.account.confirm")}
+                      </Button>
+                    </div>
+                  ) : null}
+                  {temporaryCredentials ? (
+                    <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800">
+                      <p className="font-semibold">{t("programs.learners.account.credentialsOnce")}</p>
+                      <p className="mt-1">{temporaryCredentials.email}</p>
+                      <p className="font-mono">{temporaryCredentials.password}</p>
+                      <div className="mt-2 flex flex-wrap gap-2">
+                        <button type="button" className="underline" onClick={() => void navigator.clipboard?.writeText(temporaryCredentials.email)}>{t("programs.learners.account.copyEmail")}</button>
+                        <button type="button" className="underline" onClick={() => void navigator.clipboard?.writeText(temporaryCredentials.password)}>{t("programs.learners.account.copyPassword")}</button>
+                        <button type="button" className="underline" onClick={() => void navigator.clipboard?.writeText(`${temporaryCredentials.email}\n${temporaryCredentials.password}`)}>{t("programs.learners.account.copyBoth")}</button>
+                      </div>
+                    </div>
+                  ) : null}
+                  {accountStatus.account.type === "TRAINEE" ? (
+                    <div className="space-y-2 border-t border-border-light pt-3">
+                      <p className="text-xs font-semibold text-text-primary">{t("programs.learners.account.resetTitle")}</p>
+                      <input
+                        type="password"
+                        value={newPassword}
+                        onChange={(event) => setNewPassword(event.target.value)}
+                        placeholder={t("programs.learners.account.resetPlaceholder")}
+                        className="h-11 w-full rounded-xl border border-border-light px-3 text-sm outline-none focus:border-primary"
+                      />
+                      <Button
+                        variant="outline"
+                        disabled={newPassword.length < 8 || accountLoading}
+                        onClick={async () => {
+                          try {
+                            await onResetAccount(newPassword);
+                            setNewPassword("");
+                            setAccountMessage(t("programs.learners.account.resetSuccess"));
+                          } catch {
+                            setAccountMessage(t("programs.learners.account.failure"));
+                          }
+                        }}
+                      >
+                        {t("programs.learners.account.reset")}
+                      </Button>
+                    </div>
+                  ) : null}
+                  {accountMessage ? <p className="text-xs text-text-secondary">{accountMessage}</p> : null}
+                </div>
+              ) : null}
             </LearnerSection>
 
             <LearnerSection title={t("programs.learners.sections.certificate")}>
@@ -557,7 +837,7 @@ function LearnerDetailDrawer({
                 </div>
               )}
 
-              {canManageCertificate && item.status === "UPCOMING" ? (
+              {canManageCertificate && item.status === "CONFIRMED" && certificateProgramEnded ? (
                 <div className="space-y-3 rounded-2xl border border-border-light bg-surface-secondary p-4">
                   <div>
                     <p className="text-sm font-semibold text-text-primary">
@@ -610,6 +890,10 @@ function LearnerDetailDrawer({
                         : t("programs.learners.certificate.uploadPdf")}
                   </Button>
                 </div>
+              ) : !certificateProgramEnded ? (
+                <div className="rounded-2xl border border-dashed border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
+                  {t("programs.learners.certificate.programNotEnded")}
+                </div>
               ) : !canManageCertificate ? (
                 <div className="rounded-2xl border border-dashed border-border-light bg-white px-4 py-3 text-sm text-text-muted">
                   {t("programs.learners.certificate.noAccess")}
@@ -631,9 +915,6 @@ function LearnerDetailDrawer({
             </Button>
             <Button variant="secondary" onClick={onComplete} startIcon={<CheckCircle2 className="h-4 w-4" />} disabled={busy}>
               {t("programs.learners.actions.complete")}
-            </Button>
-            <Button variant="secondary" onClick={onCertify} startIcon={<BadgeCheck className="h-4 w-4" />} disabled={busy}>
-              {t("programs.learners.actions.certify")}
             </Button>
             <Button variant="danger" onClick={onCancel} startIcon={<CircleOff className="h-4 w-4" />} disabled={busy}>
               {t("programs.learners.actions.cancel")}
@@ -699,6 +980,7 @@ export default function AdminAcademyProgramLearnersScreen({ programId }: Props) 
   const [cancelReason, setCancelReason] = useState("");
   const [bulkCancelReason, setBulkCancelReason] = useState("");
   const [toastMessage, setToastMessage] = useState<{ tone: "success" | "error"; message: string } | null>(null);
+  const [isExportingPdf, setIsExportingPdf] = useState(false);
 
   useEffect(() => {
     setSearch(initialQuery);
@@ -734,12 +1016,16 @@ export default function AdminAcademyProgramLearnersScreen({ programId }: Props) 
   );
 
   const programQuery = useAdminAcademyProgramEnrollments(programId, params);
+  const programDetailQuery = useAdminAcademyProgram(programId);
   const programData = programQuery.data;
   const items = programData?.items ?? [];
-  const selectedItem = useMemo(
+  const selectedListItem = useMemo(
     () => items.find((item) => item.id === selectedEnrollmentId) ?? null,
     [items, selectedEnrollmentId],
   );
+  const selectedDetailQuery = useAdminAcademyProgramEnrollment(selectedEnrollmentId, isDetailOpen);
+  const selectedItem = selectedDetailQuery.data?.item ?? selectedListItem;
+  const accountStatusQuery = useAdminAcademyEnrollmentAccountStatus(selectedEnrollmentId);
 
   useEffect(() => {
     if (isDetailOpen && selectedEnrollmentId && !items.some((item) => item.id === selectedEnrollmentId)) {
@@ -755,6 +1041,10 @@ export default function AdminAcademyProgramLearnersScreen({ programId }: Props) 
   const certifyMutation = useMarkCertifiedAdminAcademyProgramEnrollment();
   const uploadCertificateMutation = useUploadAdminAcademyProgramEnrollmentCertificate();
   const bulkMutation = useBulkAdminAcademyProgramEnrollments();
+  const createAccountMutation = useCreateAdminAcademyEnrollmentAccount();
+  const lookupAccountMutation = useLookupAdminAcademyEnrollmentAccount();
+  const linkAccountMutation = useLinkAdminAcademyEnrollmentAccount();
+  const resetAccountMutation = useResetAdminAcademyTraineePassword();
 
   const sortConfig: SortConfig = {
     column: initialSortBy,
@@ -804,7 +1094,7 @@ export default function AdminAcademyProgramLearnersScreen({ programId }: Props) 
       {
         id: "country",
         header: t("programs.learners.columns.country"),
-        accessor: (row) => resolveLearnerCountryLabel(row, countries, locale),
+        accessor: (row) => resolveLearnerCountryLabel(row, countries, locale, t("programs.learners.countryUnknown")),
       },
       {
         id: "status",
@@ -823,9 +1113,26 @@ export default function AdminAcademyProgramLearnersScreen({ programId }: Props) 
         hideOnMobile: true,
         cell: (row) => (
           <span className={`inline-flex rounded-full border px-2.5 py-1 text-xs font-semibold ${badgeTone(row.paymentStatus)}`}>
-            {t(`statuses.payment.${row.paymentStatus}` as Parameters<typeof t>[0])}
+            {!row.payment && row.learner.sourceLabel === "admin-manual"
+              ? t("programs.learners.payment.manual")
+              : t(`statuses.payment.${row.paymentStatus}` as Parameters<typeof t>[0])}
           </span>
         ),
+      },
+      {
+        id: "amount",
+        header: t("programs.learners.payment.amount"),
+        accessor: (row) => row.payment?.amountTotal ?? row.selectedAmountSnapshot,
+        hideOnMobile: true,
+        cell: (row) => {
+          const isManual = !row.payment && row.learner.sourceLabel === "admin-manual";
+          const isFree = Number(row.selectedAmountSnapshot) === 0;
+          if (isFree) return t("programs.learners.payment.free");
+          if (isManual) return t("programs.learners.payment.manual");
+          return row.payment
+            ? formatMoney(row.payment.amountTotal, row.payment.currencyCode, locale)
+            : t("programs.learners.payment.noAmount");
+        },
       },
       {
         id: "registeredAt",
@@ -851,6 +1158,42 @@ export default function AdminAcademyProgramLearnersScreen({ programId }: Props) 
           </span>
         ),
       },
+      {
+        id: "actions",
+        header: t("programs.learners.columns.actions"),
+        accessor: () => "",
+        hideOnMobile: true,
+        cell: (row) => {
+          const phone = row.learner.phoneNumber ?? row.contactPhone;
+          const email = row.learner.email ?? row.contactEmail;
+          const whatsapp = normalizeWhatsAppNumber(row.learner.whatsappNumber ?? row.contactWhatsapp ?? phone, row.learner.countryCode ?? row.contactCountry);
+          return (
+            <div className="flex flex-wrap items-center gap-1.5" onClick={(event) => event.stopPropagation()}>
+              {whatsapp ? <a className="rounded-lg border border-emerald-200 px-2 py-1 text-xs font-semibold text-emerald-700" href={`https://wa.me/${whatsapp}`} target="_blank" rel="noreferrer">{t("programs.learners.contact.whatsapp")}</a> : null}
+              {phone ? <a className="rounded-lg border border-border-light px-2 py-1 text-xs font-semibold text-text-secondary" href={`tel:${phone}`}>{t("programs.learners.contact.call")}</a> : null}
+              {email ? <a className="rounded-lg border border-border-light px-2 py-1 text-xs font-semibold text-text-secondary" href={`mailto:${email}`}>{t("programs.learners.contact.email")}</a> : null}
+            </div>
+          );
+        },
+      },
+    ],
+    [countries, locale, t],
+  );
+
+  const pdfColumns = useMemo<ColumnDef<AcademyProgramEnrollmentItem>[]>(
+    () => [
+      { id: "fullName", header: t("programs.learners.columns.fullName"), accessor: (row) => row.learner.fullName },
+      { id: "country", header: t("programs.learners.columns.country"), accessor: (row) => resolveLearnerCountryLabel(row, countries, locale, t("programs.learners.countryUnknown")) },
+      { id: "phone", header: t("programs.learners.columns.mobileNumber"), accessor: (row) => row.learner.phoneNumber ?? row.contactPhone ?? "-" },
+      { id: "email", header: t("programs.learners.columns.email"), accessor: (row) => row.learner.email ?? row.contactEmail ?? "-" },
+      { id: "registeredAt", header: t("programs.learners.columns.registrationDate"), accessor: (row) => formatDateTime(row.registeredAt, locale) },
+      { id: "status", header: t("programs.learners.columns.enrollmentStatus"), accessor: (row) => t(`programs.learners.statuses.${row.status}` as Parameters<typeof t>[0]) },
+      { id: "paymentStatus", header: t("programs.learners.columns.paymentStatus"), accessor: (row) => !row.payment && row.learner.sourceLabel === "admin-manual" ? t("programs.learners.payment.manual") : t(`statuses.payment.${row.paymentStatus}` as Parameters<typeof t>[0]) },
+      { id: "amount", header: t("programs.learners.payment.amount"), accessor: (row) => {
+        if (Number(row.selectedAmountSnapshot) === 0) return t("programs.learners.payment.free");
+        if (!row.payment && row.learner.sourceLabel === "admin-manual") return t("programs.learners.payment.manual");
+        return row.payment ? formatMoney(row.payment.amountTotal, row.payment.currencyCode, locale) : t("programs.learners.payment.noAmount");
+      } },
     ],
     [countries, locale, t],
   );
@@ -871,23 +1214,38 @@ export default function AdminAcademyProgramLearnersScreen({ programId }: Props) 
   };
 
   const exportLearners = async () => {
-    const rows = await exportMutation.mutateAsync({
-      programId,
-      params: {
-        q: initialQuery || undefined,
-        status: initialStatus === "ALL" ? undefined : initialStatus,
-        paymentStatus: initialPaymentStatus === "ALL" ? undefined : initialPaymentStatus,
-        country: initialCountry || undefined,
-        sortBy: (initialSortBy === "fullName" ? "name" : "registeredAt") as ListAdminAcademyProgramEnrollmentsParams["sortBy"],
-        sortDir: initialSortDir,
-      },
-    });
-
-    await exportToExcel(
-      rows,
-      columns,
-      `academy-program-${programId}-learners`,
-    );
+    if (isExportingPdf) return;
+    setIsExportingPdf(true);
+    try {
+      const rows = await exportMutation.mutateAsync({
+        programId,
+        params: {
+          q: initialQuery || undefined,
+          status: initialStatus === "ALL" ? undefined : initialStatus,
+          paymentStatus: initialPaymentStatus === "ALL" ? undefined : initialPaymentStatus,
+          country: initialCountry || undefined,
+          sortBy: (initialSortBy === "fullName" ? "name" : "registeredAt") as ListAdminAcademyProgramEnrollmentsParams["sortBy"],
+          sortDir: initialSortDir,
+        },
+      });
+      if (rows.length === 0) {
+        setToastMessage({ tone: "error", message: t("programs.learners.exportEmpty") });
+        return;
+      }
+      const program = programDetailQuery.data ?? rows[0]?.program;
+      const slug = (program?.slug ?? programId).replace(/[^a-z0-9-]+/gi, "-").replace(/^-+|-+$/g, "") || programId;
+      const dates = [program?.startAt, program?.endAt].filter(Boolean).map((value) => formatDateTime(value, locale)).join(" – ");
+      await exportToPdf(rows, pdfColumns, `training-registrants-${slug}-${new Date().toISOString().slice(0, 10)}`, {
+        title: t("programs.learners.exportPdf"),
+        subtitle: [program?.title ?? program?.titleEn ?? program?.slug, dates].filter(Boolean).join(" · "),
+        countLabel: t("programs.learners.summary.total"),
+        direction: locale === "ar" ? "rtl" : "ltr",
+      });
+    } catch (cause) {
+      setToastMessage({ tone: "error", message: cause instanceof Error && cause.message === "EMPTY_EXPORT" ? t("programs.learners.exportEmpty") : t("programs.learners.exportFailure") });
+    } finally {
+      setIsExportingPdf(false);
+    }
   };
 
   const updateSelectedCount = (next: string[]) => {
@@ -1049,14 +1407,6 @@ export default function AdminAcademyProgramLearnersScreen({ programId }: Props) 
         {t("programs.learners.bulk.complete")}
       </Button>
       <Button
-        variant="secondary"
-        disabled={selectedCount === 0}
-        onClick={() => handleBulkAction("MARK_CERTIFIED")}
-        startIcon={<BadgeCheck className="h-4 w-4" />}
-      >
-        {t("programs.learners.bulk.certify")}
-      </Button>
-      <Button
         variant="danger"
         disabled={selectedCount === 0}
         onClick={() => setBulkCancelOpen(true)}
@@ -1090,8 +1440,8 @@ export default function AdminAcademyProgramLearnersScreen({ programId }: Props) 
           >
             {t("programs.learners.addLearner")}
           </Button>
-          <Button onClick={exportLearners} startIcon={<Download className="h-4 w-4" />}>
-            {t("programs.learners.export")}
+          <Button onClick={exportLearners} disabled={isExportingPdf} startIcon={<Download className="h-4 w-4" />}>
+            {isExportingPdf ? t("programs.learners.exportingPdf") : t("programs.learners.exportPdf")}
           </Button>
         </div>
       }
@@ -1266,7 +1616,26 @@ export default function AdminAcademyProgramLearnersScreen({ programId }: Props) 
         canManageCertificate={canManageCertificate}
         certificateUploading={uploadCertificateMutation.isPending}
         onUploadCertificate={handleCertificateUpload}
-        busy={cancelMutation.isPending || completeMutation.isPending || certifyMutation.isPending || bulkMutation.isPending}
+        accountStatus={accountStatusQuery.data ?? null}
+        accountLoading={accountStatusQuery.isFetching || lookupAccountMutation.isPending || createAccountMutation.isPending || linkAccountMutation.isPending || resetAccountMutation.isPending}
+        onLookupAccount={async (email) => {
+          if (!selectedItem) return null;
+          return lookupAccountMutation.mutateAsync({ enrollmentId: selectedItem.id, email });
+        }}
+        onCreateAccount={async (email) => {
+          if (!selectedItem) return null;
+          const result = await createAccountMutation.mutateAsync({ enrollmentId: selectedItem.id, email });
+          return result.temporaryCredentials;
+        }}
+        onLinkAccount={async (email) => {
+          if (!selectedItem) return;
+          await linkAccountMutation.mutateAsync({ enrollmentId: selectedItem.id, email });
+        }}
+        onResetAccount={async (password) => {
+          if (!selectedItem) return;
+          await resetAccountMutation.mutateAsync({ enrollmentId: selectedItem.id, newPassword: password });
+        }}
+        busy={cancelMutation.isPending || completeMutation.isPending || certifyMutation.isPending || bulkMutation.isPending || createAccountMutation.isPending || linkAccountMutation.isPending || resetAccountMutation.isPending}
       />
 
       <LearnerFormDrawer

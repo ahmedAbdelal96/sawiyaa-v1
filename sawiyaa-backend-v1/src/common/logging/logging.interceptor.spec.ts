@@ -136,4 +136,59 @@ describe('LoggingInterceptor', () => {
       'LoggingInterceptor',
     );
   });
+
+  it('logs validation field metadata without logging the request body', async () => {
+    const logger = { http: jest.fn(), slowRequest: jest.fn() } as never;
+    const interceptor = new LoggingInterceptor(logger, {
+      httpEnabled: true,
+      slowRequestMs: 1000,
+    } as never);
+    const request = {
+      requestId: 'req-validation',
+      method: 'PATCH',
+      originalUrl: '/api/v1/practitioners/me/availability/weeks/week-1',
+      url: '/api/v1/practitioners/me/availability/weeks/week-1',
+      user: { id: 'user-1', roles: ['PRACTITIONER'] },
+      locale: 'en',
+      headers: { 'user-agent': 'jest' },
+      query: {},
+      body: { slots: [{ startMinuteOfDay: 'private body value' }] },
+      ip: '127.0.0.1',
+    } as never;
+    const context = {
+      getType: () => 'http',
+      switchToHttp: () => ({ getRequest: () => request, getResponse: () => ({ statusCode: 400 }) }),
+      getClass: () => ({ name: 'AvailabilityController' }),
+      getHandler: () => ({ name: 'updateWeek' }),
+    } as never;
+
+    await expect(
+      lastValueFrom(
+        interceptor.intercept(context, {
+          handle: () =>
+            throwError(
+              () =>
+                new HttpException(
+                  {
+                    errorCode: 'VALIDATION_FAILED',
+                    validationFields: [
+                      { field: 'slots[0].startMinuteOfDay', constraints: ['isInt'] },
+                    ],
+                  },
+                  HttpStatus.BAD_REQUEST,
+                ),
+            ),
+        } as never),
+      ),
+    ).rejects.toBeInstanceOf(HttpException);
+
+    expect(logger.http).toHaveBeenCalledWith(
+      expect.objectContaining({
+        validationFields: [{ field: 'slots[0].startMinuteOfDay', constraints: ['isInt'] }],
+      }),
+      undefined,
+      'LoggingInterceptor',
+    );
+    expect(JSON.stringify(logger.http.mock.calls[0][0])).not.toContain('private body value');
+  });
 });

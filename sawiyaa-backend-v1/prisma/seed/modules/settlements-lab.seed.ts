@@ -427,14 +427,22 @@ export const settlementsLabSeedModule: SeedModule = {
             '[seed:settlements-lab] missing wallet id for current settlement',
           );
         }
-        const currentSettlement = await tx.practitionerSettlement.upsert({
-          where: {
-            batchId_practitionerId: {
+        const currentSettlementExisting =
+          await tx.practitionerSettlement.findFirst({
+            where: {
               batchId: currentBatch.id,
               practitionerId: plan.practitionerId,
             },
-          },
+            orderBy: { createdAt: 'asc' },
+            select: { id: true },
+          });
+        const currentSettlementId =
+          currentSettlementExisting?.id ??
+          uuid(`settlements-lab-settlement-${plan.currentSettlement.key}`);
+        const currentSettlement = await tx.practitionerSettlement.upsert({
+          where: { id: currentSettlementId },
           create: {
+            id: currentSettlementId,
             batchId: currentBatch.id,
             practitionerId: plan.practitionerId,
             walletId,
@@ -480,26 +488,34 @@ export const settlementsLabSeedModule: SeedModule = {
               '[seed:settlements-lab] missing wallet id for historical settlement',
             );
           }
-          const historicalSettlement = await tx.practitionerSettlement.upsert({
-            where: {
-              batchId_practitionerId: {
+          const historicalSettlementExisting =
+            await tx.practitionerSettlement.findFirst({
+              where: {
                 batchId: historicalBatch.id,
                 practitionerId: plan.practitionerId,
               },
-            },
+              orderBy: { createdAt: 'asc' },
+              select: { id: true },
+            });
+          const historicalSettlementId =
+            historicalSettlementExisting?.id ??
+            uuid(`settlements-lab-settlement-${plan.historicalSettlement.key}`);
+          const historicalSettlement = await tx.practitionerSettlement.upsert({
+            where: { id: historicalSettlementId },
             create: {
+              id: historicalSettlementId,
               batchId: historicalBatch.id,
               practitionerId: plan.practitionerId,
               walletId: historicalWalletId,
               amountGross: money(plan.historicalSettlement.amountNet),
               amountAdjustments: '0.00',
-            amountNet: money(plan.historicalSettlement.amountNet),
-            currencyCode,
-            originalAmount: money(plan.historicalSettlement.amountNet),
-            originalCurrencyCode: currencyCode,
-            walletCurrencyCode: currencyCode,
-            convertedAmount: money(plan.historicalSettlement.amountNet),
-            finalWalletCredit: money(plan.historicalSettlement.amountNet),
+              amountNet: money(plan.historicalSettlement.amountNet),
+              currencyCode,
+              originalAmount: money(plan.historicalSettlement.amountNet),
+              originalCurrencyCode: currencyCode,
+              walletCurrencyCode: currencyCode,
+              convertedAmount: money(plan.historicalSettlement.amountNet),
+              finalWalletCredit: money(plan.historicalSettlement.amountNet),
               status: plan.historicalSettlement.status,
               paidAt: plan.historicalSettlement.paidAt,
               failedAt: null,
@@ -806,12 +822,7 @@ export const settlementsLabSeedModule: SeedModule = {
         });
 
         await tx.practitionerSettlement.upsert({
-          where: {
-            batchId_practitionerId: {
-              batchId: historicalBatch.id,
-              practitionerId: ePaidSettlement.practitionerId,
-            },
-          },
+          where: { id: paidSettlementId },
           create: {
             id: paidSettlementId,
             batchId: historicalBatch.id,

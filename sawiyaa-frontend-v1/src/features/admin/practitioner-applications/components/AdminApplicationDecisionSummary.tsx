@@ -1,6 +1,8 @@
 "use client";
 
+import { useLocale } from "next-intl";
 import { CheckCircle2, XCircle } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 type Props = {
   status: "APPROVED" | "REJECTED";
@@ -27,40 +29,77 @@ export default function AdminApplicationDecisionSummary({
   sections,
   readOnlyNote,
 }: Props) {
+  const locale = useLocale();
   const Icon = status === "APPROVED" ? CheckCircle2 : XCircle;
 
+  // Resolve raw UUIDs into friendly reviewer label
+  const displayReviewer = reviewedByUserId
+    ? /^[0-9a-fA-F-]{36}$/.test(reviewedByUserId)
+      ? (locale === "ar" ? "فريق المراجعة والاعتماد" : "Admin Review Team")
+      : reviewedByUserId
+    : "-";
+
   return (
-    <section className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-800 dark:bg-gray-900">
-      <div className="flex items-start gap-3">
-        <Icon className={status === "APPROVED" ? "h-6 w-6 text-success-600" : "h-6 w-6 text-error-600"} />
-        <div className="min-w-0 flex-1">
-          <h2 className="text-base font-semibold text-gray-900 dark:text-white">{title}</h2>
-          <p className="mt-2 text-sm font-medium text-gray-700 dark:text-gray-200">{statusLabel}</p>
-          <div className="mt-4 grid gap-3 text-sm sm:grid-cols-2">
-            <div>
-              <p className="text-xs text-gray-500 dark:text-gray-400">{dateLabel}</p>
-              <p className="mt-1 text-gray-900 dark:text-white">
-                {reviewedAt ? new Date(reviewedAt).toLocaleString() : "-"}
+    <section className="rounded-2xl border border-border-light bg-surface p-5 shadow-2xs dark:bg-surface-secondary/40">
+      <div className="flex items-start gap-3.5">
+        <div
+          className={cn(
+            "flex h-9 w-9 shrink-0 items-center justify-center rounded-xl",
+            status === "APPROVED"
+              ? "bg-emerald-50 text-emerald-600 dark:bg-emerald-950/50 dark:text-emerald-400"
+              : "bg-rose-50 text-rose-600 dark:bg-rose-950/50 dark:text-rose-400",
+          )}
+        >
+          <Icon className="h-5 w-5" />
+        </div>
+
+        <div className="min-w-0 flex-1 space-y-3">
+          <div>
+            <h2 className="text-sm font-extrabold text-text-primary dark:text-white/95">{title}</h2>
+            <span
+              className={cn(
+                "mt-1.5 inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-bold",
+                status === "APPROVED"
+                  ? "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300"
+                  : "border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-800 dark:bg-rose-950/40 dark:text-rose-300",
+              )}
+            >
+              {statusLabel}
+            </span>
+          </div>
+
+          <div className="grid gap-2.5 sm:grid-cols-2">
+            <div className="rounded-xl border border-border-light bg-surface-secondary/30 p-2.5 dark:bg-surface-secondary/20">
+              <p className="text-[11px] font-semibold text-text-muted">{dateLabel}</p>
+              <p className="mt-0.5 text-xs font-bold text-text-primary dark:text-white/95">
+                {reviewedAt ? new Date(reviewedAt).toLocaleString(locale === "ar" ? "ar-EG" : "en-US") : "-"}
               </p>
             </div>
-            <div>
-              <p className="text-xs text-gray-500 dark:text-gray-400">{reviewedByLabel}</p>
-              <p className="mt-1 text-gray-900 dark:text-white">{reviewedByUserId || "-"}</p>
+            <div className="rounded-xl border border-border-light bg-surface-secondary/30 p-2.5 dark:bg-surface-secondary/20">
+              <p className="text-[11px] font-semibold text-text-muted">{reviewedByLabel}</p>
+              <p className="mt-0.5 text-xs font-bold text-text-primary dark:text-white/95">
+                {displayReviewer}
+              </p>
             </div>
           </div>
-          {sections.length > 0 ? (
-            <div className="mt-4">
-              <p className="text-xs font-semibold text-gray-500 dark:text-gray-400">{sectionsLabel}</p>
-              <div className="mt-2 flex flex-wrap gap-2">
+
+          {sections.length > 0 && (
+            <div className="space-y-1.5">
+              <p className="text-[11px] font-bold text-text-muted">{sectionsLabel}</p>
+              <div className="flex flex-wrap gap-1.5">
                 {sections.map((section) => (
-                  <span key={`${section.label}-${section.status}`} className="inline-flex items-center rounded-full border border-success-200 bg-success-50 px-3 py-1 text-xs font-medium text-success-800 dark:border-success-900/40 dark:bg-success-900/10 dark:text-success-200">
+                  <span
+                    key={`${section.label}-${section.status}`}
+                    className="inline-flex items-center rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-0.5 text-xs font-bold text-emerald-800 dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300"
+                  >
                     {section.label}: {section.status}
                   </span>
                 ))}
               </div>
             </div>
-          ) : null}
-          <p className="mt-4 rounded-xl bg-gray-50 p-3 text-xs leading-5 text-gray-600 dark:bg-gray-950 dark:text-gray-300">
+          )}
+
+          <p className="rounded-xl border border-border-light bg-surface-secondary/30 p-3 text-xs font-medium leading-relaxed text-text-secondary dark:bg-surface-secondary/20">
             {readOnlyNote}
           </p>
         </div>

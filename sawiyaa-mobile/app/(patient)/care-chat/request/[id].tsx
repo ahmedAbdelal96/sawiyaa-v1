@@ -98,7 +98,7 @@ export default function CareChatRequestDetailScreen() {
 
           <View style={[styles.statusBadge, { backgroundColor: color + "18" }]}>
             <Text style={[styles.statusText, { color }]}>
-              {t(`careChat.requestStatus.${request.status}`, request.status)}
+              {String(t(`careChat.requestStatus.${request.status}`, request.status))}
             </Text>
           </View>
 

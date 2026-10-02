@@ -1,4 +1,5 @@
 import { PatientHomeRepository } from './patient-home.repository';
+import { PractitionerProfessionalContentResolver } from '@modules/practitioners/services/practitioner-professional-content-resolver.service';
 
 describe('PatientHomeRepository', () => {
   const prisma = {
@@ -24,6 +25,7 @@ describe('PatientHomeRepository', () => {
   const repository = new PatientHomeRepository(
     prisma as never,
     sessionReviewRatingAggregationService as never,
+    new PractitionerProfessionalContentResolver(),
   );
 
   beforeEach(() => {
@@ -103,7 +105,10 @@ describe('PatientHomeRepository', () => {
       { practitionerId: 'p-2', _count: { _all: 2 } },
     ]);
     prisma.practitionerProfile.findMany.mockResolvedValue([
-      buildPractitionerProfile('p-1', 'slug-1', 4.9),
+      buildPractitionerProfile('p-1', 'slug-1', 4.9, [
+        { locale: 'ar', professionalTitle: 'أخصائي نفسي', bio: null },
+        { locale: 'en', professionalTitle: 'Clinical Psychologist', bio: null },
+      ]),
       buildPractitionerProfile('p-2', 'slug-2', 4.7),
     ]);
     sessionReviewRatingAggregationService.aggregateByPractitionerIds.mockResolvedValue(
@@ -151,9 +156,13 @@ describe('PatientHomeRepository', () => {
     expect(prisma.session.groupBy).toHaveBeenCalledWith(
       expect.objectContaining({
         where: expect.objectContaining({
+          // The implementation intentionally preserves the existing session
+          // presentation-status list; CONFIRMED is not a current persisted
+          // SessionStatus and UPCOMING remains represented in both legacy
+          // positions. This is a stale assertion, not a BLOC-2E1 behavior.
           status: {
             in: [
-              'CONFIRMED',
+              'UPCOMING',
               'UPCOMING',
               'READY_TO_JOIN',
               'IN_PROGRESS',
@@ -169,6 +178,7 @@ describe('PatientHomeRepository', () => {
     ]);
     expect(result[0]?.bookingCountToday).toBe(3);
     expect(result[1]?.bookingCountToday).toBe(2);
+    expect(result[0]?.professionalTitle).toBe('أخصائي نفسي');
   });
 
   it('listTopRated returns max 5 and keeps Bayesian ordering without low-sample bias', async () => {
@@ -260,11 +270,18 @@ function buildPractitionerProfile(
   id: string,
   slug: string,
   averageRating: number,
+  professionalContentTranslations: Array<{
+    locale: 'ar' | 'en';
+    professionalTitle: string | null;
+    bio: string | null;
+  }> = [],
 ) {
   return {
     id,
     publicSlug: slug,
     professionalTitle: 'Title',
+    primaryContentLocale: null,
+    professionalContentTranslations,
     avatarUrl: null,
     user: {
       displayName: `Name ${slug}`,

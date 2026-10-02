@@ -141,4 +141,58 @@ describe('NotificationPushExecutionService', () => {
       }),
     });
   });
+
+  it('revokes the invalid token from the correct device across multiple Expo batches', async () => {
+    const devices = Array.from({ length: 101 }, (_, index) => ({
+      deviceToken: `ExponentPushToken[token-${index}]`,
+      provider: 'EXPO',
+    }));
+    (repository.listActiveDevicesByUserAndRole as jest.Mock).mockResolvedValue(
+      devices,
+    );
+
+    (global.fetch as jest.Mock)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          data: Array.from({ length: 100 }, (_, index) => ({
+            status: 'ok',
+            id: `ticket-${index}`,
+          })),
+        }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          data: [
+            {
+              status: 'error',
+              message: 'Push token is invalid',
+              details: { error: 'DeviceNotRegistered' },
+            },
+          ],
+        }),
+      });
+
+    const result = await service.execute(baseNotification);
+
+    expect(global.fetch).toHaveBeenCalledTimes(2);
+    expect(repository.revokeUserDevices).toHaveBeenCalledTimes(1);
+    expect(repository.revokeUserDevices).toHaveBeenCalledWith({
+      userId: 'user-1',
+      token: 'ExponentPushToken[token-100]',
+    });
+    expect(result).toEqual({
+      success: true,
+      provider: 'EXPO',
+      providerMessageRef: 'ticket-0',
+      responsePayload: expect.objectContaining({
+        deviceCount: 101,
+        successCount: 100,
+        failureCount: 1,
+        notificationId: 'notif-1',
+        targetRole: 'PATIENT',
+      }),
+    });
+  });
 });

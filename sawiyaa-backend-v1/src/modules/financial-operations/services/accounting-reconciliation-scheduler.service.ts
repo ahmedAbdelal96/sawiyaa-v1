@@ -1,10 +1,24 @@
-import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  OnModuleDestroy,
+  OnModuleInit,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { CronJob } from 'cron';
-import { Prisma, AccountingReconciliationRunStatus, AccountingReconciliationRunTrigger } from '@prisma/client';
+import { AccountingReconciliationRunStatus } from '@prisma/client';
 import { PrismaService } from '@common/prisma/prisma.service';
 import { AccountingReconciliationOperationsService } from './accounting-reconciliation-operations.service';
 import { AccountingReconciliationSchedulerState } from '../types/accounting-reconciliation-operations.types';
+import { ModuleRef } from '@nestjs/core';
+import { PaymentProviderRecoveryService } from '@modules/payments/services/payment-provider-recovery.service';
+import {
+  PostgresAdvisoryLockService,
+  PostgresAdvisoryLockLease,
+} from '@common/coordination/postgres-advisory-lock.service';
+
+export const ACCOUNTING_RECONCILIATION_SCHEDULER_LOCK_KEY =
+  'sawiyaa:accounting-reconciliation:scheduler';
 
 @Injectable()
 export class AccountingReconciliationSchedulerService
@@ -16,7 +30,8 @@ export class AccountingReconciliationSchedulerService
   private job: CronJob | null = null;
   private lastScheduledRunAt: Date | null = null;
   private lastScheduledRunId: string | null = null;
-  private lastScheduledRunStatus: AccountingReconciliationRunStatus | null = null;
+  private lastScheduledRunStatus: AccountingReconciliationRunStatus | null =
+    null;
   private lastScheduledIssueCount: number | null = null;
   private lastScheduledCriticalCount: number | null = null;
   private running = false;
@@ -25,6 +40,8 @@ export class AccountingReconciliationSchedulerService
     private readonly configService: ConfigService,
     private readonly prisma: PrismaService,
     private readonly operationsService: AccountingReconciliationOperationsService,
+    private readonly advisoryLockService: PostgresAdvisoryLockService,
+    private readonly moduleRef?: ModuleRef,
   ) {}
 
   onModuleInit() {
@@ -61,8 +78,8 @@ export class AccountingReconciliationSchedulerService
     }
   }
 
-  onModuleDestroy() {
-    this.job?.stop();
+  async onModuleDestroy() {
+    await this.job?.stop();
     this.job = null;
   }
 
@@ -72,16 +89,51 @@ export class AccountingReconciliationSchedulerService
     }
 
     if (this.running) {
-      this.logger.warn(
-        `Skipping accounting reconciliation because a run is already in progress`,
+      this.logger.log(
+        `accounting_reconciliation_scheduler_skipped_local_overlap trigger=${triggeredBy}`,
       );
       return null;
     }
 
     this.running = true;
     const startedAt = new Date();
+    let lease: PostgresAdvisoryLockLease | null = null;
+
+    this.logger.log(
+      `accounting_reconciliation_scheduler_triggered trigger=${triggeredBy}`,
+    );
 
     try {
+      try {
+        lease = await this.advisoryLockService.tryAcquire(
+          ACCOUNTING_RECONCILIATION_SCHEDULER_LOCK_KEY,
+        );
+      } catch (error) {
+        this.logger.error(
+          `accounting_reconciliation_scheduler_lock_acquisition_failed durationMs=${Date.now() - startedAt.getTime()} error=${this.errorMessage(error)}`,
+        );
+        return null;
+      }
+
+      if (!lease) {
+        this.logger.log(
+          `RECONCILIATION_SKIPPED_ALREADY_RUNNING trigger=${triggeredBy} durationMs=${Date.now() - startedAt.getTime()}`,
+        );
+        return null;
+      }
+
+      this.logger.log(
+        `accounting_reconciliation_scheduler_lock_acquired trigger=${triggeredBy}`,
+      );
+      this.logger.log(
+        `accounting_reconciliation_scheduler_execution_started trigger=${triggeredBy}`,
+      );
+
+      const providerRecovery = this.moduleRef?.get(
+        PaymentProviderRecoveryService,
+        { strict: false },
+      );
+      await providerRecovery?.reconcileEligible(this.getBatchSize());
       const result = await this.operationsService.runFull({
         scope: 'FULL',
         trigger: 'SCHEDULED',
@@ -91,23 +143,40 @@ export class AccountingReconciliationSchedulerService
 
       this.lastScheduledRunAt = startedAt;
       this.lastScheduledRunId = result.run.id;
-      this.lastScheduledRunStatus = result.run.status as AccountingReconciliationRunStatus;
+      this.lastScheduledRunStatus = result.run
+        .status as AccountingReconciliationRunStatus;
       this.lastScheduledIssueCount = result.issueCount;
       this.lastScheduledCriticalCount = result.summary.totalCritical;
 
       this.logger.log(
-        `Accounting reconciliation scheduled run completed runId=${result.run.id} status=${result.run.status} checked=${result.summary.totalChecked} failed=${result.summary.totalFailed} critical=${result.summary.totalCritical} warnings=${result.summary.totalWarnings}`,
+        `accounting_reconciliation_scheduler_execution_completed trigger=${triggeredBy} runId=${result.run.id} status=${result.run.status} checked=${result.summary.totalChecked} failed=${result.summary.totalFailed} critical=${result.summary.totalCritical} warnings=${result.summary.totalWarnings} durationMs=${Date.now() - startedAt.getTime()}`,
       );
 
       return result;
     } catch (error) {
       this.logger.error(
-        `Accounting reconciliation scheduled run failed: ${(error as Error).message}`,
+        `accounting_reconciliation_scheduler_execution_failed trigger=${triggeredBy} durationMs=${Date.now() - startedAt.getTime()} error=${this.errorMessage(error)}`,
       );
       return null;
     } finally {
+      if (lease) {
+        try {
+          await lease.release();
+          this.logger.log(
+            `accounting_reconciliation_scheduler_guard_released trigger=${triggeredBy} durationMs=${Date.now() - startedAt.getTime()}`,
+          );
+        } catch (error) {
+          this.logger.error(
+            `accounting_reconciliation_scheduler_guard_release_failed trigger=${triggeredBy} error=${this.errorMessage(error)}`,
+          );
+        }
+      }
       this.running = false;
     }
+  }
+
+  private errorMessage(error: unknown): string {
+    return error instanceof Error ? error.message : String(error);
   }
 
   async getStatusSnapshot(): Promise<AccountingReconciliationSchedulerState> {
@@ -118,7 +187,11 @@ export class AccountingReconciliationSchedulerService
             scope: 'FULL',
             trigger: 'SCHEDULED',
           },
-          orderBy: [{ startedAt: 'desc' }, { createdAt: 'desc' }, { id: 'desc' }],
+          orderBy: [
+            { startedAt: 'desc' },
+            { createdAt: 'desc' },
+            { id: 'desc' },
+          ],
           select: {
             id: true,
             startedAt: true,
@@ -138,7 +211,11 @@ export class AccountingReconciliationSchedulerService
               ],
             },
           },
-          orderBy: [{ startedAt: 'desc' }, { createdAt: 'desc' }, { id: 'desc' }],
+          orderBy: [
+            { startedAt: 'desc' },
+            { createdAt: 'desc' },
+            { id: 'desc' },
+          ],
           select: { startedAt: true },
         }),
         this.prisma.accountingReconciliationIssue.count({
@@ -162,23 +239,26 @@ export class AccountingReconciliationSchedulerService
       lookbackDays: this.getLookbackDays(),
       batchSize: this.getBatchSize(),
       active: Boolean(this.job),
-      nextScheduledRunAt: this.job ? this.job.nextDate().toJSDate().toISOString() : null,
+      nextScheduledRunAt: this.job
+        ? this.job.nextDate().toJSDate().toISOString()
+        : null,
       lastScheduledRunAt:
         this.lastScheduledRunAt?.toISOString() ??
         lastScheduledRun?.startedAt?.toISOString() ??
         null,
-      lastScheduledRunId: this.lastScheduledRunId ?? lastScheduledRun?.id ?? null,
+      lastScheduledRunId:
+        this.lastScheduledRunId ?? lastScheduledRun?.id ?? null,
       lastScheduledRunStatus:
-        this.lastScheduledRunStatus ??
-        (lastScheduledRun?.status ?? null) ??
-        null,
+        this.lastScheduledRunStatus ?? lastScheduledRun?.status ?? null,
       lastScheduledIssueCount:
         this.lastScheduledIssueCount ??
         (typeof lastScheduledRun?.totalCritical === 'number'
           ? lastScheduledRun.totalCritical + lastScheduledRun.totalWarnings
           : null),
       lastScheduledCriticalCount:
-        this.lastScheduledCriticalCount ?? lastScheduledRun?.totalCritical ?? null,
+        this.lastScheduledCriticalCount ??
+        lastScheduledRun?.totalCritical ??
+        null,
       lastFullRunAt: lastFullRun?.startedAt?.toISOString() ?? null,
       openCriticalCount: criticalCount,
       openWarningCount: warningCount,
@@ -199,14 +279,16 @@ export class AccountingReconciliationSchedulerService
 
   private isEnabled() {
     return (
-      this.configService.get<boolean>('accountingReconciliation.enabled') ?? false
+      this.configService.get<boolean>('accountingReconciliation.enabled') ??
+      false
     );
   }
 
   private isAlertsEnabled() {
     return (
-      this.configService.get<boolean>('accountingReconciliation.alertsEnabled') ??
-      false
+      this.configService.get<boolean>(
+        'accountingReconciliation.alertsEnabled',
+      ) ?? false
     );
   }
 
@@ -220,14 +302,16 @@ export class AccountingReconciliationSchedulerService
   private getLookbackDays() {
     return Math.max(
       1,
-      this.configService.get<number>('accountingReconciliation.lookbackDays') ?? 7,
+      this.configService.get<number>('accountingReconciliation.lookbackDays') ??
+        7,
     );
   }
 
   private getBatchSize() {
     return Math.max(
       10,
-      this.configService.get<number>('accountingReconciliation.batchSize') ?? 100,
+      this.configService.get<number>('accountingReconciliation.batchSize') ??
+        100,
     );
   }
 }

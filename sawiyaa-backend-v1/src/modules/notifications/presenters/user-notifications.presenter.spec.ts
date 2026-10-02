@@ -87,6 +87,8 @@ describe('UserNotificationsPresenter', () => {
         relatedEntityType: 'SESSION',
         relatedEntityId: 'session_1',
         category: 'SESSION',
+        amount: '600.00',
+        currencyCode: 'egp',
         idempotencyKey: 'secret-value',
         providerRoomUrl: 'https://provider.example/room',
       },
@@ -108,6 +110,8 @@ describe('UserNotificationsPresenter', () => {
       relatedEntityType: 'SESSION',
       relatedEntityId: 'session_1',
       category: 'SESSION',
+      amount: '600.00',
+      currencyCode: 'EGP',
     });
   });
 });

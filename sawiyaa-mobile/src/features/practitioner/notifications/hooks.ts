@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import { useAuthenticatedQueryEnabled } from "../../auth/query-auth";
 import {
   getMyUnreadNotificationCount,
@@ -7,23 +8,20 @@ import {
   markMyNotificationRead,
 } from "../../patient/notifications/api";
 import type { ListMyNotificationsParams } from "../../patient/notifications/types";
+import { practitionerNotificationQueryKeys } from "./query-keys";
 
-const practitionerNotificationQueryKeys = {
-  all: ["practitioner-notifications"] as const,
-  list: (params: ListMyNotificationsParams) =>
-    [...practitionerNotificationQueryKeys.all, "list", params] as const,
-  unreadCount: () =>
-    [...practitionerNotificationQueryKeys.all, "unread-count"] as const,
-};
+export { practitionerNotificationQueryKeys } from "./query-keys";
 
 export function usePractitionerNotifications(
   params: ListMyNotificationsParams,
   options?: { enabled?: boolean },
 ) {
   const authEnabled = useAuthenticatedQueryEnabled("practitioner");
+  const { i18n } = useTranslation();
+  const locale = i18n.language?.startsWith("ar") ? "ar" : "en";
 
   return useQuery({
-    queryKey: practitionerNotificationQueryKeys.list(params),
+    queryKey: practitionerNotificationQueryKeys.list(params, locale),
     queryFn: () => listMyNotifications(params),
     enabled: authEnabled && (options?.enabled ?? true),
     staleTime: 20_000,

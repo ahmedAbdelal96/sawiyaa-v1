@@ -133,6 +133,18 @@ export class PractitionerProfileResponseDto {
   @ApiProperty({ type: PractitionerPricingResponseDto })
   pricing!: PractitionerPricingResponseDto;
 
+  @ApiProperty({ nullable: true })
+  instantBookingPrice30Egp!: number | null;
+
+  @ApiProperty({ nullable: true })
+  instantBookingPrice30Usd!: number | null;
+
+  @ApiProperty({ nullable: true })
+  instantBookingPrice60Egp!: number | null;
+
+  @ApiProperty({ nullable: true })
+  instantBookingPrice60Usd!: number | null;
+
   @ApiProperty({
     type: PractitionerPayoutDestinationResponseDto,
     nullable: true,

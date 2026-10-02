@@ -6,7 +6,6 @@ import {
 import {
   Payment,
   PatientPackagePurchaseStatus,
-  SessionEventType,
   SessionStatus,
 } from '@prisma/client';
 import { PrismaService } from '@common/prisma/prisma.service';
@@ -67,13 +66,6 @@ export class HandlePackagePurchasePaymentFailureUseCase {
       return {
         purchase,
       };
-    }
-
-    if (!purchase.sessions.length) {
-      throw new ConflictException({
-        messageKey: 'packagePurchases.errors.noLinkedSessions',
-        error: 'PACKAGE_PURCHASE_NO_LINKED_SESSIONS',
-      });
     }
 
     const sessionsToExpire = purchase.sessions.filter(

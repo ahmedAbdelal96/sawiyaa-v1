@@ -82,20 +82,38 @@ export class UploadAdminAcademyProgramEnrollmentCertificateUseCase {
       });
     }
 
+    const now = new Date();
+    const programSessions = this.prisma
+      ? await this.prisma.academyProgramSession.findMany({
+          where: { academyProgramId: enrollment.academyProgram.id },
+          select: { endsAt: true },
+        })
+      : [];
+    if (
+      (enrollment.academyProgram.endAt && enrollment.academyProgram.endAt > now) ||
+      programSessions.some((session) => session.endsAt > now)
+    ) {
+      throw new BadRequestException({
+        messageKey: 'academyProgram.errors.certificateProgramNotEnded',
+        error: 'ACADEMY_PROGRAM_CERTIFICATE_PROGRAM_NOT_ENDED',
+      });
+    }
+
     const originalFileName = this.normalizeOriginalFileName(
       input.file.originalname,
     );
-    const now = new Date();
     const stored = await this.academyProgramCertificateStorageService.saveCertificate(
       {
         enrollmentId: enrollment.id,
         fileBuffer: input.file.buffer,
+        originalFileName,
       },
     );
 
     try {
       const data = {
           certificateFileStoragePath: stored.storagePath,
+          certificateStoredFileId: stored.storedFileId,
           certificateFileName: originalFileName,
           certificateUploadedAt: now,
           certificateUploadedByUserId: input.actorUserId,

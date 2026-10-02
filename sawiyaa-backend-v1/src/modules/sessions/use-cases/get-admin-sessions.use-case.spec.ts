@@ -74,6 +74,7 @@ describe('GetAdminSessionsUseCase', () => {
     const useCase = new GetAdminSessionsUseCase(
       sessionRepository as never,
       sessionMapper as never,
+      { interpret: jest.fn(async ({ session }) => ({ state: session.status })) } as never,
     );
 
     return { useCase, sessionRepository, sessionMapper };

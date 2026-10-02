@@ -11,6 +11,7 @@ import { ValidateSettlementStatusTransitionService } from '../services/validate-
 import { RecordSettlementPayoutService } from '../services/record-settlement-payout.service';
 import { RecordPractitionerSettlementPayoutDto } from '../dto/settlement-payout.dto';
 import { FINANCIAL_OPS_ERROR_CODES } from '../types/financial-operations.types';
+import { OperationalNotificationService } from '@modules/notifications/services/operational-notification.service';
 
 @Injectable()
 export class RecordPractitionerSettlementPayoutUseCase {
@@ -20,6 +21,7 @@ export class RecordPractitionerSettlementPayoutUseCase {
     private readonly settlementRepository: SettlementRepository,
     private readonly recordSettlementPayoutService: RecordSettlementPayoutService,
     private readonly validateSettlementStatusTransitionService: ValidateSettlementStatusTransitionService,
+    private readonly operationalNotificationService?: OperationalNotificationService,
   ) {}
 
   async execute(input: {
@@ -124,6 +126,15 @@ export class RecordPractitionerSettlementPayoutUseCase {
         isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
       },
     );
+
+    if (this.operationalNotificationService) {
+      await this.operationalNotificationService.notifyPractitionerPayoutCompleted({
+        practitionerProfileId: result.payoutRecord.practitionerId,
+        payoutId: result.payoutRecord.id,
+        amount: result.payoutRecord.amountNet,
+        currencyCode: result.payoutRecord.currency,
+      });
+    }
 
     return {
       item: result.payoutRecord,

@@ -21,6 +21,14 @@ export type FinancialBreakdownCommission = {
 };
 
 export type FinancialBreakdown = {
+  /** Authoritative funding quote; existing collection intents remain fixed. */
+  fundingPreview?: {
+    walletUsed: string;
+    gatewayAmount: string;
+    gatewayAmountWithoutWallet: string;
+    walletAvailable: string;
+    locked: boolean;
+  };
   sessionId: string;
   paymentPurpose: string;
   currency: string;
@@ -33,9 +41,9 @@ export type FinancialBreakdown = {
   discountAmount: string;
   /** Final amount the patient pays */
   netPaidAmount: string;
-  platformCommissionAmount: string;
-  practitionerShareAmount: string;
-  commissionRule: FinancialBreakdownCommission;
+  platformCommissionAmount: string | null;
+  practitionerShareAmount: string | null;
+  commissionRule: FinancialBreakdownCommission | null;
   coupon: FinancialBreakdownCoupon | null;
 };
 

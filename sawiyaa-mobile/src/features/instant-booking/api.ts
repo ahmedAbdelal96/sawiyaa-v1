@@ -27,8 +27,15 @@ export async function getPatientInstantBookingPractitioners(
 
 export async function createPatientInstantBookingRequest(
   input: CreatePatientInstantBookingRequestInput,
+  idempotencyKey?: string,
 ) {
-  const response = await apiClient.post("/patients/me/instant-booking-requests", input);
+  const response = await apiClient.post(
+    "/patients/me/instant-booking-requests",
+    input,
+    idempotencyKey
+      ? { headers: { "Idempotency-Key": idempotencyKey } }
+      : undefined,
+  );
   return extractApiData<InstantBookingRequestResponse>(response);
 }
 

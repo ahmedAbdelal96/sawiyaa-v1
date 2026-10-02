@@ -17,6 +17,23 @@ describe('ConfirmPatientPasswordResetUseCase', () => {
   };
   const authIdentityRepository = { updatePasswordHash: jest.fn() };
   const invalidateUserTokensUseCase = { execute: jest.fn() };
+  const issueAuthTokensUseCase = {
+    execute: jest.fn().mockResolvedValue({
+      accessToken: 'access-token',
+      refreshToken: 'refresh-token',
+      refreshTokenExpiresAt: new Date(),
+    }),
+  };
+  const userRepository = {
+    findByIdWithAuthContext: jest.fn().mockResolvedValue({
+      id: 'u1',
+      status: 'ACTIVE',
+      roles: [{ role: UserRoleType.PATIENT }],
+    }),
+  };
+  const operationalNotificationService = {
+    notifyPatientPasswordReset: jest.fn().mockResolvedValue(undefined),
+  };
 
   const useCase = new ConfirmPatientPasswordResetUseCase(
     prisma as any,
@@ -26,6 +43,10 @@ describe('ConfirmPatientPasswordResetUseCase', () => {
     hashPasswordUseCase as any,
     authIdentityRepository as any,
     invalidateUserTokensUseCase as any,
+    issueAuthTokensUseCase as any,
+    userRepository as any,
+    undefined,
+    operationalNotificationService as any,
   );
 
   beforeEach(() => {
@@ -60,7 +81,35 @@ describe('ConfirmPatientPasswordResetUseCase', () => {
       'reset-1',
       expect.any(Object),
     );
+    expect(
+      operationalNotificationService.notifyPatientPasswordReset,
+    ).toHaveBeenCalledWith(
+      expect.objectContaining({ userId: 'u1', eventId: expect.any(String) }),
+    );
     expect(result.message).toBe('ok');
+  });
+
+  it('does not allow notification failure to undo a committed password reset', async () => {
+    passwordResetSessionRepository.findActiveByTokenHash.mockResolvedValue({
+      id: 'reset-1',
+      userId: 'u1',
+      role: UserRoleType.PATIENT,
+      user: { roles: [{ role: UserRoleType.PATIENT }] },
+    });
+    operationalNotificationService.notifyPatientPasswordReset.mockRejectedValue(
+      new Error('notification unavailable'),
+    );
+
+    await expect(
+      useCase.execute({
+        resetToken: 'plain-token',
+        newPassword: 'NewPassword123',
+        locale: 'en',
+      }),
+    ).resolves.toEqual(expect.objectContaining({ message: 'ok' }));
+    expect(authIdentityRepository.updatePasswordHash).toHaveBeenCalled();
+    expect(invalidateUserTokensUseCase.execute).toHaveBeenCalled();
+    expect(passwordResetSessionRepository.consume).toHaveBeenCalled();
   });
 
   it('rejects invalid or expired reset token', async () => {
@@ -75,6 +124,9 @@ describe('ConfirmPatientPasswordResetUseCase', () => {
         locale: 'en',
       }),
     ).rejects.toBeInstanceOf(UnauthorizedException);
+    expect(
+      operationalNotificationService.notifyPatientPasswordReset,
+    ).not.toHaveBeenCalled();
   });
 
   it('rejects reset session for non-patient role', async () => {
@@ -92,5 +144,8 @@ describe('ConfirmPatientPasswordResetUseCase', () => {
         locale: 'en',
       }),
     ).rejects.toBeInstanceOf(ConflictException);
+    expect(
+      operationalNotificationService.notifyPatientPasswordReset,
+    ).not.toHaveBeenCalled();
   });
 });

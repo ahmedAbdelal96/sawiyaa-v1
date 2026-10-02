@@ -51,7 +51,8 @@ export default function NewCareChatRequestScreen() {
   const existingState = useMemo((): ExistingRequestState => {
     if (!practitionerId && !relatedSessionId) return { found: false };
 
-    const items = existingRequestsQuery.data?.items ?? [];
+    const items: CareChatRequestItemDto[] =
+      existingRequestsQuery.data?.items ?? [];
     const match = items.find((item) => {
       const isRelevant =
         item.practitioner.id === practitionerId &&

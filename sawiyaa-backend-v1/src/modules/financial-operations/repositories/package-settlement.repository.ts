@@ -117,14 +117,27 @@ export class PackageSettlementRepository {
             currencyCode: true,
             amountTotal: true,
             capturedAt: true,
+            provider: true,
+            providerPaymentRef: true,
           },
         },
         sessions: {
           select: {
             id: true,
+            sessionCode: true,
             status: true,
             packageSessionIndex: true,
             packageSessionCount: true,
+            scheduledStartAt: true,
+            scheduledEndAt: true,
+            paymentCoverageType: true,
+            packageEntitlementDecision: {
+              select: {
+                decisionType: true,
+                reasonCode: true,
+                decidedAt: true,
+              },
+            },
           },
           orderBy: [{ packageSessionIndex: 'asc' }],
         },
@@ -144,6 +157,7 @@ export class PackageSettlementRepository {
     patient: {
       select: {
         id: true,
+        displayName: true,
         user: {
           select: {
             displayName: true,
