@@ -1,5 +1,23 @@
 # Sawiyaa Docker Deployment
 
+## Permanent server layout
+
+The canonical two-environment architecture and operator workflow are documented
+in:
+
+- `deploy/docs/SERVER_DEPLOYMENT_ARCHITECTURE.md`
+- `deploy/docs/OPERATIONS_GUIDE.md`
+- `deploy/server/bootstrap-server.sh`
+- `deploy/server/update-prod.sh`
+- `deploy/server/update-dev.sh`
+
+Production runs from `/opt/sawiyaa` on `main` under Compose project `sawiyaa`.
+Development runs from `/opt/sawiyaa-dev` on `development` under Compose project
+`sawiyaa-dev`. Initially only its Nginx ingress is published at port 8080;
+PostgreSQL, backend, frontend, worker, and Mailpit remain internal Docker
+services with separate network and volumes. No `dev.sawiyaa.com` gateway is
+configured here.
+
 This stack is designed for a production VPS with:
 
 - Nginx on ports 80 and 443

@@ -1,0 +1,6 @@
+# Database values are environment-owned. Use different credentials and
+# database names for /opt/sawiyaa and /opt/sawiyaa-dev.
+POSTGRES_DB=sawiyaa
+POSTGRES_USER=sawiyaa
+POSTGRES_PASSWORD=<secret-not-for-git>
+PGDATA=/var/lib/postgresql/data/pgdata
