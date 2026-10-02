@@ -1,0 +1,35 @@
+# Copy to /opt/sawiyaa/sawiyaa-backend-v1/.env.production and fill every
+# required value from the production secret store. Never commit the copy.
+APP_ENV=production
+NODE_ENV=production
+APP_VERSION=production
+PORT=7000
+APP_URL=https://sawiyaa.com
+WEB_APP_URL=https://sawiyaa.com
+LOG_LEVEL=info
+DATABASE_URL=postgresql://sawiyaa:<password>@postgres:5432/sawiyaa
+POSTGRES_DB=sawiyaa
+POSTGRES_USER=sawiyaa
+POSTGRES_PASSWORD=<production-password>
+PGDATA=/var/lib/postgresql/data/pgdata
+JWT_ACCESS_SECRET=<production-secret>
+JWT_REFRESH_SECRET=<different-production-secret>
+VIDEO_PROVIDER_DEFAULT=DAILY
+DAILY_API_KEY=<daily-api-key>
+DAILY_API_BASE_URL=https://api.daily.co/v1
+DAILY_WEBHOOK_SECRET=<daily-provider-webhook-secret>
+CORPORATE_CODE_PEPPER=<at-least-32-character-production-secret>
+MAIL_PROVIDER=smtp
+MAIL_FROM=<production-sender>
+MAIL_HOST=<smtp-host>
+MAIL_PORT=587
+MAIL_USER=<smtp-user>
+MAIL_PASS=<smtp-password>
+SAWIYAA_DEV_COUNTRY_CODE=
+GEOIP_ENABLED=true
+GEOIP_DATABASE_PATH=/opt/sawiyaa/geoip/GeoLite2-Country.mmdb
+TRUSTED_PROXY_MODE=cloudflare
+CLOUDFLARE_COUNTRY_HEADER_ENABLED=true
+NOTIFICATION_QUEUE_ENABLED=false
+DAILY_ATTENDANCE_QUEUE_ENABLED=false
+THROTTLE_STORE=memory
