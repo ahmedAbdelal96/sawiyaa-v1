@@ -9,6 +9,7 @@ const root = path.resolve(__dirname, '../..');
 const prodUpdate = fs.readFileSync(path.join(__dirname, 'update-prod.sh'), 'utf8');
 const devUpdate = fs.readFileSync(path.join(__dirname, 'update-dev.sh'), 'utf8');
 const devCompose = fs.readFileSync(path.join(root, 'docker-compose.dev.yml'), 'utf8');
+const backendDockerfile = fs.readFileSync(path.join(root, 'sawiyaa-backend-v1', 'Dockerfile'), 'utf8');
 
 function serviceBlock(service) {
   const start = devCompose.indexOf(`  ${service}:`);
@@ -64,6 +65,21 @@ test('development migration flow is ordered and forbids destructive reset', () =
 test('development update prepares runtime logs with the backend UID', () => {
   assert.match(devUpdate, /logs\/backend/);
   assert.match(devUpdate, /chown 10001:10001/);
+});
+
+test('runtime image contains the complete source surface for operator and seed commands', () => {
+  assert.match(backendDockerfile, /COPY --from=build \/app\/src \.\/src/);
+  assert.doesNotMatch(backendDockerfile, /COPY --from=build \/app\/src\/modules\/config/);
+  const packageJson = fs.readFileSync(path.join(root, 'sawiyaa-backend-v1', 'package.json'), 'utf8');
+  for (const command of [
+    'prisma:seed',
+    'db:bootstrap:config',
+    'db:bootstrap:payment-routes',
+    'db:sync:permissions',
+    'db:sync:countries',
+  ]) {
+    assert.match(packageJson, new RegExp(`"${command}"`));
+  }
 });
 
 test('development validator works without host Node and frontend build args use env inputs', () => {

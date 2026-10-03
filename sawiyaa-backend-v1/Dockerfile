@@ -25,10 +25,12 @@ COPY package*.json ./
 COPY --from=build /app/node_modules ./node_modules
 COPY --from=build /app/dist ./dist
 COPY --from=build /app/prisma ./prisma
-COPY --from=build /app/src/generated ./src/generated
-COPY --from=build /app/prisma/scripts ./prisma/scripts
-COPY --from=build /app/prisma/seed ./prisma/seed
-COPY --from=build /app/src/modules/config ./src/modules/config
+# Operator and seed commands execute through ts-node and may import any
+# application source module. Keep the runtime operator surface complete rather
+# than adding source directories one failure at a time. The compiled dist tree
+# remains the application runtime; this source tree is for explicit operator
+# commands only.
+COPY --from=build /app/src ./src
 COPY --from=build /app/tsconfig.json ./tsconfig.json
 COPY --from=build /app/prisma.config.js ./prisma.config.js
 COPY --from=build /app/prisma.config.js.map ./prisma.config.js.map
