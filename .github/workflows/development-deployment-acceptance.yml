@@ -115,6 +115,13 @@ jobs:
               echo 'No development acceptance log was produced.'
             fi
           } >> "$GITHUB_STEP_SUMMARY"
+          if [ -s /tmp/dev-acceptance.log ]; then
+            root_error="$(sed -E 's/(password|secret|token|api[_-]?key|authorization|database[_-]?url)[^[:space:],;]*/[REDACTED]/Ig' /tmp/dev-acceptance.log | grep -Ei 'error|exception|failed|unknown argument|invalid' | head -n 1 || true)"
+            if [ -n "$root_error" ]; then
+              root_error="${root_error:0:500}"
+              echo "::error title=Development acceptance first error::$root_error"
+            fi
+          fi
 
       - name: Verify application usability and runtime contracts
         shell: bash
