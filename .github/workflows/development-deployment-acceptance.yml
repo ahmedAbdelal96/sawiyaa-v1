@@ -98,6 +98,24 @@ jobs:
           set -e
           exit "$status"
 
+      - name: Publish redacted acceptance failure summary
+        if: always()
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          {
+            echo '## Development acceptance diagnostic summary'
+            if [ -s /tmp/dev-acceptance.log ]; then
+              echo '```text'
+              sed -E 's/(password|secret|token|api[_-]?key|authorization|database[_-]?url)[^[:space:],;]*/[REDACTED]/Ig' /tmp/dev-acceptance.log |
+                grep -Ei 'error|exception|failed|unknown argument|invalid|prisma|seed|exit code' |
+                tail -n 120 || true
+              echo '```'
+            else
+              echo 'No development acceptance log was produced.'
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
       - name: Verify application usability and runtime contracts
         shell: bash
         run: |
