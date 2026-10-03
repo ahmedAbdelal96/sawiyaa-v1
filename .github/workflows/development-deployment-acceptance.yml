@@ -127,9 +127,10 @@ jobs:
         shell: bash
         run: |
           set -Eeuo pipefail
-          curl --fail --silent --show-error http://127.0.0.1:8080/ >/dev/null
+          curl --fail --silent --show-error http://127.0.0.1:8080/ar/signin >/dev/null
           curl --fail --silent --show-error http://127.0.0.1:8080/api/v1/health >/dev/null
           curl --fail --silent --show-error http://127.0.0.1:8080/api/v1/public/help >/dev/null
+          sudo docker compose --env-file /opt/sawiyaa-dev/sawiyaa-backend-v1/.env --env-file /opt/sawiyaa-dev/sawiyaa-frontend-v1/.env -p sawiyaa-dev -f /opt/sawiyaa-dev/docker-compose.dev.yml exec -T frontend node -e "fetch('http://127.0.0.1:3000/ar/signin').then((r) => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"
           sudo docker compose --env-file /opt/sawiyaa-dev/sawiyaa-backend-v1/.env --env-file /opt/sawiyaa-dev/sawiyaa-frontend-v1/.env -p sawiyaa-dev -f /opt/sawiyaa-dev/docker-compose.dev.yml exec -T backend node -e "require('node:dns').promises.lookup('mailpit').then(() => process.exit(0)).catch(() => process.exit(1))"
           sudo docker compose --env-file /opt/sawiyaa-dev/sawiyaa-backend-v1/.env --env-file /opt/sawiyaa-dev/sawiyaa-frontend-v1/.env -p sawiyaa-dev -f /opt/sawiyaa-dev/docker-compose.dev.yml exec -T backend sh -c 'touch /app/logs/acceptance-write && rm /app/logs/acceptance-write'
           test "$(stat -c '%u:%g' /opt/sawiyaa-dev/logs/backend)" = '10001:10001'

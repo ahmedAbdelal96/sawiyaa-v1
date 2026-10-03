@@ -64,6 +64,11 @@ test('development migration flow is ordered and forbids destructive reset', () =
   assert.match(devUpdate, /backend npm run prisma:seed/);
 });
 
+test('development frontend liveness uses an existing localized route', () => {
+  assert.match(devCompose, /127\.0\.0\.1:3000\/ar\/signin/);
+  assert.match(devUpdate, /127\.0\.0\.1:3000\/ar\/signin/);
+});
+
 test('development update prepares runtime logs with the backend UID', () => {
   assert.match(devUpdate, /logs\/backend/);
   assert.match(devUpdate, /chown 10001:10001/);
