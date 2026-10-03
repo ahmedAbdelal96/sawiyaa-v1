@@ -64,9 +64,9 @@ test('development migration flow is ordered and forbids destructive reset', () =
   assert.match(devUpdate, /backend npm run prisma:seed/);
 });
 
-test('development frontend liveness uses an existing localized route', () => {
-  assert.match(devCompose, /127\.0\.0\.1:3000\/ar\/auth\/signin\/patient/);
-  assert.match(devUpdate, /127\.0\.0\.1:3000\/ar\/auth\/signin\/patient/);
+test('development frontend liveness checks the listening runtime port', () => {
+  assert.match(devCompose, /net\.connect\(3000, '127\.0\.0\.1'\)/);
+  assert.match(devUpdate, /net\.connect\(3000, '127\.0\.0\.1'\)/);
 });
 
 test('development update prepares runtime logs with the backend UID', () => {
