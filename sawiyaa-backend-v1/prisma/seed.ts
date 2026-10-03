@@ -22,6 +22,7 @@ import { sessionAccessSeedModule } from './seed/modules/session-access.seed';
 import { PrismaClient } from '@prisma/client';
 import { SeedModule } from './seed/shared/seed.types';
 import { assertLegacyFinancialFixtureSeedDisabled } from './seed/shared/financial-fixture-gate';
+import { seedIds } from './seed/shared/seed.constants';
 
 const prisma = new PrismaClient();
 const seedProfile = (process.env.SEED_PROFILE ?? 'curated').toLowerCase();
@@ -68,6 +69,20 @@ const seedModules: SeedModule[] = [
 
 async function main(): Promise<void> {
   console.log(`Starting modular seed process (profile=${seedProfile})...`);
+
+  if (
+    seedProfile === 'curated' &&
+    process.env.SEED_SKIP_IF_BOOTSTRAPPED === 'true'
+  ) {
+    const existingBootstrapUser = await prisma.user.findUnique({
+      where: { id: seedIds.users.superAdmin },
+      select: { id: true },
+    });
+    if (existingBootstrapUser) {
+      console.log('Curated seed already bootstrapped; skipping fixture reseed.');
+      return;
+    }
+  }
 
   for (const module of seedModules) {
     const startedAt = Date.now();

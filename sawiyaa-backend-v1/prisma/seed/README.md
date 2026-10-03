@@ -104,6 +104,16 @@ Scale intent:
 
 `SEED_SCALE` only matters when `SEED_PROFILE=bulk` is enabled.
 
+## Development update behavior
+
+The development deployment invokes the curated profile with
+`SEED_SKIP_IF_BOOTSTRAPPED=true`. The first bootstrap runs the full curated
+fixture set; later development updates skip that fixture reseed when the
+stable curated super-admin seed identity already exists. This prevents a
+deployment from reapplying fixture state over development data. Run
+`SEED_PROFILE=curated npm run prisma:seed` without the skip flag when a full
+curated reseed is explicitly required for a disposable development database.
+
 ## Documented Test Accounts
 
 | Account | Email | Password | What to test |

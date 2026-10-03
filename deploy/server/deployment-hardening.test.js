@@ -59,7 +59,9 @@ test('development migration flow is ordered and forbids destructive reset', () =
   assert.ok(fetch < pull && pull < validate && validate < build && build < postgres);
   assert.ok(postgres < migrate && migrate < start);
   assert.doesNotMatch(devUpdate, /migrate reset|down -v/);
-  assert.match(devUpdate, /SEED_PROFILE=curated backend npm run prisma:seed/);
+  assert.match(devUpdate, /SEED_PROFILE=curated/);
+  assert.match(devUpdate, /SEED_SKIP_IF_BOOTSTRAPPED=true/);
+  assert.match(devUpdate, /backend npm run prisma:seed/);
 });
 
 test('development update prepares runtime logs with the backend UID', () => {

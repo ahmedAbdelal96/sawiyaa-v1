@@ -82,7 +82,10 @@ docker compose "${COMPOSE_ARGS[@]}" exec -T postgres pg_isready >/dev/null 2>&1 
 # This command runs only through the development Compose project and the
 # development backend env file; it never targets production services.
 docker compose "${COMPOSE_ARGS[@]}" run --rm --no-deps backend npx prisma migrate deploy
-docker compose "${COMPOSE_ARGS[@]}" run --rm --no-deps -e SEED_PROFILE=curated backend npm run prisma:seed
+docker compose "${COMPOSE_ARGS[@]}" run --rm --no-deps \
+  -e SEED_PROFILE=curated \
+  -e SEED_SKIP_IF_BOOTSTRAPPED=true \
+  backend npm run prisma:seed
 docker compose "${COMPOSE_ARGS[@]}" up -d --force-recreate backend frontend nginx
 
 notification_queue_enabled="$(awk -F= '$1 == "NOTIFICATION_QUEUE_ENABLED" {gsub(/^[ \t]+|[ \t]+$/, "", $2); print $2; exit}' "$BACKEND_ENV" 2>/dev/null || true)"

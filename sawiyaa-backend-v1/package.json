@@ -31,6 +31,7 @@
     "session-codes:backfill": "ts-node --preferTsExts prisma/scripts/backfill-session-codes.ts",
     "session-codes:concurrency-test": "ts-node --preferTsExts prisma/scripts/verify-session-code-concurrency.ts",
     "prisma:seed": "ts-node --preferTsExts prisma/seed.ts",
+    "test:seed-contract": "node scripts/check-curated-seed-contract.js",
     "seed:session-access": "ts-node --preferTsExts prisma/scripts/seed-session-access.ts",
     "db:bootstrap:config": "ts-node -r tsconfig-paths/register --preferTsExts prisma/scripts/bootstrap-config.ts",
     "qa:settlement:fixture": "ts-node -r tsconfig-paths/register --preferTsExts prisma/scripts/create-settlement-qa-scenario.ts",
