@@ -103,7 +103,7 @@ for service in postgres backend frontend nginx; do
   }
 done
 docker compose "${COMPOSE_ARGS[@]}" exec -T backend node -e "fetch('http://127.0.0.1:7000/api/v1/health').then((r) => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"
-docker compose "${COMPOSE_ARGS[@]}" exec -T frontend node -e "fetch('http://127.0.0.1:3000/ar/signin').then((r) => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"
+docker compose "${COMPOSE_ARGS[@]}" exec -T frontend node -e "fetch('http://127.0.0.1:3000/ar/auth/signin/patient').then((r) => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"
 curl -fsS "http://127.0.0.1:${DEV_HTTP_PORT}/api/v1/health" >/dev/null
 docker compose "${COMPOSE_ARGS[@]}" ps
 echo "Development update: COMPLETE"
