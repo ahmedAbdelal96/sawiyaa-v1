@@ -136,10 +136,10 @@ jobs:
               *) echo "::error title=HTTP acceptance check failed::$name returned HTTP $status ($url)"; return 1 ;;
             esac
           }
-          check_http frontend 'http://127.0.0.1:8080/ar/auth/signin/patient'
+          check_http frontend 'http://127.0.0.1:8080/ar/signin/patient'
           check_http backend-health 'http://127.0.0.1:8080/api/v1/health'
           check_http public-help 'http://127.0.0.1:8080/api/v1/public/help'
-          sudo docker compose --env-file /opt/sawiyaa-dev/sawiyaa-backend-v1/.env --env-file /opt/sawiyaa-dev/sawiyaa-frontend-v1/.env -p sawiyaa-dev -f /opt/sawiyaa-dev/docker-compose.dev.yml exec -T frontend node -e "fetch('http://127.0.0.1:3000/ar/auth/signin/patient').then((r) => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"
+          sudo docker compose --env-file /opt/sawiyaa-dev/sawiyaa-backend-v1/.env --env-file /opt/sawiyaa-dev/sawiyaa-frontend-v1/.env -p sawiyaa-dev -f /opt/sawiyaa-dev/docker-compose.dev.yml exec -T frontend node -e "fetch('http://127.0.0.1:3000/ar/signin/patient').then((r) => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"
           sudo docker compose --env-file /opt/sawiyaa-dev/sawiyaa-backend-v1/.env --env-file /opt/sawiyaa-dev/sawiyaa-frontend-v1/.env -p sawiyaa-dev -f /opt/sawiyaa-dev/docker-compose.dev.yml exec -T backend node -e "require('node:dns').promises.lookup('mailpit').then(() => process.exit(0)).catch(() => process.exit(1))"
           sudo docker compose --env-file /opt/sawiyaa-dev/sawiyaa-backend-v1/.env --env-file /opt/sawiyaa-dev/sawiyaa-frontend-v1/.env -p sawiyaa-dev -f /opt/sawiyaa-dev/docker-compose.dev.yml exec -T backend sh -c 'touch /app/logs/acceptance-write && rm /app/logs/acceptance-write'
           test "$(stat -c '%u:%g' /opt/sawiyaa-dev/logs/backend)" = '10001:10001'
