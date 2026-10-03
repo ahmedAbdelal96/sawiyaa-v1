@@ -86,18 +86,17 @@ jobs:
         shell: bash
         run: |
           set -Eeuo pipefail
+          set -o pipefail
           set +e
           sudo env \
             SAWIYAA_FORCE_DOCKER_VALIDATOR=true \
             SAWIYAA_DEV_HTTP_PORT=8080 \
-            bash -x /opt/sawiyaa-dev/deploy/server/update-dev.sh 2>&1 | tee /tmp/update-dev.log
+            bash /opt/sawiyaa-dev/deploy/server/update-dev.sh 2>&1 |
+            sed -E 's/(password|secret|token|api[_-]?key|authorization|database[_-]?url)[^[:space:],;]*/[REDACTED]/Ig' |
+            tee /tmp/dev-acceptance.log
           status=${PIPESTATUS[0]}
           set -e
-          if [ "$status" -ne 0 ]; then
-            echo '### update-dev.sh failure tail (redacted)' >> "$GITHUB_STEP_SUMMARY"
-            tail -n 80 /tmp/update-dev.log | sed -E 's/(password|secret|token|api[_-]?key|authorization|database[_-]?url)[^[:space:],;]*/[REDACTED]/Ig' >> "$GITHUB_STEP_SUMMARY"
-            exit "$status"
-          fi
+          exit "$status"
 
       - name: Verify application usability and runtime contracts
         shell: bash
@@ -136,10 +135,38 @@ jobs:
         shell: bash
         run: |
           set +e
-          sudo docker compose --env-file /opt/sawiyaa-dev/sawiyaa-backend-v1/.env --env-file /opt/sawiyaa-dev/sawiyaa-frontend-v1/.env -p sawiyaa-dev -f /opt/sawiyaa-dev/docker-compose.dev.yml ps
+          diag_dir="$RUNNER_TEMP/development-deployment-acceptance-logs"
+          mkdir -p "$diag_dir"
+          redact() { sed -E 's/(password|secret|token|api[_-]?key|authorization|database[_-]?url)[^[:space:],;]*/[REDACTED]/Ig'; }
+          compose=(sudo docker compose --env-file /opt/sawiyaa-dev/sawiyaa-backend-v1/.env --env-file /opt/sawiyaa-dev/sawiyaa-frontend-v1/.env -p sawiyaa-dev -f /opt/sawiyaa-dev/docker-compose.dev.yml)
+          "${compose[@]}" ps 2>&1 | redact > "$diag_dir/compose-ps.txt"
           for service in postgres backend frontend nginx; do
-            sudo docker compose --env-file /opt/sawiyaa-dev/sawiyaa-backend-v1/.env --env-file /opt/sawiyaa-dev/sawiyaa-frontend-v1/.env -p sawiyaa-dev -f /opt/sawiyaa-dev/docker-compose.dev.yml logs --tail=200 "$service" 2>&1 | sed -E 's/(password|secret|token|api[_-]?key|authorization|database[_-]?url)[^[:space:],;]*/[REDACTED]/Ig'
+            "${compose[@]}" logs --tail=200 "$service" 2>&1 | redact > "$diag_dir/$service.log"
           done
+          sudo docker ps -a 2>&1 | redact > "$diag_dir/docker-ps.txt"
+          sudo docker volume ls 2>&1 | redact > "$diag_dir/docker-volume-ls.txt"
+          sudo docker network ls 2>&1 | redact > "$diag_dir/docker-network-ls.txt"
+
+      - name: Prepare development acceptance diagnostic bundle
+        if: always()
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          diag_dir="$RUNNER_TEMP/development-deployment-acceptance-logs"
+          mkdir -p "$diag_dir"
+          if [ -f /tmp/dev-acceptance.log ]; then cp /tmp/dev-acceptance.log "$diag_dir/dev-acceptance.log"; else : > "$diag_dir/dev-acceptance.log"; fi
+          for file in compose-ps.txt postgres.log backend.log frontend.log nginx.log docker-ps.txt; do
+            [ -f "$diag_dir/$file" ] || : > "$diag_dir/$file"
+          done
+
+      - name: Upload development acceptance diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: development-deployment-acceptance-logs
+          path: ${{ runner.temp }}/development-deployment-acceptance-logs/
+          if-no-files-found: error
+          retention-days: 7
 
       - name: Cleanup acceptance resources
         if: always()
