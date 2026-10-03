@@ -116,7 +116,7 @@ jobs:
             fi
           } >> "$GITHUB_STEP_SUMMARY"
           if [ -s /tmp/dev-acceptance.log ]; then
-            root_error="$(sed -E 's/(password|secret|token|api[_-]?key|authorization|database[_-]?url)[^[:space:],;]*/[REDACTED]/Ig' /tmp/dev-acceptance.log | grep -Ei 'Seed failed|PrismaClient|Unknown argument|Error:|Failure|failed|invalid' | grep -Evi 'PRESENT|OPTIONAL|REQUIRED|npm warn|deprecated' | head -n 1 || true)"
+            root_error="$(sed -E 's/(password|secret|token|api[_-]?key|authorization|database[_-]?url)[^[:space:],;]*/[REDACTED]/Ig' /tmp/dev-acceptance.log | grep -Ei 'Seed failed|PrismaClient|Unknown argument|Error:|Failure|failed|FATAL|not found' | grep -Evi 'PRESENT|OPTIONAL|REQUIRED|npm warn|deprecated|next.config|invalid' | tail -n 1 || true)"
             if [ -n "$root_error" ]; then
               root_error="${root_error:0:500}"
               echo "::error title=Development acceptance first error::$root_error"
