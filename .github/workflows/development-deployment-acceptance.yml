@@ -173,6 +173,20 @@ jobs:
           sudo docker volume ls 2>&1 | redact > "$diag_dir/docker-volume-ls.txt"
           sudo docker network ls 2>&1 | redact > "$diag_dir/docker-network-ls.txt"
 
+      - name: Annotate frontend container failure
+        if: always()
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          frontend_log="$RUNNER_TEMP/development-deployment-acceptance-logs/frontend.log"
+          if [ -s "$frontend_log" ]; then
+            frontend_error="$(sed -E 's/(password|secret|token|api[_-]?key|authorization|database[_-]?url)[^[:space:],;]*/[REDACTED]/Ig' "$frontend_log" | grep -Ei 'error|exception|failed|fatal|unhealthy|cannot|unable|not found' | grep -Evi 'npm warn|deprecated|next.config' | tail -n 1 || true)"
+            if [ -n "$frontend_error" ]; then
+              frontend_error="${frontend_error:0:500}"
+              echo "::error title=Frontend container diagnostic::$frontend_error"
+            fi
+          fi
+
       - name: Prepare development acceptance diagnostic bundle
         if: always()
         shell: bash
