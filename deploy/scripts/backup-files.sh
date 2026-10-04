@@ -24,7 +24,7 @@ mkdir -p -- "$BACKUP_DIR" || fail "Backup directory is unavailable"
 cd "$PROJECT_DIR"
 compose_args=(--env-file "$BACKEND_ENV_FILE" --env-file "$FRONTEND_ENV_FILE" -f "$COMPOSE_FILE")
 [[ -r "$BACKEND_ENV_FILE" && -r "$FRONTEND_ENV_FILE" ]] || fail "Canonical Compose environment files are not readable"
-docker compose "${compose_args[@]}" ps --status running --services | grep -Fxq "$BACKEND_SERVICE" || fail "Backend service is not running"
+docker compose "${compose_args[@]}" config --services | grep -Fxq "$BACKEND_SERVICE" || fail "Backend service is not defined"
 
 short_sha="${TARGET_SHA:0:12}"
 [[ "$short_sha" =~ ^[0-9a-fA-F]{7,12}$ ]] || short_sha="unknown"
@@ -38,7 +38,7 @@ tmp_metadata="$(mktemp "$BACKUP_DIR/.${base}.metadata.XXXXXX")"
 cleanup() { rm -f -- "$tmp_bundle" "$tmp_checksum" "$tmp_metadata" || true; }
 trap cleanup EXIT
 
-docker compose "${compose_args[@]}" exec -T "$BACKEND_SERVICE" sh -lc \
+docker compose "${compose_args[@]}" run --rm --no-deps "$BACKEND_SERVICE" sh -lc \
   'tar -C /app/storage -czf - files' > "$tmp_bundle" || fail "Unified file volume archive failed"
 size="$(wc -c < "$tmp_bundle")"
 (( size > 0 )) || fail "Unified file volume archive is empty"
