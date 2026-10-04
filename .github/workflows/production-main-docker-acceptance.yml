@@ -71,6 +71,16 @@ jobs:
                   output.append(line)
               path.write_text('\n'.join(output) + '\n')
           rewrite(backend, replacements)
+          backend.write_text(
+              backend.read_text()
+              + '\nPAYMOB_MODE=test\n'
+              + 'PAYMOB_API_KEY=accept-paymob-api-key\n'
+              + 'PAYMOB_PUBLIC_KEY=accept-paymob-public-key\n'
+              + 'PAYMOB_HMAC_SECRET=accept-paymob-hmac-secret\n'
+              + 'PAYMOB_BASE_URL=https://accept.paymob.com/api\n'
+              + 'PAYMOB_INTENTION_BASE_URL=https://flashapi.paymob.com\n'
+              + 'PAYMOB_EGP_CARD_INTEGRATION_ID=accept-paymob-egp-card\n'
+          )
           rewrite(frontend, {
               'NEXT_PUBLIC_APP_URL': 'https://sawiyaa.com',
               'NEXT_PUBLIC_SITE_URL': 'https://sawiyaa.com',
