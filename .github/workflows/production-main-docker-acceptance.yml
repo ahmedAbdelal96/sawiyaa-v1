@@ -25,6 +25,7 @@ jobs:
         shell: bash
         run: |
           set -Eeuo pipefail
+          trap 'rc=$?; echo "::error title=production source materialization failure::$BASH_COMMAND exit=$rc"; exit "$rc"' ERR
           rm -rf /tmp/sawiyaa-source
           git clone --branch "$GITHUB_REF_NAME" --depth 1 "${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}.git" /tmp/sawiyaa-source
           git -C /tmp/sawiyaa-source fetch --no-tags origin "$TARGET_SHA"
