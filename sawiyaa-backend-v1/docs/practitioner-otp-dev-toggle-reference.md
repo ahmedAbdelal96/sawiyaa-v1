@@ -48,7 +48,7 @@ AUTH_PRACTITIONER_LOGIN_OTP_BYPASS_IN_DEV=true
 
 ## كيف أعيد OTP لاحقًا
 
-1. افتح ملف `.env`.
+1. افتح ملف `.env.local`.
 2. غيّر:
 
 ```env

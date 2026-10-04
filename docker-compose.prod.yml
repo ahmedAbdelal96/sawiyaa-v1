@@ -28,7 +28,7 @@ services:
       dockerfile: Dockerfile
     restart: unless-stopped
     env_file:
-      - ./.env.production.backend
+      - ./sawiyaa-backend-v1/.env.production
     environment:
       APP_ENV: production
       NODE_ENV: production
@@ -109,7 +109,7 @@ services:
         NEXT_PUBLIC_DEBUG_PRACTITIONER_WIZARD: ${NEXT_PUBLIC_DEBUG_PRACTITIONER_WIZARD}
     restart: unless-stopped
     env_file:
-      - ./.env.production.frontend
+      - ./sawiyaa-frontend-v1/.env.production
     environment:
       NODE_ENV: production
       PORT: 3000

@@ -17,8 +17,8 @@ test('target validation precedes active checkout, build, migration, and restart'
   assert.ok(position('flock -n 9') < position('--bootstrap-only'));
   assert.ok(position('git fetch --no-tags origin') < position('git worktree add --detach'));
   assert.ok(position('--target-only --skip-lock') < position('git checkout -f main'));
-  assert.ok(position('git checkout -f main') < position('docker compose --env-file "$PROJECT_DIR/.env.production.frontend" -f "$COMPOSE_FILE" build'));
-  assert.ok(position('docker compose --env-file "$PROJECT_DIR/.env.production.frontend" -f "$COMPOSE_FILE" build') < position('prisma:migrate:deploy'));
+  assert.ok(position('git checkout -f main') < position('docker compose --env-file "$PROJECT_DIR/sawiyaa-frontend-v1/.env.production" -f "$COMPOSE_FILE" build'));
+  assert.ok(position('docker compose --env-file "$PROJECT_DIR/sawiyaa-frontend-v1/.env.production" -f "$COMPOSE_FILE" build') < position('prisma:migrate:deploy'));
   assert.ok(position('prisma:migrate:deploy') < position('up -d backend frontend nginx'));
 });
 

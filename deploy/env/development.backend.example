@@ -1,4 +1,4 @@
-# Copy to /opt/sawiyaa-dev/sawiyaa-backend-v1/.env.
+# Copy to /opt/sawiyaa-dev/sawiyaa-backend-v1/.env.development.
 APP_ENV=development
 NODE_ENV=development
 APP_VERSION=development

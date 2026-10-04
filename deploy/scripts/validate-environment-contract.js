@@ -479,7 +479,20 @@ function validateEnvironment(options = {}) {
     ),
     contract,
     knownNames,
+    environment,
+    envFiles: {
+      backend: options.backendEnv || "",
+      frontend: options.frontendEnv || "",
+      database: options.dbEnv || "",
+    },
   };
+}
+
+function displayEnvFile(file) {
+  if (!file) return "NOT PROVIDED";
+  const absolute = path.resolve(file);
+  const relative = path.relative(process.cwd(), absolute);
+  return relative && !relative.startsWith("..") ? relative.replaceAll(path.sep, "/") : path.basename(absolute);
 }
 
 function formatReport(result) {
@@ -487,6 +500,9 @@ function formatReport(result) {
   const lines = [];
   const blockers = [];
   const warnings = [];
+  lines.push(`ENVIRONMENT=${result.environment || "unknown"}`);
+  lines.push(`BACKEND_ENV_FILE=${displayEnvFile(result.envFiles?.backend)}`);
+  lines.push(`FRONTEND_ENV_FILE=${displayEnvFile(result.envFiles?.frontend)}`);
   for (const issue of result.issues) {
     const key = `${issue.status}:${issue.name}`;
     if (seen.has(key)) continue;

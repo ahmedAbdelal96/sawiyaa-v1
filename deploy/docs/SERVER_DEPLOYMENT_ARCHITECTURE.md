@@ -31,8 +31,9 @@ feature flags; adding the service does not enable queues.
 ## Ownership
 
 - Git owns source, Compose files, deployment scripts, and documentation.
-- The deployment operator owns `.env` and `.env.production` files and their
-  permissions. They are ignored by Git and must never be copied into commits.
+- The deployment operator owns `.env.development`, `.env.production`, and the
+  production database env file, plus their permissions. They are ignored by
+  Git and must never be copied into commits.
 - Docker owns named database, storage, and upload volumes.
 - The operator owns `/opt/sawiyaa-backups` and its off-server replication.
 - The GeoIP database is an operator-managed runtime input mounted read-only by

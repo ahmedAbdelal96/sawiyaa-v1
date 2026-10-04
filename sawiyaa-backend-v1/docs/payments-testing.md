@@ -6,14 +6,14 @@ infrastructure remain ENV-owned.
 
 ## 1) Development setup
 
-1. Copy `.env.example` to `.env`.
+1. Copy `.env.example` to `.env.local`.
 2. Keep:
    - `APP_ENV=development`
    - `NODE_ENV=development`
 3. Use test/sandbox modes:
    - `STRIPE_MODE=test`
    - `PAYMOB_MODE=test`
-4. Add provider test credentials into `.env` (never hardcode in source).
+4. Add provider test credentials into `.env.local` (never hardcode in source).
 5. Run backend:
    - `npm install`
    - `npm run prisma:generate`
@@ -94,7 +94,7 @@ If verification fails, webhook is rejected safely with machine-readable errors. 
 
 ## 5) Paymob testing flow
 
-1. Use Paymob sandbox credentials in `.env` placeholders.
+1. Use Paymob sandbox credentials in `.env.local` placeholders.
 2. Ensure:
    - `PAYMOB_INTEGRATION_ID_CARD` and `PAYMOB_IFRAME_ID` are set
    - `PAYMOB_BASE_URL` points to sandbox/test endpoint as required by your Paymob account

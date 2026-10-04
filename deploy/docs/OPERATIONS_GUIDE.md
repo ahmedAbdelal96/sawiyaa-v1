@@ -25,10 +25,10 @@ every placeholder using the operator secret store:
 ```bash
 sudo cp /opt/sawiyaa/deploy/env/production.backend.example /opt/sawiyaa/sawiyaa-backend-v1/.env.production
 sudo cp /opt/sawiyaa/deploy/env/production.frontend.example /opt/sawiyaa/sawiyaa-frontend-v1/.env.production
-sudo cp /opt/sawiyaa-dev/deploy/env/development.backend.example /opt/sawiyaa-dev/sawiyaa-backend-v1/.env
-sudo cp /opt/sawiyaa-dev/deploy/env/development.frontend.example /opt/sawiyaa-dev/sawiyaa-frontend-v1/.env
+sudo cp /opt/sawiyaa-dev/deploy/env/development.backend.example /opt/sawiyaa-dev/sawiyaa-backend-v1/.env.development
+sudo cp /opt/sawiyaa-dev/deploy/env/development.frontend.example /opt/sawiyaa-dev/sawiyaa-frontend-v1/.env.development
 sudo chmod 600 /opt/sawiyaa/sawiyaa-backend-v1/.env.production /opt/sawiyaa/sawiyaa-frontend-v1/.env.production
-sudo chmod 600 /opt/sawiyaa-dev/sawiyaa-backend-v1/.env /opt/sawiyaa-dev/sawiyaa-frontend-v1/.env
+sudo chmod 600 /opt/sawiyaa-dev/sawiyaa-backend-v1/.env.development /opt/sawiyaa-dev/sawiyaa-frontend-v1/.env.development
 ```
 
 Install the GeoIP database from the approved provider into the production
@@ -52,6 +52,14 @@ Start development independently:
 
 ```bash
 sudo /opt/sawiyaa-dev/deploy/server/update-dev.sh
+```
+
+If an existing development checkout still uses the legacy generic filenames,
+perform this one-time operator migration after the verified code is pushed:
+
+```bash
+mv sawiyaa-backend-v1/.env sawiyaa-backend-v1/.env.development
+mv sawiyaa-frontend-v1/.env sawiyaa-frontend-v1/.env.development
 ```
 
 Development is initially reached through `http://<server>:8080`. Only Nginx

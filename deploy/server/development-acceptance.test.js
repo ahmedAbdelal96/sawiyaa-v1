@@ -98,13 +98,13 @@ test('full Linux/Docker development deployment acceptance', { timeout: 30 * 60 *
   try {
     const clone = run('git', ['clone', '--local', '--branch', 'development', root, tempRoot], { timeout: 120_000 });
     assert.equal(clone.status, 0, clone.stderr);
-    const backendExample = fs.readFileSync(path.join(tempRoot, 'sawiyaa-backend-v1/.env.example'), 'utf8');
-    const frontendExample = fs.readFileSync(path.join(tempRoot, 'sawiyaa-frontend-v1/.env.example'), 'utf8');
-    fs.writeFileSync(path.join(tempRoot, 'sawiyaa-backend-v1/.env'), acceptanceBackendEnv(backendExample), { mode: 0o600 });
-    fs.writeFileSync(path.join(tempRoot, 'sawiyaa-frontend-v1/.env'), acceptanceFrontendEnv(frontendExample), { mode: 0o600 });
+    const backendExample = fs.readFileSync(path.join(tempRoot, 'deploy/env/development.backend.example'), 'utf8');
+    const frontendExample = fs.readFileSync(path.join(tempRoot, 'deploy/env/development.frontend.example'), 'utf8');
+    fs.writeFileSync(path.join(tempRoot, 'sawiyaa-backend-v1/.env.development'), acceptanceBackendEnv(backendExample), { mode: 0o600 });
+    fs.writeFileSync(path.join(tempRoot, 'sawiyaa-frontend-v1/.env.development'), acceptanceFrontendEnv(frontendExample), { mode: 0o600 });
 
     cleanup = () => {
-      const args = ['compose', '--env-file', 'sawiyaa-backend-v1/.env', '--env-file', 'sawiyaa-frontend-v1/.env', '-p', projectName, '-f', 'docker-compose.dev.yml', 'down', '--remove-orphans'];
+      const args = ['compose', '--env-file', 'sawiyaa-backend-v1/.env.development', '--env-file', 'sawiyaa-frontend-v1/.env.development', '-p', projectName, '-f', 'docker-compose.dev.yml', 'down', '--remove-orphans'];
       run('docker', args, { cwd: tempRoot, timeout: 120_000 });
       const volumes = run('docker', ['volume', 'ls', '--filter', `label=com.docker.compose.project=${projectName}`, '-q'], { timeout: 30_000 });
       if (volumes.status === 0 && volumes.stdout.trim())
@@ -126,7 +126,7 @@ test('full Linux/Docker development deployment acceptance', { timeout: 30 * 60 *
     assert.equal(update.status, 0, `${update.stdout}\n${update.stderr}`);
     assert.match(update.stdout, /Development update: COMPLETE/);
 
-    const services = run('docker', ['compose', '--env-file', 'sawiyaa-backend-v1/.env', '--env-file', 'sawiyaa-frontend-v1/.env', '-p', projectName, '-f', 'docker-compose.dev.yml', 'ps', '--status', 'running', '--services'], { cwd: tempRoot });
+    const services = run('docker', ['compose', '--env-file', 'sawiyaa-backend-v1/.env.development', '--env-file', 'sawiyaa-frontend-v1/.env.development', '-p', projectName, '-f', 'docker-compose.dev.yml', 'ps', '--status', 'running', '--services'], { cwd: tempRoot });
     assert.equal(services.status, 0, services.stderr);
     for (const service of ['postgres', 'mailpit', 'backend', 'frontend', 'nginx']) assert.match(services.stdout, new RegExp(`^${service}$`, 'm'));
     assert.equal(run('curl', ['-fsS', `http://127.0.0.1:${httpPort}/api/v1/health`]).status, 0);

@@ -61,27 +61,27 @@ host bind mount.
 - `.github/workflows/deploy-production.yml`
 - `sawiyaa-backend-v1/Dockerfile`
 - `sawiyaa-frontend-v1/Dockerfile`
-- `sawiyaa-backend-v1/.env.production.backend.example`
-- `sawiyaa-frontend-v1/.env.production.frontend.example`
-- `.env.production.db.example`
+- `deploy/env/production.backend.example`
+- `deploy/env/production.frontend.example`
+- `deploy/env/database.example`
 
 ## Environment files
 
 Copy or populate the example files before deployment:
 
-- `sawiyaa-backend-v1/.env.production.backend.example`
-- `sawiyaa-frontend-v1/.env.production.frontend.example`
-- `.env.production.db.example`
+- `deploy/env/production.backend.example`
+- `deploy/env/production.frontend.example`
+- `deploy/env/database.example`
 
 For the live deployment, duplicate them beside `docker-compose.prod.yml` as:
 
-- `.env.production.backend`
-- `.env.production.frontend`
+- `sawiyaa-backend-v1/.env.production`
+- `sawiyaa-frontend-v1/.env.production`
 - `.env.production.db`
 
-Frontend `NEXT_PUBLIC_*` values are build-time inputs. The one-command deployment passes `.env.production.frontend` to Compose as its interpolation source, so the validated frontend environment and the Docker build receive the same values. Do not pass separate ad-hoc build arguments.
+Frontend `NEXT_PUBLIC_*` values are build-time inputs. The one-command deployment passes `sawiyaa-frontend-v1/.env.production` to Compose as its interpolation source, so the validated frontend environment and the Docker build receive the same values. Do not pass separate ad-hoc build arguments.
 
-Real `.env.production.backend`, `.env.production.frontend`, and `.env.production.db` files must stay on the server only. Do not commit them.
+Real `sawiyaa-backend-v1/.env.production`, `sawiyaa-frontend-v1/.env.production`, and `.env.production.db` files must stay on the server only. Do not commit them.
 
 Production backend configuration must include `LOG_LEVEL` (`error`, `warn`,
 `info`, `debug`, or `verbose`), `WEB_APP_URL` as the public HTTPS web origin,
@@ -430,7 +430,7 @@ SAWIYAA_PROJECT_DIR=/opt/sawiyaa bash /opt/sawiyaa/deploy/scripts/deploy-product
 ## First deploy checklist
 
 1. Clone the repo to `/opt/sawiyaa` on the server.
-2. Create `.env.production.backend`, `.env.production.frontend`, and `.env.production.db` on the server.
+2. Create `sawiyaa-backend-v1/.env.production`, `sawiyaa-frontend-v1/.env.production`, and `.env.production.db` on the server.
 3. Fill all secrets on the server only.
 4. Obtain TLS certificates for `sawiyaa.com`.
 5. Start `postgres`, `backend`, and `frontend`.
@@ -488,7 +488,7 @@ Also back up `backend_storage` and `backend_uploads` if the release touches uplo
 
 ## Safe release flow
 
-1. Copy the env files into `.env.production.backend`, `.env.production.frontend`, and `.env.production.db`.
+1. Copy the env files into `sawiyaa-backend-v1/.env.production`, `sawiyaa-frontend-v1/.env.production`, and `.env.production.db`.
 2. Build images.
 3. Start only the database and app containers.
 4. Run Prisma migrations manually.

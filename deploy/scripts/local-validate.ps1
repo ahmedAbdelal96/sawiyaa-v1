@@ -54,14 +54,14 @@ Set-Location -LiteralPath $repoRoot
 
 $backendDir = Join-Path $repoRoot 'sawiyaa-backend-v1'
 $frontendDir = Join-Path $repoRoot 'sawiyaa-frontend-v1'
-$backendEnv = Join-Path $backendDir '.env.production.backend'
-$backendEnvExample = Join-Path $backendDir '.env.production.backend.example'
-$rootBackendEnv = Join-Path $repoRoot '.env.production.backend'
-$frontendEnv = Join-Path $frontendDir '.env.production.frontend'
-$frontendEnvExample = Join-Path $frontendDir '.env.production.frontend.example'
-$rootFrontendEnv = Join-Path $repoRoot '.env.production.frontend'
+$backendEnv = Join-Path $backendDir '.env.production'
+$backendEnvExample = Join-Path $repoRoot 'deploy\env\production.backend.example'
+$rootBackendEnv = $backendEnv
+$frontendEnv = Join-Path $frontendDir '.env.production'
+$frontendEnvExample = Join-Path $repoRoot 'deploy\env\production.frontend.example'
+$rootFrontendEnv = $frontendEnv
 $dbEnv = Join-Path $repoRoot '.env.production.db'
-$dbEnvExample = Join-Path $repoRoot '.env.production.db.example'
+$dbEnvExample = Join-Path $repoRoot 'deploy\env\database.example'
 
 try {
   Write-Info "Repo root: $repoRoot"

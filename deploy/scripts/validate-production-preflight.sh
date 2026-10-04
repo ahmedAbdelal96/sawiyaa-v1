@@ -102,8 +102,8 @@ else
 fi
 
 # 9-10. Environment files and status-only validator.
-BACKEND_ENV="${BACKEND_ENV:-$PROJECT_DIR/.env.production.backend}"
-FRONTEND_ENV="${FRONTEND_ENV:-$PROJECT_DIR/.env.production.frontend}"
+BACKEND_ENV="${BACKEND_ENV:-$PROJECT_DIR/sawiyaa-backend-v1/.env.production}"
+FRONTEND_ENV="${FRONTEND_ENV:-$PROJECT_DIR/sawiyaa-frontend-v1/.env.production}"
 DB_ENV="${DB_ENV:-$PROJECT_DIR/.env.production.db}"
 for file in "$BACKEND_ENV" "$FRONTEND_ENV" "$DB_ENV"; do
   [[ -r "$file" ]] && pass "ENV_FILE_PRESENT $(basename -- "$file")" || block "ENV_FILE_MISSING $(basename -- "$file")"

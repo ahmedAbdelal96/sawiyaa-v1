@@ -7,8 +7,8 @@ if [[ "${SAWIYAA_TEST_MODE:-false}" == "true" ]]; then
   [[ -n "$PROJECT_DIR" ]] || { echo "SAWIYAA_DEV_PROJECT_DIR is required in test mode." >&2; exit 2; }
 fi
 LOCK_PATH=/tmp/sawiyaa-dev-update.lock
-BACKEND_ENV="$PROJECT_DIR/sawiyaa-backend-v1/.env"
-FRONTEND_ENV="$PROJECT_DIR/sawiyaa-frontend-v1/.env"
+BACKEND_ENV="$PROJECT_DIR/sawiyaa-backend-v1/.env.development"
+FRONTEND_ENV="$PROJECT_DIR/sawiyaa-frontend-v1/.env.development"
 COMPOSE_FILE="$PROJECT_DIR/docker-compose.dev.yml"
 COMPOSE_PROJECT="${SAWIYAA_DEV_COMPOSE_PROJECT_NAME:-sawiyaa-dev}"
 DEV_HTTP_PORT="${SAWIYAA_DEV_HTTP_PORT:-8080}"

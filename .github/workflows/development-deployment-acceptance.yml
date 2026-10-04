@@ -36,13 +36,13 @@ jobs:
         shell: bash
         run: |
           set -Eeuo pipefail
-          sudo cp deploy/env/development.backend.example /opt/sawiyaa-dev/sawiyaa-backend-v1/.env
-          sudo cp deploy/env/development.frontend.example /opt/sawiyaa-dev/sawiyaa-frontend-v1/.env
+          sudo cp deploy/env/development.backend.example /opt/sawiyaa-dev/sawiyaa-backend-v1/.env.development
+          sudo cp deploy/env/development.frontend.example /opt/sawiyaa-dev/sawiyaa-frontend-v1/.env.development
           sudo python3 - <<'PY'
           from pathlib import Path
           root = Path('/opt/sawiyaa-dev')
-          backend = root / 'sawiyaa-backend-v1/.env'
-          frontend = root / 'sawiyaa-frontend-v1/.env'
+          backend = root / 'sawiyaa-backend-v1/.env.development'
+          frontend = root / 'sawiyaa-frontend-v1/.env.development'
           replacements = {
               'APP_URL': 'http://acceptance.sawiyaa.test:8080',
               'WEB_APP_URL': 'http://acceptance.sawiyaa.test:8080',
@@ -145,13 +145,13 @@ jobs:
           check_http backend-health 'http://127.0.0.1:8080/api/v1/health'
           check_http public-help 'http://127.0.0.1:8080/api/v1/public/help'
           record 'frontend-internal: starting'
-          sudo docker compose --env-file /opt/sawiyaa-dev/sawiyaa-backend-v1/.env --env-file /opt/sawiyaa-dev/sawiyaa-frontend-v1/.env -p sawiyaa-dev -f /opt/sawiyaa-dev/docker-compose.dev.yml exec -T frontend node -e "fetch('http://127.0.0.1:3000/ar/signin/patient').then((r) => { console.log('frontend-internal: HTTP ' + r.status); process.exit(r.ok ? 0 : 1); }).catch((error) => { console.error(error.message); process.exit(1); })" || { echo "::error title=Application verification failed::frontend-internal check failed"; exit 1; }
+          sudo docker compose --env-file /opt/sawiyaa-dev/sawiyaa-backend-v1/.env.development --env-file /opt/sawiyaa-dev/sawiyaa-frontend-v1/.env.development -p sawiyaa-dev -f /opt/sawiyaa-dev/docker-compose.dev.yml exec -T frontend node -e "fetch('http://127.0.0.1:3000/ar/signin/patient').then((r) => { console.log('frontend-internal: HTTP ' + r.status); process.exit(r.ok ? 0 : 1); }).catch((error) => { console.error(error.message); process.exit(1); })" || { echo "::error title=Application verification failed::frontend-internal check failed"; exit 1; }
           record 'mailpit-dns: starting'
-          sudo docker compose --env-file /opt/sawiyaa-dev/sawiyaa-backend-v1/.env --env-file /opt/sawiyaa-dev/sawiyaa-frontend-v1/.env -p sawiyaa-dev -f /opt/sawiyaa-dev/docker-compose.dev.yml exec -T backend node -e "require('node:dns').promises.lookup('mailpit').then(() => { console.log('mailpit-dns: resolved'); process.exit(0); }).catch((error) => { console.error(error.message); process.exit(1); })" || { echo "::error title=Application verification failed::mailpit-dns check failed"; exit 1; }
+          sudo docker compose --env-file /opt/sawiyaa-dev/sawiyaa-backend-v1/.env.development --env-file /opt/sawiyaa-dev/sawiyaa-frontend-v1/.env.development -p sawiyaa-dev -f /opt/sawiyaa-dev/docker-compose.dev.yml exec -T backend node -e "require('node:dns').promises.lookup('mailpit').then(() => { console.log('mailpit-dns: resolved'); process.exit(0); }).catch((error) => { console.error(error.message); process.exit(1); })" || { echo "::error title=Application verification failed::mailpit-dns check failed"; exit 1; }
           record 'mailpit-smtp: starting'
-          sudo docker compose --env-file /opt/sawiyaa-dev/sawiyaa-backend-v1/.env --env-file /opt/sawiyaa-dev/sawiyaa-frontend-v1/.env -p sawiyaa-dev -f /opt/sawiyaa-dev/docker-compose.dev.yml exec -T backend node -e "const net = require('node:net'); const socket = net.connect(1025, 'mailpit'); socket.once('connect', () => { console.log('mailpit-smtp: connected'); socket.destroy(); process.exit(0); }); socket.once('error', (error) => { console.error(error.message); process.exit(1); });" || { echo "::error title=Application verification failed::mailpit-smtp TCP check failed"; exit 1; }
+          sudo docker compose --env-file /opt/sawiyaa-dev/sawiyaa-backend-v1/.env.development --env-file /opt/sawiyaa-dev/sawiyaa-frontend-v1/.env.development -p sawiyaa-dev -f /opt/sawiyaa-dev/docker-compose.dev.yml exec -T backend node -e "const net = require('node:net'); const socket = net.connect(1025, 'mailpit'); socket.once('connect', () => { console.log('mailpit-smtp: connected'); socket.destroy(); process.exit(0); }); socket.once('error', (error) => { console.error(error.message); process.exit(1); });" || { echo "::error title=Application verification failed::mailpit-smtp TCP check failed"; exit 1; }
           record 'backend-log-write: starting'
-          sudo docker compose --env-file /opt/sawiyaa-dev/sawiyaa-backend-v1/.env --env-file /opt/sawiyaa-dev/sawiyaa-frontend-v1/.env -p sawiyaa-dev -f /opt/sawiyaa-dev/docker-compose.dev.yml exec -T backend sh -c 'touch /app/logs/acceptance-write && rm /app/logs/acceptance-write' || { echo "::error title=Application verification failed::backend-log-write check failed"; exit 1; }
+          sudo docker compose --env-file /opt/sawiyaa-dev/sawiyaa-backend-v1/.env.development --env-file /opt/sawiyaa-dev/sawiyaa-frontend-v1/.env.development -p sawiyaa-dev -f /opt/sawiyaa-dev/docker-compose.dev.yml exec -T backend sh -c 'touch /app/logs/acceptance-write && rm /app/logs/acceptance-write' || { echo "::error title=Application verification failed::backend-log-write check failed"; exit 1; }
           backend_owner="$(stat -c '%u:%g' /opt/sawiyaa-dev/logs/backend)"
           record "backend-log-owner: $backend_owner"
           test "$backend_owner" = '10001:10001' || { echo "::error title=Application verification failed::backend-log-owner expected 10001:10001, got $backend_owner"; exit 1; }
@@ -181,7 +181,7 @@ jobs:
         run: |
           set -Eeuo pipefail
           config=/tmp/sawiyaa-compose-config.json
-          sudo docker compose --env-file /opt/sawiyaa-dev/sawiyaa-backend-v1/.env --env-file /opt/sawiyaa-dev/sawiyaa-frontend-v1/.env -p sawiyaa-dev -f /opt/sawiyaa-dev/docker-compose.dev.yml config --format json > "$config"
+          sudo docker compose --env-file /opt/sawiyaa-dev/sawiyaa-backend-v1/.env.development --env-file /opt/sawiyaa-dev/sawiyaa-frontend-v1/.env.development -p sawiyaa-dev -f /opt/sawiyaa-dev/docker-compose.dev.yml config --format json > "$config"
           node - "$config" <<'NODE'
           const fs = require('node:fs');
           const services = JSON.parse(fs.readFileSync(process.argv[2], 'utf8')).services;
@@ -203,7 +203,7 @@ jobs:
           diag_dir="$RUNNER_TEMP/development-deployment-acceptance-logs"
           mkdir -p "$diag_dir"
           redact() { sed -E 's/(password|secret|token|api[_-]?key|authorization|database[_-]?url)[^[:space:],;]*/[REDACTED]/Ig'; }
-          compose=(sudo docker compose --env-file /opt/sawiyaa-dev/sawiyaa-backend-v1/.env --env-file /opt/sawiyaa-dev/sawiyaa-frontend-v1/.env -p sawiyaa-dev -f /opt/sawiyaa-dev/docker-compose.dev.yml)
+          compose=(sudo docker compose --env-file /opt/sawiyaa-dev/sawiyaa-backend-v1/.env.development --env-file /opt/sawiyaa-dev/sawiyaa-frontend-v1/.env.development -p sawiyaa-dev -f /opt/sawiyaa-dev/docker-compose.dev.yml)
           "${compose[@]}" ps 2>&1 | redact > "$diag_dir/compose-ps.txt"
           for service in postgres backend frontend nginx; do
             "${compose[@]}" logs --tail=200 "$service" 2>&1 | redact > "$diag_dir/$service.log"
@@ -259,7 +259,7 @@ jobs:
         shell: bash
         run: |
           set +e
-          sudo docker compose --env-file /opt/sawiyaa-dev/sawiyaa-backend-v1/.env --env-file /opt/sawiyaa-dev/sawiyaa-frontend-v1/.env -p sawiyaa-dev -f /opt/sawiyaa-dev/docker-compose.dev.yml down --remove-orphans
+          sudo docker compose --env-file /opt/sawiyaa-dev/sawiyaa-backend-v1/.env.development --env-file /opt/sawiyaa-dev/sawiyaa-frontend-v1/.env.development -p sawiyaa-dev -f /opt/sawiyaa-dev/docker-compose.dev.yml down --remove-orphans
           sudo rm -rf /opt/sawiyaa-dev /tmp/sawiyaa-acceptance.git
 
   production-regression:
@@ -268,15 +268,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: main
+          ref: ${{ github.sha }}
           fetch-depth: 1
-      - name: Run production regression from main worktree
+      - name: Run production regression from candidate worktree
         shell: bash
         run: |
           set -Eeuo pipefail
           node --test deploy/server/deployment-hardening.test.js
           cp deploy/env/production.backend.example sawiyaa-backend-v1/.env.production
           cp deploy/env/production.frontend.example sawiyaa-frontend-v1/.env.production
-          cp deploy/env/production.frontend.example .env.production.frontend
           printf '%s\n' 'POSTGRES_DB=sawiyaa' 'POSTGRES_USER=sawiyaa' 'POSTGRES_PASSWORD=regression-password' 'PGDATA=/var/lib/postgresql/data/pgdata' > .env.production.db
-          docker compose --env-file .env.production.db --env-file .env.production.frontend -f docker-compose.prod.yml config --quiet
+          docker compose --env-file .env.production.db --env-file sawiyaa-frontend-v1/.env.production -f docker-compose.prod.yml config --quiet

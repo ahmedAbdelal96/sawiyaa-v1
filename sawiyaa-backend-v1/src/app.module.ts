@@ -72,7 +72,7 @@ import { TrustedCountryResolutionService } from './common/country-resolution/tru
   imports: [
     EnvConfigModule.forRoot({
       isGlobal: true,
-      envFilePath: '.env',
+      envFilePath: process.env.SAWIYAA_ENV_FILE ?? '.env.local',
       validate,
       load: [
         appConfig,

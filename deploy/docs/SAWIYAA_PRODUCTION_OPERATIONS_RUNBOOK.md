@@ -315,8 +315,8 @@ Write release marker
 Required files:
 
 ```
-.env.production.backend
-.env.production.frontend
+sawiyaa-backend-v1/.env.production
+sawiyaa-frontend-v1/.env.production
 .env.production.db
 ```
 

@@ -49,7 +49,7 @@ services:
       dockerfile: Dockerfile
     restart: unless-stopped
     env_file:
-      - ${SAWIYAA_BACKEND_RUNTIME_ENV_FILE:-./sawiyaa-backend-v1/.env}
+      - ${SAWIYAA_BACKEND_RUNTIME_ENV_FILE:-./sawiyaa-backend-v1/.env.development}
     environment:
       SAWIYAA_RELEASE_SHA: ${SAWIYAA_RELEASE_SHA:-development}
     expose:
@@ -93,7 +93,7 @@ services:
     command: ["npm", "run", "start:worker"]
     restart: unless-stopped
     env_file:
-      - ${SAWIYAA_BACKEND_RUNTIME_ENV_FILE:-./sawiyaa-backend-v1/.env}
+      - ${SAWIYAA_BACKEND_RUNTIME_ENV_FILE:-./sawiyaa-backend-v1/.env.development}
     environment:
       SAWIYAA_RELEASE_SHA: ${SAWIYAA_RELEASE_SHA:-development}
     depends_on:
@@ -127,7 +127,7 @@ services:
         NEXT_PUBLIC_DEBUG_PRACTITIONER_WIZARD: ${NEXT_PUBLIC_DEBUG_PRACTITIONER_WIZARD:-0}
     restart: unless-stopped
     env_file:
-      - ${SAWIYAA_FRONTEND_RUNTIME_ENV_FILE:-./sawiyaa-frontend-v1/.env}
+      - ${SAWIYAA_FRONTEND_RUNTIME_ENV_FILE:-./sawiyaa-frontend-v1/.env.development}
     expose:
       - "3000"
     depends_on:

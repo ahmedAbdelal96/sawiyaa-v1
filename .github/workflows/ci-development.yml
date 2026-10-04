@@ -132,12 +132,10 @@ jobs:
 
       - name: Prepare temporary compose env files
         run: |
-          cp sawiyaa-backend-v1/.env.production.backend.example .env.production.backend
-          cp sawiyaa-backend-v1/.env.production.backend.example sawiyaa-backend-v1/.env.production.backend
-          cp sawiyaa-frontend-v1/.env.production.frontend.example .env.production.frontend
-          cp sawiyaa-frontend-v1/.env.production.frontend.example sawiyaa-frontend-v1/.env.production.frontend
-          cp .env.production.db.example .env.production.db
-          ls -1 .env.production.backend .env.production.frontend .env.production.db sawiyaa-backend-v1/.env.production.backend sawiyaa-frontend-v1/.env.production.frontend
+          cp deploy/env/production.backend.example sawiyaa-backend-v1/.env.production
+          cp deploy/env/production.frontend.example sawiyaa-frontend-v1/.env.production
+          cp deploy/env/database.example .env.production.db
+          ls -1 sawiyaa-backend-v1/.env.production sawiyaa-frontend-v1/.env.production .env.production.db
 
       - name: Validate Docker Compose configuration
         run: |

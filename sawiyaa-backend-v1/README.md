@@ -15,7 +15,7 @@ NestJS modular-monolith backend for the Sawiyaa guided-care platform.
 1. Copy environment file:
 
 ```bash
-cp .env.example .env
+cp .env.example .env.local
 ```
 
 2. Install dependencies:

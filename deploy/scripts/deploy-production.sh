@@ -92,8 +92,8 @@ trap 'cleanup_phase_0b; cleanup_validation_worktree' EXIT INT TERM
 print_logs() {
   local exit_code=$?
   echo "Deployment failed. Service status and redacted recent logs follow:" >&2
-  docker compose --env-file "$PROJECT_DIR/.env.production.frontend" -f "$COMPOSE_FILE" ps >&2 || true
-  docker compose --env-file "$PROJECT_DIR/.env.production.frontend" -f "$COMPOSE_FILE" logs --tail=80 postgres backend frontend nginx 2>&1 |
+  docker compose --env-file "$PROJECT_DIR/sawiyaa-frontend-v1/.env.production" -f "$COMPOSE_FILE" ps >&2 || true
+  docker compose --env-file "$PROJECT_DIR/sawiyaa-frontend-v1/.env.production" -f "$COMPOSE_FILE" logs --tail=80 postgres backend frontend nginx 2>&1 |
     sed -E 's/([A-Za-z_]*(password|secret|token|api[_-]?key|authorization|database[_-]?url)[A-Za-z_]*[=:][[:space:]]*)[^[:space:],;]+/\1[REDACTED]/Ig' >&2 || true
   exit "$exit_code"
 }
@@ -125,8 +125,8 @@ bash "$PROJECT_DIR/deploy/scripts/validate-production-preflight.sh" \
   --bootstrap-only --skip-lock \
   --project-dir "$PROJECT_DIR" \
   --environment production \
-  --backend-env "$PROJECT_DIR/.env.production.backend" \
-  --frontend-env "$PROJECT_DIR/.env.production.frontend" \
+  --backend-env "$PROJECT_DIR/sawiyaa-backend-v1/.env.production" \
+  --frontend-env "$PROJECT_DIR/sawiyaa-frontend-v1/.env.production" \
   --db-env "$PROJECT_DIR/.env.production.db"
 
 echo "Fetching the approved target commit without changing the active checkout..."
@@ -170,8 +170,8 @@ if ! bash "$VALIDATION_WORKTREE/deploy/scripts/validate-production-preflight.sh"
   --target-only --skip-lock \
   --project-dir "$VALIDATION_WORKTREE" \
   --environment production \
-  --backend-env "$PROJECT_DIR/.env.production.backend" \
-  --frontend-env "$PROJECT_DIR/.env.production.frontend" \
+  --backend-env "$PROJECT_DIR/sawiyaa-backend-v1/.env.production" \
+  --frontend-env "$PROJECT_DIR/sawiyaa-frontend-v1/.env.production" \
   --db-env "$PROJECT_DIR/.env.production.db"; then
   cleanup_validation_worktree
   [[ "$(git rev-parse HEAD)" == "$ACTIVE_HEAD" ]] || { echo "BLOCKING ACTIVE_RELEASE_CHANGED_ON_TARGET_FAILURE" >&2; exit 2; }
@@ -189,23 +189,23 @@ git checkout -f main
 git reset --hard "$TARGET_SHA"
 
 echo "Validating compose configuration..."
-docker compose --env-file "$PROJECT_DIR/.env.production.frontend" -f "$COMPOSE_FILE" config >/dev/null
+docker compose --env-file "$PROJECT_DIR/sawiyaa-frontend-v1/.env.production" -f "$COMPOSE_FILE" config >/dev/null
 
 echo "Building backend and frontend images..."
-docker compose --env-file "$PROJECT_DIR/.env.production.frontend" -f "$COMPOSE_FILE" build backend frontend
+docker compose --env-file "$PROJECT_DIR/sawiyaa-frontend-v1/.env.production" -f "$COMPOSE_FILE" build backend frontend
 
 echo "Checking backend log bind-mount write access..."
-docker compose --env-file "$PROJECT_DIR/.env.production.frontend" -f "$COMPOSE_FILE" run --rm --no-deps backend \
+docker compose --env-file "$PROJECT_DIR/sawiyaa-frontend-v1/.env.production" -f "$COMPOSE_FILE" run --rm --no-deps backend \
   sh -c 'touch /app/logs/.write-test && rm /app/logs/.write-test' || {
     echo "Backend container user cannot write to /app/logs (host path: $PROJECT_DIR/logs/backend)" >&2
     exit 1
   }
 
 echo "Starting PostgreSQL..."
-docker compose --env-file "$PROJECT_DIR/.env.production.frontend" -f "$COMPOSE_FILE" up -d postgres
+docker compose --env-file "$PROJECT_DIR/sawiyaa-frontend-v1/.env.production" -f "$COMPOSE_FILE" up -d postgres
 
 APPLIED_MIGRATIONS_FILE="$(mktemp "${TMPDIR:-/tmp}/sawiyaa-applied-migrations.XXXXXX")"
-docker compose --env-file "$PROJECT_DIR/.env.production.frontend" -f "$COMPOSE_FILE" exec -T postgres sh -lc \
+docker compose --env-file "$PROJECT_DIR/sawiyaa-frontend-v1/.env.production" -f "$COMPOSE_FILE" exec -T postgres sh -lc \
   'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Atqc "SELECT name FROM _prisma_migrations WHERE finished_at IS NOT NULL ORDER BY name"' > "$APPLIED_MIGRATIONS_FILE" || {
     echo "Unable to read applied Prisma migrations; migration was not run." >&2
     exit 1
@@ -255,21 +255,21 @@ MIGRATION_STATUS="$(printf '%s\n' "$scanner_output" | sed -n 's/^MIGRATIONS: //p
 echo "Creating and verifying database backup before migrations..."
 SAWIYAA_PROJECT_DIR="$PROJECT_DIR" \
 SAWIYAA_COMPOSE_FILE="$PROJECT_DIR/$COMPOSE_FILE" \
-SAWIYAA_COMPOSE_ENV_FILE="$PROJECT_DIR/.env.production.frontend" \
+SAWIYAA_COMPOSE_ENV_FILE="$PROJECT_DIR/sawiyaa-frontend-v1/.env.production" \
 SAWIYAA_TARGET_SHA="$TARGET_SHA" \
   bash "$PROJECT_DIR/deploy/scripts/backup-db.sh"
 
 echo "Running Prisma migrations..."
-docker compose --env-file "$PROJECT_DIR/.env.production.frontend" -f "$COMPOSE_FILE" run --rm backend npm run prisma:migrate:deploy
+docker compose --env-file "$PROJECT_DIR/sawiyaa-frontend-v1/.env.production" -f "$COMPOSE_FILE" run --rm backend npm run prisma:migrate:deploy
 echo "MIGRATE_DEPLOY: SUCCESS"
 
 echo "Bootstrapping production config..."
-docker compose --env-file "$PROJECT_DIR/.env.production.frontend" -f "$COMPOSE_FILE" run --rm -e ALLOW_CONFIG_BOOTSTRAP=true backend npm run db:bootstrap:config
+docker compose --env-file "$PROJECT_DIR/sawiyaa-frontend-v1/.env.production" -f "$COMPOSE_FILE" run --rm -e ALLOW_CONFIG_BOOTSTRAP=true backend npm run db:bootstrap:config
 
 echo "Starting backend, frontend, and nginx..."
-docker compose --env-file "$PROJECT_DIR/.env.production.frontend" -f "$COMPOSE_FILE" up -d backend frontend nginx
+docker compose --env-file "$PROJECT_DIR/sawiyaa-frontend-v1/.env.production" -f "$COMPOSE_FILE" up -d backend frontend nginx
 
-compose_running_services="$(docker compose --env-file "$PROJECT_DIR/.env.production.frontend" -f "$COMPOSE_FILE" ps --status running --services)"
+compose_running_services="$(docker compose --env-file "$PROJECT_DIR/sawiyaa-frontend-v1/.env.production" -f "$COMPOSE_FILE" ps --status running --services)"
 for required_service in postgres backend frontend nginx; do
   grep -Fxq "$required_service" <<<"$compose_running_services" || {
     echo "Required production service is not running: $required_service" >&2
@@ -278,7 +278,7 @@ for required_service in postgres backend frontend nginx; do
 done
 
 for healthy_service in postgres backend frontend; do
-  container_id="$(docker compose --env-file "$PROJECT_DIR/.env.production.frontend" -f "$COMPOSE_FILE" ps -q "$healthy_service")"
+  container_id="$(docker compose --env-file "$PROJECT_DIR/sawiyaa-frontend-v1/.env.production" -f "$COMPOSE_FILE" ps -q "$healthy_service")"
   health_status="$(docker inspect --format '{{if .State.Health}}{{.State.Health.Status}}{{else}}no-healthcheck{{end}}' "$container_id" 2>/dev/null || true)"
   [[ "$health_status" == "healthy" ]] || {
     echo "Required production service is not healthy: $healthy_service ($health_status)" >&2
