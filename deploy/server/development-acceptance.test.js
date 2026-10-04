@@ -128,10 +128,24 @@ test('full Linux/Docker development deployment acceptance', { timeout: 30 * 60 *
 
     const services = run('docker', ['compose', '--env-file', 'sawiyaa-backend-v1/.env', '--env-file', 'sawiyaa-frontend-v1/.env', '-p', projectName, '-f', 'docker-compose.dev.yml', 'ps', '--status', 'running', '--services'], { cwd: tempRoot });
     assert.equal(services.status, 0, services.stderr);
-    for (const service of ['postgres', 'backend', 'frontend', 'nginx']) assert.match(services.stdout, new RegExp(`^${service}$`, 'm'));
+    for (const service of ['postgres', 'mailpit', 'backend', 'frontend', 'nginx']) assert.match(services.stdout, new RegExp(`^${service}$`, 'm'));
     assert.equal(run('curl', ['-fsS', `http://127.0.0.1:${httpPort}/api/v1/health`]).status, 0);
     assert.equal(run('curl', ['-fsS', `http://127.0.0.1:${httpPort}/`]).status, 0);
     assert.equal(run('docker', ['volume', 'ls', '--filter', `label=com.docker.compose.project=${projectName}`, '-q']).status, 0);
+
+    const repeat = run(bash, [path.join(tempRoot, 'deploy/server/update-dev.sh')], {
+      cwd: tempRoot,
+      timeout: 30 * 60 * 1000,
+      env: {
+        SAWIYAA_TEST_MODE: 'true',
+        SAWIYAA_DEV_PROJECT_DIR: tempRoot,
+        SAWIYAA_DEV_COMPOSE_PROJECT_NAME: projectName,
+        SAWIYAA_DEV_HTTP_PORT: httpPort,
+        SAWIYAA_FORCE_DOCKER_VALIDATOR: 'true',
+      },
+    });
+    assert.equal(repeat.status, 0, `${repeat.stdout}\n${repeat.stderr}`);
+    assert.match(repeat.stdout, /Development update: COMPLETE/);
   } finally {
     cleanup();
   }

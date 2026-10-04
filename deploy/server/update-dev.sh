@@ -86,6 +86,22 @@ docker compose "${COMPOSE_ARGS[@]}" run --rm --no-deps \
   -e SEED_PROFILE=curated \
   -e SEED_SKIP_IF_BOOTSTRAPPED=true \
   backend npm run prisma:seed
+
+mail_provider="$(awk -F= '$1 == "MAIL_PROVIDER" {gsub(/^[ \t]+|[ \t]+$/, "", $2); print $2; exit}' "$BACKEND_ENV" 2>/dev/null || true)"
+mail_host="$(awk -F= '$1 == "MAIL_HOST" {gsub(/^[ \t]+|[ \t]+$/, "", $2); print $2; exit}' "$BACKEND_ENV" 2>/dev/null || true)"
+mailpit_enabled=false
+if [[ "$mail_provider" == "smtp" && "$mail_host" == "mailpit" ]]; then
+  mailpit_enabled=true
+  docker compose "${COMPOSE_ARGS[@]}" up -d mailpit
+  for attempt in {1..30}; do
+    if docker compose "${COMPOSE_ARGS[@]}" run --rm --no-deps backend node -e "require('node:net').connect(1025, 'mailpit').once('connect', () => process.exit(0)).once('error', () => process.exit(1))" >/dev/null 2>&1; then break; fi
+    sleep 2
+  done
+  docker compose "${COMPOSE_ARGS[@]}" run --rm --no-deps backend node -e "require('node:dns').promises.lookup('mailpit').then(() => new Promise((resolve, reject) => { const socket = require('node:net').connect(1025, 'mailpit'); socket.once('connect', () => { socket.destroy(); resolve(); }); socket.once('error', reject); })).then(() => process.exit(0)).catch(() => process.exit(1))" || {
+    echo "Development Mailpit did not become ready at mailpit:1025." >&2
+    exit 1
+  }
+fi
 docker compose "${COMPOSE_ARGS[@]}" up -d --force-recreate backend frontend nginx
 
 notification_queue_enabled="$(awk -F= '$1 == "NOTIFICATION_QUEUE_ENABLED" {gsub(/^[ \t]+|[ \t]+$/, "", $2); print $2; exit}' "$BACKEND_ENV" 2>/dev/null || true)"
@@ -96,7 +112,9 @@ else
   docker compose "${COMPOSE_ARGS[@]}" stop worker >/dev/null 2>&1 || true
 fi
 
-for service in postgres backend frontend nginx; do
+required_services=(postgres backend frontend nginx)
+if [[ "$mailpit_enabled" == true ]]; then required_services+=(mailpit); fi
+for service in "${required_services[@]}"; do
   docker compose "${COMPOSE_ARGS[@]}" ps --status running --services | grep -Fxq "$service" || {
     echo "Development service is not running: $service" >&2
     exit 1

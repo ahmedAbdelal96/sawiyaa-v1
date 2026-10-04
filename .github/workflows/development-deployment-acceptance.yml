@@ -30,6 +30,7 @@ jobs:
           sudo git clone --branch development "file:///tmp/sawiyaa-acceptance.git" /opt/sawiyaa-dev
           sudo git -C /opt/sawiyaa-dev config user.email acceptance@sawiyaa.test
           sudo git -C /opt/sawiyaa-dev config user.name acceptance
+          sudo git -C /opt/sawiyaa-dev rev-parse HEAD | sudo tee /tmp/exact-deployment-sha.txt
 
       - name: Generate redacted development environment
         shell: bash
@@ -147,6 +148,8 @@ jobs:
           sudo docker compose --env-file /opt/sawiyaa-dev/sawiyaa-backend-v1/.env --env-file /opt/sawiyaa-dev/sawiyaa-frontend-v1/.env -p sawiyaa-dev -f /opt/sawiyaa-dev/docker-compose.dev.yml exec -T frontend node -e "fetch('http://127.0.0.1:3000/ar/signin/patient').then((r) => { console.log('frontend-internal: HTTP ' + r.status); process.exit(r.ok ? 0 : 1); }).catch((error) => { console.error(error.message); process.exit(1); })" || { echo "::error title=Application verification failed::frontend-internal check failed"; exit 1; }
           record 'mailpit-dns: starting'
           sudo docker compose --env-file /opt/sawiyaa-dev/sawiyaa-backend-v1/.env --env-file /opt/sawiyaa-dev/sawiyaa-frontend-v1/.env -p sawiyaa-dev -f /opt/sawiyaa-dev/docker-compose.dev.yml exec -T backend node -e "require('node:dns').promises.lookup('mailpit').then(() => { console.log('mailpit-dns: resolved'); process.exit(0); }).catch((error) => { console.error(error.message); process.exit(1); })" || { echo "::error title=Application verification failed::mailpit-dns check failed"; exit 1; }
+          record 'mailpit-smtp: starting'
+          sudo docker compose --env-file /opt/sawiyaa-dev/sawiyaa-backend-v1/.env --env-file /opt/sawiyaa-dev/sawiyaa-frontend-v1/.env -p sawiyaa-dev -f /opt/sawiyaa-dev/docker-compose.dev.yml exec -T backend node -e "const net = require('node:net'); const socket = net.connect(1025, 'mailpit'); socket.once('connect', () => { console.log('mailpit-smtp: connected'); socket.destroy(); process.exit(0); }); socket.once('error', (error) => { console.error(error.message); process.exit(1); });" || { echo "::error title=Application verification failed::mailpit-smtp TCP check failed"; exit 1; }
           record 'backend-log-write: starting'
           sudo docker compose --env-file /opt/sawiyaa-dev/sawiyaa-backend-v1/.env --env-file /opt/sawiyaa-dev/sawiyaa-frontend-v1/.env -p sawiyaa-dev -f /opt/sawiyaa-dev/docker-compose.dev.yml exec -T backend sh -c 'touch /app/logs/acceptance-write && rm /app/logs/acceptance-write' || { echo "::error title=Application verification failed::backend-log-write check failed"; exit 1; }
           backend_owner="$(stat -c '%u:%g' /opt/sawiyaa-dev/logs/backend)"
@@ -155,6 +158,23 @@ jobs:
           status="$(curl --http1.1 --silent --output /dev/null --write-out '%{http_code}' -H 'Connection: Upgrade' -H 'Upgrade: websocket' -H 'Sec-WebSocket-Version: 13' -H 'Sec-WebSocket-Key: SGVsbG9BY2NlcHRhbmNl' 'http://127.0.0.1:8080/socket.io/?EIO=4&transport=websocket')"
           record "websocket: HTTP $status"
           case "$status" in 101|200|400) ;; *) echo "::error title=Application verification failed::websocket returned HTTP $status" >&2; exit 1;; esac
+
+      - name: Repeat actual development update workflow
+        if: success()
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          set -o pipefail
+          set +e
+          sudo env \
+            SAWIYAA_FORCE_DOCKER_VALIDATOR=true \
+            SAWIYAA_DEV_HTTP_PORT=8080 \
+            bash /opt/sawiyaa-dev/deploy/server/update-dev.sh 2>&1 |
+            sed -E 's/(password|secret|token|api[_-]?key|authorization|database[_-]?url)[^[:space:],;]*/[REDACTED]/Ig' |
+            tee -a /tmp/dev-acceptance.log
+          status=${PIPESTATUS[0]}
+          set -e
+          exit "$status"
 
       - name: Verify frontend build-time values and resource isolation
         shell: bash
@@ -214,6 +234,13 @@ jobs:
           diag_dir="$RUNNER_TEMP/development-deployment-acceptance-logs"
           mkdir -p "$diag_dir"
           if [ -f /tmp/dev-acceptance.log ]; then cp /tmp/dev-acceptance.log "$diag_dir/dev-acceptance.log"; else : > "$diag_dir/dev-acceptance.log"; fi
+          if [ -f /tmp/exact-deployment-sha.txt ]; then cp /tmp/exact-deployment-sha.txt "$diag_dir/exact-deployment-sha.txt"; else : > "$diag_dir/exact-deployment-sha.txt"; fi
+          {
+            echo '## Exact deployment SHA'
+            echo '```text'
+            cat "$diag_dir/exact-deployment-sha.txt"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
           for file in compose-ps.txt postgres.log backend.log frontend.log nginx.log docker-ps.txt; do
             [ -f "$diag_dir/$file" ] || : > "$diag_dir/$file"
           done

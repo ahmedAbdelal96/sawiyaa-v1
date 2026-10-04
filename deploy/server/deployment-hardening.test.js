@@ -69,6 +69,18 @@ test('development frontend liveness uses the existing patient sign-in route', ()
   assert.match(devUpdate, /127\.0\.0\.1:3000\/ar\/signin\/patient/);
 });
 
+test('development starts Mailpit only for the canonical SMTP development configuration', () => {
+  assert.match(devUpdate, /MAIL_PROVIDER/);
+  assert.match(devUpdate, /MAIL_HOST/);
+  assert.match(devUpdate, /mail_provider.*smtp/);
+  assert.match(devUpdate, /mail_host.*mailpit/);
+  assert.match(devUpdate, /up -d mailpit/);
+  assert.match(devUpdate, /mailpit:1025/);
+  const mailpit = serviceBlock('mailpit');
+  assert.doesNotMatch(mailpit, /^    ports:/m);
+  assert.match(mailpit, /healthcheck:/);
+});
+
 test('development update prepares runtime logs with the backend UID', () => {
   assert.match(devUpdate, /logs\/backend/);
   assert.match(devUpdate, /chown 10001:10001/);

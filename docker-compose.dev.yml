@@ -10,6 +10,12 @@ services:
     environment:
       MP_MAX_MESSAGES: 5000
       MP_DATABASE: /data/mailpit.db
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "--quiet", "http://127.0.0.1:8025/readyz"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
     volumes:
       - sawiyaa_dev_mailpit_data:/data
     networks:
