@@ -126,6 +126,7 @@ jobs:
             SAWIYAA_MIN_FREE_MB="$SAWIYAA_MIN_FREE_MB" \
             SAWIYAA_APPROVE_BLOCKING_MIGRATIONS="$SAWIYAA_APPROVE_BLOCKING_MIGRATIONS" \
             SAWIYAA_DAILY_WEBHOOK_VALIDATOR_PATH="$SAWIYAA_DAILY_WEBHOOK_VALIDATOR_PATH" \
+            SAWIYAA_TARGET_SHA="$GITHUB_SHA" \
             bash -x /opt/sawiyaa/deploy/server/update-prod.sh 2>&1 | tee /tmp/production-first.log
           first_rc=${PIPESTATUS[0]}
           echo "UPDATE_PROD_FIRST_EXIT=$first_rc" | tee -a /tmp/production-harness-forensics.log
@@ -135,6 +136,7 @@ jobs:
             SAWIYAA_MIN_FREE_MB="$SAWIYAA_MIN_FREE_MB" \
             SAWIYAA_APPROVE_BLOCKING_MIGRATIONS="$SAWIYAA_APPROVE_BLOCKING_MIGRATIONS" \
             SAWIYAA_DAILY_WEBHOOK_VALIDATOR_PATH="$SAWIYAA_DAILY_WEBHOOK_VALIDATOR_PATH" \
+            SAWIYAA_TARGET_SHA="$GITHUB_SHA" \
             bash -x /opt/sawiyaa/deploy/server/update-prod.sh 2>&1 | tee /tmp/production-repeat.log
           repeat_rc=${PIPESTATUS[0]}
           echo "UPDATE_PROD_REPEAT_EXIT=$repeat_rc" | tee -a /tmp/production-harness-forensics.log
