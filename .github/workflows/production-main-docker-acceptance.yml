@@ -189,6 +189,10 @@ jobs:
             fi
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
+          if [ -f /tmp/production-first.log ]; then
+            root_line="$(redact < /tmp/production-first.log | grep -E '^(\+ |[^[:space:]]|[A-Z_]+:|.*(BLOCKING|ERROR|failed|FAIL|Unable|Refusing|missing|cannot|required))' | tail -n 1)"
+            [ -n "$root_line" ] && echo "::error title=update-prod first failure::$root_line"
+          fi
           compose=(sudo docker compose --env-file /opt/sawiyaa/sawiyaa-backend-v1/.env.production --env-file /opt/sawiyaa/sawiyaa-frontend-v1/.env.production -p sawiyaa -f /opt/sawiyaa/docker-compose.prod.yml)
           "${compose[@]}" ps 2>&1 | redact > "$dir/compose-ps.txt"
           "${compose[@]}" logs --tail=200 postgres backend frontend nginx worker 2>&1 | redact > "$dir/compose-logs.txt"
