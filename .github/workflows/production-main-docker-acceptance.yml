@@ -26,14 +26,15 @@ jobs:
         run: |
           set -Eeuo pipefail
           rm -rf /tmp/sawiyaa-source
-          git clone --branch main --depth 1 "${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}.git" /tmp/sawiyaa-source
-          git -C /tmp/sawiyaa-source fetch --no-tags origin "$TARGET_SHA"
-          git -C /tmp/sawiyaa-source checkout --detach "$TARGET_SHA"
-          git -C /tmp/sawiyaa-source checkout -B main "$TARGET_SHA"
+          git clone --branch "$GITHUB_REF_NAME" --depth 1 "${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}.git" /tmp/sawiyaa-source
+          git -C /tmp/sawiyaa-source fetch --no-tags origin "$TARGET_SHA" "$GITHUB_SHA"
+          git -C /tmp/sawiyaa-source checkout --detach "$GITHUB_SHA"
+          git -C /tmp/sawiyaa-source checkout -B main "$GITHUB_SHA"
           sudo rm -rf /opt/sawiyaa /opt/sawiyaa-backups
           sudo cp -a /tmp/sawiyaa-source /opt/sawiyaa
           sudo git -C /opt/sawiyaa status --porcelain
-          test "$(sudo git -C /opt/sawiyaa rev-parse HEAD)" = "$TARGET_SHA"
+          test "$(sudo git -C /opt/sawiyaa rev-parse HEAD)" = "$GITHUB_SHA"
+          sudo git -C /opt/sawiyaa merge-base --is-ancestor "$TARGET_SHA" HEAD
           sudo mkdir -p /opt/sawiyaa-backups /opt/sawiyaa/logs/backend /opt/sawiyaa/geoip /opt/sawiyaa/deploy/certs/live/sawiyaa.com
           sudo cp /opt/sawiyaa/deploy/env/production.backend.example /opt/sawiyaa/sawiyaa-backend-v1/.env.production
           sudo cp /opt/sawiyaa/deploy/env/production.frontend.example /opt/sawiyaa/sawiyaa-frontend-v1/.env.production
