@@ -38,8 +38,8 @@ tmp_metadata="$(mktemp "$BACKUP_DIR/.${base}.metadata.XXXXXX")"
 cleanup() { rm -f -- "$tmp_bundle" "$tmp_checksum" "$tmp_metadata" || true; }
 trap cleanup EXIT
 
-docker compose "${compose_args[@]}" run --rm --no-deps "$BACKEND_SERVICE" sh -lc \
-  'tar -C /app/storage -czf - files' > "$tmp_bundle" || fail "Unified file volume archive failed"
+docker compose "${compose_args[@]}" run --rm --no-deps --user 0:0 "$BACKEND_SERVICE" sh -lc \
+  'mkdir -p /app/storage/files && tar -C /app/storage -czf - files' > "$tmp_bundle" || fail "Unified file volume archive failed"
 size="$(wc -c < "$tmp_bundle")"
 (( size > 0 )) || fail "Unified file volume archive is empty"
 sha256sum "$tmp_bundle" > "$tmp_checksum" || fail "File archive checksum generation failed"
