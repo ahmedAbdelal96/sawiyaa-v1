@@ -26,6 +26,8 @@ test('migration command is guarded by backup and scanner failure checks', () => 
 
 test('applied Prisma migration discovery uses the canonical migration_name column', () => {
   const script = fs.readFileSync(path.join(__dirname, 'deploy-production.sh'), 'utf8');
+  assert.match(script, /to_regclass.*_prisma_migrations/);
+  assert.match(script, /migration_table_exists/);
   assert.match(
     script,
     /SELECT migration_name FROM _prisma_migrations WHERE finished_at IS NOT NULL ORDER BY migration_name/,

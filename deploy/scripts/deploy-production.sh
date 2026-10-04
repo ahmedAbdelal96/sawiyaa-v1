@@ -275,11 +275,20 @@ docker compose --env-file "$BACKEND_ENV_FILE" --env-file "$FRONTEND_ENV_FILE" -f
   }
 
 APPLIED_MIGRATIONS_FILE="$(mktemp "${TMPDIR:-/tmp}/sawiyaa-applied-migrations.XXXXXX")"
-docker compose --env-file "$BACKEND_ENV_FILE" --env-file "$FRONTEND_ENV_FILE" -f "$COMPOSE_FILE" exec -T postgres sh -lc \
-  'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Atqc "SELECT migration_name FROM _prisma_migrations WHERE finished_at IS NOT NULL ORDER BY migration_name"' > "$APPLIED_MIGRATIONS_FILE" || {
-    echo "Unable to read applied Prisma migrations; migration was not run." >&2
+migration_table_exists="$(docker compose --env-file "$BACKEND_ENV_FILE" --env-file "$FRONTEND_ENV_FILE" -f "$COMPOSE_FILE" exec -T postgres sh -lc \
+  'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Atqc "SELECT to_regclass('\''public._prisma_migrations'\'') IS NOT NULL"' 2>/dev/null)" || {
+    echo "Unable to check for the Prisma migrations table; migration was not run." >&2
     exit 1
   }
+if [[ "$migration_table_exists" == "t" ]]; then
+  docker compose --env-file "$BACKEND_ENV_FILE" --env-file "$FRONTEND_ENV_FILE" -f "$COMPOSE_FILE" exec -T postgres sh -lc \
+    'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Atqc "SELECT migration_name FROM _prisma_migrations WHERE finished_at IS NOT NULL ORDER BY migration_name"' > "$APPLIED_MIGRATIONS_FILE" || {
+      echo "Unable to read applied Prisma migrations; migration was not run." >&2
+      exit 1
+    }
+else
+  : > "$APPLIED_MIGRATIONS_FILE"
+fi
 
 scanner_args=(--migrations-dir "$PROJECT_DIR/sawiyaa-backend-v1/prisma/migrations" --applied-file "$APPLIED_MIGRATIONS_FILE")
 if [[ "$APPROVE_BLOCKING" == "true" ]]; then
