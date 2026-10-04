@@ -81,6 +81,7 @@ jobs:
             -keyout /opt/sawiyaa/deploy/certs/live/sawiyaa.com/privkey.pem \
             -out /opt/sawiyaa/deploy/certs/live/sawiyaa.com/fullchain.pem >/dev/null 2>&1
           sudo cp /opt/sawiyaa/deploy/certs/live/sawiyaa.com/fullchain.pem /opt/sawiyaa/deploy/certs/acceptance-ca.pem
+          sudo sh -c "grep -qxF '/deploy/certs/' /opt/sawiyaa/.git/info/exclude || echo '/deploy/certs/' >> /opt/sawiyaa/.git/info/exclude"
           sudo tee /tmp/acceptance-daily-webhook-validator.js >/dev/null <<'EOF'
           console.log('PASS DAILY_WEBHOOK_READY (disposable acceptance fixture)');
           EOF
