@@ -126,6 +126,16 @@ jobs:
           cp /tmp/acceptance-shas.txt "$dir/acceptance-shas.txt" 2>/dev/null || :
           cp /tmp/production-first.log "$dir/production-first.log" 2>/dev/null || :
           cp /tmp/production-repeat.log "$dir/production-repeat.log" 2>/dev/null || :
+          {
+            echo '## First production update diagnostic'
+            echo '```text'
+            if [ -f /tmp/production-first.log ]; then
+              redact < /tmp/production-first.log | tail -n 160
+            else
+              echo 'No production update log was produced.'
+            fi
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
           compose=(sudo docker compose --env-file /opt/sawiyaa/sawiyaa-backend-v1/.env.production --env-file /opt/sawiyaa/sawiyaa-frontend-v1/.env.production -p sawiyaa -f /opt/sawiyaa/docker-compose.prod.yml)
           "${compose[@]}" ps 2>&1 | redact > "$dir/compose-ps.txt"
           "${compose[@]}" logs --tail=200 postgres backend frontend nginx worker 2>&1 | redact > "$dir/compose-logs.txt"
