@@ -229,6 +229,10 @@ jobs:
           fi
           echo "UPDATE_PROD_FIRST_EXIT_FILE=$(grep -E 'UPDATE_PROD_FIRST_EXIT=' /tmp/production-harness-forensics.log 2>/dev/null | tail -n 1 || true)"
           echo "UPDATE_PROD_REPEAT_EXIT_FILE=$(grep -E 'UPDATE_PROD_REPEAT_EXIT=' /tmp/production-harness-forensics.log 2>/dev/null | tail -n 1 || true)"
+          first_exit_line="$(grep -E 'UPDATE_PROD_FIRST_EXIT=' /tmp/production-harness-forensics.log 2>/dev/null | tail -n 1 || true)"
+          repeat_exit_line="$(grep -E 'UPDATE_PROD_REPEAT_EXIT=' /tmp/production-harness-forensics.log 2>/dev/null | tail -n 1 || true)"
+          [ -n "$first_exit_line" ] && echo "::notice title=update-prod first exit::$first_exit_line"
+          [ -n "$repeat_exit_line" ] && echo "::notice title=update-prod repeat exit::$repeat_exit_line"
           if [ -f /tmp/production-repeat.log ]; then
             repeat_line="$(redact < /tmp/production-repeat.log | grep -Ei '(^|[[:space:]])(error|failed|failure|unable|stopped|exit|blocked|blocking|denied|not found|invalid|refusing|required|missing|incomplete|operator_required|known_|initial_admin|paymob|routing|environment|migration|bootstrap|health|fatal|branch|clean|already|another)' | tail -n 60 | tr '\n' ' ' | sed -E 's/[[:space:]]+/ /g')"
             [ -n "$repeat_line" ] || repeat_line="$(redact < /tmp/production-repeat.log | tail -n 20 | tr '\n' ' ' | sed -E 's/[[:space:]]+/ /g')"
