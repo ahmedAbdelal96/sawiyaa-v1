@@ -127,6 +127,9 @@ jobs:
             SAWIYAA_BACKUP_MIN_BYTES=1 \
             SAWIYAA_APPROVE_BLOCKING_MIGRATIONS="$SAWIYAA_APPROVE_BLOCKING_MIGRATIONS" \
             SAWIYAA_DAILY_WEBHOOK_VALIDATOR_PATH="$SAWIYAA_DAILY_WEBHOOK_VALIDATOR_PATH" \
+            PRODUCTION_INITIAL_ADMIN_EMAIL=admin@sawiyaa.test \
+            PRODUCTION_INITIAL_ADMIN_NAME="Acceptance Admin" \
+            PRODUCTION_INITIAL_ADMIN_PASSWORD=accept-admin-password-012345678901234567890 \
             SAWIYAA_TARGET_SHA="$GITHUB_SHA" \
             bash -x /opt/sawiyaa/deploy/server/update-prod.sh 2>&1 | tee /tmp/production-first.log
           first_rc=${PIPESTATUS[0]}
@@ -138,6 +141,9 @@ jobs:
             SAWIYAA_BACKUP_MIN_BYTES=1 \
             SAWIYAA_APPROVE_BLOCKING_MIGRATIONS="$SAWIYAA_APPROVE_BLOCKING_MIGRATIONS" \
             SAWIYAA_DAILY_WEBHOOK_VALIDATOR_PATH="$SAWIYAA_DAILY_WEBHOOK_VALIDATOR_PATH" \
+            PRODUCTION_INITIAL_ADMIN_EMAIL=admin@sawiyaa.test \
+            PRODUCTION_INITIAL_ADMIN_NAME="Acceptance Admin" \
+            PRODUCTION_INITIAL_ADMIN_PASSWORD=accept-admin-password-012345678901234567890 \
             SAWIYAA_TARGET_SHA="$GITHUB_SHA" \
             bash -x /opt/sawiyaa/deploy/server/update-prod.sh 2>&1 | tee /tmp/production-repeat.log
           repeat_rc=${PIPESTATUS[0]}
