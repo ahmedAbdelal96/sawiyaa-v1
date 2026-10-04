@@ -81,6 +81,10 @@ jobs:
             -keyout /opt/sawiyaa/deploy/certs/live/sawiyaa.com/privkey.pem \
             -out /opt/sawiyaa/deploy/certs/live/sawiyaa.com/fullchain.pem >/dev/null 2>&1
           sudo cp /opt/sawiyaa/deploy/certs/live/sawiyaa.com/fullchain.pem /opt/sawiyaa/deploy/certs/acceptance-ca.pem
+          sudo tee /tmp/acceptance-daily-webhook-validator.js >/dev/null <<'EOF'
+          console.log('PASS DAILY_WEBHOOK_READY (disposable acceptance fixture)');
+          EOF
+          sudo chmod 755 /tmp/acceptance-daily-webhook-validator.js
           echo '127.0.0.1 sawiyaa.com www.sawiyaa.com' | sudo tee -a /etc/hosts >/dev/null
           printf 'TARGET_SHA=%s\nRUN_HEAD_SHA=%s\n' "$TARGET_SHA" "$GITHUB_SHA" | sudo tee /tmp/acceptance-shas.txt >/dev/null
 
@@ -90,6 +94,7 @@ jobs:
           CURL_CA_BUNDLE: /opt/sawiyaa/deploy/certs/acceptance-ca.pem
           SAWIYAA_MIN_FREE_MB: 128
           SAWIYAA_APPROVE_BLOCKING_MIGRATIONS: 'true'
+          SAWIYAA_DAILY_WEBHOOK_VALIDATOR_PATH: /tmp/acceptance-daily-webhook-validator.js
         run: |
           set -Eeuo pipefail
           sudo -E bash /opt/sawiyaa/deploy/server/update-prod.sh 2>&1 | tee /tmp/production-first.log
