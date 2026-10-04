@@ -127,10 +127,14 @@ jobs:
         shell: bash
         run: |
           set -Eeuo pipefail
+          verify_log=/tmp/development-verify.log
+          : > "$verify_log"
+          trap 'rc=$?; { echo "## Application verification diagnostics"; echo "```text"; cat "$verify_log"; echo "```"; } >> "$GITHUB_STEP_SUMMARY"; exit "$rc"' EXIT
+          record() { echo "$*" | tee -a "$verify_log"; }
           check_http() {
             local name="$1" url="$2" status
             status="$(curl --silent --show-error --output /dev/null --write-out '%{http_code}' "$url" || true)"
-            echo "$name: HTTP $status"
+            record "$name: HTTP $status ($url)"
             case "$status" in
               2*|3*) ;;
               *) echo "::error title=HTTP acceptance check failed::$name returned HTTP $status ($url)"; return 1 ;;
@@ -139,12 +143,18 @@ jobs:
           check_http frontend 'http://127.0.0.1:8080/ar/signin/patient'
           check_http backend-health 'http://127.0.0.1:8080/api/v1/health'
           check_http public-help 'http://127.0.0.1:8080/api/v1/public/help'
-          sudo docker compose --env-file /opt/sawiyaa-dev/sawiyaa-backend-v1/.env --env-file /opt/sawiyaa-dev/sawiyaa-frontend-v1/.env -p sawiyaa-dev -f /opt/sawiyaa-dev/docker-compose.dev.yml exec -T frontend node -e "fetch('http://127.0.0.1:3000/ar/signin/patient').then((r) => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"
-          sudo docker compose --env-file /opt/sawiyaa-dev/sawiyaa-backend-v1/.env --env-file /opt/sawiyaa-dev/sawiyaa-frontend-v1/.env -p sawiyaa-dev -f /opt/sawiyaa-dev/docker-compose.dev.yml exec -T backend node -e "require('node:dns').promises.lookup('mailpit').then(() => process.exit(0)).catch(() => process.exit(1))"
-          sudo docker compose --env-file /opt/sawiyaa-dev/sawiyaa-backend-v1/.env --env-file /opt/sawiyaa-dev/sawiyaa-frontend-v1/.env -p sawiyaa-dev -f /opt/sawiyaa-dev/docker-compose.dev.yml exec -T backend sh -c 'touch /app/logs/acceptance-write && rm /app/logs/acceptance-write'
-          test "$(stat -c '%u:%g' /opt/sawiyaa-dev/logs/backend)" = '10001:10001'
+          record 'frontend-internal: starting'
+          sudo docker compose --env-file /opt/sawiyaa-dev/sawiyaa-backend-v1/.env --env-file /opt/sawiyaa-dev/sawiyaa-frontend-v1/.env -p sawiyaa-dev -f /opt/sawiyaa-dev/docker-compose.dev.yml exec -T frontend node -e "fetch('http://127.0.0.1:3000/ar/signin/patient').then((r) => { console.log('frontend-internal: HTTP ' + r.status); process.exit(r.ok ? 0 : 1); }).catch((error) => { console.error(error.message); process.exit(1); })" || { echo "::error title=Application verification failed::frontend-internal check failed"; exit 1; }
+          record 'mailpit-dns: starting'
+          sudo docker compose --env-file /opt/sawiyaa-dev/sawiyaa-backend-v1/.env --env-file /opt/sawiyaa-dev/sawiyaa-frontend-v1/.env -p sawiyaa-dev -f /opt/sawiyaa-dev/docker-compose.dev.yml exec -T backend node -e "require('node:dns').promises.lookup('mailpit').then(() => { console.log('mailpit-dns: resolved'); process.exit(0); }).catch((error) => { console.error(error.message); process.exit(1); })" || { echo "::error title=Application verification failed::mailpit-dns check failed"; exit 1; }
+          record 'backend-log-write: starting'
+          sudo docker compose --env-file /opt/sawiyaa-dev/sawiyaa-backend-v1/.env --env-file /opt/sawiyaa-dev/sawiyaa-frontend-v1/.env -p sawiyaa-dev -f /opt/sawiyaa-dev/docker-compose.dev.yml exec -T backend sh -c 'touch /app/logs/acceptance-write && rm /app/logs/acceptance-write' || { echo "::error title=Application verification failed::backend-log-write check failed"; exit 1; }
+          backend_owner="$(stat -c '%u:%g' /opt/sawiyaa-dev/logs/backend)"
+          record "backend-log-owner: $backend_owner"
+          test "$backend_owner" = '10001:10001' || { echo "::error title=Application verification failed::backend-log-owner expected 10001:10001, got $backend_owner"; exit 1; }
           status="$(curl --http1.1 --silent --output /dev/null --write-out '%{http_code}' -H 'Connection: Upgrade' -H 'Upgrade: websocket' -H 'Sec-WebSocket-Version: 13' -H 'Sec-WebSocket-Key: SGVsbG9BY2NlcHRhbmNl' 'http://127.0.0.1:8080/socket.io/?EIO=4&transport=websocket')"
-          case "$status" in 101|200|400) ;; *) echo "unexpected websocket status: $status" >&2; exit 1;; esac
+          record "websocket: HTTP $status"
+          case "$status" in 101|200|400) ;; *) echo "::error title=Application verification failed::websocket returned HTTP $status" >&2; exit 1;; esac
 
       - name: Verify frontend build-time values and resource isolation
         shell: bash
