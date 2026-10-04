@@ -31,6 +31,8 @@ jobs:
           sudo git -C /opt/sawiyaa-dev config user.email acceptance@sawiyaa.test
           sudo git -C /opt/sawiyaa-dev config user.name acceptance
           sudo git -C /opt/sawiyaa-dev rev-parse HEAD | sudo tee /tmp/exact-deployment-sha.txt
+          printf '%s\n' 'FUNCTIONAL_SHA=09d579a04d5cc6c0c0df09c441dc1ecea903318a' | sudo tee /tmp/functional-sha.txt
+          printf 'RUN_HEAD_SHA=%s\n' "$GITHUB_SHA" | sudo tee /tmp/run-head-sha.txt
 
       - name: Generate redacted development environment
         shell: bash
@@ -235,10 +237,17 @@ jobs:
           mkdir -p "$diag_dir"
           if [ -f /tmp/dev-acceptance.log ]; then cp /tmp/dev-acceptance.log "$diag_dir/dev-acceptance.log"; else : > "$diag_dir/dev-acceptance.log"; fi
           if [ -f /tmp/exact-deployment-sha.txt ]; then cp /tmp/exact-deployment-sha.txt "$diag_dir/exact-deployment-sha.txt"; else : > "$diag_dir/exact-deployment-sha.txt"; fi
+          if [ -f /tmp/functional-sha.txt ]; then cp /tmp/functional-sha.txt "$diag_dir/functional-sha.txt"; else : > "$diag_dir/functional-sha.txt"; fi
+          if [ -f /tmp/run-head-sha.txt ]; then cp /tmp/run-head-sha.txt "$diag_dir/run-head-sha.txt"; else : > "$diag_dir/run-head-sha.txt"; fi
           {
             echo '## Exact deployment SHA'
             echo '```text'
             cat "$diag_dir/exact-deployment-sha.txt"
+            echo '```'
+            echo '## Candidate SHAs'
+            echo '```text'
+            cat "$diag_dir/functional-sha.txt"
+            cat "$diag_dir/run-head-sha.txt"
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
           for file in compose-ps.txt postgres.log backend.log frontend.log nginx.log docker-ps.txt; do
