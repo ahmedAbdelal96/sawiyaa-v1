@@ -97,18 +97,45 @@ jobs:
           SAWIYAA_DAILY_WEBHOOK_VALIDATOR_PATH: /tmp/acceptance-daily-webhook-validator.js
         run: |
           set -Eeuo pipefail
+          {
+            echo "WORKDIR=$(pwd)"
+            echo "PROJECT_DIR=/opt/sawiyaa"
+            echo "CURRENT_BRANCH=$(sudo git -C /opt/sawiyaa branch --show-current)"
+            echo "CURRENT_HEAD=$(sudo git -C /opt/sawiyaa rev-parse HEAD)"
+            echo "TARGET_MAIN_SHA=$TARGET_SHA"
+            test -d /opt/sawiyaa/.git && echo 'GIT_EXISTS=YES' || echo 'GIT_EXISTS=NO'
+            git ls-remote --exit-code origin refs/heads/main >/dev/null && echo 'ORIGIN_MAIN_EXISTS=YES' || echo 'ORIGIN_MAIN_EXISTS=NO'
+            test -r /opt/sawiyaa/sawiyaa-backend-v1/.env.production && echo 'BACKEND_ENV_PATH=PRESENT' || echo 'BACKEND_ENV_PATH=MISSING'
+            test -r /opt/sawiyaa/sawiyaa-frontend-v1/.env.production && echo 'FRONTEND_ENV_PATH=PRESENT' || echo 'FRONTEND_ENV_PATH=MISSING'
+            echo 'BACKEND_ENV_VARIABLE_STATUS_BEGIN'
+            sudo awk -F= '/^[A-Z][A-Z0-9_]*=/{print $1 "=" (length($0) > length($1)+1 ? "PRESENT" : "EMPTY")}' /opt/sawiyaa/sawiyaa-backend-v1/.env.production
+            echo 'BACKEND_ENV_VARIABLE_STATUS_END'
+            echo 'FRONTEND_ENV_VARIABLE_STATUS_BEGIN'
+            sudo awk -F= '/^[A-Z][A-Z0-9_]*=/{print $1 "=" (length($0) > length($1)+1 ? "PRESENT" : "EMPTY")}' /opt/sawiyaa/sawiyaa-frontend-v1/.env.production
+            echo 'FRONTEND_ENV_VARIABLE_STATUS_END'
+            echo 'COMPOSE_CONFIG_BEGIN'
+            sudo docker compose --env-file /opt/sawiyaa/sawiyaa-backend-v1/.env.production --env-file /opt/sawiyaa/sawiyaa-frontend-v1/.env.production -p sawiyaa -f /opt/sawiyaa/docker-compose.prod.yml config --quiet
+            echo "COMPOSE_CONFIG_EXIT=$?"
+            echo 'COMPOSE_CONFIG_END'
+          } 2>&1 | tee /tmp/production-harness-forensics.log
           sudo env \
             CURL_CA_BUNDLE="$CURL_CA_BUNDLE" \
             SAWIYAA_MIN_FREE_MB="$SAWIYAA_MIN_FREE_MB" \
             SAWIYAA_APPROVE_BLOCKING_MIGRATIONS="$SAWIYAA_APPROVE_BLOCKING_MIGRATIONS" \
             SAWIYAA_DAILY_WEBHOOK_VALIDATOR_PATH="$SAWIYAA_DAILY_WEBHOOK_VALIDATOR_PATH" \
-            bash /opt/sawiyaa/deploy/server/update-prod.sh 2>&1 | tee /tmp/production-first.log
+            bash -x /opt/sawiyaa/deploy/server/update-prod.sh 2>&1 | tee /tmp/production-first.log
+          first_rc=${PIPESTATUS[0]}
+          echo "UPDATE_PROD_FIRST_EXIT=$first_rc" | tee -a /tmp/production-harness-forensics.log
+          if (( first_rc != 0 )); then exit "$first_rc"; fi
           sudo env \
             CURL_CA_BUNDLE="$CURL_CA_BUNDLE" \
             SAWIYAA_MIN_FREE_MB="$SAWIYAA_MIN_FREE_MB" \
             SAWIYAA_APPROVE_BLOCKING_MIGRATIONS="$SAWIYAA_APPROVE_BLOCKING_MIGRATIONS" \
             SAWIYAA_DAILY_WEBHOOK_VALIDATOR_PATH="$SAWIYAA_DAILY_WEBHOOK_VALIDATOR_PATH" \
-            bash /opt/sawiyaa/deploy/server/update-prod.sh 2>&1 | tee /tmp/production-repeat.log
+            bash -x /opt/sawiyaa/deploy/server/update-prod.sh 2>&1 | tee /tmp/production-repeat.log
+          repeat_rc=${PIPESTATUS[0]}
+          echo "UPDATE_PROD_REPEAT_EXIT=$repeat_rc" | tee -a /tmp/production-harness-forensics.log
+          exit "$repeat_rc"
 
       - name: Verify production runtime and isolation
         shell: bash
@@ -141,6 +168,7 @@ jobs:
           cp /tmp/acceptance-shas.txt "$dir/acceptance-shas.txt" 2>/dev/null || :
           cp /tmp/production-first.log "$dir/production-first.log" 2>/dev/null || :
           cp /tmp/production-repeat.log "$dir/production-repeat.log" 2>/dev/null || :
+          cp /tmp/production-harness-forensics.log "$dir/production-harness-forensics.log" 2>/dev/null || :
           {
             echo '## First production update diagnostic'
             echo '```text'
@@ -148,6 +176,16 @@ jobs:
               redact < /tmp/production-first.log | tail -n 160
             else
               echo 'No production update log was produced.'
+            fi
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+          {
+            echo '## Harness forensics'
+            echo '```text'
+            if [ -f /tmp/production-harness-forensics.log ]; then
+              redact < /tmp/production-harness-forensics.log | tail -n 220
+            else
+              echo 'No harness forensics log was produced.'
             fi
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
