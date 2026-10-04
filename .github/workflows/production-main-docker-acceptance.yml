@@ -227,6 +227,11 @@ jobs:
             [ -n "$root_line" ] || root_line="$(redact < /tmp/production-first.log | tail -n 20 | tr '\n' ' ' | sed -E 's/[[:space:]]+/ /g')"
             [ -n "$root_line" ] && echo "::error title=update-prod first failure::$root_line"
           fi
+          if [ -f /tmp/production-repeat.log ]; then
+            repeat_line="$(redact < /tmp/production-repeat.log | grep -Ei '(^|[[:space:]])(error|failed|failure|unable|stopped|exit|blocked|blocking|denied|not found|invalid|refusing|required|missing|incomplete|operator_required|known_|initial_admin|paymob|routing|environment|migration|bootstrap|health)' | tail -n 60 | tr '\n' ' ' | sed -E 's/[[:space:]]+/ /g')"
+            [ -n "$repeat_line" ] || repeat_line="$(redact < /tmp/production-repeat.log | tail -n 20 | tr '\n' ' ' | sed -E 's/[[:space:]]+/ /g')"
+            [ -n "$repeat_line" ] && echo "::error title=update-prod repeat failure::$repeat_line"
+          fi
           compose=(sudo docker compose --env-file /opt/sawiyaa/sawiyaa-backend-v1/.env.production --env-file /opt/sawiyaa/sawiyaa-frontend-v1/.env.production -p sawiyaa -f /opt/sawiyaa/docker-compose.prod.yml)
           "${compose[@]}" ps 2>&1 | redact > "$dir/compose-ps.txt"
           "${compose[@]}" logs --tail=200 postgres backend frontend nginx worker 2>&1 | redact > "$dir/compose-logs.txt"
