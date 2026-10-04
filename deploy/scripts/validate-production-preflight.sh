@@ -282,6 +282,8 @@ if (( MOCK )); then
   warn POSTGRES_CHECK_MOCKED
 elif (( COMPOSE_MODEL_OK == 0 )); then
   skip POSTGRES_CHECK_COMPOSE_MODEL_INVALID
+elif (( TARGET_ONLY )); then
+  skip POSTGRES_CHECK_TARGET_ONLY
 elif (( contract_exit == 0 )) && [[ -f "$COMPOSE_FILE" ]]; then
   docker compose --env-file "$BACKEND_ENV" --env-file "$FRONTEND_ENV" -f "$COMPOSE_FILE" ps --status running --services 2>/dev/null | grep -Fxq postgres && pass POSTGRES_CONTAINER_RUNNING || block POSTGRES_CONTAINER_UNAVAILABLE
   docker compose --env-file "$BACKEND_ENV" --env-file "$FRONTEND_ENV" -f "$COMPOSE_FILE" exec -T postgres pg_isready >/dev/null 2>&1 && pass POSTGRES_CONNECTIVITY || block POSTGRES_UNHEALTHY
