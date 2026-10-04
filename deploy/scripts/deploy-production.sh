@@ -21,6 +21,7 @@ ACTIVE_HEAD=""
 MIGRATION_STATUS="NOT_RUN"
 APPLIED_MIGRATIONS_FILE=""
 PROVIDER_STATE_FILE=""
+LOG_MOUNT_CHECK_OUTPUT=""
 RELEASE_STATE_DIR="${SAWIYAA_RELEASE_STATE_DIR:-/opt/sawiyaa-release-state}"
 RELEASE_MARKER="${SAWIYAA_RELEASE_MARKER:-$RELEASE_STATE_DIR/.sawiyaa-release}"
 
@@ -103,6 +104,7 @@ cleanup_validation_worktree() {
 cleanup_phase_0b() {
   [[ -n "$APPLIED_MIGRATIONS_FILE" ]] && rm -f -- "$APPLIED_MIGRATIONS_FILE"
   [[ -n "$PROVIDER_STATE_FILE" ]] && rm -f -- "$PROVIDER_STATE_FILE"
+  [[ -n "$LOG_MOUNT_CHECK_OUTPUT" ]] && rm -f -- "$LOG_MOUNT_CHECK_OUTPUT"
 }
 trap 'cleanup_phase_0b; cleanup_validation_worktree' EXIT INT TERM
 
@@ -282,11 +284,28 @@ docker compose --env-file "$BACKEND_ENV_FILE" --env-file "$FRONTEND_ENV_FILE" -f
   }
 
 echo "Checking backend log bind-mount write access..."
+LOG_MOUNT_CHECK_OUTPUT="$(mktemp "${TMPDIR:-/tmp}/sawiyaa-log-mount-check.XXXXXX")"
+printf 'LOG_MOUNT_HOST_CWD=%s LOG_MOUNT_PROJECT_DIR=%s LOG_MOUNT_COMPOSE_FILE=%s COMPOSE_PROJECT_NAME=%s\n' \
+  "$PWD" "$PROJECT_DIR" "$COMPOSE_FILE" "${COMPOSE_PROJECT_NAME:-}" 
+set +e
 docker compose --env-file "$BACKEND_ENV_FILE" --env-file "$FRONTEND_ENV_FILE" -f "$COMPOSE_FILE" run --rm --no-deps backend \
-  sh -c 'touch /app/logs/.write-test && rm /app/logs/.write-test' || {
+  sh -lc 'set -eu
+    printf "LOG_MOUNT_UID=%s LOG_MOUNT_GID=%s LOG_MOUNT_CWD=%s\n" "$(id -u)" "$(id -g)" "$PWD"
+    ls -ldn /app/logs
+    touch /app/logs/.write-test
+    echo LOG_MOUNT_TOUCH=OK
+    rm -f /app/logs/.write-test
+    echo LOG_MOUNT_REMOVE=OK' >"$LOG_MOUNT_CHECK_OUTPUT" 2>&1
+log_mount_check_exit=$?
+set -e
+cat "$LOG_MOUNT_CHECK_OUTPUT"
+echo "LOG_MOUNT_CHECK_EXIT=$log_mount_check_exit"
+if (( log_mount_check_exit != 0 )); then
     echo "Backend container user cannot write to /app/logs (host path: $PROJECT_DIR/logs/backend)" >&2
     exit 1
-  }
+fi
+rm -f -- "$LOG_MOUNT_CHECK_OUTPUT"
+LOG_MOUNT_CHECK_OUTPUT=""
 
 APPLIED_MIGRATIONS_FILE="$(mktemp "${TMPDIR:-/tmp}/sawiyaa-applied-migrations.XXXXXX")"
 migration_table_exists="$(docker compose --env-file "$BACKEND_ENV_FILE" --env-file "$FRONTEND_ENV_FILE" -f "$COMPOSE_FILE" exec -T \

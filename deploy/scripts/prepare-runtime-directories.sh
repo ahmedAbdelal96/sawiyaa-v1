@@ -45,7 +45,7 @@ fi
 docker run --rm --user 0:0 \
   --mount "type=bind,src=$LOG_DIR,dst=/target" \
   "$HELPER_IMAGE" sh -c \
-  "chown $RUNTIME_UID:$RUNTIME_GID /target && chmod 0750 /target" || {
+  "mkdir -p /target && chown $RUNTIME_UID:$RUNTIME_GID /target && chmod 0750 /target" || {
     echo "Unable to prepare runtime directory ownership for $LOG_DIR" >&2
     exit 1
   }
