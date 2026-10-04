@@ -24,6 +24,18 @@ PROVIDER_STATE_FILE=""
 RELEASE_STATE_DIR="${SAWIYAA_RELEASE_STATE_DIR:-/opt/sawiyaa-release-state}"
 RELEASE_MARKER="${SAWIYAA_RELEASE_MARKER:-$RELEASE_STATE_DIR/.sawiyaa-release}"
 
+read_env_value() {
+  local key="$1"
+  awk -F= -v key="$key" '$1 == key {sub(/^[^=]*=/, ""); print; exit}' "$BACKEND_ENV_FILE"
+}
+
+POSTGRES_DB="$(read_env_value POSTGRES_DB)"
+POSTGRES_USER="$(read_env_value POSTGRES_USER)"
+[[ -n "$POSTGRES_DB" && -n "$POSTGRES_USER" ]] || {
+  echo "Production PostgreSQL database and user must be configured in $BACKEND_ENV_FILE." >&2
+  exit 1
+}
+
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --target-sha) TARGET_SHA_ARG="$2"; shift 2;;
@@ -107,7 +119,8 @@ trap print_logs ERR
 read_provider_state() {
   local require_config_catalog="${1:-false}"
   local catalog_exists
-  catalog_exists="$(docker compose --env-file "$BACKEND_ENV_FILE" --env-file "$FRONTEND_ENV_FILE" -f "$COMPOSE_FILE" exec -T postgres sh -lc \
+  catalog_exists="$(docker compose --env-file "$BACKEND_ENV_FILE" --env-file "$FRONTEND_ENV_FILE" -f "$COMPOSE_FILE" exec -T \
+    -e "POSTGRES_USER=$POSTGRES_USER" -e "POSTGRES_DB=$POSTGRES_DB" postgres sh -lc \
     'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Atqc "SELECT to_regclass('"'"'public.\"ConfigKeyCatalog\"'"'"') IS NOT NULL"' 2>/dev/null)" || {
       echo "Unable to check database payment provider schema; deployment stopped." >&2
       return 1
@@ -121,7 +134,8 @@ read_provider_state() {
     return 0
   fi
 
-  docker compose --env-file "$BACKEND_ENV_FILE" --env-file "$FRONTEND_ENV_FILE" -f "$COMPOSE_FILE" exec -T postgres sh -lc \
+  docker compose --env-file "$BACKEND_ENV_FILE" --env-file "$FRONTEND_ENV_FILE" -f "$COMPOSE_FILE" exec -T \
+    -e "POSTGRES_USER=$POSTGRES_USER" -e "POSTGRES_DB=$POSTGRES_DB" postgres sh -lc \
     'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -AtF "=" -c "SELECT c.key, COALESCE((SELECT v.\"valueBoolean\"::text FROM \"ConfigValue\" v WHERE v.\"configKeyId\" = c.id AND v.\"scopeType\" = '\''GLOBAL'\'' AND v.\"scopeRefId\" IS NULL AND v.\"isActive\" = true ORDER BY v.priority DESC LIMIT 1), '\''false'\'') FROM \"ConfigKeyCatalog\" c WHERE c.key IN ('\''payment.provider.stripe.enabled'\'', '\''payment.provider.paymob.enabled'\'') ORDER BY c.key"' \
     | sed -n -E 's/^payment\.provider\.stripe\.enabled=(true|false)$/stripe=\1/p; s/^payment\.provider\.paymob\.enabled=(true|false)$/paymob=\1/p' \
     > "$PROVIDER_STATE_FILE" || {
@@ -137,7 +151,7 @@ read_provider_state() {
 
 wait_for_postgres() {
   for attempt in {1..30}; do
-    if docker compose --env-file "$BACKEND_ENV_FILE" --env-file "$FRONTEND_ENV_FILE" -f "$COMPOSE_FILE" exec -T postgres pg_isready >/dev/null 2>&1; then
+    if docker compose --env-file "$BACKEND_ENV_FILE" --env-file "$FRONTEND_ENV_FILE" -f "$COMPOSE_FILE" exec -T postgres pg_isready -U "$POSTGRES_USER" -d "$POSTGRES_DB" >/dev/null 2>&1; then
       return 0
     fi
     sleep 2
@@ -275,13 +289,15 @@ docker compose --env-file "$BACKEND_ENV_FILE" --env-file "$FRONTEND_ENV_FILE" -f
   }
 
 APPLIED_MIGRATIONS_FILE="$(mktemp "${TMPDIR:-/tmp}/sawiyaa-applied-migrations.XXXXXX")"
-migration_table_exists="$(docker compose --env-file "$BACKEND_ENV_FILE" --env-file "$FRONTEND_ENV_FILE" -f "$COMPOSE_FILE" exec -T postgres sh -lc \
+migration_table_exists="$(docker compose --env-file "$BACKEND_ENV_FILE" --env-file "$FRONTEND_ENV_FILE" -f "$COMPOSE_FILE" exec -T \
+  -e "POSTGRES_USER=$POSTGRES_USER" -e "POSTGRES_DB=$POSTGRES_DB" postgres sh -lc \
   'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Atqc "SELECT to_regclass('\''public._prisma_migrations'\'') IS NOT NULL"' 2>/dev/null)" || {
     echo "Unable to check for the Prisma migrations table; migration was not run." >&2
     exit 1
   }
 if [[ "$migration_table_exists" == "t" ]]; then
-  docker compose --env-file "$BACKEND_ENV_FILE" --env-file "$FRONTEND_ENV_FILE" -f "$COMPOSE_FILE" exec -T postgres sh -lc \
+  docker compose --env-file "$BACKEND_ENV_FILE" --env-file "$FRONTEND_ENV_FILE" -f "$COMPOSE_FILE" exec -T \
+    -e "POSTGRES_USER=$POSTGRES_USER" -e "POSTGRES_DB=$POSTGRES_DB" postgres sh -lc \
     'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Atqc "SELECT migration_name FROM _prisma_migrations WHERE finished_at IS NOT NULL ORDER BY migration_name"' > "$APPLIED_MIGRATIONS_FILE" || {
       echo "Unable to read applied Prisma migrations; migration was not run." >&2
       exit 1
