@@ -51,6 +51,7 @@ jobs:
               'JWT_REFRESH_SECRET': 'accept-production-refresh-secret-012345678901234567890',
               'DAILY_API_KEY': 'accept-daily-api-key',
               'DAILY_WEBHOOK_SECRET': 'accept-daily-webhook-secret',
+              'PAYMOB_EGP_CARD_INTEGRATION_ID': 'accept-paymob-egp-card',
               'CORPORATE_CODE_PEPPER': 'accept-corporate-pepper-012345678901234567890',
               'MAIL_FROM': 'accept@sawiyaa.test', 'MAIL_HOST': '127.0.0.1',
               'MAIL_PORT': '1025', 'MAIL_USER': 'accept-user', 'MAIL_PASS': 'accept-password',
