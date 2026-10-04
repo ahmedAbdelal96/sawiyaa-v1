@@ -97,8 +97,18 @@ jobs:
           SAWIYAA_DAILY_WEBHOOK_VALIDATOR_PATH: /tmp/acceptance-daily-webhook-validator.js
         run: |
           set -Eeuo pipefail
-          sudo -E bash /opt/sawiyaa/deploy/server/update-prod.sh 2>&1 | tee /tmp/production-first.log
-          sudo -E bash /opt/sawiyaa/deploy/server/update-prod.sh 2>&1 | tee /tmp/production-repeat.log
+          sudo env \
+            CURL_CA_BUNDLE="$CURL_CA_BUNDLE" \
+            SAWIYAA_MIN_FREE_MB="$SAWIYAA_MIN_FREE_MB" \
+            SAWIYAA_APPROVE_BLOCKING_MIGRATIONS="$SAWIYAA_APPROVE_BLOCKING_MIGRATIONS" \
+            SAWIYAA_DAILY_WEBHOOK_VALIDATOR_PATH="$SAWIYAA_DAILY_WEBHOOK_VALIDATOR_PATH" \
+            bash /opt/sawiyaa/deploy/server/update-prod.sh 2>&1 | tee /tmp/production-first.log
+          sudo env \
+            CURL_CA_BUNDLE="$CURL_CA_BUNDLE" \
+            SAWIYAA_MIN_FREE_MB="$SAWIYAA_MIN_FREE_MB" \
+            SAWIYAA_APPROVE_BLOCKING_MIGRATIONS="$SAWIYAA_APPROVE_BLOCKING_MIGRATIONS" \
+            SAWIYAA_DAILY_WEBHOOK_VALIDATOR_PATH="$SAWIYAA_DAILY_WEBHOOK_VALIDATOR_PATH" \
+            bash /opt/sawiyaa/deploy/server/update-prod.sh 2>&1 | tee /tmp/production-repeat.log
 
       - name: Verify production runtime and isolation
         shell: bash
