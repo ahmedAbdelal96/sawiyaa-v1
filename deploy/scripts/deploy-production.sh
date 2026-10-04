@@ -135,6 +135,17 @@ read_provider_state() {
   fi
 }
 
+wait_for_postgres() {
+  for attempt in {1..30}; do
+    if docker compose --env-file "$BACKEND_ENV_FILE" --env-file "$FRONTEND_ENV_FILE" -f "$COMPOSE_FILE" exec -T postgres pg_isready >/dev/null 2>&1; then
+      return 0
+    fi
+    sleep 2
+  done
+  echo "PostgreSQL did not become ready before the deployment database check." >&2
+  return 1
+}
+
 assert_active_checkout_safe() {
   local line code item
   while IFS= read -r line; do
@@ -232,6 +243,7 @@ docker compose --env-file "$BACKEND_ENV_FILE" --env-file "$FRONTEND_ENV_FILE" -f
 
 echo "Starting PostgreSQL for database-backed environment checks..."
 docker compose --env-file "$BACKEND_ENV_FILE" --env-file "$FRONTEND_ENV_FILE" -f "$COMPOSE_FILE" up -d postgres
+wait_for_postgres || exit 1
 PROVIDER_STATE_FILE="$(mktemp "${TMPDIR:-/tmp}/sawiyaa-provider-state.XXXXXX")"
 read_provider_state false || exit 1
 if ! bash "$PROJECT_DIR/deploy/scripts/validate-production-preflight.sh" \
