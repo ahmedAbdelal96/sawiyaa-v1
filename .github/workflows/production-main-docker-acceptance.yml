@@ -190,7 +190,7 @@ jobs:
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
           if [ -f /tmp/production-first.log ]; then
-            root_line="$(redact < /tmp/production-first.log | grep -E '^(\+ |[^[:space:]]|[A-Z_]+:|.*(BLOCKING|ERROR|failed|FAIL|Unable|Refusing|missing|cannot|required))' | tail -n 1)"
+            root_line="$(redact < /tmp/production-first.log | tail -n 8 | tr '\n' ' ' | sed -E 's/[[:space:]]+/ /g')"
             [ -n "$root_line" ] && echo "::error title=update-prod first failure::$root_line"
           fi
           compose=(sudo docker compose --env-file /opt/sawiyaa/sawiyaa-backend-v1/.env.production --env-file /opt/sawiyaa/sawiyaa-frontend-v1/.env.production -p sawiyaa -f /opt/sawiyaa/docker-compose.prod.yml)
