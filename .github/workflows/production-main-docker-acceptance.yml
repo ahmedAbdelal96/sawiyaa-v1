@@ -79,7 +79,11 @@ jobs:
               + 'PAYMOB_HMAC_SECRET=accept-paymob-hmac-secret\n'
               + 'PAYMOB_BASE_URL=https://accept.paymob.com/api\n'
               + 'PAYMOB_INTENTION_BASE_URL=https://flashapi.paymob.com\n'
+              + 'PAYMOB_CHECKOUT_BASE_URL=https://flashapi.paymob.com\n'
               + 'PAYMOB_EGP_CARD_INTEGRATION_ID=accept-paymob-egp-card\n'
+              + 'PAYMENT_SUCCESS_URL=https://sawiyaa.com/payment/success\n'
+              + 'PAYMENT_FAILED_URL=https://sawiyaa.com/payment/failed\n'
+              + 'PAYMENT_PENDING_URL=https://sawiyaa.com/payment/pending\n'
           )
           rewrite(frontend, {
               'NEXT_PUBLIC_APP_URL': 'https://sawiyaa.com',
