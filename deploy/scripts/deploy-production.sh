@@ -465,10 +465,10 @@ curl -fsS https://sawiyaa.com/api/v1/health >/dev/null
 
 echo "Waiting for frontend health..."
 for attempt in {1..30}; do
-  if curl -fsS https://sawiyaa.com >/dev/null; then break; fi
+  if curl -fsSL https://sawiyaa.com >/dev/null; then break; fi
   sleep 5
 done
-curl -fsS https://sawiyaa.com >/dev/null
+curl -fsSL https://sawiyaa.com >/dev/null
 
 payment_status="DISABLED"
 if [[ -s "$PROVIDER_STATE_FILE" ]] && grep -Eq '^(stripe|paymob)=true$' "$PROVIDER_STATE_FILE"; then
