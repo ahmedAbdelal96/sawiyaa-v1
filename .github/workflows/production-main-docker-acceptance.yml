@@ -205,7 +205,7 @@ jobs:
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
           if [ -f /tmp/production-first.log ]; then
-            root_line="$(redact < /tmp/production-first.log | grep -Ei '(^|[[:space:]])(error|failed|failure|unable|stopped|exit|blocked|denied|not found|invalid|refusing|required|migration|bootstrap|health)' | tail -n 20 | tr '\n' ' ' | sed -E 's/[[:space:]]+/ /g')"
+            root_line="$(redact < /tmp/production-first.log | grep -Ei '(^|[[:space:]])(error|failed|failure|unable|stopped|exit|blocked|denied|not found|invalid|refusing|required|missing|incomplete|operator_required|known_|initial_admin|migration|bootstrap|health)' | tail -n 30 | tr '\n' ' ' | sed -E 's/[[:space:]]+/ /g')"
             [ -n "$root_line" ] || root_line="$(redact < /tmp/production-first.log | tail -n 20 | tr '\n' ' ' | sed -E 's/[[:space:]]+/ /g')"
             [ -n "$root_line" ] && echo "::error title=update-prod first failure::$root_line"
           fi
