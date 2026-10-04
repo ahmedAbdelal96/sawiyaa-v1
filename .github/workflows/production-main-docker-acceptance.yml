@@ -227,8 +227,10 @@ jobs:
             [ -n "$root_line" ] || root_line="$(redact < /tmp/production-first.log | tail -n 20 | tr '\n' ' ' | sed -E 's/[[:space:]]+/ /g')"
             [ -n "$root_line" ] && echo "::error title=update-prod first failure::$root_line"
           fi
+          echo "UPDATE_PROD_FIRST_EXIT_FILE=$(grep -E 'UPDATE_PROD_FIRST_EXIT=' /tmp/production-harness-forensics.log 2>/dev/null | tail -n 1 || true)"
+          echo "UPDATE_PROD_REPEAT_EXIT_FILE=$(grep -E 'UPDATE_PROD_REPEAT_EXIT=' /tmp/production-harness-forensics.log 2>/dev/null | tail -n 1 || true)"
           if [ -f /tmp/production-repeat.log ]; then
-            repeat_line="$(redact < /tmp/production-repeat.log | grep -Ei '(^|[[:space:]])(error|failed|failure|unable|stopped|exit|blocked|blocking|denied|not found|invalid|refusing|required|missing|incomplete|operator_required|known_|initial_admin|paymob|routing|environment|migration|bootstrap|health)' | tail -n 60 | tr '\n' ' ' | sed -E 's/[[:space:]]+/ /g')"
+            repeat_line="$(redact < /tmp/production-repeat.log | grep -Ei '(^|[[:space:]])(error|failed|failure|unable|stopped|exit|blocked|blocking|denied|not found|invalid|refusing|required|missing|incomplete|operator_required|known_|initial_admin|paymob|routing|environment|migration|bootstrap|health|fatal|branch|clean|already|another)' | tail -n 60 | tr '\n' ' ' | sed -E 's/[[:space:]]+/ /g')"
             [ -n "$repeat_line" ] || repeat_line="$(redact < /tmp/production-repeat.log | tail -n 20 | tr '\n' ' ' | sed -E 's/[[:space:]]+/ /g')"
             [ -n "$repeat_line" ] && echo "::error title=update-prod repeat failure::$repeat_line"
           fi
