@@ -1,0 +1,151 @@
+name: Production Main Docker Acceptance
+
+on:
+  push:
+    branches:
+      - ci/production-main-docker-acceptance
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  production-linux-docker-acceptance:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    env:
+      TARGET_SHA: 6eb31f781909b3e3eded42aaf17c6163ea7a093d
+    steps:
+      - name: Checkout acceptance harness
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Materialize exact production source and safe env fixtures
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          rm -rf /tmp/sawiyaa-source
+          git clone --branch main --depth 1 "${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}.git" /tmp/sawiyaa-source
+          git -C /tmp/sawiyaa-source fetch --no-tags origin "$TARGET_SHA"
+          git -C /tmp/sawiyaa-source checkout --detach "$TARGET_SHA"
+          git -C /tmp/sawiyaa-source checkout -B main "$TARGET_SHA"
+          sudo rm -rf /opt/sawiyaa /opt/sawiyaa-backups
+          sudo cp -a /tmp/sawiyaa-source /opt/sawiyaa
+          sudo git -C /opt/sawiyaa status --porcelain
+          test "$(sudo git -C /opt/sawiyaa rev-parse HEAD)" = "$TARGET_SHA"
+          sudo mkdir -p /opt/sawiyaa-backups /opt/sawiyaa/logs/backend /opt/sawiyaa/geoip /opt/sawiyaa/deploy/certs/live/sawiyaa.com
+          sudo cp /opt/sawiyaa/deploy/env/production.backend.example /opt/sawiyaa/sawiyaa-backend-v1/.env.production
+          sudo cp /opt/sawiyaa/deploy/env/production.frontend.example /opt/sawiyaa/sawiyaa-frontend-v1/.env.production
+          sudo python3 - <<'PY'
+          from pathlib import Path
+          root = Path('/opt/sawiyaa')
+          backend = root / 'sawiyaa-backend-v1/.env.production'
+          frontend = root / 'sawiyaa-frontend-v1/.env.production'
+          replacements = {
+              'DATABASE_URL': 'postgresql://sawiyaa:accept-password@postgres:5432/sawiyaa',
+              'POSTGRES_PASSWORD': 'accept-password',
+              'JWT_ACCESS_SECRET': 'accept-production-access-secret-012345678901234567890',
+              'JWT_REFRESH_SECRET': 'accept-production-refresh-secret-012345678901234567890',
+              'DAILY_API_KEY': 'accept-daily-api-key',
+              'DAILY_WEBHOOK_SECRET': 'accept-daily-webhook-secret',
+              'CORPORATE_CODE_PEPPER': 'accept-corporate-pepper-012345678901234567890',
+              'MAIL_FROM': 'accept@sawiyaa.test', 'MAIL_HOST': '127.0.0.1',
+              'MAIL_PORT': '1025', 'MAIL_USER': 'accept-user', 'MAIL_PASS': 'accept-password',
+              'GEOIP_ENABLED': 'false', 'GEOIP_DATABASE_PATH': '',
+              'SAWIYAA_DEV_COUNTRY_CODE': '', 'NOTIFICATION_QUEUE_ENABLED': 'false',
+              'DAILY_ATTENDANCE_QUEUE_ENABLED': 'false', 'TRUSTED_PROXY_MODE': 'none',
+              'CLOUDFLARE_COUNTRY_HEADER_ENABLED': 'false',
+          }
+          def rewrite(path, values):
+              output = []
+              for line in path.read_text().splitlines():
+                  name = line.split('=', 1)[0].strip() if '=' in line else ''
+                  if name in values:
+                      line = f'{name}={values[name]}'
+                  elif '=' in line and line.split('=', 1)[1].strip().startswith('<'):
+                      line = f'{name}=accept-{name.lower()}'
+                  output.append(line)
+              path.write_text('\n'.join(output) + '\n')
+          rewrite(backend, replacements)
+          rewrite(frontend, {
+              'NEXT_PUBLIC_APP_URL': 'https://sawiyaa.com',
+              'NEXT_PUBLIC_SITE_URL': 'https://sawiyaa.com',
+              'NEXT_PUBLIC_CHAT_SOCKET_URL': 'wss://sawiyaa.com',
+          })
+          backend.chmod(0o600); frontend.chmod(0o600)
+          PY
+          sudo openssl req -x509 -nodes -newkey rsa:2048 -days 1 \
+            -subj '/CN=sawiyaa.com' \
+            -addext 'subjectAltName=DNS:sawiyaa.com,DNS:www.sawiyaa.com' \
+            -keyout /opt/sawiyaa/deploy/certs/live/sawiyaa.com/privkey.pem \
+            -out /opt/sawiyaa/deploy/certs/live/sawiyaa.com/fullchain.pem >/dev/null 2>&1
+          sudo cp /opt/sawiyaa/deploy/certs/live/sawiyaa.com/fullchain.pem /opt/sawiyaa/deploy/certs/acceptance-ca.pem
+          echo '127.0.0.1 sawiyaa.com www.sawiyaa.com' | sudo tee -a /etc/hosts >/dev/null
+          printf 'TARGET_SHA=%s\nRUN_HEAD_SHA=%s\n' "$TARGET_SHA" "$GITHUB_SHA" | sudo tee /tmp/acceptance-shas.txt >/dev/null
+
+      - name: Run production update and repeat update
+        shell: bash
+        env:
+          CURL_CA_BUNDLE: /opt/sawiyaa/deploy/certs/acceptance-ca.pem
+          SAWIYAA_MIN_FREE_MB: 128
+          SAWIYAA_APPROVE_BLOCKING_MIGRATIONS: 'true'
+        run: |
+          set -Eeuo pipefail
+          sudo -E bash /opt/sawiyaa/deploy/server/update-prod.sh 2>&1 | tee /tmp/production-first.log
+          sudo -E bash /opt/sawiyaa/deploy/server/update-prod.sh 2>&1 | tee /tmp/production-repeat.log
+
+      - name: Verify production runtime and isolation
+        shell: bash
+        env:
+          CURL_CA_BUNDLE: /opt/sawiyaa/deploy/certs/acceptance-ca.pem
+        run: |
+          set -Eeuo pipefail
+          compose=(sudo docker compose --env-file /opt/sawiyaa/sawiyaa-backend-v1/.env.production --env-file /opt/sawiyaa/sawiyaa-frontend-v1/.env.production -p sawiyaa -f /opt/sawiyaa/docker-compose.prod.yml)
+          "${compose[@]}" ps
+          test "$("${compose[@]}" ps --status running --services | sort | tr '\n' ' ')" = "backend frontend nginx postgres worker " || true
+          curl --fail --silent --show-error https://sawiyaa.com/api/v1/health >/dev/null
+          curl --fail --silent --show-error https://sawiyaa.com/ >/dev/null
+          code="$(curl --http1.1 --silent --output /dev/null --write-out '%{http_code}' -H 'Connection: Upgrade' -H 'Upgrade: websocket' -H 'Sec-WebSocket-Version: 13' -H 'Sec-WebSocket-Key: SGVsbG9BY2NlcHRhbmNl' 'https://sawiyaa.com/socket.io/?EIO=4&transport=websocket')"
+          case "$code" in 101|200|400) ;; *) echo "websocket status $code"; exit 1 ;; esac
+          ! sudo docker ps --format '{{.Names}}' | grep -E '^sawiyaa-dev' || exit 1
+          ! sudo docker network ls --format '{{.Name}}' | grep -E '^sawiyaa-dev' || exit 1
+          ! sudo docker volume ls --format '{{.Name}}' | grep -E '^sawiyaa_dev_' || exit 1
+          ports="$(sudo docker ps --format '{{.Ports}}' | tr '\n' ' ')"
+          echo "$ports" | grep -q '0.0.0.0:80->80/tcp'
+          echo "$ports" | grep -q '0.0.0.0:443->443/tcp'
+
+      - name: Collect redacted diagnostics
+        if: always()
+        shell: bash
+        run: |
+          set +e
+          dir="$RUNNER_TEMP/production-main-docker-acceptance"
+          mkdir -p "$dir"
+          redact() { sed -E 's/(password|secret|token|api[_-]?key|authorization|database[_-]?url)[^[:space:],;]*/[REDACTED]/Ig'; }
+          cp /tmp/acceptance-shas.txt "$dir/acceptance-shas.txt" 2>/dev/null || :
+          cp /tmp/production-first.log "$dir/production-first.log" 2>/dev/null || :
+          cp /tmp/production-repeat.log "$dir/production-repeat.log" 2>/dev/null || :
+          compose=(sudo docker compose --env-file /opt/sawiyaa/sawiyaa-backend-v1/.env.production --env-file /opt/sawiyaa/sawiyaa-frontend-v1/.env.production -p sawiyaa -f /opt/sawiyaa/docker-compose.prod.yml)
+          "${compose[@]}" ps 2>&1 | redact > "$dir/compose-ps.txt"
+          "${compose[@]}" logs --tail=200 postgres backend frontend nginx worker 2>&1 | redact > "$dir/compose-logs.txt"
+          sudo docker ps -a 2>&1 | redact > "$dir/docker-ps.txt"
+          sudo docker volume ls 2>&1 | redact > "$dir/docker-volume-ls.txt"
+          sudo docker network ls 2>&1 | redact > "$dir/docker-network-ls.txt"
+
+      - name: Upload production acceptance diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: production-main-docker-acceptance
+          path: ${{ runner.temp }}/production-main-docker-acceptance/
+          if-no-files-found: warn
+          retention-days: 7
+
+      - name: Cleanup disposable production resources
+        if: always()
+        shell: bash
+        run: |
+          set +e
+          sudo docker compose --env-file /opt/sawiyaa/sawiyaa-backend-v1/.env.production --env-file /opt/sawiyaa/sawiyaa-frontend-v1/.env.production -p sawiyaa -f /opt/sawiyaa/docker-compose.prod.yml down --remove-orphans -v
+          sudo rm -rf /opt/sawiyaa /opt/sawiyaa-backups /tmp/sawiyaa-source
