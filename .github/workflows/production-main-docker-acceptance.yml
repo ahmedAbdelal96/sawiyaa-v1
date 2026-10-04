@@ -77,6 +77,7 @@ jobs:
               + 'PAYMOB_API_KEY=accept-paymob-api-key\n'
               + 'PAYMOB_PUBLIC_KEY=accept-paymob-public-key\n'
               + 'PAYMOB_HMAC_SECRET=accept-paymob-hmac-secret\n'
+              + 'PAYMOB_IFRAME_ID=accept-paymob-iframe\n'
               + 'PAYMOB_BASE_URL=https://accept.paymob.com/api\n'
               + 'PAYMOB_INTENTION_BASE_URL=https://flashapi.paymob.com\n'
               + 'PAYMOB_CHECKOUT_BASE_URL=https://flashapi.paymob.com\n'
