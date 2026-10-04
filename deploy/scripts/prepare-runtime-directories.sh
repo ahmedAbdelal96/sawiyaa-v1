@@ -50,7 +50,7 @@ docker run --rm --user 0:0 \
     exit 1
   }
 
-"$0" --project-dir "$PROJECT_DIR" \
+bash "$0" --project-dir "$PROJECT_DIR" \
   --runtime-uid "$RUNTIME_UID" \
   --runtime-gid "$RUNTIME_GID" \
   --helper-image "$HELPER_IMAGE" \
