@@ -456,19 +456,36 @@ for healthy_service in postgres backend frontend; do
 done
 echo "PostgreSQL, backend, and frontend healthchecks are healthy; nginx is running."
 
+run_public_health_check() {
+  local check_name="$1"
+  local check_url="$2"
+  local check_args=(curl -fsS)
+  if [[ "$check_name" == "frontend" ]]; then
+    check_args+=(--location)
+  fi
+  check_args+=("$check_url")
+  echo "PUBLIC_HEALTH_CHECK_BEGIN name=$check_name url=$check_url"
+  set +e
+  "${check_args[@]}" >/dev/null
+  local check_exit=$?
+  set -e
+  echo "PUBLIC_HEALTH_CHECK_EXIT name=$check_name exit=$check_exit"
+  (( check_exit == 0 ))
+}
+
 echo "Waiting for backend health..."
 for attempt in {1..30}; do
-  if curl -fsS https://sawiyaa.com/api/v1/health >/dev/null; then break; fi
+  if run_public_health_check backend https://sawiyaa.com/api/v1/health; then break; fi
   sleep 5
 done
-curl -fsS https://sawiyaa.com/api/v1/health >/dev/null
+run_public_health_check backend https://sawiyaa.com/api/v1/health
 
 echo "Waiting for frontend health..."
 for attempt in {1..30}; do
-  if curl -fsSL https://sawiyaa.com >/dev/null; then break; fi
+  if run_public_health_check frontend https://sawiyaa.com; then break; fi
   sleep 5
 done
-curl -fsSL https://sawiyaa.com >/dev/null
+run_public_health_check frontend https://sawiyaa.com
 
 payment_status="DISABLED"
 if [[ -s "$PROVIDER_STATE_FILE" ]] && grep -Eq '^(stripe|paymob)=true$' "$PROVIDER_STATE_FILE"; then
