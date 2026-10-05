@@ -102,9 +102,16 @@ cleanup_validation_worktree() {
   fi
 }
 cleanup_phase_0b() {
-  [[ -n "$APPLIED_MIGRATIONS_FILE" ]] && rm -f -- "$APPLIED_MIGRATIONS_FILE"
-  [[ -n "$PROVIDER_STATE_FILE" ]] && rm -f -- "$PROVIDER_STATE_FILE"
-  [[ -n "$LOG_MOUNT_CHECK_OUTPUT" ]] && rm -f -- "$LOG_MOUNT_CHECK_OUTPUT"
+  if [[ -n "$APPLIED_MIGRATIONS_FILE" ]]; then
+    rm -f -- "$APPLIED_MIGRATIONS_FILE"
+  fi
+  if [[ -n "$PROVIDER_STATE_FILE" ]]; then
+    rm -f -- "$PROVIDER_STATE_FILE"
+  fi
+  if [[ -n "$LOG_MOUNT_CHECK_OUTPUT" ]]; then
+    rm -f -- "$LOG_MOUNT_CHECK_OUTPUT"
+  fi
+  return 0
 }
 trap 'cleanup_phase_0b; cleanup_validation_worktree' EXIT INT TERM
 
