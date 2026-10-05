@@ -14,7 +14,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 90
     env:
-      TARGET_SHA: 6eb31f781909b3e3eded42aaf17c6163ea7a093d
+      TARGET_SHA: 1942170e82d90553652da48175be8eef16d3a67e
     steps:
       - name: Checkout acceptance harness
         uses: actions/checkout@v4
@@ -36,7 +36,7 @@ jobs:
           sudo git -C /opt/sawiyaa status --porcelain
           test "$(sudo git -C /opt/sawiyaa rev-parse HEAD)" = "$GITHUB_SHA"
           sudo git -C /opt/sawiyaa merge-base --is-ancestor "$TARGET_SHA" HEAD
-          sudo mkdir -p /opt/sawiyaa-backups /opt/sawiyaa/logs/backend /opt/sawiyaa/geoip /opt/sawiyaa/deploy/certs/live/sawiyaa.com
+          sudo mkdir -p /opt/sawiyaa-backups /opt/sawiyaa/logs/backend /opt/sawiyaa/geoip
           sudo cp /opt/sawiyaa/deploy/env/production.backend.example /opt/sawiyaa/sawiyaa-backend-v1/.env.production
           sudo cp /opt/sawiyaa/deploy/env/production.frontend.example /opt/sawiyaa/sawiyaa-frontend-v1/.env.production
           sudo python3 - <<'PY'
@@ -93,26 +93,18 @@ jobs:
           })
           backend.chmod(0o600); frontend.chmod(0o600)
           PY
-          sudo openssl req -x509 -nodes -newkey rsa:2048 -days 1 \
-            -subj '/CN=sawiyaa.com' \
-            -addext 'subjectAltName=DNS:sawiyaa.com,DNS:www.sawiyaa.com' \
-            -keyout /opt/sawiyaa/deploy/certs/live/sawiyaa.com/privkey.pem \
-            -out /opt/sawiyaa/deploy/certs/live/sawiyaa.com/fullchain.pem >/dev/null 2>&1
-          sudo cp /opt/sawiyaa/deploy/certs/live/sawiyaa.com/fullchain.pem /opt/sawiyaa/deploy/certs/acceptance-ca.pem
-          sudo sh -c "grep -qxF '/deploy/certs/' /opt/sawiyaa/.git/info/exclude || echo '/deploy/certs/' >> /opt/sawiyaa/.git/info/exclude"
           sudo tee /tmp/acceptance-daily-webhook-validator.js >/dev/null <<'EOF'
           console.log('PASS DAILY_WEBHOOK_READY (disposable acceptance fixture)');
           EOF
           sudo chmod 755 /tmp/acceptance-daily-webhook-validator.js
-          echo '127.0.0.1 sawiyaa.com www.sawiyaa.com' | sudo tee -a /etc/hosts >/dev/null
           printf 'TARGET_SHA=%s\nRUN_HEAD_SHA=%s\n' "$TARGET_SHA" "$GITHUB_SHA" | sudo tee /tmp/acceptance-shas.txt >/dev/null
 
       - name: Run production update and repeat update
         shell: bash
         env:
-          CURL_CA_BUNDLE: /opt/sawiyaa/deploy/certs/acceptance-ca.pem
           SAWIYAA_MIN_FREE_MB: 128
           SAWIYAA_DAILY_WEBHOOK_VALIDATOR_PATH: /tmp/acceptance-daily-webhook-validator.js
+          SAWIYAA_PRODUCTION_INGRESS_URL: http://127.0.0.1:8081
         run: |
           set -Eeuo pipefail
           {
@@ -144,9 +136,9 @@ jobs:
           import os, pty, select, sys, time
           command = [
               'sudo', 'env', 'SHELLOPTS=xtrace',
-              f"CURL_CA_BUNDLE={os.environ['CURL_CA_BUNDLE']}",
               f"SAWIYAA_MIN_FREE_MB={os.environ['SAWIYAA_MIN_FREE_MB']}",
               f"SAWIYAA_DAILY_WEBHOOK_VALIDATOR_PATH={os.environ['SAWIYAA_DAILY_WEBHOOK_VALIDATOR_PATH']}",
+              f"SAWIYAA_PRODUCTION_INGRESS_URL={os.environ['SAWIYAA_PRODUCTION_INGRESS_URL']}",
               'ALLOW_PAYMOB_CONTROL_BOOTSTRAP=true',
               f"SAWIYAA_TARGET_SHA={os.environ['GITHUB_SHA']}",
               'bash', '-x', '/opt/sawiyaa/deploy/server/update-prod.sh',
@@ -209,9 +201,9 @@ jobs:
           import os, pty, select, sys
           command = [
               'sudo', 'env', 'SHELLOPTS=xtrace',
-              f"CURL_CA_BUNDLE={os.environ['CURL_CA_BUNDLE']}",
               f"SAWIYAA_MIN_FREE_MB={os.environ['SAWIYAA_MIN_FREE_MB']}",
               f"SAWIYAA_DAILY_WEBHOOK_VALIDATOR_PATH={os.environ['SAWIYAA_DAILY_WEBHOOK_VALIDATOR_PATH']}",
+              f"SAWIYAA_PRODUCTION_INGRESS_URL={os.environ['SAWIYAA_PRODUCTION_INGRESS_URL']}",
               'ALLOW_PAYMOB_CONTROL_BOOTSTRAP=true',
               f"SAWIYAA_TARGET_SHA={os.environ['GITHUB_SHA']}",
               'bash', '-x', '/opt/sawiyaa/deploy/server/update-prod.sh',
@@ -259,23 +251,23 @@ jobs:
 
       - name: Verify production runtime and isolation
         shell: bash
-        env:
-          CURL_CA_BUNDLE: /opt/sawiyaa/deploy/certs/acceptance-ca.pem
         run: |
           set -Eeuo pipefail
           compose=(sudo docker compose --env-file /opt/sawiyaa/sawiyaa-backend-v1/.env.production --env-file /opt/sawiyaa/sawiyaa-frontend-v1/.env.production -p sawiyaa -f /opt/sawiyaa/docker-compose.prod.yml)
           "${compose[@]}" ps
           test "$("${compose[@]}" ps --status running --services | sort | tr '\n' ' ')" = "backend frontend nginx postgres worker " || true
-          curl --fail --silent --show-error https://sawiyaa.com/api/v1/health >/dev/null
-          curl --fail --silent --show-error https://sawiyaa.com/ >/dev/null
-          code="$(curl --http1.1 --silent --output /dev/null --write-out '%{http_code}' -H 'Connection: Upgrade' -H 'Upgrade: websocket' -H 'Sec-WebSocket-Version: 13' -H 'Sec-WebSocket-Key: SGVsbG9BY2NlcHRhbmNl' 'https://sawiyaa.com/socket.io/?EIO=4&transport=websocket')"
+          curl --fail --silent --show-error http://127.0.0.1:8081/api/v1/health >/dev/null
+          curl --fail --silent --show-error http://127.0.0.1:8081/ >/dev/null
+          code="$(curl --http1.1 --silent --output /dev/null --write-out '%{http_code}' -H 'Connection: Upgrade' -H 'Upgrade: websocket' -H 'Sec-WebSocket-Version: 13' -H 'Sec-WebSocket-Key: SGVsbG9BY2NlcHRhbmNl' 'http://127.0.0.1:8081/socket.io/?EIO=4&transport=websocket')"
           case "$code" in 101|200|400) ;; *) echo "websocket status $code"; exit 1 ;; esac
           ! sudo docker ps --format '{{.Names}}' | grep -E '^sawiyaa-dev' || exit 1
           ! sudo docker network ls --format '{{.Name}}' | grep -E '^sawiyaa-dev' || exit 1
           ! sudo docker volume ls --format '{{.Name}}' | grep -E '^sawiyaa_dev_' || exit 1
           ports="$(sudo docker ps --format '{{.Ports}}' | tr '\n' ' ')"
-          echo "$ports" | grep -q '0.0.0.0:80->80/tcp'
-          echo "$ports" | grep -q '0.0.0.0:443->443/tcp'
+          echo "$ports" | grep -q '127.0.0.1:8081->80/tcp'
+          ! echo "$ports" | grep -Eq '0.0.0.0:(80|443)->|:::((80|443)->)'
+          ! echo "$ports" | grep -Eq '(7000|3000)->'
+          grep -Eq ':-8080\}:80' /opt/sawiyaa/docker-compose.dev.yml
 
       - name: Collect redacted diagnostics
         if: always()
