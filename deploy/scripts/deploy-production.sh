@@ -513,11 +513,16 @@ echo "Frontend: HEALTHY"
 echo "Nginx: HEALTHY"
 echo "DEPLOYMENT SUCCESSFUL"
 
+echo "RELEASE_MARKER_BEGIN path=$RELEASE_MARKER"
 mkdir -p -- "$(dirname -- "$RELEASE_MARKER")"
+echo "RELEASE_MARKER_DIRECTORY=READY"
 marker_tmp="$(mktemp "${RELEASE_MARKER}.XXXXXX")"
+echo "RELEASE_MARKER_TEMP=READY"
 printf 'targetSha=%s\ndeployedAt=%s\nstatus=success\n' \
   "$TARGET_SHA" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > "$marker_tmp"
+echo "RELEASE_MARKER_WRITE=READY"
 mv -- "$marker_tmp" "$RELEASE_MARKER"
+echo "RELEASE_MARKER_MOVE=READY"
 
 printf 'MIGRATIONS: %s\nMIGRATE_DEPLOY: SUCCESS\n' "$MIGRATION_STATUS"
 echo "Deployment completed successfully."
