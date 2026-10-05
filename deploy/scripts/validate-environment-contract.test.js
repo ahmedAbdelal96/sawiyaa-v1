@@ -109,6 +109,41 @@ test("optional variable missing is not blocking", () => {
   assert.match(formatReport(result), /ENVIRONMENT_CONTRACT_SUMMARY blockers=0/);
 });
 
+test("optional development throttle hash secret may be empty", () => {
+  const directory = fixtureDirectory();
+  const files = completeFixture(directory, {
+    backend: {
+      APP_ENV: "development",
+      NODE_ENV: "development",
+      THROTTLE_STORE: "memory",
+      THROTTLE_KEY_HASH_SECRET: "",
+    },
+  });
+  const result = validateEnvironment({ ...files, environment: "development" });
+  assert.equal(result.blocking, false);
+  assert.doesNotMatch(formatReport(result), /BLOCKING_ENV THROTTLE_KEY_HASH_SECRET/);
+});
+
+test("production throttle hash secret policy remains blocking when explicitly empty", () => {
+  const { result } = validate({ backend: { THROTTLE_KEY_HASH_SECRET: "" } });
+  assert.match(formatReport(result), /BLOCKING_ENV THROTTLE_KEY_HASH_SECRET/);
+  assert.equal(result.blocking, true);
+});
+
+test("database URL identity must match development Compose database identity", () => {
+  const { result } = validate({
+    backend: {
+      APP_ENV: "development",
+      NODE_ENV: "development",
+      DATABASE_URL: "postgresql://other-user:valid-pass@postgres:5432/other-db",
+      POSTGRES_DB: "sawiyaa",
+      POSTGRES_USER: "sawiyaa",
+    },
+  });
+  assert.match(formatReport(result), /BLOCKING_ENV DATABASE_URL reason="conflict"/);
+  assert.equal(result.blocking, true);
+});
+
 test("conditional GeoIP requirement is enforced", () => {
   const { result } = validate({ backend: { GEOIP_ENABLED: "true" } });
   assert.match(formatReport(result), /BLOCKING_ENV GEOIP_DATABASE_PATH/);

@@ -23,6 +23,7 @@ const CONTRACT_PATH = path.join(
 );
 const SECRET_NAME_PATTERN =
   /(SECRET|PASSWORD|TOKEN|API_KEY|PRIVATE|HMAC|DATABASE_URL|INTEGRATION_ID|REGISTRY_JSON)/;
+const OPTIONAL_SECRET_NAMES = new Set(["THROTTLE_KEY_HASH_SECRET"]);
 const LEGACY_PROVIDER_FLAGS = new Set([
   "PAYMENT_STRIPE_ENABLED",
   "PAYMENT_PAYMOB_ENABLED",
@@ -638,12 +639,15 @@ function validateEnvironment(options = {}) {
         !["deployment", "database"].includes(entry.service)
       )
         addIssue(issues, STATUS.UNKNOWN, name, false);
+      const optionalSecretInNonProduction =
+        OPTIONAL_SECRET_NAMES.has(name) &&
+        ["development", "local", "test"].includes(environment);
       const required =
         (appliesToEnvironment &&
           Boolean(entry && requirementEnabled(entry.required, env.values))) ||
         name === "DATABASE_URL" ||
-        name.endsWith("_SECRET") ||
-        name.endsWith("_PASSWORD");
+        (!optionalSecretInNonProduction &&
+          (name.endsWith("_SECRET") || name.endsWith("_PASSWORD")));
       const conditionallyDisabled = conditionalProviderDisabled(name, backendValues, providerStates);
       if (value === "") addIssue(issues, STATUS.EMPTY, name, required && !conditionallyDisabled);
       else if (isPlaceholder(name, value, entry))
