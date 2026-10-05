@@ -1,4 +1,7 @@
 const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const os = require('node:os');
+const path = require('node:path');
 const test = require('node:test');
 const { assertProductionBootstrapEnvironment, runProductionBootstrap } = require('./bootstrap-production');
 
@@ -94,6 +97,29 @@ test('explicit initial-admin input runs after the baseline and before optional p
     'db:bootstrap:paymob-provider-control',
     'db:verify:production-ready',
   ]);
+});
+
+test('carries the selected initial-admin email into readiness verification without carrying a password', () => {
+  const stateFile = path.join(os.tmpdir(), `sawiyaa-initial-admin-${process.pid}.txt`);
+  const calls = [];
+  try {
+    runProductionBootstrap({
+      ...valid,
+      PRODUCTION_INITIAL_ADMIN_STATE_FILE: stateFile,
+    }, (script, env) => {
+      calls.push(script);
+      if (script === 'db:bootstrap:initial-admin') {
+        fs.writeFileSync(env.PRODUCTION_INITIAL_ADMIN_STATE_FILE, 'admin@sawiyaa.com\n');
+      }
+      if (script === 'db:verify:production-ready') {
+        assert.equal(env.PRODUCTION_INITIAL_ADMIN_EMAIL, 'admin@sawiyaa.com');
+        assert.equal(env.PRODUCTION_INITIAL_ADMIN_PASSWORD, undefined);
+      }
+    });
+  } finally {
+    fs.rmSync(stateFile, { force: true });
+  }
+  assert.equal(calls.at(-1), 'db:verify:production-ready');
 });
 
 test('bootstrap source does not contain destructive reset or push operations', () => {

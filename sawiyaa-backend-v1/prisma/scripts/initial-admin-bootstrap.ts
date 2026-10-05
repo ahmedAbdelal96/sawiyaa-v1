@@ -1,5 +1,7 @@
 import 'dotenv/config';
 import { AuthProvider, Prisma, PrismaClient, UserRoleType, UserStatus } from '@prisma/client';
+import { mkdirSync, writeFileSync } from 'node:fs';
+import { dirname } from 'node:path';
 import { createInterface } from 'node:readline/promises';
 import { stdin as input, stdout as output } from 'node:process';
 import { hashPassword } from '../seed/shared/seed.utils';
@@ -248,6 +250,7 @@ async function main(): Promise<void> {
       console.log('INITIAL_ADMIN_BOOTSTRAP_ALREADY_CONFIGURED');
       return;
     }
+    writeResolvedInitialAdminEmail(initialAdminInput.email);
     const result = await bootstrapInitialAdmin(
       prisma as unknown as InitialAdminDatabase,
       initialAdminInput,
@@ -270,7 +273,9 @@ async function resolveInitialAdminInput(prisma: PrismaClient): Promise<InitialAd
         'Initial administrator bootstrap requires PRODUCTION_INITIAL_ADMIN_EMAIL, PRODUCTION_INITIAL_ADMIN_NAME, and PRODUCTION_INITIAL_ADMIN_PASSWORD together.',
       );
     }
-    return readInitialAdminInput();
+    const input = readInitialAdminInput();
+    writeResolvedInitialAdminEmail(input.email);
+    return input;
   }
 
   if (!input.isTTY || !output.isTTY) {
@@ -313,16 +318,28 @@ async function resolveInitialAdminInput(prisma: PrismaClient): Promise<InitialAd
       !user.practitionerProfile &&
       user.roles.some((role) => role.role === UserRoleType.SUPER_ADMIN) &&
       hasUsablePassword;
-    if (isUsableAdmin) return null;
+    if (isUsableAdmin) {
+      writeResolvedInitialAdminEmail(email);
+      return null;
+    }
   }
 
   const name = (await ask('Initial admin display name: ')).trim();
   const password = await askHidden('Initial admin password (hidden): ');
-  return readInitialAdminInput({
+  const resolved = readInitialAdminInput({
     PRODUCTION_INITIAL_ADMIN_EMAIL: email,
     PRODUCTION_INITIAL_ADMIN_NAME: name,
     PRODUCTION_INITIAL_ADMIN_PASSWORD: password,
   });
+  writeResolvedInitialAdminEmail(resolved.email);
+  return resolved;
+}
+
+function writeResolvedInitialAdminEmail(email: string): void {
+  const stateFile = process.env.PRODUCTION_INITIAL_ADMIN_STATE_FILE;
+  if (!stateFile) return;
+  mkdirSync(dirname(stateFile), { recursive: true, mode: 0o700 });
+  writeFileSync(stateFile, `${email.trim().toLowerCase()}\n`, { mode: 0o600 });
 }
 
 async function ask(question: string): Promise<string> {

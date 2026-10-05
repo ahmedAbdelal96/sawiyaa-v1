@@ -32,6 +32,17 @@ const EXPECTED_ROLE_PERMISSION_KEYS = rolePermissionBundles.flatMap((bundle) =>
   bundle.permissions.map((permission) => `${bundle.role}:${permission}`),
 );
 
+export function classifyPaymentRouting(routes: unknown): 'READY' | 'OPERATOR_SETUP_REQUIRED' | 'INVALID' {
+  if (!routes) return 'OPERATOR_SETUP_REQUIRED';
+  if (!Array.isArray(routes)) return 'INVALID';
+  const hasEgpCardRoute = routes.some((route) => {
+    if (!route || typeof route !== 'object') return false;
+    const item = route as Record<string, unknown>;
+    return item.currencyCode === 'EGP' && item.paymentMethod === 'CARD' && item.provider === 'PAYMOB' && item.integrationKey === 'paymob-egp-card' && item.enabled === true;
+  });
+  return hasEgpCardRoute ? 'READY' : 'INVALID';
+}
+
 export function collectSessionCancellationPolicyBlockers(
   cancellationPolicies: Array<{ bookingType: string; rules: Array<{ code: string }> }>,
 ): string[] {
@@ -353,13 +364,9 @@ async function main(): Promise<void> {
   else if (paymobAssessment.status !== 'SATISFIED') blockers.push('INVALID_PAYMOB_CONTROL');
 
   const routes = activeValues.get(CONFIG_KEYS.payment.routing.currencyRoutes)?.[0];
-  const hasEgpCardRoute = Array.isArray(routes) && routes.some((route) => {
-    if (!route || typeof route !== 'object') return false;
-    const item = route as Record<string, unknown>;
-    return item.currencyCode === 'EGP' && item.paymentMethod === 'CARD' && item.provider === 'PAYMOB' && item.integrationKey === 'paymob-egp-card' && item.enabled === true;
-  });
-  if (!routes) blockers.push('OPERATOR_REQUIRED_PAYMENT_ROUTING');
-  else if (!hasEgpCardRoute) blockers.push('INVALID_EGP_CARD_PAYMENT_ROUTING');
+  const paymentRoutingStatus = classifyPaymentRouting(routes);
+  if (paymentRoutingStatus === 'OPERATOR_SETUP_REQUIRED') warnings.push('PAYMENT_ROUTING_OPERATOR_SETUP_REQUIRED');
+  else if (paymentRoutingStatus === 'INVALID') blockers.push('INVALID_EGP_CARD_PAYMENT_ROUTING');
 
   if (blockers.length > 0) {
     for (const blocker of [...new Set(blockers)]) console.error(blocker);
