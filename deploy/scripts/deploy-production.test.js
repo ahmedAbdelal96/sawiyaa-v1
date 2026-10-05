@@ -116,6 +116,7 @@ test('deployment uses the target validator and the unified production bootstrap'
   assert.match(script, /db:bootstrap:production/);
   assert.match(script, /ALLOW_PAYMENT_ROUTE_BOOTSTRAP/);
   assert.match(script, /bootstrap_run_args=\(run --rm --interactive\)/);
+  assert.match(script, /bootstrap_run_args\+=\(--tty\)/);
   assert.match(script, /bootstrap_run_args\+=\(--no-TTY\)/);
 });
 

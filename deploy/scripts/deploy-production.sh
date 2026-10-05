@@ -471,7 +471,9 @@ for initial_admin_var in PRODUCTION_INITIAL_ADMIN_EMAIL PRODUCTION_INITIAL_ADMIN
   fi
 done
 bootstrap_run_args=(run --rm --interactive)
-if [[ ! -t 0 || ! -t 1 ]]; then
+if [[ -t 0 && -t 1 ]]; then
+  bootstrap_run_args+=(--tty)
+else
   bootstrap_run_args+=(--no-TTY)
 fi
 docker compose --env-file "$BACKEND_ENV_FILE" --env-file "$FRONTEND_ENV_FILE" -f "$COMPOSE_FILE" "${bootstrap_run_args[@]}" \
