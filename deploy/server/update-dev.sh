@@ -32,6 +32,26 @@ node "$PROJECT_DIR/deploy/scripts/validate-environment-contract.js" \
   --require-public-url
 docker compose "${COMPOSE_ARGS[@]}" config --quiet
 
+# The network was previously project-scoped (`${COMPOSE_PROJECT}_sawiyaa_dev_internal`)
+# and is now explicitly named `sawiyaa-dev-internal`. Reconcile that one-time
+# transition without touching any named volume or any other Compose project.
+legacy_network="${COMPOSE_PROJECT}_sawiyaa_dev_internal"
+if docker network inspect "$legacy_network" >/dev/null 2>&1; then
+  echo "Reconciling legacy Development network: $legacy_network"
+  docker compose "${COMPOSE_ARGS[@]}" down --remove-orphans
+  if docker network inspect "$legacy_network" >/dev/null 2>&1; then
+    while IFS= read -r container; do
+      [[ -z "$container" ]] && continue
+      [[ "$container" == "${COMPOSE_PROJECT}-"* ]] || {
+        echo "Legacy Development network has an unexpected endpoint: $container" >&2
+        exit 1
+      }
+      docker network disconnect -f "$legacy_network" "$container"
+    done < <(docker network inspect "$legacy_network" --format '{{range .Containers}}{{.Name}}{{"\n"}}{{end}}')
+    docker network rm "$legacy_network" >/dev/null
+  fi
+fi
+
 mkdir -p "$PROJECT_DIR/logs/backend"
 docker run --rm --user 0:0 -v "$PROJECT_DIR/logs/backend:/logs" busybox:1.36.1 \
   sh -c 'chown 10001:10001 /logs && chmod 0750 /logs'
