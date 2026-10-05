@@ -1,7 +1,10 @@
 'use strict';
 
 const { spawnSync } = require('node:child_process');
+const fs = require('node:fs');
 require('dotenv/config');
+
+const INITIAL_ADMIN_STATE_FILE = '/tmp/sawiyaa-production-initial-admin-email';
 
 function assertProductionBootstrapEnvironment(env) {
   const appEnv = String(env.APP_ENV || env.NODE_ENV || '').toLowerCase();
@@ -40,21 +43,38 @@ function runNpmScript(script, env) {
 function runProductionBootstrap(env, runScript = runNpmScript) {
   assertProductionBootstrapEnvironment(env);
   console.log('PRODUCTION_BOOTSTRAP_ENVIRONMENT_VALID');
-  runScript('config:validate:production', env);
-  runScript('prisma:migrate:deploy', env);
-  runScript('db:seed:production', env);
+  const stateFile = env.PRODUCTION_INITIAL_ADMIN_STATE_FILE || INITIAL_ADMIN_STATE_FILE;
+  const bootstrapEnv = { ...env, PRODUCTION_INITIAL_ADMIN_STATE_FILE: stateFile };
+  try { fs.rmSync(stateFile, { force: true }); } catch {}
+
+  runScript('config:validate:production', bootstrapEnv);
+  runScript('prisma:migrate:deploy', bootstrapEnv);
+  runScript('db:seed:production', bootstrapEnv);
   // The command remains one-shot: the child bootstrap prompts securely when
   // no automation variables are supplied, and exits without a password prompt
   // when the intended Super Admin is already configured.
-  runScript('db:bootstrap:initial-admin', env);
-  if (env.ALLOW_PAYMENT_ROUTE_BOOTSTRAP === 'true') {
-    runScript('db:bootstrap:payment-routes', env);
+  runScript('db:bootstrap:initial-admin', bootstrapEnv);
+  if (bootstrapEnv.ALLOW_PAYMENT_ROUTE_BOOTSTRAP === 'true') {
+    runScript('db:bootstrap:payment-routes', bootstrapEnv);
   }
-  if (env.ALLOW_PAYMOB_CONTROL_BOOTSTRAP === 'true') {
-    runScript('db:bootstrap:paymob-provider-control', env);
+  if (bootstrapEnv.ALLOW_PAYMOB_CONTROL_BOOTSTRAP === 'true') {
+    runScript('db:bootstrap:paymob-provider-control', bootstrapEnv);
   }
-  runScript('db:verify:production-ready', env);
-  console.log('PRODUCTION_BOOTSTRAP_COMPLETE');
+  const verifyEnv = { ...bootstrapEnv };
+  try {
+    const selectedEmail = fs.readFileSync(stateFile, 'utf8').trim();
+    if (selectedEmail && !verifyEnv.PRODUCTION_INITIAL_ADMIN_EMAIL) {
+      verifyEnv.PRODUCTION_INITIAL_ADMIN_EMAIL = selectedEmail;
+    }
+  } catch (error) {
+    if (error?.code !== 'ENOENT') throw error;
+  }
+  try {
+    runScript('db:verify:production-ready', verifyEnv);
+    console.log('PRODUCTION_BOOTSTRAP_COMPLETE');
+  } finally {
+    try { fs.rmSync(stateFile, { force: true }); } catch {}
+  }
 }
 
 if (require.main === module) {
