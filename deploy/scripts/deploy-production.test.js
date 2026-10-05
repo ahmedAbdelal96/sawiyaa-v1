@@ -118,6 +118,9 @@ test('deployment uses the target validator and the unified production bootstrap'
   assert.match(script, /bootstrap_run_args=\(run --rm --interactive\)/);
   assert.match(script, /bootstrap_run_args\+=\(--tty\)/);
   assert.match(script, /bootstrap_run_args\+=\(--no-TTY\)/);
+  assert.match(script, /Initial admin password \(hidden\):/);
+  assert.match(script, /read -r -s PRODUCTION_INITIAL_ADMIN_PASSWORD/);
+  assert.match(script, /INITIAL_ADMIN_INPUT_REQUIRED_EOF/);
 });
 
 test('Paymob control bootstrap is explicit and occurs before startup validation', () => {
