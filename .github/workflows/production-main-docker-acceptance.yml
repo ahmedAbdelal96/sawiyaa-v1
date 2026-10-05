@@ -136,35 +136,29 @@ jobs:
             echo "COMPOSE_CONFIG_EXIT=$?"
             echo 'COMPOSE_CONFIG_END'
           } 2>&1 | tee /tmp/production-harness-forensics.log
+          ACCEPT_ADMIN_PASSWORD="accept-interactive-admin-${GITHUB_RUN_ID}-password"
           export SHELLOPTS
-          sudo env \
-            SHELLOPTS=xtrace \
-            CURL_CA_BUNDLE="$CURL_CA_BUNDLE" \
-            SAWIYAA_MIN_FREE_MB="$SAWIYAA_MIN_FREE_MB" \
-            SAWIYAA_DAILY_WEBHOOK_VALIDATOR_PATH="$SAWIYAA_DAILY_WEBHOOK_VALIDATOR_PATH" \
-            ALLOW_PAYMOB_CONTROL_BOOTSTRAP=true \
-            PRODUCTION_INITIAL_ADMIN_EMAIL=admin@sawiyaa.test \
-            PRODUCTION_INITIAL_ADMIN_NAME="Acceptance Admin" \
-            PRODUCTION_INITIAL_ADMIN_PASSWORD=accept-admin-password-012345678901234567890 \
-            SAWIYAA_TARGET_SHA="$GITHUB_SHA" \
-            bash -x /opt/sawiyaa/deploy/server/update-prod.sh 2>&1 | tee /tmp/production-first.log
-          first_rc=${PIPESTATUS[0]}
+          {
+            sleep 1
+            printf 'admin@sawiyaa.test\n'
+            sleep 1
+            printf 'Acceptance Admin\n'
+            sleep 2
+            printf '%s\n' "$ACCEPT_ADMIN_PASSWORD"
+            echo 'INTERACTIVE_PTY_PASSWORD_SUPPLIED_AFTER_WAIT=YES'
+          } | script -qefc 'sudo env SHELLOPTS=xtrace CURL_CA_BUNDLE="$CURL_CA_BUNDLE" SAWIYAA_MIN_FREE_MB="$SAWIYAA_MIN_FREE_MB" SAWIYAA_DAILY_WEBHOOK_VALIDATOR_PATH="$SAWIYAA_DAILY_WEBHOOK_VALIDATOR_PATH" ALLOW_PAYMOB_CONTROL_BOOTSTRAP=true SAWIYAA_TARGET_SHA="$GITHUB_SHA" bash -x /opt/sawiyaa/deploy/server/update-prod.sh' /tmp/production-first-pty.log 2>&1 | tee /tmp/production-first.log
+          first_rc=${PIPESTATUS[1]}
           echo "UPDATE_PROD_FIRST_EXIT=$first_rc" | tee -a /tmp/production-harness-forensics.log
           if (( first_rc != 0 )); then exit "$first_rc"; fi
+          grep -Fq 'Initial admin password (hidden):' /tmp/production-first.log
+          ! grep -Fq "$ACCEPT_ADMIN_PASSWORD" /tmp/production-first.log
+          grep -Fq 'INTERACTIVE_PTY_PASSWORD_SUPPLIED_AFTER_WAIT=YES' /tmp/production-first.log
           export SHELLOPTS
-          sudo env \
-            SHELLOPTS=xtrace \
-            CURL_CA_BUNDLE="$CURL_CA_BUNDLE" \
-            SAWIYAA_MIN_FREE_MB="$SAWIYAA_MIN_FREE_MB" \
-            SAWIYAA_DAILY_WEBHOOK_VALIDATOR_PATH="$SAWIYAA_DAILY_WEBHOOK_VALIDATOR_PATH" \
-            ALLOW_PAYMOB_CONTROL_BOOTSTRAP=true \
-            PRODUCTION_INITIAL_ADMIN_EMAIL=admin@sawiyaa.test \
-            PRODUCTION_INITIAL_ADMIN_NAME="Acceptance Admin" \
-            PRODUCTION_INITIAL_ADMIN_PASSWORD=accept-admin-password-012345678901234567890 \
-            SAWIYAA_TARGET_SHA="$GITHUB_SHA" \
-            bash -x /opt/sawiyaa/deploy/server/update-prod.sh 2>&1 | tee /tmp/production-repeat.log
-          repeat_rc=${PIPESTATUS[0]}
+          { sleep 1; printf 'admin@sawiyaa.test\n'; } | script -qefc 'sudo env SHELLOPTS=xtrace CURL_CA_BUNDLE="$CURL_CA_BUNDLE" SAWIYAA_MIN_FREE_MB="$SAWIYAA_MIN_FREE_MB" SAWIYAA_DAILY_WEBHOOK_VALIDATOR_PATH="$SAWIYAA_DAILY_WEBHOOK_VALIDATOR_PATH" ALLOW_PAYMOB_CONTROL_BOOTSTRAP=true SAWIYAA_TARGET_SHA="$GITHUB_SHA" bash -x /opt/sawiyaa/deploy/server/update-prod.sh' /tmp/production-repeat-pty.log 2>&1 | tee /tmp/production-repeat.log
+          repeat_rc=${PIPESTATUS[1]}
           echo "UPDATE_PROD_REPEAT_EXIT=$repeat_rc" | tee -a /tmp/production-harness-forensics.log
+          if (( repeat_rc != 0 )); then exit "$repeat_rc"; fi
+          ! grep -Fq 'Initial admin password (hidden):' /tmp/production-repeat.log
           exit "$repeat_rc"
 
       - name: Verify production runtime and isolation
@@ -197,7 +191,9 @@ jobs:
           redact() { sed -E 's/(password|secret|token|api[_-]?key|authorization|database[_-]?url)[^[:space:],;]*/[REDACTED]/Ig'; }
           cp /tmp/acceptance-shas.txt "$dir/acceptance-shas.txt" 2>/dev/null || :
           cp /tmp/production-first.log "$dir/production-first.log" 2>/dev/null || :
+          cp /tmp/production-first-pty.log "$dir/production-first-pty.log" 2>/dev/null || :
           cp /tmp/production-repeat.log "$dir/production-repeat.log" 2>/dev/null || :
+          cp /tmp/production-repeat-pty.log "$dir/production-repeat-pty.log" 2>/dev/null || :
           cp /tmp/production-harness-forensics.log "$dir/production-harness-forensics.log" 2>/dev/null || :
           {
             echo '## First production update diagnostic'
