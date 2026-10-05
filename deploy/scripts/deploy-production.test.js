@@ -178,7 +178,9 @@ test('log mount success continues through the migration snapshot boundary', () =
 
 test('an existing database without Prisma migration metadata is treated as a fresh database', () => {
   assert.ok(position('PROD_STAGE=migration-table-detection') < position('fresh_database=0'));
-  assert.match(script, /fresh_database=1/);
+  assert.match(script, /application_relation_exists/);
+  assert.match(script, /fresh_empty_database=1/);
+  assert.match(script, /application_relation_exists" != "t"/);
   assert.ok(position('fresh_database=1') < position('scanner_args+=(--approve-blocking-migrations)'));
   assert.match(script, /PROD_STAGE=migration-safety-scan/);
 });

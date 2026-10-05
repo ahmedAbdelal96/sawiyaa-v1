@@ -338,6 +338,7 @@ if (( migration_table_exit != 0 )); then
     exit 1
 fi
 fresh_database=0
+fresh_empty_database=0
 if [[ "$migration_table_exists" == "t" ]]; then
   echo "PROD_STAGE=read-applied-migrations"
   set +e
@@ -352,10 +353,27 @@ if [[ "$migration_table_exists" == "t" ]]; then
       exit 1
   fi
 else
-  fresh_database=1
+  echo "PROD_STAGE=fresh-database-facts"
+  set +e
+  application_relation_exists="$(docker compose --env-file "$BACKEND_ENV_FILE" --env-file "$FRONTEND_ENV_FILE" -f "$COMPOSE_FILE" exec -T \
+    -e "POSTGRES_USER=$POSTGRES_USER" -e "POSTGRES_DB=$POSTGRES_DB" postgres sh -lc \
+    'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Atqc "SELECT EXISTS (SELECT 1 FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace WHERE n.nspname NOT IN ('\''pg_catalog'\'', '\''information_schema'\'') AND n.nspname NOT LIKE '\''pg_toast%'\'' AND c.relkind IN ('\''r'\'', '\''p'\'', '\''v'\'', '\''m'\'', '\''f'\'', '\''S'\''))"' 2>/dev/null)"
+  application_relation_exit=$?
+  set -e
+  echo "PROD_STAGE_EXIT=$application_relation_exit"
+  if (( application_relation_exit != 0 )); then
+    echo "Unable to determine whether application relations exist; migration was not run." >&2
+    exit 1
+  fi
   : > "$APPLIED_MIGRATIONS_FILE"
   echo "PROD_STAGE=empty-migration-snapshot"
   echo "PROD_STAGE_EXIT=0"
+  if [[ "$application_relation_exists" != "t" ]]; then
+    fresh_database=1
+    fresh_empty_database=1
+    echo "PROD_STAGE=fresh-empty-database"
+    echo "PROD_STAGE_EXIT=0"
+  fi
 fi
 
 scanner_args=(--migrations-dir "$PROJECT_DIR/sawiyaa-backend-v1/prisma/migrations" --applied-file "$APPLIED_MIGRATIONS_FILE")
