@@ -24,6 +24,7 @@ PROVIDER_STATE_FILE=""
 LOG_MOUNT_CHECK_OUTPUT=""
 RELEASE_STATE_DIR="${SAWIYAA_RELEASE_STATE_DIR:-/opt/sawiyaa-release-state}"
 RELEASE_MARKER="${SAWIYAA_RELEASE_MARKER:-$RELEASE_STATE_DIR/.sawiyaa-release}"
+PRODUCTION_INGRESS_URL="${SAWIYAA_PRODUCTION_INGRESS_URL:-https://sawiyaa.com}"
 
 read_env_value() {
   local key="$1"
@@ -593,17 +594,17 @@ run_public_health_check() {
 
 echo "Waiting for backend health..."
 for attempt in {1..30}; do
-  if run_public_health_check backend https://sawiyaa.com/api/v1/health; then break; fi
+  if run_public_health_check backend "$PRODUCTION_INGRESS_URL/api/v1/health"; then break; fi
   sleep 5
 done
-run_public_health_check backend https://sawiyaa.com/api/v1/health
+run_public_health_check backend "$PRODUCTION_INGRESS_URL/api/v1/health"
 
 echo "Waiting for frontend health..."
 for attempt in {1..30}; do
-  if run_public_health_check frontend https://sawiyaa.com; then break; fi
+  if run_public_health_check frontend "$PRODUCTION_INGRESS_URL"; then break; fi
   sleep 5
 done
-run_public_health_check frontend https://sawiyaa.com
+run_public_health_check frontend "$PRODUCTION_INGRESS_URL"
 
 payment_status="DISABLED"
 if [[ -s "$PROVIDER_STATE_FILE" ]] && grep -Eq '^(stripe|paymob)=true$' "$PROVIDER_STATE_FILE"; then

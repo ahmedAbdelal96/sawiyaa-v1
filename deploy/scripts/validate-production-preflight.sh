@@ -14,6 +14,8 @@ BACKEND_IMAGE=""; FRONTEND_IMAGE=""; PROVIDER_STATE_FILE=""
 RUNTIME_UID="${SAWIYAA_RUNTIME_UID:-10001}"
 RUNTIME_GID="${SAWIYAA_RUNTIME_GID:-10001}"
 RUNTIME_INIT_IMAGE="${SAWIYAA_RUNTIME_INIT_IMAGE:-busybox:1.36.1}"
+PRODUCTION_INGRESS_HOST_IP="${SAWIYAA_PRODUCTION_INGRESS_HOST_IP:-127.0.0.1}"
+PRODUCTION_INGRESS_PORT="${SAWIYAA_PRODUCTION_INGRESS_PORT:-8081}"
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -274,6 +276,45 @@ else
     sed -E 's/([A-Za-z_]*(password|secret|token|api[_-]?key|authorization|database[_-]?url)[A-Za-z_]*[=:][[:space:]]*)[^[:space:],;]+/\1[REDACTED]/Ig' "$compose_error" | head -n 80
     echo "SANITIZED_COMPOSE_CONFIG_ERROR_END"
     block COMPOSE_MODEL_INVALID
+  fi
+fi
+
+# Production Docker Nginx is an internal hop behind the host Nginx. Validate
+# the rendered Compose model so a broad public bind cannot return unnoticed.
+if (( MOCK )); then
+  warn PRODUCTION_INGRESS_CHECK_MOCKED
+elif (( COMPOSE_MODEL_OK == 0 )); then
+  skip PRODUCTION_INGRESS_CHECK_COMPOSE_MODEL_INVALID
+else
+  compose_json="$TEMP_DIR/compose-config.json"
+  if docker compose --env-file "$BACKEND_ENV" --env-file "$FRONTEND_ENV" -f "$COMPOSE_FILE" config --format json >"$compose_json" 2>/dev/null &&
+    node - "$compose_json" "$PRODUCTION_INGRESS_HOST_IP" "$PRODUCTION_INGRESS_PORT" <<'NODE'
+const fs = require('node:fs');
+const [file, expectedHost, expectedPort] = process.argv.slice(2);
+const model = JSON.parse(fs.readFileSync(file, 'utf8'));
+const services = model.services || {};
+const nginxPorts = services.nginx?.ports || [];
+const published = (port) => String(port.published ?? '');
+const isExpected = nginxPorts.some((port) =>
+  String(port.target) === '80' && published(port) === expectedPort && port.host_ip === expectedHost,
+);
+const hasForbiddenPublicPort = nginxPorts.some((port) =>
+  ['80', '443'].includes(published(port)) || port.host_ip === '0.0.0.0',
+);
+const backendOrFrontendPublished = ['backend', 'frontend'].some((name) =>
+  (services[name]?.ports || []).length > 0,
+);
+if (!isExpected || hasForbiddenPublicPort || backendOrFrontendPublished) process.exit(1);
+NODE
+  then
+    pass "PRODUCTION_INGRESS_LOCALHOST_${PRODUCTION_INGRESS_PORT}"
+  else
+    block PRODUCTION_INGRESS_NOT_LOCALHOST_ONLY
+  fi
+  if [[ -f "$PROJECT_DIR/docker-compose.dev.yml" ]] && grep -Eq ':-8080\}:80' "$PROJECT_DIR/docker-compose.dev.yml"; then
+    pass STAGING_INGRESS_8080_PRESERVED
+  else
+    block STAGING_INGRESS_8080_MISSING
   fi
 fi
 
