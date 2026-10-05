@@ -44,3 +44,13 @@ test("development updater reconciles the legacy project-scoped network without v
   assert.doesNotMatch(script, /docker compose .*down\s+[^\n]*-v/);
   assert.doesNotMatch(script, /docker volume rm/);
 });
+
+test("Linux Development acceptance exercises the legacy network transition", () => {
+  const workflow = read(".github/workflows/development-deployment-acceptance.yml");
+  assert.match(workflow, /legacy=sawiyaa-dev_sawiyaa_dev_internal/);
+  assert.match(workflow, /docker network connect[\s\S]*legacy/);
+  assert.match(workflow, /network-transition-sentinel/);
+  assert.match(workflow, /down --remove-orphans/);
+  assert.doesNotMatch(workflow, /down\s+--remove-orphans\s+-v/);
+  assert.doesNotMatch(workflow, /docker volume rm/);
+});

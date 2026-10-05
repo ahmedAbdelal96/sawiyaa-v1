@@ -1,0 +1,140 @@
+name: Development Deployment Acceptance
+
+on:
+  push:
+    branches:
+      - development
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  linux-docker-acceptance:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - name: Checkout development candidate
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Create disposable Development checkout and env files
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          sudo rm -rf /opt/sawiyaa-dev
+          sudo git clone --branch development "$GITHUB_WORKSPACE" /opt/sawiyaa-dev
+          sudo git -C /opt/sawiyaa-dev config user.email acceptance@sawiyaa.test
+          sudo git -C /opt/sawiyaa-dev config user.name acceptance
+          sudo cp /opt/sawiyaa-dev/deploy/env/development.backend.example /opt/sawiyaa-dev/sawiyaa-backend-v1/.env.development
+          sudo cp /opt/sawiyaa-dev/deploy/env/development.frontend.example /opt/sawiyaa-dev/sawiyaa-frontend-v1/.env.development
+          sudo mkdir -p /opt/sawiyaa-dev/geoip
+          sudo touch /opt/sawiyaa-dev/geoip/GeoLite2-Country.mmdb
+          sudo python3 - <<'PY'
+          from pathlib import Path
+
+          root = Path('/opt/sawiyaa-dev')
+          backend = root / 'sawiyaa-backend-v1/.env.development'
+          frontend = root / 'sawiyaa-frontend-v1/.env.development'
+          backend_values = {
+              'APP_URL': 'http://127.0.0.1:8080',
+              'WEB_APP_URL': 'http://127.0.0.1:8080',
+              'APP_BASE_URL': 'http://127.0.0.1:8080',
+              'CORS_ORIGINS': 'http://127.0.0.1:8080',
+              'DATABASE_URL': 'postgresql://sawiyaa_dev:accept-password@postgres:5432/sawiyaa_dev',
+              'POSTGRES_PASSWORD': 'accept-password',
+              'JWT_ACCESS_SECRET': 'accept-access-secret-for-ci-only',
+              'JWT_REFRESH_SECRET': 'accept-refresh-secret-for-ci-only',
+              'DAILY_API_KEY': 'accept-daily-key',
+              'DAILY_WEBHOOK_SECRET': 'accept-daily-webhook-secret',
+              'CORPORATE_CODE_PEPPER': 'accept-corporate-pepper-012345678901234567890',
+              'MAIL_FROM': 'accept@sawiyaa.test',
+              'MAIL_HOST': 'mailpit',
+              'MAIL_PORT': '1025',
+              'GEOIP_ENABLED': 'false',
+              'GEOIP_DATABASE_PATH': '',
+              'SAWIYAA_DEV_COUNTRY_CODE': 'EG',
+              'NOTIFICATION_QUEUE_ENABLED': 'false',
+              'DAILY_ATTENDANCE_QUEUE_ENABLED': 'false',
+          }
+          frontend_values = {
+              'NEXT_PUBLIC_API_URL': '/api/v1',
+              'API_PROXY_TARGET': 'http://backend:7000',
+              'NEXT_PUBLIC_APP_URL': 'http://127.0.0.1:8080',
+              'NEXT_PUBLIC_SITE_URL': 'http://127.0.0.1:8080',
+              'NEXT_PUBLIC_CHAT_SOCKET_URL': 'http://127.0.0.1:8080',
+          }
+
+          def rewrite(path, values):
+              lines = []
+              for line in path.read_text().splitlines():
+                  if '=' in line and not line.lstrip().startswith('#'):
+                      name, value = line.split('=', 1)
+                      name = name.strip()
+                      if name in values:
+                          line = f'{name}={values[name]}'
+                      elif value.strip().startswith('<'):
+                          line = f'{name}=accept-{name.lower()}'
+                  lines.append(line)
+              path.write_text('\n'.join(lines) + '\n')
+
+          rewrite(backend, backend_values)
+          rewrite(frontend, frontend_values)
+          backend.chmod(0o600)
+          frontend.chmod(0o600)
+          PY
+
+      - name: Run Development update and network transition regression
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          set -o pipefail
+          log=/tmp/development-acceptance.log
+          run_update() {
+            sudo env SAWIYAA_FORCE_DOCKER_VALIDATOR=true bash /opt/sawiyaa-dev/deploy/server/update-dev.sh 2>&1 | tee -a "$log"
+          }
+          run_update
+          compose=(sudo docker compose --env-file /opt/sawiyaa-dev/sawiyaa-backend-v1/.env.development --env-file /opt/sawiyaa-dev/sawiyaa-frontend-v1/.env.development -p sawiyaa-dev -f /opt/sawiyaa-dev/docker-compose.dev.yml)
+          storage_volume="$("${compose[@]}" config --volumes | grep -Fx sawiyaa_dev_backend_storage)"
+          "${compose[@]}" run --rm --no-deps --user 0:0 backend sh -lc 'printf preserved >/app/storage/network-transition-sentinel'
+          legacy=sawiyaa-dev_sawiyaa_dev_internal
+          sudo docker network create --label com.docker.compose.project=sawiyaa-dev "$legacy"
+          for service in backend frontend nginx; do
+            container="$("${compose[@]}" ps -q "$service")"
+            sudo docker network connect "$legacy" "$container"
+          done
+          run_update
+          run_update
+          "${compose[@]}" run --rm --no-deps --user 0:0 backend sh -lc 'test "$(cat /app/storage/network-transition-sentinel)" = preserved'
+          curl -fsS http://127.0.0.1:8080/api/v1/health >/dev/null
+          "${compose[@]}" port nginx 80 | grep -Fq '127.0.0.1:8080'
+          ! sudo docker ps --format '{{.Names}} {{.Ports}}' | grep -E 'sawiyaa-dev-(backend|frontend)-1.*0\.0\.0\.0'
+          test -n "$storage_volume"
+
+      - name: Collect Development diagnostics
+        if: always()
+        shell: bash
+        run: |
+          set +e
+          mkdir -p "$RUNNER_TEMP/development-deployment-acceptance"
+          cp /tmp/development-acceptance.log "$RUNNER_TEMP/development-deployment-acceptance/update-dev.log" 2>/dev/null || true
+          sudo docker compose --env-file /opt/sawiyaa-dev/sawiyaa-backend-v1/.env.development --env-file /opt/sawiyaa-dev/sawiyaa-frontend-v1/.env.development -p sawiyaa-dev -f /opt/sawiyaa-dev/docker-compose.dev.yml ps > "$RUNNER_TEMP/development-deployment-acceptance/compose-ps.txt" 2>&1 || true
+          sudo docker ps -a > "$RUNNER_TEMP/development-deployment-acceptance/docker-ps.txt" 2>&1 || true
+          sudo docker network ls > "$RUNNER_TEMP/development-deployment-acceptance/docker-networks.txt" 2>&1 || true
+
+      - name: Upload Development diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: development-deployment-acceptance
+          path: ${{ runner.temp }}/development-deployment-acceptance/
+          if-no-files-found: error
+
+      - name: Cleanup Development resources
+        if: always()
+        shell: bash
+        run: |
+          set +e
+          sudo docker compose --env-file /opt/sawiyaa-dev/sawiyaa-backend-v1/.env.development --env-file /opt/sawiyaa-dev/sawiyaa-frontend-v1/.env.development -p sawiyaa-dev -f /opt/sawiyaa-dev/docker-compose.dev.yml down --remove-orphans
+          sudo rm -rf /opt/sawiyaa-dev
