@@ -67,6 +67,32 @@ test('production Compose identity is fixed across deployment phases', () => {
   assert.ok((script.match(/docker compose/g) || []).length > 10);
 });
 
+test('production ingress is localhost-only and does not claim public or staging ports', () => {
+  const compose = fs.readFileSync(path.resolve(__dirname, '../../docker-compose.prod.yml'), 'utf8');
+  const stagingCompose = fs.readFileSync(path.resolve(__dirname, '../../docker-compose.dev.yml'), 'utf8');
+  const serviceBlock = (name) => compose.match(
+    new RegExp(`\\n  ${name}:\\n([\\s\\S]*?)(?=\\n  [A-Za-z0-9_]+:\\n|\\nvolumes:)`),
+  )?.[1] || '';
+  assert.match(compose, /127\.0\.0\.1:8081:80/);
+  assert.doesNotMatch(compose, /(?:^|["'])0\.0\.0\.0:(?:80|443):/m);
+  assert.doesNotMatch(compose, /(?:^|["'])(?:80|443):(?:80|443)(?:["']|\s*$)/m);
+  assert.doesNotMatch(compose, /127\.0\.0\.1:(?:80|443):/);
+  assert.doesNotMatch(serviceBlock('backend'), /^\s+ports:/m);
+  assert.doesNotMatch(serviceBlock('frontend'), /^\s+ports:/m);
+  assert.match(stagingCompose, /:-8080\}:80/);
+});
+
+test('production preflight enforces the localhost ingress contract', () => {
+  const preflight = fs.readFileSync(
+    path.join(__dirname, 'validate-production-preflight.sh'),
+    'utf8',
+  );
+  assert.match(preflight, /PRODUCTION_INGRESS_HOST_IP/);
+  assert.match(preflight, /PRODUCTION_INGRESS_PORT/);
+  assert.match(preflight, /8081/);
+  assert.match(preflight, /0\.0\.0\.0/);
+});
+
 test('deployment validates backend log access inside the container', () => {
   assert.doesNotMatch(script, /runuser/);
   assert.match(script, /run --rm --no-deps backend[\s\S]*touch \/app\/logs\/\.write-test/);
@@ -169,7 +195,8 @@ test('deployment verifies checkout safety before destructive Git operations', ()
 });
 
 test('deployment writes a successful release marker after public health checks', () => {
-  assert.ok(position('run_public_health_check frontend https://sawiyaa.com') < position('status=success'));
+  assert.match(script, /PRODUCTION_INGRESS_URL=.*https:\/\/sawiyaa\.com/);
+  assert.ok(position('run_public_health_check frontend "$PRODUCTION_INGRESS_URL"') < position('status=success'));
   assert.match(script, /check_args=\(curl -fsS\)/);
   assert.match(script, /check_args=\(curl -fsS\)[\s\S]*check_args\+=\(\"\$check_url\"\)/);
   assert.match(script, /RELEASE_STATE_DIR=.*sawiyaa-release-state/);

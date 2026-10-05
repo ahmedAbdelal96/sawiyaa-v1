@@ -179,7 +179,7 @@ test('preserves unrelated Super Admin assignments', async () => {
   );
 });
 
-test('requires the one-time operator contract without exposing the password', () => {
+test('requires the one-time operator contract with an eight-character minimum without exposing the password', () => {
   expect(
     readInitialAdminInput({
       PRODUCTION_INITIAL_ADMIN_EMAIL: ' FIRST.ADMIN@example.com ',
@@ -195,9 +195,20 @@ test('requires the one-time operator contract without exposing the password', ()
     readInitialAdminInput({
       PRODUCTION_INITIAL_ADMIN_EMAIL: 'first.admin@example.com',
       PRODUCTION_INITIAL_ADMIN_NAME: 'First Production Admin',
-      PRODUCTION_INITIAL_ADMIN_PASSWORD: 'too-short',
+      PRODUCTION_INITIAL_ADMIN_PASSWORD: '1234567',
     }),
-  ).toThrow(/at least 16 characters/);
+  ).toThrow(/at least 8 characters/);
+  expect(
+    readInitialAdminInput({
+      PRODUCTION_INITIAL_ADMIN_EMAIL: 'first.admin@example.com',
+      PRODUCTION_INITIAL_ADMIN_NAME: 'First Production Admin',
+      PRODUCTION_INITIAL_ADMIN_PASSWORD: '12345678',
+    }),
+  ).toEqual({
+    email: 'first.admin@example.com',
+    name: 'First Production Admin',
+    password: '12345678',
+  });
 });
 
 test('retries a unique conflict so concurrent first runs converge on one result', async () => {

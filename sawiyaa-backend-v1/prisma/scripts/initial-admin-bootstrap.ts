@@ -37,7 +37,7 @@ export type InitialAdminDatabase = {
   ) => Promise<InitialAdminResult>;
 };
 
-const REQUIRED_PASSWORD_LENGTH = 16;
+const REQUIRED_PASSWORD_LENGTH = 8;
 const MAX_UNIQUE_RETRIES = 3;
 const INCOMPATIBLE_ROLES = new Set<UserRoleType>([
   UserRoleType.PATIENT,
