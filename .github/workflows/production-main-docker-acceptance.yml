@@ -182,10 +182,11 @@ jobs:
           _, status = os.waitpid(pid, 0)
           rc = os.waitstatus_to_exitcode(status)
           safe = bytes(output).replace(password, b'[REDACTED]')
+          marker = b'\nINTERACTIVE_PTY_PASSWORD_SUPPLIED_AFTER_WAIT=%s\n' % (b'YES' if 'password' in sent else b'NO')
           with open(os.environ['PTY_LOG'], 'wb') as handle:
-              handle.write(safe)
+              handle.write(safe + marker)
           sys.stdout.buffer.write(safe)
-          sys.stdout.write('\nINTERACTIVE_PTY_PASSWORD_SUPPLIED_AFTER_WAIT=%s\n' % ('YES' if 'password' in sent else 'NO'))
+          sys.stdout.buffer.write(marker)
           sys.exit(rc)
           PY
           first_rc=$?
