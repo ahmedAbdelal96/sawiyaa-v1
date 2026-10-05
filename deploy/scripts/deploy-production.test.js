@@ -161,7 +161,9 @@ test('deployment verifies checkout safety before destructive Git operations', ()
 });
 
 test('deployment writes a successful release marker after public health checks', () => {
-  assert.ok(position('curl -fsS https://sawiyaa.com >/dev/null') < position('status=success'));
+  assert.ok(position('run_public_health_check frontend https://sawiyaa.com') < position('status=success'));
+  assert.match(script, /check_args=\(curl -fsS\)/);
+  assert.match(script, /check_args=\(curl -fsS\)[\s\S]*check_args\+=\(\"\$check_url\"\)/);
   assert.match(script, /RELEASE_STATE_DIR=.*sawiyaa-release-state/);
   assert.match(script, /mkdir -p -- "\$\(dirname -- "\$RELEASE_MARKER"\)"/);
   assert.match(script, /targetSha=%s\\ndeployedAt=%s\\nstatus=success/);
