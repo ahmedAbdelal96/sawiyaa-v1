@@ -138,24 +138,109 @@ jobs:
           } 2>&1 | tee /tmp/production-harness-forensics.log
           ACCEPT_ADMIN_PASSWORD="accept-interactive-admin-${GITHUB_RUN_ID}-password"
           export SHELLOPTS
-          {
-            sleep 1
-            printf 'admin@sawiyaa.test\n'
-            sleep 1
-            printf 'Acceptance Admin\n'
-            sleep 2
-            printf '%s\n' "$ACCEPT_ADMIN_PASSWORD"
-            echo 'INTERACTIVE_PTY_PASSWORD_SUPPLIED_AFTER_WAIT=YES'
-          } | script -qefc 'sudo env SHELLOPTS=xtrace CURL_CA_BUNDLE="$CURL_CA_BUNDLE" SAWIYAA_MIN_FREE_MB="$SAWIYAA_MIN_FREE_MB" SAWIYAA_DAILY_WEBHOOK_VALIDATOR_PATH="$SAWIYAA_DAILY_WEBHOOK_VALIDATOR_PATH" ALLOW_PAYMOB_CONTROL_BOOTSTRAP=true SAWIYAA_TARGET_SHA="$GITHUB_SHA" bash -x /opt/sawiyaa/deploy/server/update-prod.sh' /tmp/production-first-pty.log 2>&1 | tee /tmp/production-first.log
-          first_rc=${PIPESTATUS[1]}
+          export ACCEPT_ADMIN_PASSWORD
+          PTY_MODE=first PTY_LOG=/tmp/production-first-pty.log python3 - <<'PY'
+          import os, pty, select, sys, time
+          command = [
+              'sudo', 'env', 'SHELLOPTS=xtrace',
+              f"CURL_CA_BUNDLE={os.environ['CURL_CA_BUNDLE']}",
+              f"SAWIYAA_MIN_FREE_MB={os.environ['SAWIYAA_MIN_FREE_MB']}",
+              f"SAWIYAA_DAILY_WEBHOOK_VALIDATOR_PATH={os.environ['SAWIYAA_DAILY_WEBHOOK_VALIDATOR_PATH']}",
+              'ALLOW_PAYMOB_CONTROL_BOOTSTRAP=true',
+              f"SAWIYAA_TARGET_SHA={os.environ['GITHUB_SHA']}",
+              'bash', '-x', '/opt/sawiyaa/deploy/server/update-prod.sh',
+          ]
+          pid, fd = pty.fork()
+          if pid == 0:
+              os.execvp(command[0], command)
+          output = bytearray()
+          sent = set()
+          password = os.environ['ACCEPT_ADMIN_PASSWORD'].encode()
+          while True:
+              ready, _, _ = select.select([fd], [], [], 1)
+              if ready:
+                  try:
+                      chunk = os.read(fd, 4096)
+                  except OSError:
+                      chunk = b''
+                  if not chunk:
+                      break
+                  output.extend(chunk)
+                  if b'Initial admin email: ' in output and 'email' not in sent:
+                      os.write(fd, b'admin@sawiyaa.test\n'); sent.add('email')
+                  if b'Initial admin display name: ' in output and 'name' not in sent:
+                      os.write(fd, b'Acceptance Admin\n'); sent.add('name')
+                  if b'Initial admin password (hidden): ' in output and 'password' not in sent:
+                      time.sleep(2)
+                      os.write(fd, password + b'\n'); sent.add('password')
+              else:
+                  try:
+                      os.kill(pid, 0)
+                  except ProcessLookupError:
+                      break
+          _, status = os.waitpid(pid, 0)
+          rc = os.waitstatus_to_exitcode(status)
+          safe = bytes(output).replace(password, b'[REDACTED]')
+          with open(os.environ['PTY_LOG'], 'wb') as handle:
+              handle.write(safe)
+          sys.stdout.buffer.write(safe)
+          sys.stdout.write('\nINTERACTIVE_PTY_PASSWORD_SUPPLIED_AFTER_WAIT=%s\n' % ('YES' if 'password' in sent else 'NO'))
+          sys.exit(rc)
+          PY
+          first_rc=$?
+          cp /tmp/production-first-pty.log /tmp/production-first.log
           echo "UPDATE_PROD_FIRST_EXIT=$first_rc" | tee -a /tmp/production-harness-forensics.log
           if (( first_rc != 0 )); then exit "$first_rc"; fi
           grep -Fq 'Initial admin password (hidden):' /tmp/production-first.log
           ! grep -Fq "$ACCEPT_ADMIN_PASSWORD" /tmp/production-first.log
           grep -Fq 'INTERACTIVE_PTY_PASSWORD_SUPPLIED_AFTER_WAIT=YES' /tmp/production-first.log
           export SHELLOPTS
-          { sleep 1; printf 'admin@sawiyaa.test\n'; } | script -qefc 'sudo env SHELLOPTS=xtrace CURL_CA_BUNDLE="$CURL_CA_BUNDLE" SAWIYAA_MIN_FREE_MB="$SAWIYAA_MIN_FREE_MB" SAWIYAA_DAILY_WEBHOOK_VALIDATOR_PATH="$SAWIYAA_DAILY_WEBHOOK_VALIDATOR_PATH" ALLOW_PAYMOB_CONTROL_BOOTSTRAP=true SAWIYAA_TARGET_SHA="$GITHUB_SHA" bash -x /opt/sawiyaa/deploy/server/update-prod.sh' /tmp/production-repeat-pty.log 2>&1 | tee /tmp/production-repeat.log
-          repeat_rc=${PIPESTATUS[1]}
+          PTY_MODE=repeat PTY_LOG=/tmp/production-repeat-pty.log python3 - <<'PY'
+          import os, pty, select, sys
+          command = [
+              'sudo', 'env', 'SHELLOPTS=xtrace',
+              f"CURL_CA_BUNDLE={os.environ['CURL_CA_BUNDLE']}",
+              f"SAWIYAA_MIN_FREE_MB={os.environ['SAWIYAA_MIN_FREE_MB']}",
+              f"SAWIYAA_DAILY_WEBHOOK_VALIDATOR_PATH={os.environ['SAWIYAA_DAILY_WEBHOOK_VALIDATOR_PATH']}",
+              'ALLOW_PAYMOB_CONTROL_BOOTSTRAP=true',
+              f"SAWIYAA_TARGET_SHA={os.environ['GITHUB_SHA']}",
+              'bash', '-x', '/opt/sawiyaa/deploy/server/update-prod.sh',
+          ]
+          pid, fd = pty.fork()
+          if pid == 0:
+              os.execvp(command[0], command)
+          output = bytearray()
+          sent = False
+          password = os.environ['ACCEPT_ADMIN_PASSWORD'].encode()
+          while True:
+              ready, _, _ = select.select([fd], [], [], 1)
+              if ready:
+                  try:
+                      chunk = os.read(fd, 4096)
+                  except OSError:
+                      chunk = b''
+                  if not chunk:
+                      break
+                  output.extend(chunk)
+                  if b'Initial admin email: ' in output and not sent:
+                      os.write(fd, b'admin@sawiyaa.test\n'); sent = True
+                  if b'Initial admin password (hidden): ' in output or b'Initial admin display name: ' in output:
+                      os.write(fd, b'\x03')
+              else:
+                  try:
+                      os.kill(pid, 0)
+                  except ProcessLookupError:
+                      break
+          _, status = os.waitpid(pid, 0)
+          rc = os.waitstatus_to_exitcode(status)
+          safe = bytes(output).replace(password, b'[REDACTED]')
+          with open(os.environ['PTY_LOG'], 'wb') as handle:
+              handle.write(safe)
+          sys.stdout.buffer.write(safe)
+          sys.exit(rc)
+          PY
+          repeat_rc=$?
+          cp /tmp/production-repeat-pty.log /tmp/production-repeat.log
           echo "UPDATE_PROD_REPEAT_EXIT=$repeat_rc" | tee -a /tmp/production-harness-forensics.log
           if (( repeat_rc != 0 )); then exit "$repeat_rc"; fi
           ! grep -Fq 'Initial admin password (hidden):' /tmp/production-repeat.log
