@@ -262,29 +262,27 @@ async function main(): Promise<void> {
 }
 
 async function resolveInitialAdminInput(prisma: PrismaClient): Promise<InitialAdminInput | null> {
-  const configured = [
-    process.env.PRODUCTION_INITIAL_ADMIN_EMAIL,
-    process.env.PRODUCTION_INITIAL_ADMIN_NAME,
-    process.env.PRODUCTION_INITIAL_ADMIN_PASSWORD,
-  ];
-  if (configured.some(Boolean)) {
+  const configuredEmail = process.env.PRODUCTION_INITIAL_ADMIN_EMAIL?.trim();
+  const configuredName = process.env.PRODUCTION_INITIAL_ADMIN_NAME;
+  const configuredPassword = process.env.PRODUCTION_INITIAL_ADMIN_PASSWORD;
+  const configured = [configuredEmail, configuredName, configuredPassword];
+  const emailOnly = Boolean(configuredEmail && !configuredName && !configuredPassword);
+  if (configured.some(Boolean) && !emailOnly) {
     if (configured.some((value) => !value)) {
       throw new Error(
         'Initial administrator bootstrap requires PRODUCTION_INITIAL_ADMIN_EMAIL, PRODUCTION_INITIAL_ADMIN_NAME, and PRODUCTION_INITIAL_ADMIN_PASSWORD together.',
       );
     }
-    const input = readInitialAdminInput();
-    writeResolvedInitialAdminEmail(input.email);
-    return input;
+    return readInitialAdminInput();
   }
 
-  if (!input.isTTY || !output.isTTY) {
+  if ((!configuredEmail && (!input.isTTY || !output.isTTY)) || (emailOnly && (!input.isTTY || !output.isTTY))) {
     throw new Error(
       'Initial administrator bootstrap requires the three PRODUCTION_INITIAL_ADMIN_* variables in non-interactive mode.',
     );
   }
 
-  const email = (await ask('Initial admin email: ')).trim().toLowerCase();
+  const email = (configuredEmail ?? (await ask('Initial admin email: '))).trim().toLowerCase();
   if (!/^\S+@\S+\.\S+$/.test(email)) {
     throw new Error('Initial administrator email must be a valid email address.');
   }
@@ -324,8 +322,8 @@ async function resolveInitialAdminInput(prisma: PrismaClient): Promise<InitialAd
     }
   }
 
-  const name = (await ask('Initial admin display name: ')).trim();
-  const password = await askHidden('Initial admin password (hidden): ');
+  const name = (configuredName ?? (await ask('Initial admin display name: '))).trim();
+  const password = configuredPassword ?? await askHidden('Initial admin password (hidden): ');
   const resolved = readInitialAdminInput({
     PRODUCTION_INITIAL_ADMIN_EMAIL: email,
     PRODUCTION_INITIAL_ADMIN_NAME: name,
