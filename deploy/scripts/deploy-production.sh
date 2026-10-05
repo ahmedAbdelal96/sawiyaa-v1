@@ -481,28 +481,7 @@ if [[ -t 0 && -t 1 && -z "${PRODUCTION_INITIAL_ADMIN_EMAIL:-}" && -z "${PRODUCTI
     echo 'INITIAL_ADMIN_INPUT_REQUIRED_EOF' >&2
     exit 1
   }
-  IFS= read -r -p 'Initial admin display name: ' PRODUCTION_INITIAL_ADMIN_NAME || {
-    if (( production_admin_xtrace )); then set -x; fi
-    echo 'INITIAL_ADMIN_INPUT_REQUIRED_EOF' >&2
-    exit 1
-  }
-  printf 'Initial admin password (hidden): ' >&2
-  IFS= read -r -s PRODUCTION_INITIAL_ADMIN_PASSWORD || {
-    printf '\n' >&2
-    if (( production_admin_xtrace )); then set -x; fi
-    echo 'INITIAL_ADMIN_INPUT_REQUIRED_EOF' >&2
-    exit 1
-  }
-  printf '\n' >&2
-  if [[ -z "$PRODUCTION_INITIAL_ADMIN_EMAIL" || -z "$PRODUCTION_INITIAL_ADMIN_NAME" || -z "$PRODUCTION_INITIAL_ADMIN_PASSWORD" ]]; then
-    if (( production_admin_xtrace )); then set -x; fi
-    echo 'INITIAL_ADMIN_INPUT_REQUIRED' >&2
-    exit 1
-  fi
   bootstrap_env_args+=(-e "PRODUCTION_INITIAL_ADMIN_EMAIL=$PRODUCTION_INITIAL_ADMIN_EMAIL")
-  bootstrap_env_args+=(-e "PRODUCTION_INITIAL_ADMIN_NAME=$PRODUCTION_INITIAL_ADMIN_NAME")
-  bootstrap_env_args+=(-e "PRODUCTION_INITIAL_ADMIN_PASSWORD=$PRODUCTION_INITIAL_ADMIN_PASSWORD")
-  unset PRODUCTION_INITIAL_ADMIN_PASSWORD
   if (( production_admin_xtrace )); then set -x; fi
 fi
 bootstrap_run_args=(run --rm --interactive)
