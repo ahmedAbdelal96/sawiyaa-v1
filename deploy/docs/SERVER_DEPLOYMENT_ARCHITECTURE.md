@@ -19,7 +19,8 @@ templates under `deploy/env/` are committed.
 
 Production uses `docker-compose.prod.yml` and the `sawiyaa` project. Development
 uses `docker-compose.dev.yml` and the `sawiyaa-dev` project. Only the
-development Nginx ingress is published on host port `8080` (`8080:80`).
+development Nginx ingress is published only on localhost port `8080`
+(`127.0.0.1:8080:80`).
 PostgreSQL, backend, frontend, worker, and Mailpit remain internal Docker
 services on a separate bridge network with explicit `sawiyaa_dev_*` volumes. It
 cannot reuse production containers, networks, or data volumes.

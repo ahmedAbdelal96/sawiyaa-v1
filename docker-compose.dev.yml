@@ -43,7 +43,7 @@ services:
       dockerfile: Dockerfile
     restart: unless-stopped
     env_file:
-      - ${SAWIYAA_BACKEND_RUNTIME_ENV_FILE:-./sawiyaa-backend-v1/.env}
+      - ${SAWIYAA_BACKEND_RUNTIME_ENV_FILE:-./sawiyaa-backend-v1/.env.development}
     environment:
       SAWIYAA_RELEASE_SHA: ${SAWIYAA_RELEASE_SHA:-development}
     expose:
@@ -51,7 +51,7 @@ services:
     volumes:
       - sawiyaa_dev_backend_storage:/app/storage
       - sawiyaa_dev_backend_uploads:/app/uploads
-      - ./logs/dev-backend:/app/logs
+      - ./logs/backend:/app/logs
       - ./geoip/GeoLite2-Country.mmdb:/opt/sawiyaa/geoip/GeoLite2-Country.mmdb:ro
     depends_on:
       backend_volume_init:
@@ -87,7 +87,7 @@ services:
     command: ["npm", "run", "start:worker"]
     restart: unless-stopped
     env_file:
-      - ${SAWIYAA_BACKEND_RUNTIME_ENV_FILE:-./sawiyaa-backend-v1/.env}
+      - ${SAWIYAA_BACKEND_RUNTIME_ENV_FILE:-./sawiyaa-backend-v1/.env.development}
     environment:
       SAWIYAA_RELEASE_SHA: ${SAWIYAA_RELEASE_SHA:-development}
     depends_on:
@@ -121,7 +121,7 @@ services:
         NEXT_PUBLIC_DEBUG_PRACTITIONER_WIZARD: ${NEXT_PUBLIC_DEBUG_PRACTITIONER_WIZARD:-0}
     restart: unless-stopped
     env_file:
-      - ${SAWIYAA_FRONTEND_RUNTIME_ENV_FILE:-./sawiyaa-frontend-v1/.env}
+      - ${SAWIYAA_FRONTEND_RUNTIME_ENV_FILE:-./sawiyaa-frontend-v1/.env.development}
     expose:
       - "3000"
     depends_on:
@@ -145,7 +145,7 @@ services:
       backend:
         condition: service_healthy
     ports:
-      - "${SAWIYAA_DEV_HTTP_PORT:-8080}:80"
+      - "127.0.0.1:${SAWIYAA_DEV_HTTP_PORT:-8080}:80"
     volumes:
       - ./deploy/nginx/sawiyaa-dev.conf:/etc/nginx/conf.d/default.conf:ro
     networks:

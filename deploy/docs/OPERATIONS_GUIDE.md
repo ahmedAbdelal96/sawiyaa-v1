@@ -25,10 +25,10 @@ every placeholder using the operator secret store:
 ```bash
 sudo cp /opt/sawiyaa/deploy/env/production.backend.example /opt/sawiyaa/sawiyaa-backend-v1/.env.production
 sudo cp /opt/sawiyaa/deploy/env/production.frontend.example /opt/sawiyaa/sawiyaa-frontend-v1/.env.production
-sudo cp /opt/sawiyaa-dev/deploy/env/development.backend.example /opt/sawiyaa-dev/sawiyaa-backend-v1/.env
-sudo cp /opt/sawiyaa-dev/deploy/env/development.frontend.example /opt/sawiyaa-dev/sawiyaa-frontend-v1/.env
+sudo cp /opt/sawiyaa-dev/deploy/env/development.backend.example /opt/sawiyaa-dev/sawiyaa-backend-v1/.env.development
+sudo cp /opt/sawiyaa-dev/deploy/env/development.frontend.example /opt/sawiyaa-dev/sawiyaa-frontend-v1/.env.development
 sudo chmod 600 /opt/sawiyaa/sawiyaa-backend-v1/.env.production /opt/sawiyaa/sawiyaa-frontend-v1/.env.production
-sudo chmod 600 /opt/sawiyaa-dev/sawiyaa-backend-v1/.env /opt/sawiyaa-dev/sawiyaa-frontend-v1/.env
+sudo chmod 600 /opt/sawiyaa-dev/sawiyaa-backend-v1/.env.development /opt/sawiyaa-dev/sawiyaa-frontend-v1/.env.development
 ```
 
 Install the GeoIP database from the approved provider into the production
@@ -54,8 +54,9 @@ Start development independently:
 sudo /opt/sawiyaa-dev/deploy/server/update-dev.sh
 ```
 
-Development is initially reached through `http://<server>:8080`. Only Nginx
-is published; PostgreSQL, backend, frontend, worker, and Mailpit are internal
+Development is initially reached through the host Nginx proxy. The Docker
+Nginx ingress is bound to `127.0.0.1:8080`; PostgreSQL, backend, frontend,
+worker, and Mailpit are internal
 services on the `sawiyaa-dev` network. No `dev.sawiyaa.com` DNS or TLS gateway
 is configured by this repository.
 

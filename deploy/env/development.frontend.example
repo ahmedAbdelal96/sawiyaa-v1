@@ -1,4 +1,4 @@
-# Copy to /opt/sawiyaa-dev/sawiyaa-frontend-v1/.env.
+# Copy to /opt/sawiyaa-dev/sawiyaa-frontend-v1/.env.development.
 NEXT_PUBLIC_API_URL=/api/v1
 API_PROXY_TARGET=http://backend:7000
 NEXT_PUBLIC_APP_NAME=Sawiyaa Development

@@ -6,7 +6,7 @@ on:
       - development
   pull_request:
     branches:
-      - main
+      - development
 
 concurrency:
   group: development-ci-${{ github.ref }}
@@ -130,16 +130,16 @@ jobs:
         working-directory: sawiyaa-frontend-v1
         run: npm run build
 
-      - name: Prepare temporary two-source compose env files
+      - name: Prepare temporary development compose env files
         run: |
-          cp sawiyaa-backend-v1/.env.example sawiyaa-backend-v1/.env.production
-          cp sawiyaa-frontend-v1/.env.example sawiyaa-frontend-v1/.env.production
-          ls -1 sawiyaa-backend-v1/.env.production sawiyaa-frontend-v1/.env.production
+          cp deploy/env/development.backend.example sawiyaa-backend-v1/.env.development
+          cp deploy/env/development.frontend.example sawiyaa-frontend-v1/.env.development
+          ls -1 sawiyaa-backend-v1/.env.development sawiyaa-frontend-v1/.env.development
 
       - name: Validate Docker Compose configuration
         run: |
           if command -v docker >/dev/null 2>&1; then
-            docker compose --env-file sawiyaa-backend-v1/.env.production --env-file sawiyaa-frontend-v1/.env.production -f docker-compose.prod.yml config >/dev/null
+            docker compose --env-file sawiyaa-backend-v1/.env.development --env-file sawiyaa-frontend-v1/.env.development -p sawiyaa-dev -f docker-compose.dev.yml config >/dev/null
           else
             echo "Docker CLI not available in this runner; skipping compose config validation."
           fi
