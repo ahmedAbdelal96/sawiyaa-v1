@@ -276,12 +276,6 @@ async function resolveInitialAdminInput(prisma: PrismaClient): Promise<InitialAd
     return readInitialAdminInput();
   }
 
-  if ((!configuredEmail && (!input.isTTY || !output.isTTY)) || (emailOnly && (!input.isTTY || !output.isTTY))) {
-    throw new Error(
-      'Initial administrator bootstrap requires the three PRODUCTION_INITIAL_ADMIN_* variables in non-interactive mode.',
-    );
-  }
-
   const email = (configuredEmail ?? (await ask('Initial admin email: '))).trim().toLowerCase();
   if (!/^\S+@\S+\.\S+$/.test(email)) {
     throw new Error('Initial administrator email must be a valid email address.');
@@ -320,6 +314,12 @@ async function resolveInitialAdminInput(prisma: PrismaClient): Promise<InitialAd
       writeResolvedInitialAdminEmail(email);
       return null;
     }
+  }
+
+  if (!input.isTTY || !output.isTTY) {
+    throw new Error(
+      'Initial administrator bootstrap requires the three PRODUCTION_INITIAL_ADMIN_* variables in non-interactive mode.',
+    );
   }
 
   const name = (configuredName ?? (await ask('Initial admin display name: '))).trim();

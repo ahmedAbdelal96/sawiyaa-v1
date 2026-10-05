@@ -470,6 +470,11 @@ for initial_admin_var in PRODUCTION_INITIAL_ADMIN_EMAIL PRODUCTION_INITIAL_ADMIN
     bootstrap_env_args+=(-e "$initial_admin_var=${!initial_admin_var}")
   fi
 done
+INITIAL_ADMIN_MARKER="${SAWIYAA_INITIAL_ADMIN_MARKER:-/opt/sawiyaa-backups/production-initial-admin-email}"
+if [[ -z "${PRODUCTION_INITIAL_ADMIN_EMAIL:-}" && -z "${PRODUCTION_INITIAL_ADMIN_NAME:-}" && -z "${PRODUCTION_INITIAL_ADMIN_PASSWORD:-}" && -s "$INITIAL_ADMIN_MARKER" ]]; then
+  PRODUCTION_INITIAL_ADMIN_EMAIL="$(head -n 1 "$INITIAL_ADMIN_MARKER")"
+  bootstrap_env_args+=(-e "PRODUCTION_INITIAL_ADMIN_EMAIL=$PRODUCTION_INITIAL_ADMIN_EMAIL")
+fi
 if [[ -t 0 && -t 1 && -z "${PRODUCTION_INITIAL_ADMIN_EMAIL:-}" && -z "${PRODUCTION_INITIAL_ADMIN_NAME:-}" && -z "${PRODUCTION_INITIAL_ADMIN_PASSWORD:-}" ]]; then
   production_admin_xtrace=0
   if [[ "$-" == *x* ]]; then
@@ -481,7 +486,28 @@ if [[ -t 0 && -t 1 && -z "${PRODUCTION_INITIAL_ADMIN_EMAIL:-}" && -z "${PRODUCTI
     echo 'INITIAL_ADMIN_INPUT_REQUIRED_EOF' >&2
     exit 1
   }
+  IFS= read -r -p 'Initial admin display name: ' PRODUCTION_INITIAL_ADMIN_NAME || {
+    if (( production_admin_xtrace )); then set -x; fi
+    echo 'INITIAL_ADMIN_INPUT_REQUIRED_EOF' >&2
+    exit 1
+  }
+  printf 'Initial admin password (hidden): ' >&2
+  IFS= read -r -s PRODUCTION_INITIAL_ADMIN_PASSWORD || {
+    printf '\n' >&2
+    if (( production_admin_xtrace )); then set -x; fi
+    echo 'INITIAL_ADMIN_INPUT_REQUIRED_EOF' >&2
+    exit 1
+  }
+  printf '\n' >&2
+  if [[ -z "$PRODUCTION_INITIAL_ADMIN_EMAIL" || -z "$PRODUCTION_INITIAL_ADMIN_NAME" || -z "$PRODUCTION_INITIAL_ADMIN_PASSWORD" ]]; then
+    if (( production_admin_xtrace )); then set -x; fi
+    echo 'INITIAL_ADMIN_INPUT_REQUIRED' >&2
+    exit 1
+  fi
   bootstrap_env_args+=(-e "PRODUCTION_INITIAL_ADMIN_EMAIL=$PRODUCTION_INITIAL_ADMIN_EMAIL")
+  bootstrap_env_args+=(-e "PRODUCTION_INITIAL_ADMIN_NAME=$PRODUCTION_INITIAL_ADMIN_NAME")
+  bootstrap_env_args+=(-e "PRODUCTION_INITIAL_ADMIN_PASSWORD=$PRODUCTION_INITIAL_ADMIN_PASSWORD")
+  unset PRODUCTION_INITIAL_ADMIN_PASSWORD
   if (( production_admin_xtrace )); then set -x; fi
 fi
 bootstrap_run_args=(run --rm --interactive)
@@ -493,6 +519,11 @@ fi
 docker compose --env-file "$BACKEND_ENV_FILE" --env-file "$FRONTEND_ENV_FILE" -f "$COMPOSE_FILE" "${bootstrap_run_args[@]}" \
   "${bootstrap_env_args[@]}" backend npm run db:bootstrap:production
 echo "PRODUCTION_BOOTSTRAP: SUCCESS"
+if [[ -n "${PRODUCTION_INITIAL_ADMIN_EMAIL:-}" ]]; then
+  mkdir -p "$(dirname "$INITIAL_ADMIN_MARKER")"
+  printf '%s\n' "$PRODUCTION_INITIAL_ADMIN_EMAIL" > "$INITIAL_ADMIN_MARKER"
+  chmod 600 "$INITIAL_ADMIN_MARKER"
+fi
 read_provider_state true || exit 1
 if ! bash "$PROJECT_DIR/deploy/scripts/validate-production-preflight.sh" \
   --target-only --skip-lock \
