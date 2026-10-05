@@ -192,6 +192,9 @@ jobs:
           set -e
           cp /tmp/production-first-pty.log /tmp/production-first.log
           echo "UPDATE_PROD_FIRST_EXIT=$first_rc" | tee -a /tmp/production-harness-forensics.log
+          echo 'INTERACTIVE_BOOTSTRAP_MARKERS_BEGIN' | tee -a /tmp/production-harness-forensics.log
+          grep -Ei 'Initial admin|INITIAL_ADMIN_BOOTSTRAP|INITIAL_ADMIN_PASSWORD_INPUT|INTERACTIVE_PTY' /tmp/production-first.log | sed -E 's/(password|secret|token|api[_-]?key|authorization|database[_-]?url)[^[:space:],;]*/[REDACTED]/Ig' | tee -a /tmp/production-harness-forensics.log || true
+          echo 'INTERACTIVE_BOOTSTRAP_MARKERS_END' | tee -a /tmp/production-harness-forensics.log
           if (( first_rc != 0 )); then exit "$first_rc"; fi
           grep -Fq 'Initial admin password (hidden):' /tmp/production-first.log
           ! grep -Fq "$ACCEPT_ADMIN_PASSWORD" /tmp/production-first.log
@@ -310,6 +313,8 @@ jobs:
             [ -n "$root_line" ] && echo "::error title=update-prod first failure::$root_line"
             trace_line="$(redact < /tmp/production-first.log | grep -E '^\+[[:space:]]' | tail -n 24 | tr '\n' ' ' | sed -E 's/[[:space:]]+/ /g')"
             [ -n "$trace_line" ] && echo "::error title=update-prod last shell trace::$trace_line"
+            marker_line="$(grep -Ei 'Initial admin|INITIAL_ADMIN_BOOTSTRAP|INITIAL_ADMIN_PASSWORD_INPUT|INTERACTIVE_PTY' /tmp/production-first.log | tail -n 40 | tr '\n' ' ' | sed -E 's/(password|secret|token|api[_-]?key|authorization|database[_-]?url)[^[:space:],;]*/[REDACTED]/Ig' | sed -E 's/[[:space:]]+/ /g')"
+            [ -n "$marker_line" ] && echo "::error title=interactive bootstrap markers::$marker_line"
           fi
           echo "UPDATE_PROD_FIRST_EXIT_FILE=$(grep -E 'UPDATE_PROD_FIRST_EXIT=' /tmp/production-harness-forensics.log 2>/dev/null | tail -n 1 || true)"
           echo "UPDATE_PROD_REPEAT_EXIT_FILE=$(grep -E 'UPDATE_PROD_REPEAT_EXIT=' /tmp/production-harness-forensics.log 2>/dev/null | tail -n 1 || true)"
