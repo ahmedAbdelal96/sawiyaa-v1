@@ -91,6 +91,23 @@ jobs:
           set -Eeuo pipefail
           set -o pipefail
           log=/tmp/development-acceptance.log
+          redact_log() {
+            sed -E 's/([A-Za-z_]*(SECRET|PASSWORD|TOKEN|KEY)[A-Za-z_]*=)[^[:space:]]+/\1[REDACTED]/g'
+          }
+          report_failure() {
+            status=$?
+            if [[ "$status" -ne 0 ]]; then
+              {
+                echo "## Development acceptance failure"
+                echo "exit_code=$status"
+                echo '```text'
+                redact_log < "$log" | tail -n 120
+                echo '```'
+              } >> "$GITHUB_STEP_SUMMARY"
+            fi
+            return "$status"
+          }
+          trap report_failure EXIT
           run_update() {
             sudo env SAWIYAA_FORCE_DOCKER_VALIDATOR=true bash /opt/sawiyaa-dev/deploy/server/update-dev.sh 2>&1 | tee -a "$log"
           }
