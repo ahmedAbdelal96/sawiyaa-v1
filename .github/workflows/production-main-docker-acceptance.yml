@@ -137,6 +137,7 @@ jobs:
             echo "COMPOSE_CONFIG_EXIT=$?"
             echo 'COMPOSE_CONFIG_END'
           } 2>&1 | tee /tmp/production-harness-forensics.log
+          export SHELLOPTS
           sudo env \
             CURL_CA_BUNDLE="$CURL_CA_BUNDLE" \
             SAWIYAA_MIN_FREE_MB="$SAWIYAA_MIN_FREE_MB" \
@@ -153,6 +154,7 @@ jobs:
           first_rc=${PIPESTATUS[0]}
           echo "UPDATE_PROD_FIRST_EXIT=$first_rc" | tee -a /tmp/production-harness-forensics.log
           if (( first_rc != 0 )); then exit "$first_rc"; fi
+          export SHELLOPTS
           sudo env \
             CURL_CA_BUNDLE="$CURL_CA_BUNDLE" \
             SAWIYAA_MIN_FREE_MB="$SAWIYAA_MIN_FREE_MB" \
