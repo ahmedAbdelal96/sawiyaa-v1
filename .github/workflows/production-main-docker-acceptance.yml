@@ -195,6 +195,9 @@ jobs:
           echo 'INTERACTIVE_BOOTSTRAP_MARKERS_BEGIN' | tee -a /tmp/production-harness-forensics.log
           grep -Ei 'Initial admin|INITIAL_ADMIN_BOOTSTRAP|INITIAL_ADMIN_PASSWORD_INPUT|INTERACTIVE_PTY' /tmp/production-first.log | sed -E 's/(password|secret|token|api[_-]?key|authorization|database[_-]?url)[^[:space:],;]*/[REDACTED]/Ig' | tee -a /tmp/production-harness-forensics.log || true
           echo 'INTERACTIVE_BOOTSTRAP_MARKERS_END' | tee -a /tmp/production-harness-forensics.log
+          echo 'INTERACTIVE_BOOTSTRAP_DATABASE_STATE_BEGIN' | tee -a /tmp/production-harness-forensics.log
+          sudo docker compose --env-file /opt/sawiyaa/sawiyaa-backend-v1/.env.production --env-file /opt/sawiyaa/sawiyaa-frontend-v1/.env.production -p sawiyaa -f /opt/sawiyaa/docker-compose.prod.yml run --rm --no-TTY --no-deps backend node -e "const {PrismaClient}=require('@prisma/client'); const p=new PrismaClient(); Promise.all([p.user.count(),p.userRole.count({where:{role:'SUPER_ADMIN'}}),p.authIdentity.count({where:{provider:'PASSWORD',isEnabled:true}}),p.userEmail.count()]).then(([users,admins,passwords,emails])=>console.log('USERS='+users+' SUPER_ADMINS='+admins+' ENABLED_PASSWORDS='+passwords+' EMAILS='+emails)).finally(()=>p.\$disconnect())" | tee -a /tmp/production-harness-forensics.log || true
+          echo 'INTERACTIVE_BOOTSTRAP_DATABASE_STATE_END' | tee -a /tmp/production-harness-forensics.log
           if (( first_rc != 0 )); then exit "$first_rc"; fi
           grep -Fq 'Initial admin password (hidden):' /tmp/production-first.log
           ! grep -Fq "$ACCEPT_ADMIN_PASSWORD" /tmp/production-first.log
