@@ -139,6 +139,7 @@ jobs:
           } 2>&1 | tee /tmp/production-harness-forensics.log
           export SHELLOPTS
           sudo env \
+            SHELLOPTS=xtrace \
             CURL_CA_BUNDLE="$CURL_CA_BUNDLE" \
             SAWIYAA_MIN_FREE_MB="$SAWIYAA_MIN_FREE_MB" \
             SAWIYAA_BACKUP_MIN_BYTES=1 \
@@ -156,6 +157,7 @@ jobs:
           if (( first_rc != 0 )); then exit "$first_rc"; fi
           export SHELLOPTS
           sudo env \
+            SHELLOPTS=xtrace \
             CURL_CA_BUNDLE="$CURL_CA_BUNDLE" \
             SAWIYAA_MIN_FREE_MB="$SAWIYAA_MIN_FREE_MB" \
             SAWIYAA_BACKUP_MIN_BYTES=1 \
