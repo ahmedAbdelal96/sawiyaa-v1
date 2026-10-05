@@ -325,25 +325,43 @@ if (( applied_migrations_temp_exit != 0 )); then
   exit "$applied_migrations_temp_exit"
 fi
 echo "POST_LOG_CHECK_STAGE=prepare-applied-migrations result=READY"
+echo "PROD_STAGE=migration-table-detection"
+set +e
 migration_table_exists="$(docker compose --env-file "$BACKEND_ENV_FILE" --env-file "$FRONTEND_ENV_FILE" -f "$COMPOSE_FILE" exec -T \
   -e "POSTGRES_USER=$POSTGRES_USER" -e "POSTGRES_DB=$POSTGRES_DB" postgres sh -lc \
-  'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Atqc "SELECT to_regclass('\''public._prisma_migrations'\'') IS NOT NULL"' 2>/dev/null)" || {
+  'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Atqc "SELECT to_regclass('\''public._prisma_migrations'\'') IS NOT NULL"' 2>/dev/null)"
+migration_table_exit=$?
+set -e
+echo "PROD_STAGE_EXIT=$migration_table_exit"
+if (( migration_table_exit != 0 )); then
     echo "Unable to check for the Prisma migrations table; migration was not run." >&2
     exit 1
-  }
+fi
+fresh_database=0
 if [[ "$migration_table_exists" == "t" ]]; then
+  echo "PROD_STAGE=read-applied-migrations"
+  set +e
   docker compose --env-file "$BACKEND_ENV_FILE" --env-file "$FRONTEND_ENV_FILE" -f "$COMPOSE_FILE" exec -T \
     -e "POSTGRES_USER=$POSTGRES_USER" -e "POSTGRES_DB=$POSTGRES_DB" postgres sh -lc \
-    'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Atqc "SELECT migration_name FROM _prisma_migrations WHERE finished_at IS NOT NULL ORDER BY migration_name"' > "$APPLIED_MIGRATIONS_FILE" || {
+    'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Atqc "SELECT migration_name FROM _prisma_migrations WHERE finished_at IS NOT NULL ORDER BY migration_name"' > "$APPLIED_MIGRATIONS_FILE"
+  applied_migrations_read_exit=$?
+  set -e
+  echo "PROD_STAGE_EXIT=$applied_migrations_read_exit"
+  if (( applied_migrations_read_exit != 0 )); then
       echo "Unable to read applied Prisma migrations; migration was not run." >&2
       exit 1
-    }
+  fi
 else
+  fresh_database=1
   : > "$APPLIED_MIGRATIONS_FILE"
+  echo "PROD_STAGE=empty-migration-snapshot"
+  echo "PROD_STAGE_EXIT=0"
 fi
 
 scanner_args=(--migrations-dir "$PROJECT_DIR/sawiyaa-backend-v1/prisma/migrations" --applied-file "$APPLIED_MIGRATIONS_FILE")
-if [[ "$APPROVE_BLOCKING" == "true" ]]; then
+if (( fresh_database )); then
+  scanner_args+=(--approve-blocking-migrations)
+elif [[ "$APPROVE_BLOCKING" == "true" ]]; then
   scanner_args+=(--approve-blocking-migrations)
 fi
 run_migration_safety_check() {
@@ -366,15 +384,17 @@ run_migration_safety_check() {
     --migrations-dir /workspace/sawiyaa-backend-v1/prisma/migrations
     --applied-file /inputs/applied-migrations.txt
   )
-  if [[ "$APPROVE_BLOCKING" == "true" ]]; then
+  if (( fresh_database )) || [[ "$APPROVE_BLOCKING" == "true" ]]; then
     docker_args+=(--approve-blocking-migrations)
   fi
   docker "${docker_args[@]}"
 }
+echo "PROD_STAGE=migration-safety-scan"
 set +e
 scanner_output="$(run_migration_safety_check 2>&1)"
 scanner_exit=$?
 set -e
+echo "PROD_STAGE_EXIT=$scanner_exit"
 printf '%s\n' "$scanner_output"
 if (( scanner_exit != 0 )); then
   MIGRATION_STATUS="BLOCKED"
@@ -385,6 +405,8 @@ MIGRATION_STATUS="$(printf '%s\n' "$scanner_output" | sed -n 's/^MIGRATIONS: //p
 
 echo "Creating and verifying database backup before migrations..."
 BACKUP_TIMESTAMP="$(date -u +%Y%m%d-%H%M%S)"
+echo "PROD_STAGE=backup-db"
+set +e
 SAWIYAA_PROJECT_DIR="$PROJECT_DIR" \
 SAWIYAA_COMPOSE_FILE="$PROJECT_DIR/$COMPOSE_FILE" \
 SAWIYAA_BACKEND_ENV_FILE="$BACKEND_ENV_FILE" \
@@ -392,11 +414,17 @@ SAWIYAA_FRONTEND_ENV_FILE="$FRONTEND_ENV_FILE" \
 SAWIYAA_TARGET_SHA="$TARGET_SHA" \
 SAWIYAA_BACKUP_TIMESTAMP="$BACKUP_TIMESTAMP" \
   bash "$PROJECT_DIR/deploy/scripts/backup-db.sh"
+backup_db_exit=$?
+set -e
+echo "PROD_STAGE_EXIT=$backup_db_exit"
+if (( backup_db_exit != 0 )); then exit "$backup_db_exit"; fi
 
 SHORT_TARGET_SHA="${TARGET_SHA:0:12}"
 DB_BACKUP_DIR="${SAWIYAA_BACKUP_DIR:-/opt/sawiyaa-backups/db}"
 DB_BACKUP_FILE="$DB_BACKUP_DIR/sawiyaa-${BACKUP_TIMESTAMP}-${SHORT_TARGET_SHA}.dump"
 echo "Creating and verifying unified file-volume backup matched to the database backup..."
+echo "PROD_STAGE=backup-files"
+set +e
 SAWIYAA_PROJECT_DIR="$PROJECT_DIR" \
 SAWIYAA_COMPOSE_FILE="$PROJECT_DIR/$COMPOSE_FILE" \
 SAWIYAA_BACKEND_ENV_FILE="$BACKEND_ENV_FILE" \
@@ -406,6 +434,10 @@ SAWIYAA_BACKUP_TIMESTAMP="$BACKUP_TIMESTAMP" \
 SAWIYAA_DB_BACKUP_FILE="$DB_BACKUP_FILE" \
 SAWIYAA_BACKUP_DIR="${SAWIYAA_FILE_BACKUP_DIR:-/opt/sawiyaa-backups}" \
   bash "$PROJECT_DIR/deploy/scripts/backup-files.sh"
+backup_files_exit=$?
+set -e
+echo "PROD_STAGE_EXIT=$backup_files_exit"
+if (( backup_files_exit != 0 )); then exit "$backup_files_exit"; fi
 
 echo "Running unified production bootstrap (migrations, baseline seeds, and readiness verification)..."
 bootstrap_env_args=(-e ALLOW_PRODUCTION_BASELINE_SEED=true)

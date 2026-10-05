@@ -174,6 +174,13 @@ test('log mount success continues through the migration snapshot boundary', () =
   assert.match(script, /POST_LOG_CHECK_STAGE=prepare-applied-migrations exit=\$applied_migrations_temp_exit/);
 });
 
+test('an existing database without Prisma migration metadata is treated as a fresh database', () => {
+  assert.ok(position('PROD_STAGE=migration-table-detection') < position('fresh_database=0'));
+  assert.match(script, /fresh_database=1/);
+  assert.ok(position('fresh_database=1') < position('scanner_args+=(--approve-blocking-migrations)'));
+  assert.match(script, /PROD_STAGE=migration-safety-scan/);
+});
+
 test('Compose frontend build args come from interpolation, not duplicated production literals', () => {
   const compose = fs.readFileSync(path.resolve(__dirname, '../../docker-compose.prod.yml'), 'utf8');
   assert.match(compose, /env_file:\n\s+- \$\{SAWIYAA_BACKEND_RUNTIME_ENV_FILE:-\.\/sawiyaa-backend-v1\/\.env\.production\}/);
