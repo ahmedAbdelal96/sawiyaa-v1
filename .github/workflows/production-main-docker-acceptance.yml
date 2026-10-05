@@ -139,6 +139,7 @@ jobs:
           ACCEPT_ADMIN_PASSWORD="accept-interactive-admin-${GITHUB_RUN_ID}-password"
           export SHELLOPTS
           export ACCEPT_ADMIN_PASSWORD
+          set +e
           PTY_MODE=first PTY_LOG=/tmp/production-first-pty.log python3 - <<'PY'
           import os, pty, select, sys, time
           command = [
@@ -188,6 +189,7 @@ jobs:
           sys.exit(rc)
           PY
           first_rc=$?
+          set -e
           cp /tmp/production-first-pty.log /tmp/production-first.log
           echo "UPDATE_PROD_FIRST_EXIT=$first_rc" | tee -a /tmp/production-harness-forensics.log
           if (( first_rc != 0 )); then exit "$first_rc"; fi
@@ -195,6 +197,7 @@ jobs:
           ! grep -Fq "$ACCEPT_ADMIN_PASSWORD" /tmp/production-first.log
           grep -Fq 'INTERACTIVE_PTY_PASSWORD_SUPPLIED_AFTER_WAIT=YES' /tmp/production-first.log
           export SHELLOPTS
+          set +e
           PTY_MODE=repeat PTY_LOG=/tmp/production-repeat-pty.log python3 - <<'PY'
           import os, pty, select, sys
           command = [
@@ -240,6 +243,7 @@ jobs:
           sys.exit(rc)
           PY
           repeat_rc=$?
+          set -e
           cp /tmp/production-repeat-pty.log /tmp/production-repeat.log
           echo "UPDATE_PROD_REPEAT_EXIT=$repeat_rc" | tee -a /tmp/production-harness-forensics.log
           if (( repeat_rc != 0 )); then exit "$repeat_rc"; fi
