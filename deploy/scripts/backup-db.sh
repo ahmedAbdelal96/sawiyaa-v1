@@ -30,6 +30,22 @@ compose_args=(--env-file "$BACKEND_ENV_FILE" --env-file "$FRONTEND_ENV_FILE" -f 
 [[ -r "$BACKEND_ENV_FILE" && -r "$FRONTEND_ENV_FILE" ]] || fail "Canonical Compose environment files are not readable"
 docker compose "${compose_args[@]}" ps --status running --services | grep -Fxq "$DB_SERVICE" || fail "Database service is not running"
 
+migration_table_exists="$(docker compose "${compose_args[@]}" exec -T "$DB_SERVICE" sh -lc \
+  'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Atqc "SELECT to_regclass('\''public._prisma_migrations'\'') IS NOT NULL"' 2>/dev/null)" ||
+  fail "Unable to determine whether the Prisma migrations table exists"
+application_relation_exists="$(docker compose "${compose_args[@]}" exec -T "$DB_SERVICE" sh -lc \
+  'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Atqc "SELECT EXISTS (SELECT 1 FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace WHERE n.nspname NOT IN ('\''pg_catalog'\'', '\''information_schema'\'') AND n.nspname NOT LIKE '\''pg_toast%'\'' AND c.relkind IN ('\''r'\'', '\''p'\'', '\''v'\'', '\''m'\'', '\''f'\'', '\''S'\''))"' 2>/dev/null)" ||
+  fail "Unable to determine whether application relations exist"
+fresh_empty_database=false
+if [[ "$migration_table_exists" != "t" && "$application_relation_exists" != "t" ]]; then
+  fresh_empty_database=true
+fi
+if [[ "$fresh_empty_database" == true ]]; then
+  printf 'BACKUP: FRESH_EMPTY_DATABASE=TRUE\n'
+else
+  printf 'BACKUP: FRESH_EMPTY_DATABASE=FALSE\n'
+fi
+
 dump_file="$BACKUP_DIR/${BASE_NAME}.dump"
 checksum_file="$dump_file.sha256"
 metadata_file="$dump_file.metadata.json"
@@ -52,7 +68,15 @@ docker compose "${compose_args[@]}" exec -T "$DB_SERVICE" sh -lc \
   'pg_dump -Fc --no-owner --no-acl -U "$POSTGRES_USER" "$POSTGRES_DB"' > "$tmp_dump" || fail "pg_dump failed"
 
 dump_size="$(wc -c < "$tmp_dump")"
-(( dump_size >= MIN_BACKUP_BYTES )) || fail "Backup dump is empty or below minimum size"
+backup_verification_status="VERIFIED"
+if (( dump_size < MIN_BACKUP_BYTES )); then
+  if [[ "$fresh_empty_database" == true && "$dump_size" -gt 0 ]]; then
+    backup_verification_status="EMPTY_DATABASE_BACKUP_SKIPPED"
+    printf 'BACKUP: EMPTY_DATABASE_BACKUP_SKIPPED dump_size=%s minimum_bytes=%s\n' "$dump_size" "$MIN_BACKUP_BYTES"
+  else
+    fail "Backup dump is empty or below minimum size"
+  fi
+fi
 sha256sum "$tmp_dump" > "$tmp_checksum" || fail "Checksum generation failed"
 sha256sum --check "$tmp_checksum" >/dev/null || fail "Checksum verification failed"
 docker compose "${compose_args[@]}" exec -T "$DB_SERVICE" pg_restore --list < "$tmp_dump" >/dev/null ||
@@ -72,7 +96,7 @@ cat > "$tmp_metadata" <<EOF
   "dumpFilename": "$(basename "$dump_file")",
   "dumpSize": $dump_size,
   "checksum": "$checksum",
-  "verificationStatus": "VERIFIED"
+  "verificationStatus": "$backup_verification_status"
 }
 EOF
 

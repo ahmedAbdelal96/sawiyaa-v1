@@ -10,7 +10,7 @@ const test = require('node:test');
 const bash = process.platform === 'win32' ? 'C:\\Program Files\\Git\\bin\\bash.exe' : 'bash';
 const bashAvailable = process.platform !== 'win32' || fs.existsSync(bash);
 
-function runBackup({ restoreFails = false, minBytes = '1', minFreeMb = '0', retentionCount = '20', seedOldBackups = false, postgresMissing = false, emptyDump = false, directoryFile = false } = {}) {
+function runBackup({ restoreFails = false, minBytes = '1', minFreeMb = '0', retentionCount = '20', seedOldBackups = false, postgresMissing = false, emptyDump = false, directoryFile = false, freshEmptyDatabase = false } = {}) {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'sawiyaa-backup-'));
   const bin = path.join(root, 'bin');
   const backupDir = path.join(root, 'backups');
@@ -30,7 +30,7 @@ function runBackup({ restoreFails = false, minBytes = '1', minFreeMb = '0', rete
   const frontendEnvFile = path.join(root, 'frontend.env');
   fs.writeFileSync(backendEnvFile, 'POSTGRES_DB=sawiyaa\nPOSTGRES_USER=sawiyaa\nPOSTGRES_PASSWORD=fixture\n');
   fs.writeFileSync(frontendEnvFile, 'NEXT_PUBLIC_API_URL=/api/v1\n');
-  fs.writeFileSync(path.join(bin, 'docker'), `#!/usr/bin/env bash\nif [[ "$*" == *"ps --status running --services"* ]]; then ${postgresMissing ? ':' : 'echo postgres'}; elif [[ "$*" == *"pg_dump"* ]]; then ${emptyDump ? ':' : "printf 'fixture dump'"}; elif [[ "$*" == *"pg_restore --list"* ]]; then ${restoreFails ? 'exit 1' : 'exit 0'}; elif [[ "$*" == *"psql"* ]]; then echo 'PostgreSQL 16 fixture'; fi\n`);
+  fs.writeFileSync(path.join(bin, 'docker'), `#!/usr/bin/env bash\nif [[ "$*" == *"ps --status running --services"* ]]; then ${postgresMissing ? ':' : 'echo postgres'}; elif [[ "$*" == *"pg_dump"* ]]; then ${emptyDump ? ':' : "printf 'fixture dump'"}; elif [[ "$*" == *"pg_restore --list"* ]]; then ${restoreFails ? 'exit 1' : 'exit 0'}; elif [[ "$*" == *"to_regclass"* ]]; then ${freshEmptyDatabase ? "echo f" : "echo t"}; elif [[ "$*" == *"FROM pg_class"* ]]; then ${freshEmptyDatabase ? "echo f" : "echo t"}; elif [[ "$*" == *"psql"* ]]; then echo 'PostgreSQL 16 fixture'; fi\n`);
   fs.chmodSync(path.join(bin, 'docker'), 0o755);
   const shellPath = process.platform === 'win32' ? process.env.PATH.replaceAll(';', ':') : process.env.PATH;
   const env = { ...process.env, PATH: `${bin}:${shellPath}`, SAWIYAA_PROJECT_DIR: root, SAWIYAA_BACKEND_ENV_FILE: backendEnvFile, SAWIYAA_FRONTEND_ENV_FILE: frontendEnvFile, SAWIYAA_BACKUP_DIR: backupDir, SAWIYAA_BACKUP_MIN_FREE_MB: minFreeMb, SAWIYAA_BACKUP_MIN_BYTES: minBytes, SAWIYAA_BACKUP_RETENTION_COUNT: retentionCount, SAWIYAA_TARGET_SHA: '0123456789abcdef0123456789abcdef01234567' };
@@ -58,6 +58,14 @@ test('backup script rejects an undersized dump', { skip: !bashAvailable }, () =>
   const { backupDir, run } = runBackup({ minBytes: '1000' });
   assert.notEqual(run.status, 0);
   assert.equal(fs.readdirSync(backupDir).length, 0);
+});
+
+test('backup script records an explicit skip for a fresh empty database', { skip: !bashAvailable }, () => {
+  const { backupDir, run } = runBackup({ minBytes: '1000', freshEmptyDatabase: true });
+  assert.equal(run.status, 0, run.stderr);
+  assert.match(run.stdout, /EMPTY_DATABASE_BACKUP_SKIPPED/);
+  const metadata = fs.readFileSync(path.join(backupDir, fs.readdirSync(backupDir).find((file) => file.endsWith('.metadata.json'))), 'utf8');
+  assert.match(metadata, /"verificationStatus": "EMPTY_DATABASE_BACKUP_SKIPPED"/);
 });
 
 test('backup script fails when the database service is unavailable', { skip: !bashAvailable }, () => {
