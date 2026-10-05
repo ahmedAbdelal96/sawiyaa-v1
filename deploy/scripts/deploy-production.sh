@@ -470,7 +470,11 @@ for initial_admin_var in PRODUCTION_INITIAL_ADMIN_EMAIL PRODUCTION_INITIAL_ADMIN
     bootstrap_env_args+=(-e "$initial_admin_var=${!initial_admin_var}")
   fi
 done
-docker compose --env-file "$BACKEND_ENV_FILE" --env-file "$FRONTEND_ENV_FILE" -f "$COMPOSE_FILE" run --rm \
+bootstrap_run_args=(run --rm --interactive)
+if [[ ! -t 0 || ! -t 1 ]]; then
+  bootstrap_run_args+=(--no-TTY)
+fi
+docker compose --env-file "$BACKEND_ENV_FILE" --env-file "$FRONTEND_ENV_FILE" -f "$COMPOSE_FILE" "${bootstrap_run_args[@]}" \
   "${bootstrap_env_args[@]}" backend npm run db:bootstrap:production
 echo "PRODUCTION_BOOTSTRAP: SUCCESS"
 read_provider_state true || exit 1

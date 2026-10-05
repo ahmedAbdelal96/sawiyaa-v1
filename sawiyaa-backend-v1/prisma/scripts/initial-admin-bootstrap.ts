@@ -352,24 +352,26 @@ async function ask(question: string): Promise<string> {
 }
 
 async function askHidden(question: string): Promise<string> {
-  output.write(question);
   const terminal = input as NodeJS.ReadStream & { setRawMode?: (mode: boolean) => void };
   if (!terminal.isTTY || !terminal.setRawMode) {
-    throw new Error('Hidden initial administrator password input requires a TTY.');
+    throw new Error('INITIAL_ADMIN_PASSWORD_INPUT_REQUIRED_NO_TTY');
   }
+  output.write(question);
   terminal.setRawMode(true);
   return new Promise((resolve, reject) => {
     let value = '';
+    let settled = false;
     const onData = (chunk: Buffer) => {
       const text = chunk.toString('utf8');
       for (const character of text) {
         if (character === '\u0003') {
-          cleanup();
-          reject(new Error('Initial administrator password input cancelled.'));
+          finish(new Error('Initial administrator password input cancelled.'));
         } else if (character === '\r' || character === '\n') {
-          cleanup();
-          output.write('\n');
-          resolve(value);
+          if (!value) {
+            output.write('\nInitial administrator password is required. Try again: ');
+            continue;
+          }
+          finish(undefined, value);
         } else if (character === '\u007f') {
           value = value.slice(0, -1);
         } else {
@@ -377,11 +379,22 @@ async function askHidden(question: string): Promise<string> {
         }
       }
     };
+    const onEnd = () => finish(new Error('INITIAL_ADMIN_PASSWORD_INPUT_REQUIRED_EOF'));
+    const finish = (error?: Error, result?: string) => {
+      if (settled) return;
+      settled = true;
+      cleanup();
+      output.write('\n');
+      if (error) reject(error);
+      else resolve(result!);
+    };
     const cleanup = () => {
       terminal.setRawMode?.(false);
       input.off('data', onData);
+      input.off('end', onEnd);
     };
     input.on('data', onData);
+    input.once('end', onEnd);
   });
 }
 
