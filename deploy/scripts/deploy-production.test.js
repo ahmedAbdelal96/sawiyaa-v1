@@ -167,6 +167,13 @@ test('deployment writes a successful release marker after public health checks',
   assert.match(script, /targetSha=%s\\ndeployedAt=%s\\nstatus=success/);
 });
 
+test('log mount success continues through the migration snapshot boundary', () => {
+  assert.ok(position('LOG_MOUNT_CHECK_EXIT=$log_mount_check_exit') < position('POST_LOG_CHECK_STAGE=prepare-applied-migrations'));
+  assert.ok(position('POST_LOG_CHECK_STAGE=prepare-applied-migrations') < position('APPLIED_MIGRATIONS_FILE="$(mktemp'));
+  assert.match(script, /applied_migrations_temp_exit=\$\?/);
+  assert.match(script, /POST_LOG_CHECK_STAGE=prepare-applied-migrations exit=\$applied_migrations_temp_exit/);
+});
+
 test('Compose frontend build args come from interpolation, not duplicated production literals', () => {
   const compose = fs.readFileSync(path.resolve(__dirname, '../../docker-compose.prod.yml'), 'utf8');
   assert.match(compose, /env_file:\n\s+- \$\{SAWIYAA_BACKEND_RUNTIME_ENV_FILE:-\.\/sawiyaa-backend-v1\/\.env\.production\}/);

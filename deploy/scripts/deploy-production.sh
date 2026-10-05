@@ -311,10 +311,20 @@ if (( log_mount_check_exit != 0 )); then
     echo "Backend container user cannot write to /app/logs (host path: $PROJECT_DIR/logs/backend)" >&2
     exit 1
 fi
+echo "POST_LOG_CHECK_STAGE=prepare-applied-migrations"
 rm -f -- "$LOG_MOUNT_CHECK_OUTPUT"
 LOG_MOUNT_CHECK_OUTPUT=""
 
+set +e
 APPLIED_MIGRATIONS_FILE="$(mktemp "${TMPDIR:-/tmp}/sawiyaa-applied-migrations.XXXXXX")"
+applied_migrations_temp_exit=$?
+set -e
+echo "POST_LOG_CHECK_STAGE=prepare-applied-migrations exit=$applied_migrations_temp_exit"
+if (( applied_migrations_temp_exit != 0 )); then
+  echo "Unable to create the applied Prisma migrations snapshot file; backup and migrations were not run." >&2
+  exit "$applied_migrations_temp_exit"
+fi
+echo "POST_LOG_CHECK_STAGE=prepare-applied-migrations result=READY"
 migration_table_exists="$(docker compose --env-file "$BACKEND_ENV_FILE" --env-file "$FRONTEND_ENV_FILE" -f "$COMPOSE_FILE" exec -T \
   -e "POSTGRES_USER=$POSTGRES_USER" -e "POSTGRES_DB=$POSTGRES_DB" postgres sh -lc \
   'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Atqc "SELECT to_regclass('\''public._prisma_migrations'\'') IS NOT NULL"' 2>/dev/null)" || {
