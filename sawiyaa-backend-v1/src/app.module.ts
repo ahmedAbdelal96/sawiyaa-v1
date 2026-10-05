@@ -79,7 +79,7 @@ import { OperationsQueueModule } from './common/queue/operations-queue.module';
   imports: [
     EnvConfigModule.forRoot({
       isGlobal: true,
-      envFilePath: '.env',
+      envFilePath: process.env.SAWIYAA_ENV_FILE ?? '.env.local',
       validate,
       load: [
         appConfig,

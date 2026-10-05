@@ -2,7 +2,12 @@
 
 const { spawnSync } = require('node:child_process');
 const fs = require('node:fs');
-require('dotenv/config');
+const path = require('node:path');
+const dotenv = require('dotenv');
+
+dotenv.config({
+  path: process.env.SAWIYAA_ENV_FILE || path.resolve(__dirname, '../.env.local'),
+});
 
 const INITIAL_ADMIN_STATE_FILE = '/tmp/sawiyaa-production-initial-admin-email';
 

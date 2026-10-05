@@ -741,12 +741,29 @@ function validateEnvironment(options = {}) {
     ),
     contract,
     knownNames,
+    environment,
+    envFiles: {
+      backend: options.backendEnv || "",
+      frontend: options.frontendEnv || "",
+    },
   };
+}
+
+function displayEnvFile(file) {
+  if (!file) return "NOT PROVIDED";
+  const absolute = path.resolve(file);
+  const relative = path.relative(process.cwd(), absolute);
+  return relative && !relative.startsWith("..")
+    ? relative.replaceAll(path.sep, "/")
+    : path.basename(absolute);
 }
 
 function formatReport(result) {
   const seen = new Set();
   const lines = [];
+  lines.push(`ENVIRONMENT=${result.environment || "unknown"}`);
+  lines.push(`BACKEND_ENV_FILE=${displayEnvFile(result.envFiles?.backend)}`);
+  lines.push(`FRONTEND_ENV_FILE=${displayEnvFile(result.envFiles?.frontend)}`);
   const actionable = result.issues.filter(
     (issue) => ![STATUS.PRESENT, STATUS.NOT_REQUIRED].includes(issue.status),
   );

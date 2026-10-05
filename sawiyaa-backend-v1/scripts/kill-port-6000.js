@@ -10,8 +10,12 @@ function resolvePort() {
     return Number(envPort);
   }
 
-  // Prestart scripts run before Nest ConfigModule, so we read .env directly.
-  const envPath = path.resolve(process.cwd(), '.env');
+  // Prestart scripts run before Nest ConfigModule, so load the explicit local
+  // file (or an operator-selected file) without relying on generic .env.
+  const envPath = path.resolve(
+    process.cwd(),
+    process.env.SAWIYAA_ENV_FILE || '.env.local',
+  );
   if (fs.existsSync(envPath)) {
     const content = fs.readFileSync(envPath, 'utf8');
     const match = content.match(/^\s*PORT\s*=\s*(\d+)\s*$/m);

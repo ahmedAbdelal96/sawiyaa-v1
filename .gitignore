@@ -25,6 +25,7 @@ coverage/
 *.env.upload
 **/.env
 **/.env.*
+**/ - Copy.env
 **/*.env.upload
 !**/.env.example
 !**/.env.*.example

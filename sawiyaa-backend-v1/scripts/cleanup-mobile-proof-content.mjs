@@ -3,7 +3,7 @@ import path from "node:path";
 import { PrismaClient } from "@prisma/client";
 
 const ROOT = path.resolve("D:/Web/full-projects/sawiyaa/sawiyaa-backend-v1");
-const ENV_PATH = path.join(ROOT, ".env");
+const ENV_PATH = path.join(ROOT, ".env.local");
 
 const SUPPORT_PATIENT_USER_ID = "11111111-1111-4111-8111-111111111114";
 const SUPPORT_ADMIN_USER_ID = "11111111-1111-4111-8111-111111111111";
