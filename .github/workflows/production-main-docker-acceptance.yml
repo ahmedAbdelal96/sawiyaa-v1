@@ -1,0 +1,350 @@
+name: Production Main Docker Acceptance
+
+on:
+  push:
+    branches:
+      - ci/production-ingress-acceptance
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  production-linux-docker-acceptance:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    env:
+      TARGET_SHA: 1942170e82d90553652da48175be8eef16d3a67e
+    steps:
+      - name: Checkout acceptance harness
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Materialize exact production source and safe env fixtures
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          trap 'rc=$?; echo "::error title=production source materialization failure::$BASH_COMMAND exit=$rc"; exit "$rc"' ERR
+          rm -rf /tmp/sawiyaa-source
+          git clone --branch "$GITHUB_REF_NAME" "${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}.git" /tmp/sawiyaa-source
+          git -C /tmp/sawiyaa-source fetch --no-tags origin "$TARGET_SHA"
+          git -C /tmp/sawiyaa-source checkout --detach "$GITHUB_SHA"
+          git -C /tmp/sawiyaa-source checkout -B main "$GITHUB_SHA"
+          sudo rm -rf /opt/sawiyaa /opt/sawiyaa-backups
+          sudo cp -a /tmp/sawiyaa-source /opt/sawiyaa
+          sudo git -C /opt/sawiyaa status --porcelain
+          test "$(sudo git -C /opt/sawiyaa rev-parse HEAD)" = "$GITHUB_SHA"
+          sudo git -C /opt/sawiyaa merge-base --is-ancestor "$TARGET_SHA" HEAD
+          sudo mkdir -p /opt/sawiyaa-backups /opt/sawiyaa/logs/backend /opt/sawiyaa/geoip
+          sudo cp /opt/sawiyaa/deploy/env/production.backend.example /opt/sawiyaa/sawiyaa-backend-v1/.env.production
+          sudo cp /opt/sawiyaa/deploy/env/production.frontend.example /opt/sawiyaa/sawiyaa-frontend-v1/.env.production
+          sudo python3 - <<'PY'
+          from pathlib import Path
+          root = Path('/opt/sawiyaa')
+          backend = root / 'sawiyaa-backend-v1/.env.production'
+          frontend = root / 'sawiyaa-frontend-v1/.env.production'
+          replacements = {
+              'DATABASE_URL': 'postgresql://sawiyaa:accept-password@postgres:5432/sawiyaa',
+              'POSTGRES_PASSWORD': 'accept-password',
+              'JWT_ACCESS_SECRET': 'accept-production-access-secret-012345678901234567890',
+              'JWT_REFRESH_SECRET': 'accept-production-refresh-secret-012345678901234567890',
+              'DAILY_API_KEY': 'accept-daily-api-key',
+              'DAILY_WEBHOOK_SECRET': 'accept-daily-webhook-secret',
+              'PAYMOB_EGP_CARD_INTEGRATION_ID': 'accept-paymob-egp-card',
+              'CORPORATE_CODE_PEPPER': 'accept-corporate-pepper-012345678901234567890',
+              'MAIL_FROM': 'accept@sawiyaa.test', 'MAIL_HOST': '127.0.0.1',
+              'MAIL_PORT': '1025', 'MAIL_USER': 'accept-user', 'MAIL_PASS': 'accept-password',
+              'GEOIP_ENABLED': 'false', 'GEOIP_DATABASE_PATH': '',
+              'SAWIYAA_DEV_COUNTRY_CODE': '', 'NOTIFICATION_QUEUE_ENABLED': 'false',
+              'DAILY_ATTENDANCE_QUEUE_ENABLED': 'false', 'TRUSTED_PROXY_MODE': 'none',
+              'CLOUDFLARE_COUNTRY_HEADER_ENABLED': 'false',
+          }
+          def rewrite(path, values):
+              output = []
+              for line in path.read_text().splitlines():
+                  name = line.split('=', 1)[0].strip() if '=' in line else ''
+                  if name in values:
+                      line = f'{name}={values[name]}'
+                  elif '=' in line and line.split('=', 1)[1].strip().startswith('<'):
+                      line = f'{name}=accept-{name.lower()}'
+                  output.append(line)
+              path.write_text('\n'.join(output) + '\n')
+          rewrite(backend, replacements)
+          backend.write_text(
+              backend.read_text()
+              + '\nPAYMOB_MODE=test\n'
+              + 'PAYMOB_API_KEY=accept-paymob-api-key\n'
+              + 'PAYMOB_PUBLIC_KEY=accept-paymob-public-key\n'
+              + 'PAYMOB_HMAC_SECRET=accept-paymob-hmac-secret\n'
+              + 'PAYMOB_IFRAME_ID=accept-paymob-iframe\n'
+              + 'PAYMOB_BASE_URL=https://accept.paymob.com/api\n'
+              + 'PAYMOB_INTENTION_BASE_URL=https://flashapi.paymob.com\n'
+              + 'PAYMOB_CHECKOUT_BASE_URL=https://flashapi.paymob.com\n'
+              + 'PAYMOB_EGP_CARD_INTEGRATION_ID=accept-paymob-egp-card\n'
+              + 'PAYMENT_SUCCESS_URL=https://sawiyaa.com/payment/success\n'
+              + 'PAYMENT_FAILED_URL=https://sawiyaa.com/payment/failed\n'
+              + 'PAYMENT_PENDING_URL=https://sawiyaa.com/payment/pending\n'
+          )
+          rewrite(frontend, {
+              'NEXT_PUBLIC_APP_URL': 'https://sawiyaa.com',
+              'NEXT_PUBLIC_SITE_URL': 'https://sawiyaa.com',
+              'NEXT_PUBLIC_CHAT_SOCKET_URL': 'wss://sawiyaa.com',
+          })
+          backend.chmod(0o600); frontend.chmod(0o600)
+          PY
+          sudo tee /tmp/acceptance-daily-webhook-validator.js >/dev/null <<'EOF'
+          console.log('PASS DAILY_WEBHOOK_READY (disposable acceptance fixture)');
+          EOF
+          sudo chmod 755 /tmp/acceptance-daily-webhook-validator.js
+          printf 'TARGET_SHA=%s\nRUN_HEAD_SHA=%s\n' "$TARGET_SHA" "$GITHUB_SHA" | sudo tee /tmp/acceptance-shas.txt >/dev/null
+
+      - name: Run production update and repeat update
+        shell: bash
+        env:
+          SAWIYAA_MIN_FREE_MB: 128
+          SAWIYAA_DAILY_WEBHOOK_VALIDATOR_PATH: /tmp/acceptance-daily-webhook-validator.js
+          SAWIYAA_PRODUCTION_INGRESS_URL: http://127.0.0.1:8081
+        run: |
+          set -Eeuo pipefail
+          {
+            echo "WORKDIR=$(pwd)"
+            echo "PROJECT_DIR=/opt/sawiyaa"
+            echo "CURRENT_BRANCH=$(sudo git -C /opt/sawiyaa branch --show-current)"
+            echo "CURRENT_HEAD=$(sudo git -C /opt/sawiyaa rev-parse HEAD)"
+            echo "TARGET_MAIN_SHA=$TARGET_SHA"
+            test -d /opt/sawiyaa/.git && echo 'GIT_EXISTS=YES' || echo 'GIT_EXISTS=NO'
+            git ls-remote --exit-code origin refs/heads/main >/dev/null && echo 'ORIGIN_MAIN_EXISTS=YES' || echo 'ORIGIN_MAIN_EXISTS=NO'
+            test -r /opt/sawiyaa/sawiyaa-backend-v1/.env.production && echo 'BACKEND_ENV_PATH=PRESENT' || echo 'BACKEND_ENV_PATH=MISSING'
+            test -r /opt/sawiyaa/sawiyaa-frontend-v1/.env.production && echo 'FRONTEND_ENV_PATH=PRESENT' || echo 'FRONTEND_ENV_PATH=MISSING'
+            echo 'BACKEND_ENV_VARIABLE_STATUS_BEGIN'
+            sudo awk -F= '/^[A-Z][A-Z0-9_]*=/{print $1 "=" (length($0) > length($1)+1 ? "PRESENT" : "EMPTY")}' /opt/sawiyaa/sawiyaa-backend-v1/.env.production
+            echo 'BACKEND_ENV_VARIABLE_STATUS_END'
+            echo 'FRONTEND_ENV_VARIABLE_STATUS_BEGIN'
+            sudo awk -F= '/^[A-Z][A-Z0-9_]*=/{print $1 "=" (length($0) > length($1)+1 ? "PRESENT" : "EMPTY")}' /opt/sawiyaa/sawiyaa-frontend-v1/.env.production
+            echo 'FRONTEND_ENV_VARIABLE_STATUS_END'
+            echo 'COMPOSE_CONFIG_BEGIN'
+            sudo docker compose --env-file /opt/sawiyaa/sawiyaa-backend-v1/.env.production --env-file /opt/sawiyaa/sawiyaa-frontend-v1/.env.production -p sawiyaa -f /opt/sawiyaa/docker-compose.prod.yml config --quiet
+            echo "COMPOSE_CONFIG_EXIT=$?"
+            echo 'COMPOSE_CONFIG_END'
+          } 2>&1 | tee /tmp/production-harness-forensics.log
+          ACCEPT_ADMIN_PASSWORD="accept-interactive-admin-${GITHUB_RUN_ID}-password"
+          export SHELLOPTS
+          export ACCEPT_ADMIN_PASSWORD
+          set +e
+          PTY_MODE=first PTY_LOG=/tmp/production-first-pty.log python3 - <<'PY'
+          import os, pty, select, sys, time
+          command = [
+              'sudo', 'env', 'SHELLOPTS=xtrace',
+              f"SAWIYAA_MIN_FREE_MB={os.environ['SAWIYAA_MIN_FREE_MB']}",
+              f"SAWIYAA_DAILY_WEBHOOK_VALIDATOR_PATH={os.environ['SAWIYAA_DAILY_WEBHOOK_VALIDATOR_PATH']}",
+              f"SAWIYAA_PRODUCTION_INGRESS_URL={os.environ['SAWIYAA_PRODUCTION_INGRESS_URL']}",
+              'ALLOW_PAYMOB_CONTROL_BOOTSTRAP=true',
+              f"SAWIYAA_TARGET_SHA={os.environ['GITHUB_SHA']}",
+              'bash', '-x', '/opt/sawiyaa/deploy/server/update-prod.sh',
+          ]
+          pid, fd = pty.fork()
+          if pid == 0:
+              os.execvp(command[0], command)
+          output = bytearray()
+          sent = set()
+          password = os.environ['ACCEPT_ADMIN_PASSWORD'].encode()
+          while True:
+              ready, _, _ = select.select([fd], [], [], 1)
+              if ready:
+                  try:
+                      chunk = os.read(fd, 4096)
+                  except OSError:
+                      chunk = b''
+                  if not chunk:
+                      break
+                  output.extend(chunk)
+                  if b'Initial admin email: ' in output and 'email' not in sent:
+                      os.write(fd, b'admin@sawiyaa.test\n'); sent.add('email')
+                  if b'Initial admin display name: ' in output and 'name' not in sent:
+                      os.write(fd, b'Acceptance Admin\n'); sent.add('name')
+                  if b'Initial admin password (hidden): ' in output and 'password' not in sent:
+                      time.sleep(2)
+                      os.write(fd, password + b'\n'); sent.add('password')
+              else:
+                  try:
+                      os.kill(pid, 0)
+                  except ProcessLookupError:
+                      break
+          _, status = os.waitpid(pid, 0)
+          rc = os.waitstatus_to_exitcode(status)
+          safe = bytes(output).replace(password, b'[REDACTED]')
+          marker = b'\nINTERACTIVE_PTY_PASSWORD_SUPPLIED_AFTER_WAIT=%s\n' % (b'YES' if 'password' in sent else b'NO')
+          with open(os.environ['PTY_LOG'], 'wb') as handle:
+              handle.write(safe + marker)
+          sys.stdout.buffer.write(safe)
+          sys.stdout.buffer.write(marker)
+          sys.exit(rc)
+          PY
+          first_rc=$?
+          set -e
+          cp /tmp/production-first-pty.log /tmp/production-first.log
+          echo "UPDATE_PROD_FIRST_EXIT=$first_rc" | tee -a /tmp/production-harness-forensics.log
+          echo 'INTERACTIVE_BOOTSTRAP_MARKERS_BEGIN' | tee -a /tmp/production-harness-forensics.log
+          grep -Ei 'Initial admin|INITIAL_ADMIN_BOOTSTRAP|INITIAL_ADMIN_PASSWORD_INPUT|INTERACTIVE_PTY' /tmp/production-first.log | sed -E 's/(password|secret|token|api[_-]?key|authorization|database[_-]?url)[^[:space:],;]*/[REDACTED]/Ig' | tee -a /tmp/production-harness-forensics.log || true
+          echo 'INTERACTIVE_BOOTSTRAP_MARKERS_END' | tee -a /tmp/production-harness-forensics.log
+          echo 'INTERACTIVE_BOOTSTRAP_DATABASE_STATE_BEGIN' | tee -a /tmp/production-harness-forensics.log
+          sudo docker compose --env-file /opt/sawiyaa/sawiyaa-backend-v1/.env.production --env-file /opt/sawiyaa/sawiyaa-frontend-v1/.env.production -p sawiyaa -f /opt/sawiyaa/docker-compose.prod.yml run --rm --no-TTY --no-deps backend node -e "const {PrismaClient}=require('@prisma/client'); const p=new PrismaClient(); Promise.all([p.user.count(),p.userRole.count({where:{role:'SUPER_ADMIN'}}),p.authIdentity.count({where:{provider:'PASSWORD',isEnabled:true}}),p.userEmail.count()]).then(([users,admins,passwords,emails])=>console.log('USERS='+users+' SUPER_ADMINS='+admins+' ENABLED_PASSWORDS='+passwords+' EMAILS='+emails)).finally(()=>p.\$disconnect())" | tee -a /tmp/production-harness-forensics.log || true
+          echo 'INTERACTIVE_BOOTSTRAP_DATABASE_STATE_END' | tee -a /tmp/production-harness-forensics.log
+          if (( first_rc != 0 )); then exit "$first_rc"; fi
+          grep -Fq 'Initial admin password (hidden):' /tmp/production-first.log
+          ! grep -Fq "$ACCEPT_ADMIN_PASSWORD" /tmp/production-first.log
+          grep -Fq 'INTERACTIVE_PTY_PASSWORD_SUPPLIED_AFTER_WAIT=YES' /tmp/production-first.log
+          export SHELLOPTS
+          set +e
+          PTY_MODE=repeat PTY_LOG=/tmp/production-repeat-pty.log python3 - <<'PY'
+          import os, pty, select, sys
+          command = [
+              'sudo', 'env', 'SHELLOPTS=xtrace',
+              f"SAWIYAA_MIN_FREE_MB={os.environ['SAWIYAA_MIN_FREE_MB']}",
+              f"SAWIYAA_DAILY_WEBHOOK_VALIDATOR_PATH={os.environ['SAWIYAA_DAILY_WEBHOOK_VALIDATOR_PATH']}",
+              f"SAWIYAA_PRODUCTION_INGRESS_URL={os.environ['SAWIYAA_PRODUCTION_INGRESS_URL']}",
+              'ALLOW_PAYMOB_CONTROL_BOOTSTRAP=true',
+              f"SAWIYAA_TARGET_SHA={os.environ['GITHUB_SHA']}",
+              'bash', '-x', '/opt/sawiyaa/deploy/server/update-prod.sh',
+          ]
+          pid, fd = pty.fork()
+          if pid == 0:
+              os.execvp(command[0], command)
+          output = bytearray()
+          sent = False
+          password = os.environ['ACCEPT_ADMIN_PASSWORD'].encode()
+          while True:
+              ready, _, _ = select.select([fd], [], [], 1)
+              if ready:
+                  try:
+                      chunk = os.read(fd, 4096)
+                  except OSError:
+                      chunk = b''
+                  if not chunk:
+                      break
+                  output.extend(chunk)
+                  if b'Initial admin email: ' in output and not sent:
+                      os.write(fd, b'admin@sawiyaa.test\n'); sent = True
+                  if b'Initial admin password (hidden): ' in output or b'Initial admin display name: ' in output:
+                      os.write(fd, b'\x03')
+              else:
+                  try:
+                      os.kill(pid, 0)
+                  except ProcessLookupError:
+                      break
+          _, status = os.waitpid(pid, 0)
+          rc = os.waitstatus_to_exitcode(status)
+          safe = bytes(output).replace(password, b'[REDACTED]')
+          with open(os.environ['PTY_LOG'], 'wb') as handle:
+              handle.write(safe)
+          sys.stdout.buffer.write(safe)
+          sys.exit(rc)
+          PY
+          repeat_rc=$?
+          set -e
+          cp /tmp/production-repeat-pty.log /tmp/production-repeat.log
+          echo "UPDATE_PROD_REPEAT_EXIT=$repeat_rc" | tee -a /tmp/production-harness-forensics.log
+          if (( repeat_rc != 0 )); then exit "$repeat_rc"; fi
+          ! grep -Fq 'Initial admin password (hidden):' /tmp/production-repeat.log
+          exit "$repeat_rc"
+
+      - name: Verify production runtime and isolation
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          compose=(sudo docker compose --env-file /opt/sawiyaa/sawiyaa-backend-v1/.env.production --env-file /opt/sawiyaa/sawiyaa-frontend-v1/.env.production -p sawiyaa -f /opt/sawiyaa/docker-compose.prod.yml)
+          "${compose[@]}" ps
+          test "$("${compose[@]}" ps --status running --services | sort | tr '\n' ' ')" = "backend frontend nginx postgres worker " || true
+          curl --fail --silent --show-error http://127.0.0.1:8081/api/v1/health >/dev/null
+          curl --fail --silent --show-error http://127.0.0.1:8081/ >/dev/null
+          code="$(curl --http1.1 --silent --output /dev/null --write-out '%{http_code}' -H 'Connection: Upgrade' -H 'Upgrade: websocket' -H 'Sec-WebSocket-Version: 13' -H 'Sec-WebSocket-Key: SGVsbG9BY2NlcHRhbmNl' 'http://127.0.0.1:8081/socket.io/?EIO=4&transport=websocket')"
+          case "$code" in 101|200|400) ;; *) echo "websocket status $code"; exit 1 ;; esac
+          ! sudo docker ps --format '{{.Names}}' | grep -E '^sawiyaa-dev' || exit 1
+          ! sudo docker network ls --format '{{.Name}}' | grep -E '^sawiyaa-dev' || exit 1
+          ! sudo docker volume ls --format '{{.Name}}' | grep -E '^sawiyaa_dev_' || exit 1
+          ports="$(sudo docker ps --format '{{.Ports}}' | tr '\n' ' ')"
+          echo "$ports" | grep -q '127.0.0.1:8081->80/tcp'
+          ! echo "$ports" | grep -Eq '0.0.0.0:(80|443)->|:::((80|443)->)'
+          ! echo "$ports" | grep -Eq '(7000|3000)->'
+          grep -Eq ':-8080\}:80' /opt/sawiyaa/docker-compose.dev.yml
+
+      - name: Collect redacted diagnostics
+        if: always()
+        shell: bash
+        run: |
+          set +e
+          dir="$RUNNER_TEMP/production-main-docker-acceptance"
+          mkdir -p "$dir"
+          redact() { sed -E 's/(password|secret|token|api[_-]?key|authorization|database[_-]?url)[^[:space:],;]*/[REDACTED]/Ig'; }
+          cp /tmp/acceptance-shas.txt "$dir/acceptance-shas.txt" 2>/dev/null || :
+          cp /tmp/production-first.log "$dir/production-first.log" 2>/dev/null || :
+          cp /tmp/production-first-pty.log "$dir/production-first-pty.log" 2>/dev/null || :
+          cp /tmp/production-repeat.log "$dir/production-repeat.log" 2>/dev/null || :
+          cp /tmp/production-repeat-pty.log "$dir/production-repeat-pty.log" 2>/dev/null || :
+          cp /tmp/production-harness-forensics.log "$dir/production-harness-forensics.log" 2>/dev/null || :
+          {
+            echo '## First production update diagnostic'
+            echo '```text'
+            if [ -f /tmp/production-first.log ]; then
+              redact < /tmp/production-first.log | tail -n 160
+            else
+              echo 'No production update log was produced.'
+            fi
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+          {
+            echo '## Harness forensics'
+            echo '```text'
+            if [ -f /tmp/production-harness-forensics.log ]; then
+              redact < /tmp/production-harness-forensics.log | tail -n 220
+            else
+              echo 'No harness forensics log was produced.'
+            fi
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+          if [ -f /tmp/production-first.log ]; then
+            root_line="$(redact < /tmp/production-first.log | grep -Ei '(^|[[:space:]])(error|failed|failure|unable|stopped|exit|blocked|blocking|denied|not found|invalid|refusing|required|missing|incomplete|operator_required|known_|initial_admin|paymob|routing|environment|migration|bootstrap|health|curl|frontend|certificate|ssl|connection|timeout|http)' | tail -n 80 | tr '\n' ' ' | sed -E 's/[[:space:]]+/ /g')"
+            [ -n "$root_line" ] || root_line="$(redact < /tmp/production-first.log | tail -n 20 | tr '\n' ' ' | sed -E 's/[[:space:]]+/ /g')"
+            [ -n "$root_line" ] && echo "::error title=update-prod first failure::$root_line"
+            trace_line="$(redact < /tmp/production-first.log | grep -E '^\+[[:space:]]' | tail -n 24 | tr '\n' ' ' | sed -E 's/[[:space:]]+/ /g')"
+            [ -n "$trace_line" ] && echo "::error title=update-prod last shell trace::$trace_line"
+            marker_line="$(grep -Ei 'Initial admin|INITIAL_ADMIN_BOOTSTRAP|INITIAL_ADMIN_PASSWORD_INPUT|INTERACTIVE_PTY' /tmp/production-first.log | tail -n 40 | tr '\n' ' ' | sed -E 's/(password|secret|token|api[_-]?key|authorization|database[_-]?url)[^[:space:],;]*/[REDACTED]/Ig' | sed -E 's/[[:space:]]+/ /g')"
+            [ -n "$marker_line" ] && echo "::error title=interactive bootstrap markers::$marker_line"
+          fi
+          echo "UPDATE_PROD_FIRST_EXIT_FILE=$(grep -E 'UPDATE_PROD_FIRST_EXIT=' /tmp/production-harness-forensics.log 2>/dev/null | tail -n 1 || true)"
+          echo "UPDATE_PROD_REPEAT_EXIT_FILE=$(grep -E 'UPDATE_PROD_REPEAT_EXIT=' /tmp/production-harness-forensics.log 2>/dev/null | tail -n 1 || true)"
+          first_exit_line="$(grep -E 'UPDATE_PROD_FIRST_EXIT=' /tmp/production-harness-forensics.log 2>/dev/null | tail -n 1 || true)"
+          repeat_exit_line="$(grep -E 'UPDATE_PROD_REPEAT_EXIT=' /tmp/production-harness-forensics.log 2>/dev/null | tail -n 1 || true)"
+          bootstrap_diag_line="$(grep -E 'INTERACTIVE_BOOTSTRAP_(MARKERS|DATABASE_STATE)|USERS=|SUPER_ADMINS=|ENABLED_PASSWORDS=|EMAILS=' /tmp/production-harness-forensics.log 2>/dev/null | tail -n 40 | tr '\n' ' ' | sed -E 's/(password|secret|token|api[_-]?key|authorization|database[_-]?url)[^[:space:],;]*/[REDACTED]/Ig' | sed -E 's/[[:space:]]+/ /g')"
+          [ -n "$bootstrap_diag_line" ] && echo "::error title=interactive bootstrap database diagnostics::$bootstrap_diag_line"
+          [ -n "$first_exit_line" ] && echo "::notice title=update-prod first exit::$first_exit_line"
+          [ -n "$repeat_exit_line" ] && echo "::notice title=update-prod repeat exit::$repeat_exit_line"
+          if [ -f /tmp/production-repeat.log ]; then
+            repeat_line="$(redact < /tmp/production-repeat.log | grep -Ei '(^|[[:space:]])(error|failed|failure|unable|stopped|exit|blocked|blocking|denied|not found|invalid|refusing|required|missing|incomplete|operator_required|known_|initial_admin|paymob|routing|environment|migration|bootstrap|health|fatal|branch|clean|already|another)' | tail -n 60 | tr '\n' ' ' | sed -E 's/[[:space:]]+/ /g')"
+            [ -n "$repeat_line" ] || repeat_line="$(redact < /tmp/production-repeat.log | tail -n 20 | tr '\n' ' ' | sed -E 's/[[:space:]]+/ /g')"
+            [ -n "$repeat_line" ] && echo "::error title=update-prod repeat failure::$repeat_line"
+          fi
+          compose=(sudo docker compose --env-file /opt/sawiyaa/sawiyaa-backend-v1/.env.production --env-file /opt/sawiyaa/sawiyaa-frontend-v1/.env.production -p sawiyaa -f /opt/sawiyaa/docker-compose.prod.yml)
+          "${compose[@]}" ps 2>&1 | redact > "$dir/compose-ps.txt"
+          "${compose[@]}" logs --tail=200 postgres backend frontend nginx worker 2>&1 | redact > "$dir/compose-logs.txt"
+          sudo docker ps -a 2>&1 | redact > "$dir/docker-ps.txt"
+          sudo docker volume ls 2>&1 | redact > "$dir/docker-volume-ls.txt"
+          sudo docker network ls 2>&1 | redact > "$dir/docker-network-ls.txt"
+
+      - name: Upload production acceptance diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: production-main-docker-acceptance
+          path: ${{ runner.temp }}/production-main-docker-acceptance/
+          if-no-files-found: warn
+          retention-days: 7
+
+      - name: Cleanup disposable production resources
+        if: always()
+        shell: bash
+        run: |
+          set +e
+          sudo docker compose --env-file /opt/sawiyaa/sawiyaa-backend-v1/.env.production --env-file /opt/sawiyaa/sawiyaa-frontend-v1/.env.production -p sawiyaa -f /opt/sawiyaa/docker-compose.prod.yml down --remove-orphans -v
+          sudo rm -rf /opt/sawiyaa /opt/sawiyaa-backups /tmp/sawiyaa-source
