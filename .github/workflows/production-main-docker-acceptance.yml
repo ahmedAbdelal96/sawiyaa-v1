@@ -323,6 +323,8 @@ jobs:
           echo "UPDATE_PROD_REPEAT_EXIT_FILE=$(grep -E 'UPDATE_PROD_REPEAT_EXIT=' /tmp/production-harness-forensics.log 2>/dev/null | tail -n 1 || true)"
           first_exit_line="$(grep -E 'UPDATE_PROD_FIRST_EXIT=' /tmp/production-harness-forensics.log 2>/dev/null | tail -n 1 || true)"
           repeat_exit_line="$(grep -E 'UPDATE_PROD_REPEAT_EXIT=' /tmp/production-harness-forensics.log 2>/dev/null | tail -n 1 || true)"
+          bootstrap_diag_line="$(grep -E 'INTERACTIVE_BOOTSTRAP_(MARKERS|DATABASE_STATE)|USERS=|SUPER_ADMINS=|ENABLED_PASSWORDS=|EMAILS=' /tmp/production-harness-forensics.log 2>/dev/null | tail -n 40 | tr '\n' ' ' | sed -E 's/(password|secret|token|api[_-]?key|authorization|database[_-]?url)[^[:space:],;]*/[REDACTED]/Ig' | sed -E 's/[[:space:]]+/ /g')"
+          [ -n "$bootstrap_diag_line" ] && echo "::error title=interactive bootstrap database diagnostics::$bootstrap_diag_line"
           [ -n "$first_exit_line" ] && echo "::notice title=update-prod first exit::$first_exit_line"
           [ -n "$repeat_exit_line" ] && echo "::notice title=update-prod repeat exit::$repeat_exit_line"
           if [ -f /tmp/production-repeat.log ]; then
