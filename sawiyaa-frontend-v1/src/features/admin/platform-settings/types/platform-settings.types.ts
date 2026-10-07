@@ -7,20 +7,45 @@ export type PlatformSetting = {
   category: string;
   domain: string;
   valueType:
-    | "STRING"
-    | "NUMBER"
-    | "INTEGER"
-    | "BOOLEAN"
-    | "STRING_ARRAY"
-    | "JSON";
+    "STRING" | "NUMBER" | "INTEGER" | "BOOLEAN" | "STRING_ARRAY" | "JSON";
   value: unknown;
   defaultValue: unknown;
   source: "OVERRIDE" | "CATALOG_DEFAULT";
+  effectiveSource?:
+    | "DATABASE_OVERRIDE"
+    | "CATALOG_DEFAULT"
+    | "ENVIRONMENT"
+    | "SYSTEM_MANAGED"
+    | "DEDICATED_CONTROL"
+    | "MISSING"
+    | "LEGACY";
+  ownership?:
+    | "BUSINESS"
+    | "OPERATIONAL"
+    | "FINANCIAL"
+    | "SECURITY"
+    | "ENVIRONMENT"
+    | "SYSTEM"
+    | "LEGACY";
+  primaryDomain?:
+    | "sessions"
+    | "notifications"
+    | "messaging"
+    | "practitioners"
+    | "patientsAccounts"
+    | "contentAcademy"
+    | "general"
+    | "paymentsFinance"
+    | "advanced";
+  section?: string;
+  dedicatedRoute?: string | null;
   editable: boolean;
   readOnlyReason?:
     | "DEDICATED_PAYMENT_CONTROL"
     | "READ_ONLY_DEFINITION"
-    | "LEGACY_DEPRECATED";
+    | "LEGACY_DEPRECATED"
+    | "ENVIRONMENT_MANAGED"
+    | "SYSTEM_MANAGED";
   permission: string;
   minimum?: number;
   maximum?: number;
@@ -66,12 +91,81 @@ export type PlatformSetting = {
     warningTextKey?: string;
     advancedOnly?: boolean;
   } | null;
+  capabilities?: {
+    canView: boolean;
+    canEdit: boolean;
+    canReset: boolean;
+    canViewHistory: boolean;
+    requiresConfirmation: boolean;
+    requiresReason: boolean;
+    requiresStepUp: boolean;
+    managedByDedicatedControl: boolean;
+    advancedOnly: boolean;
+  };
+};
+
+export type PlatformSettingDomain =
+  | "sessions"
+  | "notifications"
+  | "messaging"
+  | "practitioners"
+  | "patientsAccounts"
+  | "contentAcademy"
+  | "general"
+  | "paymentsFinance"
+  | "advanced";
+
+export type PlatformSettingDomainSummary = {
+  primaryDomain: PlatformSettingDomain;
+  title: string;
+  titleAr: string;
+  description: string;
+  descriptionAr: string;
+  count: number;
+  ordinaryCount: number;
+  customizedCount: number;
+  attentionCount: number;
+  permissionState: "EDITABLE" | "VIEW_ONLY" | "MANAGED_ELSEWHERE";
+  lastChange: string | null;
+  dedicatedRoute: string | null;
+  status: "READY" | "NEEDS_ATTENTION" | "MANAGED_ELSEWHERE" | "ADVANCED";
 };
 
 export type PlatformSettingsResponse = {
   categories: string[];
   settings: PlatformSetting[];
   legacySettings: PlatformSetting[];
+  advancedSettings: PlatformSetting[];
+  domains: PlatformSettingDomainSummary[];
+};
+
+export type PlatformSettingsChange = {
+  key: string;
+  value?: unknown;
+  reset?: boolean;
+  expectedUpdatedAt?: string | null;
+};
+
+export type PlatformSettingsChangeSetInput = {
+  domain?: PlatformSettingDomain;
+  changes: PlatformSettingsChange[];
+  reason: string;
+};
+
+export type PlatformSettingsChangeSetResponse = {
+  domain: PlatformSettingDomain | null;
+  results: Array<{
+    key: string;
+    kind: "update" | "reset";
+    changed: boolean;
+    value: unknown;
+    valueId: string | null;
+    previousValueId: string | null;
+    updatedAt: string | null;
+    changeLogId: string | null;
+  }>;
+  settings: PlatformSetting[];
+  changedCount: number;
 };
 
 export type PlatformSettingHistory = {

@@ -195,6 +195,138 @@ describe('ConfigurationManagementService', () => {
     expect(tx.configChangeLog.create).toHaveBeenCalledTimes(2);
   });
 
+  it('commits mixed updates and resets through one atomic change set', async () => {
+    const current = {
+      id: 'value-1',
+      updatedAt: new Date('2026-08-02T11:00:00.000Z'),
+      priority: 100,
+      scopeType: ConfigScopeType.GLOBAL,
+      scopeRefId: null,
+      valueBoolean: true,
+      valueString: null,
+      valueNumber: null,
+      valueJson: null,
+    };
+    const { service, prisma, tx } = createService();
+    tx.configKeyCatalog.findUnique.mockImplementation(
+      ({ where }: { where: { key: string } }) => ({
+        id: where.key,
+        key: where.key,
+        dataType: ConfigDataType.BOOLEAN,
+        defaultValueJson: false,
+      }),
+    );
+    tx.configValue.findFirst
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce(current);
+
+    const results = await service.changeSet([
+      { kind: 'update', command: command() },
+      {
+        kind: 'reset',
+        command: {
+          key: CONFIG_KEYS.packages.purchaseEnabled,
+          scopeType: ConfigScopeType.GLOBAL,
+          scopeRefId: null,
+          actor,
+          actorType: 'USER',
+          reason: command().reason,
+          expectedUpdatedAt: current.updatedAt,
+        },
+      },
+    ]);
+
+    expect(results).toHaveLength(2);
+    expect(results.map((result) => result.kind)).toEqual(['update', 'reset']);
+    expect(prisma.$transaction).toHaveBeenCalledTimes(1);
+    expect(tx.configValue.create).toHaveBeenCalledTimes(1);
+    expect(tx.configValue.update).toHaveBeenCalledTimes(1);
+    expect(tx.configChangeLog.create).toHaveBeenCalledTimes(2);
+  });
+
+  it('rejects a cross-field file limit change before persistence', async () => {
+    const { service, prisma } = createService();
+
+    await expect(
+      service.changeSet([
+        {
+          kind: 'update',
+          command: command({
+            key: 'file.uploads.chat.maxCombinedBytes' as never,
+            value: 10,
+          }),
+        },
+        {
+          kind: 'update',
+          command: command({
+            key: 'file.uploads.chat.maxImageBytes' as never,
+            value: 20,
+          }),
+        },
+      ]),
+    ).rejects.toMatchObject({
+      response: { error: 'CONFIG_CROSS_FIELD_INVALID' },
+    });
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+  });
+
+  it('rejects a stale item in a change set before writing any item', async () => {
+    const current = {
+      id: 'value-1',
+      updatedAt: new Date('2026-08-02T11:00:00.000Z'),
+      priority: 100,
+      scopeType: ConfigScopeType.GLOBAL,
+      scopeRefId: null,
+      valueBoolean: false,
+      valueString: null,
+      valueNumber: null,
+      valueJson: null,
+    };
+    const { service, tx } = createService(current);
+
+    await expect(
+      service.changeSet([
+        {
+          kind: 'update',
+          command: command({
+            expectedUpdatedAt: new Date('2026-08-02T10:00:00.000Z'),
+          }),
+        },
+      ]),
+    ).rejects.toMatchObject({ response: { error: 'CONFIG_WRITE_CONFLICT' } });
+    expect(tx.configValue.create).not.toHaveBeenCalled();
+    expect(tx.configValue.update).not.toHaveBeenCalled();
+  });
+
+  it('ignores an update whose value already matches the current value', async () => {
+    const current = {
+      id: 'value-1',
+      updatedAt: new Date('2026-08-02T11:00:00.000Z'),
+      priority: 100,
+      scopeType: ConfigScopeType.GLOBAL,
+      scopeRefId: null,
+      valueBoolean: true,
+      valueString: null,
+      valueNumber: null,
+      valueJson: null,
+    };
+    const { service, tx } = createService(current);
+
+    const results = await service.changeSet([
+      {
+        kind: 'update',
+        command: command({ expectedUpdatedAt: current.updatedAt, value: true }),
+      },
+    ]);
+
+    expect(results).toMatchObject([
+      { key: CONFIG_KEYS.packages.enabled, changed: false },
+    ]);
+    expect(tx.configValue.create).not.toHaveBeenCalled();
+    expect(tx.configValue.update).not.toHaveBeenCalled();
+    expect(tx.configChangeLog.create).not.toHaveBeenCalled();
+  });
+
   it('rejects duplicate keys before opening a transaction', async () => {
     const { service, prisma } = createService();
 

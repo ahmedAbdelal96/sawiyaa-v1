@@ -19,6 +19,8 @@ import { getConfigDefinition } from '../registry/config.registry';
 import { ConfigurationAuthorizationService } from './configuration-authorization.service';
 import {
   ConfigurationCurrentVersion,
+  ConfigurationChangeSetCommand,
+  ConfigurationChangeSetResult,
   ConfigurationResetResult,
   ConfigurationWriteResult,
   ConfigurationWriteValueView,
@@ -58,6 +60,298 @@ export class ConfigurationManagementService {
     return this.updateManyWithTransaction(commands, (_tx, results) => [
       ...results,
     ]);
+  }
+
+  async changeSet(
+    commands: readonly ConfigurationChangeSetCommand[],
+  ): Promise<ConfigurationChangeSetResult[]> {
+    if (commands.length === 0) {
+      throw new BadRequestException({
+        error: 'CONFIG_BATCH_EMPTY',
+        message: 'At least one configuration change is required.',
+      });
+    }
+
+    const seen = new Set<string>();
+    const prepared = commands.map((request) => {
+      const command = request.command;
+      const identity = `${command.key}:${command.scopeType}:${command.scopeRefId ?? ''}`;
+      if (seen.has(identity)) {
+        throw new BadRequestException({
+          error: 'CONFIG_BATCH_DUPLICATE_KEY',
+          message: `Configuration key "${command.key}" appears more than once in the batch.`,
+        });
+      }
+      seen.add(identity);
+
+      const definition = this.resolveDefinition(command.key);
+      if (request.kind === 'update') {
+        this.validateCommand(request.command, definition);
+      } else {
+        this.validateResetCommand(request.command, definition);
+      }
+      this.authorizationService.assertCanWrite(
+        command.actor,
+        command.actorType,
+        definition,
+      );
+      return { request, definition };
+    });
+
+    this.validateChangedValues(
+      prepared
+        .filter(
+          (
+            item,
+          ): item is {
+            request: Extract<ConfigurationChangeSetCommand, { kind: 'update' }>;
+            definition: ConfigDefinition;
+          } => item.request.kind === 'update',
+        )
+        .map(({ request }) => [request.command.key, request.command.value]),
+    );
+
+    return this.prisma.$transaction(
+      async (tx) => {
+        type Entry = (typeof prepared)[number] & {
+          configKey: {
+            id: string;
+            dataType: ConfigDataType;
+            defaultValueJson: Prisma.JsonValue;
+          };
+          current: ConfigValueRecord | null;
+        };
+        const entries: Entry[] = [];
+
+        for (const item of prepared) {
+          const configKey = await tx.configKeyCatalog.findUnique({
+            where: { key: item.request.command.key },
+          });
+          if (!configKey) {
+            throw new NotFoundException({
+              error: 'CONFIG_CATALOG_ENTRY_NOT_FOUND',
+              message: `Configuration catalog entry "${item.request.command.key}" was not found.`,
+            });
+          }
+          if (
+            item.request.kind === 'update' &&
+            configKey.dataType !==
+              this.toConfigDataType(item.definition.valueType)
+          ) {
+            throw new InternalServerErrorException({
+              error: 'CONFIG_CATALOG_TYPE_MISMATCH',
+              message: `Configuration catalog entry "${item.request.command.key}" is incompatible with the registry.`,
+            });
+          }
+          const current = await tx.configValue.findFirst({
+            where: {
+              configKeyId: configKey.id,
+              scopeType: item.request.command.scopeType,
+              scopeRefId: item.request.command.scopeRefId,
+              isActive: true,
+            },
+            orderBy: [{ priority: 'desc' }, { updatedAt: 'desc' }],
+          });
+          this.assertExpectedVersion(
+            current,
+            item.request.command.expectedUpdatedAt,
+          );
+          entries.push({
+            ...item,
+            configKey: {
+              id: configKey.id,
+              dataType: configKey.dataType,
+              defaultValueJson: configKey.defaultValueJson,
+            },
+            current,
+          });
+        }
+
+        const projected = new Map<string, unknown>();
+        for (const entry of entries) {
+          const currentValue = entry.current
+            ? this.extractValue(entry.current, entry.configKey.dataType)
+            : entry.configKey.defaultValueJson;
+          projected.set(entry.request.command.key, currentValue);
+          if (entry.request.kind === 'update') {
+            projected.set(
+              entry.request.command.key,
+              entry.request.command.value,
+            );
+          } else {
+            projected.set(
+              entry.request.command.key,
+              entry.configKey.defaultValueJson,
+            );
+          }
+        }
+        const relatedFileLimitKeys = [
+          'file.uploads.chat.maxCombinedBytes',
+          'file.uploads.chat.maxImageBytes',
+          'file.uploads.chat.maxDocumentBytes',
+        ];
+        if (relatedFileLimitKeys.some((key) => projected.has(key))) {
+          const scope = entries[0].request.command;
+          for (const key of relatedFileLimitKeys) {
+            if (projected.has(key)) continue;
+            const relatedCatalog = await tx.configKeyCatalog.findUnique({
+              where: { key },
+            });
+            if (!relatedCatalog) continue;
+            const relatedCurrent = await tx.configValue.findFirst({
+              where: {
+                configKeyId: relatedCatalog.id,
+                scopeType: scope.scopeType,
+                scopeRefId: scope.scopeRefId,
+                isActive: true,
+              },
+              orderBy: [{ priority: 'desc' }, { updatedAt: 'desc' }],
+            });
+            projected.set(
+              key,
+              relatedCurrent
+                ? this.extractValue(relatedCurrent, relatedCatalog.dataType)
+                : relatedCatalog.defaultValueJson,
+            );
+          }
+        }
+        this.validateProjectedChangeSet(projected);
+
+        const results: ConfigurationChangeSetResult[] = [];
+        for (const entry of entries) {
+          const command = entry.request.command;
+          const currentValue = entry.current
+            ? this.extractValue(entry.current, entry.configKey.dataType)
+            : entry.configKey.defaultValueJson;
+          const nextValue =
+            entry.request.kind === 'update'
+              ? entry.request.command.value
+              : entry.configKey.defaultValueJson;
+
+          if (this.valuesEqual(currentValue, nextValue)) {
+            results.push({
+              key: command.key,
+              kind: entry.request.kind,
+              changed: false,
+              value: this.redactValue(entry.definition, currentValue),
+              valueId: entry.current?.id ?? null,
+              previousValueId: null,
+              updatedAt: entry.current?.updatedAt ?? null,
+              changeLogId: null,
+            });
+            continue;
+          }
+
+          if (entry.request.kind === 'reset') {
+            if (!entry.current) {
+              results.push({
+                key: command.key,
+                kind: 'reset',
+                changed: false,
+                value: this.redactValue(entry.definition, nextValue),
+                valueId: null,
+                previousValueId: null,
+                updatedAt: null,
+                changeLogId: null,
+              });
+              continue;
+            }
+            const now = new Date();
+            await tx.configValue.update({
+              where: { id: entry.current.id },
+              data: { isActive: false, effectiveTo: now },
+            });
+            const changeLog = await tx.configChangeLog.create({
+              data: {
+                configKeyId: entry.configKey.id,
+                configValueId: entry.current.id,
+                changedByUserId: command.actor.id ?? null,
+                changeAction: ConfigChangeAction.OVERRIDE_REMOVED,
+                oldValueSnapshot: this.buildAuditSnapshot(
+                  entry.definition,
+                  currentValue,
+                  command,
+                  false,
+                ),
+                newValueSnapshot: this.buildAuditSnapshot(
+                  entry.definition,
+                  nextValue,
+                  command,
+                  true,
+                ),
+                reason: command.reason,
+              },
+            });
+            results.push({
+              key: command.key,
+              kind: 'reset',
+              changed: true,
+              value: this.redactValue(entry.definition, nextValue),
+              valueId: entry.current.id,
+              previousValueId: entry.current.id,
+              updatedAt: now,
+              changeLogId: changeLog.id,
+            });
+            continue;
+          }
+
+          const now = new Date();
+          if (entry.current) {
+            await tx.configValue.update({
+              where: { id: entry.current.id },
+              data: { isActive: false, effectiveTo: now },
+            });
+          }
+          const updateCommand = entry.request.command;
+          const created = await tx.configValue.create({
+            data: this.buildValueCreateData(
+              entry.configKey.id,
+              updateCommand.value,
+              command.scopeType,
+              command.scopeRefId,
+              entry.current?.priority ?? 100,
+              now,
+              null,
+            ),
+          });
+          const changeLog = await tx.configChangeLog.create({
+            data: {
+              configKeyId: entry.configKey.id,
+              configValueId: created.id,
+              changedByUserId: command.actor.id ?? null,
+              changeAction: entry.current
+                ? ConfigChangeAction.UPDATED
+                : ConfigChangeAction.CREATED,
+              oldValueSnapshot: this.buildAuditSnapshot(
+                entry.definition,
+                currentValue,
+                command,
+                false,
+              ),
+              newValueSnapshot: this.buildAuditSnapshot(
+                entry.definition,
+                updateCommand.value,
+                command,
+                true,
+              ),
+              reason: command.reason,
+            },
+          });
+          results.push({
+            key: command.key,
+            kind: 'update',
+            changed: true,
+            value: this.redactValue(entry.definition, updateCommand.value),
+            valueId: created.id,
+            previousValueId: entry.current?.id ?? null,
+            updatedAt: created.updatedAt,
+            changeLogId: changeLog.id,
+          });
+        }
+        return results;
+      },
+      { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
+    );
   }
 
   async reset(
@@ -466,6 +760,80 @@ export class ConfigurationManagementService {
     this.validateValue(command.value, definition);
   }
 
+  private validateResetCommand(
+    command: ResetConfigurationCommand,
+    definition: ConfigDefinition,
+  ): void {
+    if (definition.status === 'LEGACY' || definition.owner.startsWith('ENV_')) {
+      throw new BadRequestException({
+        error: 'CONFIG_NOT_RESETTABLE',
+        message: `Configuration key "${command.key}" cannot be reset.`,
+      });
+    }
+    if (!definition.editable) {
+      throw new BadRequestException({ error: 'CONFIG_NOT_EDITABLE' });
+    }
+    if (!definition.allowedScopes.includes(command.scopeType)) {
+      throw new BadRequestException({ error: 'CONFIG_SCOPE_UNSUPPORTED' });
+    }
+    if (!command.reason.trim() || command.reason.length > 1000) {
+      throw new BadRequestException({ error: 'CONFIG_REASON_INVALID' });
+    }
+    if (
+      command.scopeType === ConfigScopeType.GLOBAL &&
+      command.scopeRefId !== null
+    ) {
+      throw new BadRequestException({
+        error: 'CONFIG_GLOBAL_SCOPE_REFERENCE_FORBIDDEN',
+      });
+    }
+    if (
+      command.expectedUpdatedAt !== undefined &&
+      command.expectedUpdatedAt !== null &&
+      Number.isNaN(command.expectedUpdatedAt.getTime())
+    ) {
+      throw new BadRequestException({
+        error: 'CONFIG_EXPECTED_VERSION_INVALID',
+      });
+    }
+  }
+
+  private validateChangedValues(
+    values: readonly (readonly [string, unknown])[],
+  ): void {
+    this.validateProjectedChangeSet(new Map(values));
+  }
+
+  private validateProjectedChangeSet(
+    values: ReadonlyMap<string, unknown>,
+  ): void {
+    const combined = values.get('file.uploads.chat.maxCombinedBytes');
+    const image = values.get('file.uploads.chat.maxImageBytes');
+    const document = values.get('file.uploads.chat.maxDocumentBytes');
+    if (
+      typeof combined === 'number' &&
+      ((typeof image === 'number' && combined < image) ||
+        (typeof document === 'number' && combined < document))
+    ) {
+      throw new BadRequestException({
+        error: 'CONFIG_CROSS_FIELD_INVALID',
+        message:
+          'The combined chat attachment limit cannot be smaller than an individual attachment limit.',
+      });
+    }
+  }
+
+  private valuesEqual(left: unknown, right: unknown): boolean {
+    if (Object.is(left, right)) return true;
+    if (left === null || right === null || typeof left !== typeof right) {
+      return false;
+    }
+    if (typeof left === 'object' && typeof right === 'object') {
+      return JSON.stringify(left) === JSON.stringify(right);
+    }
+    return false;
+  }
+
   private validateValue(
     value: UpdateConfigurationCommand['value'],
     definition: ConfigDefinition,
@@ -655,7 +1023,7 @@ export class ConfigurationManagementService {
   private buildAuditSnapshot(
     definition: ConfigDefinition,
     value: ConfigurationWriteValueView,
-    command: UpdateConfigurationCommand,
+    command: UpdateConfigurationCommand | ResetConfigurationCommand,
     includeActor: boolean,
   ): Prisma.InputJsonValue {
     return {

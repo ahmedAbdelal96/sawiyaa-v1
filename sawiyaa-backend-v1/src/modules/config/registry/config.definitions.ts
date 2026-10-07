@@ -540,7 +540,9 @@ export const CONFIG_DEFINITIONS = deepFreeze(
       catalog: {
         slug: 'packages-enabled',
         displayName: 'Package Plans Enabled',
+        displayNameAr: 'تفعيل باقات الجلسات',
         description: 'Controls whether standardized package plans are visible',
+        descriptionAr: 'التحكم في ظهور باقات الجلسات القياسية للمستخدمين.',
         configKind: ConfigKind.FEATURE_DEFAULT,
       },
       seed: { createInitialValue: true, value: true, priority: 100 },
@@ -566,8 +568,11 @@ export const CONFIG_DEFINITIONS = deepFreeze(
       catalog: {
         slug: 'packages-purchase-enabled',
         displayName: 'Package Purchases Enabled',
+        displayNameAr: 'السماح بشراء باقات الجلسات',
         description:
           'Controls whether package quote and purchase flows are enabled',
+        descriptionAr:
+          'التحكم في إتاحة عرض أسعار باقات الجلسات وعمليات شرائها.',
         configKind: ConfigKind.SETTING,
       },
       seed: { createInitialValue: true, value: true, priority: 100 },

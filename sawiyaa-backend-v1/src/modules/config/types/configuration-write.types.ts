@@ -92,3 +92,18 @@ export type ConfigurationResetResult = {
   readonly updatedAt: Date | null;
   readonly changeLogId: string | null;
 };
+
+export type ConfigurationChangeSetCommand =
+  | { readonly kind: 'update'; readonly command: UpdateConfigurationCommand }
+  | { readonly kind: 'reset'; readonly command: ResetConfigurationCommand };
+
+export type ConfigurationChangeSetResult = {
+  readonly key: ConfigKey;
+  readonly kind: ConfigurationChangeSetCommand['kind'];
+  readonly changed: boolean;
+  readonly value: ConfigurationWriteValueView;
+  readonly valueId: string | null;
+  readonly previousValueId: string | null;
+  readonly updatedAt: Date | null;
+  readonly changeLogId: string | null;
+};

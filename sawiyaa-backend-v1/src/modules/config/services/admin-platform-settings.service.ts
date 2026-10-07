@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ForbiddenException,
   Injectable,
   NotFoundException,
@@ -9,6 +10,12 @@ import { PermissionKey } from '@common/enums/permission-key.enum';
 import { AuthenticatedUser } from '@common/interfaces/authenticated-user.interface';
 import { CONFIG_DEFINITIONS } from '../registry/config.definitions';
 import { ConfigDefinition } from '../registry/config-definition.types';
+import {
+  ADMIN_SETTING_DOMAIN_DEFINITIONS,
+  AdminPlatformSettingDomain,
+  getAdminPlatformDomainDefinition,
+  getAdminPlatformSettingMetadata,
+} from '../registry/admin-platform-settings.metadata';
 import { ConfigRuntimeService } from './config-runtime.service';
 import { ConfigurationManagementService } from './configuration-management.service';
 
@@ -23,7 +30,12 @@ export class AdminPlatformSettingsService {
   ) {}
 
   async list(
-    query: { search?: string; category?: string; state?: string },
+    query: {
+      search?: string;
+      category?: string;
+      state?: string;
+      domain?: AdminPlatformSettingDomain;
+    },
     permissions: PermissionSet,
   ) {
     const definitions = CONFIG_DEFINITIONS.filter((definition) =>
@@ -33,10 +45,17 @@ export class AdminPlatformSettingsService {
     const filtered = definitions.filter((definition) => {
       if (query.category && definition.category !== query.category)
         return false;
+      if (
+        query.domain &&
+        getAdminPlatformSettingMetadata(definition).primaryDomain !==
+          query.domain
+      )
+        return false;
       if (search) {
-        const catalogAr = 'displayNameAr' in definition.catalog
-          ? `${definition.catalog.displayNameAr} ${'descriptionAr' in definition.catalog ? definition.catalog.descriptionAr : ''}`
-          : '';
+        const catalogAr =
+          'displayNameAr' in definition.catalog
+            ? `${definition.catalog.displayNameAr} ${'descriptionAr' in definition.catalog ? definition.catalog.descriptionAr : ''}`
+            : '';
         const haystack =
           `${definition.key} ${definition.catalog.displayName} ${catalogAr} ${definition.description} ${definition.catalog.description}`.toLocaleLowerCase();
         if (!haystack.includes(search)) return false;
@@ -44,25 +63,46 @@ export class AdminPlatformSettingsService {
       return true;
     });
 
-    const settings = await Promise.all(
-      filtered.map((definition) => this.toSetting(definition, permissions)),
+    const allSettings = await Promise.all(
+      definitions.map((definition) => this.toSetting(definition, permissions)),
     );
+    const settings = (
+      await Promise.all(
+        filtered.map((definition) => this.toSetting(definition, permissions)),
+      )
+    ).filter((setting) => {
+      if (query.state === 'editable') return setting.editable;
+      if (query.state === 'readonly') return !setting.editable;
+      if (query.state === 'changed') return setting.source === 'OVERRIDE';
+      if (query.state === 'default') return setting.source !== 'OVERRIDE';
+      return true;
+    });
     const legacyDefinitions = CONFIG_DEFINITIONS.filter((definition) =>
       this.isLegacy(definition),
     );
     const legacySettings = await Promise.all(
-      legacyDefinitions.map((definition) => this.toSetting(definition, permissions)),
+      legacyDefinitions.map((definition) =>
+        this.toSetting(definition, permissions),
+      ),
     );
+    const advancedDefinitions = CONFIG_DEFINITIONS.filter((definition) =>
+      this.isAdvanced(definition),
+    );
+    const advancedSettings = permissions.includes(
+      PermissionKey.CONFIGURATION_HISTORY_VIEW,
+    )
+      ? await Promise.all(
+          advancedDefinitions.map((definition) =>
+            this.toSetting(definition, permissions),
+          ),
+        )
+      : [];
     return {
-      categories: [...new Set(settings.map((setting) => setting.category))],
-      settings: settings.filter((setting) => {
-        if (query.state === 'editable') return setting.editable;
-        if (query.state === 'readonly') return !setting.editable;
-        if (query.state === 'changed') return setting.source === 'OVERRIDE';
-        if (query.state === 'default') return setting.source !== 'OVERRIDE';
-        return true;
-      }),
+      categories: [...new Set(allSettings.map((setting) => setting.category))],
+      settings,
       legacySettings,
+      advancedSettings,
+      domains: this.domainSummaries(allSettings),
     };
   }
 
@@ -97,6 +137,91 @@ export class AdminPlatformSettingsService {
     return {
       setting: await this.toSetting(definition, permissions),
       changeLogId: result.changeLogId,
+    };
+  }
+
+  async changeSet(
+    input: {
+      changes: readonly {
+        key: string;
+        value?: unknown;
+        reset?: boolean;
+        expectedUpdatedAt?: string | null;
+        scopeType?: ConfigScopeType;
+        scopeRefId?: string | null;
+      }[];
+      reason: string;
+      domain?: string;
+    },
+    actor: AuthenticatedUser,
+    permissions: PermissionSet,
+  ) {
+    if (!input.reason.trim() || input.reason.length > 1000) {
+      throw new BadRequestException({ error: 'CONFIG_REASON_INVALID' });
+    }
+    if (input.changes.length === 0) {
+      throw new BadRequestException({ error: 'CONFIG_BATCH_EMPTY' });
+    }
+
+    const commands = input.changes.map((change) => {
+      const definition = this.requireEditable(
+        definitionFor(change.key),
+        permissions,
+      );
+      const metadata = getAdminPlatformSettingMetadata(definition);
+      if (input.domain && metadata.primaryDomain !== input.domain) {
+        throw new BadRequestException({
+          error: 'CONFIG_CHANGE_SET_DOMAIN_MISMATCH',
+        });
+      }
+      const scopeType = change.scopeType ?? ConfigScopeType.GLOBAL;
+      const scopeRefId =
+        scopeType === ConfigScopeType.GLOBAL
+          ? null
+          : (change.scopeRefId ?? null);
+      const common = {
+        key: definition.key as never,
+        scopeType,
+        scopeRefId,
+        actor: {
+          type: 'USER' as const,
+          id: actor.id,
+          permissions: permissions as never,
+        },
+        actorType: 'USER' as const,
+        reason: input.reason,
+        expectedUpdatedAt: change.expectedUpdatedAt
+          ? new Date(change.expectedUpdatedAt)
+          : null,
+      };
+      if (change.reset) {
+        return {
+          kind: 'reset' as const,
+          command: common,
+        };
+      }
+      if (change.value === undefined) {
+        throw new BadRequestException({
+          error: 'CONFIG_CHANGE_SET_VALUE_REQUIRED',
+        });
+      }
+      return {
+        kind: 'update' as const,
+        command: { ...common, value: change.value as never },
+      };
+    });
+
+    const results = await this.management.changeSet(commands as never);
+    const settings = await Promise.all(
+      input.changes.map((change) =>
+        this.toSetting(definitionFor(change.key)!, permissions),
+      ),
+    );
+    return {
+      domain: input.domain ?? null,
+      results,
+      settings,
+      changedCount: results.filter((result) => result.changed).length,
     };
   }
 
@@ -201,25 +326,39 @@ export class AdminPlatformSettingsService {
           select: { id: true, updatedAt: true },
         })
       : null;
-    const financial = definition.category === ConfigCategory.PAYMENT;
-    const labelAr = 'displayNameAr' in definition.catalog
-      ? definition.catalog.displayNameAr
-      : definition.catalog.displayName;
-    const descriptionAr = 'descriptionAr' in definition.catalog
-      ? definition.catalog.descriptionAr
-      : definition.description;
+    const labelAr =
+      'displayNameAr' in definition.catalog
+        ? definition.catalog.displayNameAr
+        : definition.catalog.displayName;
+    const descriptionAr =
+      'descriptionAr' in definition.catalog
+        ? definition.catalog.descriptionAr
+        : definition.description;
+    const metadata = getAdminPlatformSettingMetadata(definition);
     const isLegacySetting = definition.status === 'LEGACY';
+    const environmentOwned =
+      definition.owner === 'ENV_SECRET' ||
+      definition.owner === 'ENV_INFRASTRUCTURE';
+    const systemManaged = metadata.ownership === 'SYSTEM';
+    const financial = definition.category === ConfigCategory.PAYMENT;
     const isEditable =
       definition.editable &&
       !financial &&
       !isLegacySetting &&
+      !environmentOwned &&
+      !systemManaged &&
+      !metadata.managedByDedicatedControl &&
       permissions.includes(PermissionKey.CONFIGURATION_EDIT_OPERATIONAL);
 
     let readOnlyReason: string | undefined = undefined;
-    if (isLegacySetting) {
+    if (environmentOwned) {
+      readOnlyReason = 'ENVIRONMENT_MANAGED';
+    } else if (isLegacySetting) {
       readOnlyReason = 'LEGACY_DEPRECATED';
     } else if (financial) {
       readOnlyReason = 'DEDICATED_PAYMENT_CONTROL';
+    } else if (systemManaged) {
+      readOnlyReason = 'SYSTEM_MANAGED';
     } else if (!definition.editable) {
       readOnlyReason = 'READ_ONLY_DEFINITION';
     }
@@ -245,9 +384,29 @@ export class AdminPlatformSettingsService {
       category: definition.category,
       domain: definition.domain,
       valueType: definition.valueType,
-      value: definition.sensitive ? null : resolved.value,
-      defaultValue: definition.sensitive ? null : definition.defaultValue,
+      value: definition.sensitive || environmentOwned ? null : resolved.value,
+      defaultValue:
+        definition.sensitive || environmentOwned
+          ? null
+          : definition.defaultValue,
       source: resolved.source === 'database' ? 'OVERRIDE' : 'CATALOG_DEFAULT',
+      effectiveSource: environmentOwned
+        ? 'ENVIRONMENT'
+        : isLegacySetting
+          ? 'LEGACY'
+          : metadata.managedByDedicatedControl
+            ? 'DEDICATED_CONTROL'
+            : systemManaged
+              ? 'SYSTEM_MANAGED'
+              : resolved.source === 'database'
+                ? 'DATABASE_OVERRIDE'
+                : resolved.source === 'catalog_default'
+                  ? 'CATALOG_DEFAULT'
+                  : 'MISSING',
+      ownership: metadata.ownership,
+      primaryDomain: metadata.primaryDomain,
+      section: metadata.section,
+      dedicatedRoute: metadata.dedicatedRoute ?? null,
       editable: isEditable,
       readOnlyReason,
       permission: financial
@@ -267,7 +426,84 @@ export class AdminPlatformSettingsService {
       deprecatedReplacementKey: definition.deprecatedReplacementKey ?? null,
       deprecationReason: definition.deprecationReason ?? null,
       uiMetadata: definition.uiMetadata ?? null,
+      capabilities: {
+        canView: permissions.includes(PermissionKey.CONFIGURATION_VIEW),
+        canEdit: isEditable,
+        canReset:
+          isEditable &&
+          resolved.source === 'database' &&
+          !metadata.managedByDedicatedControl,
+        canViewHistory: permissions.includes(
+          PermissionKey.CONFIGURATION_HISTORY_VIEW,
+        ),
+        requiresConfirmation: definition.requiresConfirmation,
+        requiresReason: definition.requiresReason,
+        requiresStepUp: definition.requiresStepUp,
+        managedByDedicatedControl: metadata.managedByDedicatedControl,
+        advancedOnly: metadata.advancedOnly,
+      },
     };
+  }
+
+  private domainSummaries(
+    settings: readonly Awaited<
+      ReturnType<AdminPlatformSettingsService['toSetting']>
+    >[],
+  ) {
+    return ADMIN_SETTING_DOMAIN_DEFINITIONS.map((domain) => {
+      const domainSettings = settings.filter(
+        (setting) => setting.primaryDomain === domain.primaryDomain,
+      );
+      const ordinarySettings = domainSettings.filter(
+        (setting) =>
+          !setting.capabilities.advancedOnly &&
+          !setting.capabilities.managedByDedicatedControl,
+      );
+      const attentionCount = domainSettings.filter(
+        (setting) =>
+          setting.effectiveSource === 'MISSING' || setting.status !== 'ACTIVE',
+      ).length;
+      const lastChange =
+        domainSettings
+          .map((setting) => setting.changedAt)
+          .sort()
+          .at(-1) ?? null;
+      const dedicated =
+        domain.primaryDomain === 'paymentsFinance' ||
+        domain.primaryDomain === 'advanced';
+      const canEdit = ordinarySettings.some(
+        (setting) => setting.capabilities.canEdit,
+      );
+
+      return {
+        ...domain,
+        count: domainSettings.length,
+        ordinaryCount: ordinarySettings.length,
+        customizedCount: domainSettings.filter(
+          (setting) => setting.effectiveSource === 'DATABASE_OVERRIDE',
+        ).length,
+        attentionCount,
+        permissionState: dedicated
+          ? 'MANAGED_ELSEWHERE'
+          : canEdit
+            ? 'EDITABLE'
+            : 'VIEW_ONLY',
+        lastChange,
+        status:
+          domain.primaryDomain === 'paymentsFinance'
+            ? 'MANAGED_ELSEWHERE'
+            : domain.primaryDomain === 'advanced'
+              ? 'ADVANCED'
+              : attentionCount > 0
+                ? 'NEEDS_ATTENTION'
+                : 'READY',
+        dedicatedRoute:
+          domain.dedicatedRoute ??
+          getAdminPlatformDomainDefinition(domain.primaryDomain)
+            .dedicatedRoute ??
+          null,
+      };
+    });
   }
 
   private isVisible(definition: ConfigDefinition) {
@@ -288,11 +524,25 @@ export class AdminPlatformSettingsService {
     );
   }
 
+  private isAdvanced(definition: ConfigDefinition) {
+    const metadata = getAdminPlatformSettingMetadata(definition);
+    return (
+      metadata.advancedOnly ||
+      definition.status === 'LEGACY' ||
+      definition.owner === 'ENV_SECRET' ||
+      definition.owner === 'ENV_INFRASTRUCTURE' ||
+      definition.sensitive
+    );
+  }
+
   private requireVisible(
     definition: ConfigDefinition | undefined,
     permissions: PermissionSet,
   ) {
-    if (!definition || (!this.isVisible(definition) && !this.isLegacy(definition)))
+    if (
+      !definition ||
+      (!this.isVisible(definition) && !this.isLegacy(definition))
+    )
       throw new NotFoundException({ error: 'CONFIG_SETTING_NOT_FOUND' });
     if (!permissions.includes(PermissionKey.CONFIGURATION_VIEW))
       throw new ForbiddenException({ error: 'CONFIGURATION_VIEW_REQUIRED' });
@@ -310,6 +560,13 @@ export class AdminPlatformSettingsService {
       throw new ForbiddenException({
         error: 'CONFIG_LEGACY_DEPRECATED',
         message: 'Legacy settings are read-only.',
+      });
+    }
+    const metadata = getAdminPlatformSettingMetadata(value);
+    if (metadata.ownership === 'SYSTEM') {
+      throw new ForbiddenException({
+        error: 'CONFIG_SYSTEM_MANAGED',
+        message: 'This setting is managed by the system.',
       });
     }
     if (!value.editable)

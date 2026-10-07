@@ -3,13 +3,17 @@ import { extractData } from "@/lib/api/response";
 import type { ApiPayload } from "@/lib/api/contracts";
 import type {
   PlatformSettingHistory,
+  PlatformSettingDomain,
   PlatformSettingsResponse,
+  PlatformSettingsChangeSetInput,
+  PlatformSettingsChangeSetResponse,
 } from "../types/platform-settings.types";
 
 export async function listPlatformSettings(params?: {
   search?: string;
   category?: string;
   state?: string;
+  domain?: PlatformSettingDomain;
 }) {
   const response = await httpClient.get<ApiPayload<PlatformSettingsResponse>>(
     "/admin/platform-settings",
@@ -25,6 +29,15 @@ export async function updatePlatformSetting(
   const response = await httpClient.patch<
     ApiPayload<{ setting: unknown; changeLogId: string }>
   >(`/admin/platform-settings/${encodeURIComponent(key)}`, input);
+  return extractData(response.data);
+}
+
+export async function changePlatformSettings(
+  input: PlatformSettingsChangeSetInput,
+) {
+  const response = await httpClient.post<
+    ApiPayload<PlatformSettingsChangeSetResponse>
+  >("/admin/platform-settings/change-set", input);
   return extractData(response.data);
 }
 

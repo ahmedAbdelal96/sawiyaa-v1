@@ -1,10 +1,15 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   getPlatformSettingHistory,
+  changePlatformSettings,
   listPlatformSettings,
   resetPlatformSetting,
   updatePlatformSetting,
 } from "../api/platform-settings.api";
+import type {
+  PlatformSettingDomain,
+  PlatformSettingsChangeSetInput,
+} from "../types/platform-settings.types";
 
 export const platformSettingsQueryKeys = {
   all: ["admin-platform-settings"] as const,
@@ -18,6 +23,7 @@ export function usePlatformSettings(params?: {
   search?: string;
   category?: string;
   state?: string;
+  domain?: PlatformSettingDomain;
 }) {
   return useQuery({
     queryKey: platformSettingsQueryKeys.list(params),
@@ -46,6 +52,18 @@ export function useUpdatePlatformSetting() {
       reason: string;
       expectedUpdatedAt?: string | null;
     }) => updatePlatformSetting(key, input),
+    onSuccess: () =>
+      queryClient.invalidateQueries({
+        queryKey: platformSettingsQueryKeys.all,
+      }),
+  });
+}
+
+export function usePlatformSettingsChangeSet() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: PlatformSettingsChangeSetInput) =>
+      changePlatformSettings(input),
     onSuccess: () =>
       queryClient.invalidateQueries({
         queryKey: platformSettingsQueryKeys.all,

@@ -4,6 +4,7 @@ import {
   Get,
   Param,
   Patch,
+  Post,
   Query,
   UseGuards,
 } from '@nestjs/common';
@@ -22,6 +23,7 @@ import { AuthenticatedUser } from '@common/interfaces/authenticated-user.interfa
 import { AdminPlatformSettingsService } from '../services/admin-platform-settings.service';
 import {
   AdminPlatformSettingHistoryQueryDto,
+  AdminPlatformSettingChangeSetDto,
   ListAdminPlatformSettingsDto,
   ResetAdminPlatformSettingDto,
   UpdateAdminPlatformSettingDto,
@@ -52,6 +54,22 @@ export class AdminPlatformSettingsController {
     return {
       success: true,
       data: await this.service.list(query, await this.resolve(actor)),
+    };
+  }
+
+  @Post('change-set')
+  @Permissions(PermissionKey.CONFIGURATION_VIEW)
+  async changeSet(
+    @Body() body: AdminPlatformSettingChangeSetDto,
+    @CurrentUser() actor: AuthenticatedUser,
+  ) {
+    return {
+      success: true,
+      data: await this.service.changeSet(
+        body,
+        actor,
+        await this.resolve(actor),
+      ),
     };
   }
 
