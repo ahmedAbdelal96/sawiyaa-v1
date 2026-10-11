@@ -1295,6 +1295,7 @@
     "statuses": {
       "DRAFT": "مسودة",
       "PENDING_PAYMENT": "بانتظار الدفع",
+      "REFUND_PENDING": "الاسترداد قيد المعالجة",
       "PENDING_PRACTITIONER_RESPONSE": "بانتظار رد المعالج",
       "CONFIRMED": "مؤكدة",
       "UPCOMING": "قادمة",
@@ -2201,6 +2202,7 @@
     "statuses": {
       "ACTIVE": "نشطة",
       "PENDING_PAYMENT": "بانتظار الدفع",
+      "REFUND_PENDING": "الاسترداد قيد المعالجة",
       "COMPLETED": "مكتملة",
       "CANCELLED": "ملغاة",
       "EXPIRED": "منتهية",
@@ -2266,7 +2268,8 @@
       "priceSummary": "{{value}} · خصم {{discount}}",
       "nextSessionSummary": "القادمة: {{value}}",
       "noNextSession": "لا توجد جلسة قادمة بعد",
-      "paymentDueSummary": "آخر موعد للدفع: {{value}}"
+      "paymentDueSummary": "آخر موعد للدفع: {{value}}",
+      "refundPendingNotice": "يجري الآن معالجة الاسترداد، وسيُعاد المبلغ إلى محفظتك في سويّة."
     },
     "detail": {
       "title": "مشتريات الباقات",
@@ -2287,6 +2290,7 @@
       "paymentActive": "أكمل الدفع قبل هذا الموعد.",
       "paymentDueByHelper": "أكمل الدفع قبل هذا الموعد.",
       "continuePayment": "أكمل الدفع",
+      "refundPendingNotice": "يجري الآن معالجة الاسترداد، وسيُعاد المبلغ إلى محفظتك في سويّة.",
       "sessionsTitle": "الجلسات المحجوزة من الباقة",
       "sessionsSubtitle": "تابع كل جلسة وافتحها عندما يحين موعدها.",
       "completed_zero": "لا توجد جلسات مكتملة",

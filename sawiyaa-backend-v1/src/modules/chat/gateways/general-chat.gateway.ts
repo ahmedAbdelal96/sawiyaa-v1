@@ -217,20 +217,20 @@ export class GeneralChatGateway implements OnGatewayConnection, OnGatewayInit {
 
       await client.join(this.room(payload.conversationId));
 
-      const deliveredOnJoin =
-        await this.messagingUseCase.markMessagesDeliveredForRecipient(
-          {
-            conversationId: payload.conversationId,
-            recipientUserId: actor.id,
-            deliveredAt: new Date(),
-          },
-        );
-
-      for (const delivered of deliveredOnJoin) {
-        this.server
-          .to(this.room(delivered.conversationId))
-          .emit('chat:delivered', delivered);
-      }
+      await this.messagingUseCase.markMessagesDeliveredForRecipient(
+        {
+          conversationId: payload.conversationId,
+          recipientUserId: actor.id,
+          deliveredAt: new Date(),
+        },
+        (batch) => {
+          for (const delivered of batch) {
+            this.server
+              .to(this.room(delivered.conversationId))
+              .emit('chat:delivered', delivered);
+          }
+        },
+      );
 
       return {
         ok: true,
@@ -448,24 +448,24 @@ export class GeneralChatGateway implements OnGatewayConnection, OnGatewayInit {
 
       await client.join(this.supportRoom(payload.ticketId));
 
-      const deliveredOnJoin =
-        await this.messagingUseCase.markMessagesDeliveredForRecipient(
-          {
-            conversationId: ticket.conversationId,
-            recipientUserId: actor.id,
-            deliveredAt: new Date(),
-          },
-        );
-
-      for (const delivered of deliveredOnJoin) {
-        this.server
-          .to(this.supportRoom(payload.ticketId))
-          .emit('chat:support:delivered', {
-            ticketId: payload.ticketId,
-            messageId: delivered.messageId,
-            deliveredAt: delivered.deliveredAt.toISOString(),
-          });
-      }
+      await this.messagingUseCase.markMessagesDeliveredForRecipient(
+        {
+          conversationId: ticket.conversationId,
+          recipientUserId: actor.id,
+          deliveredAt: new Date(),
+        },
+        (batch) => {
+          for (const delivered of batch) {
+            this.server
+              .to(this.supportRoom(payload.ticketId))
+              .emit('chat:support:delivered', {
+                ticketId: payload.ticketId,
+                messageId: delivered.messageId,
+                deliveredAt: delivered.deliveredAt.toISOString(),
+              });
+          }
+        },
+      );
 
       return {
         ok: true,
@@ -681,24 +681,24 @@ export class GeneralChatGateway implements OnGatewayConnection, OnGatewayInit {
 
       await client.join(this.careRoom(payload.conversationId));
 
-      const deliveredOnJoin =
-        await this.messagingUseCase.markMessagesDeliveredForRecipient(
-          {
-            conversationId: payload.conversationId,
-            recipientUserId: actor.id,
-            deliveredAt: new Date(),
-          },
-        );
-
-      for (const delivered of deliveredOnJoin) {
-        this.server
-          .to(this.careRoom(payload.conversationId))
-          .emit('chat:care:delivered', {
-            conversationId: payload.conversationId,
-            messageId: delivered.messageId,
-            deliveredAt: delivered.deliveredAt.toISOString(),
-          });
-      }
+      await this.messagingUseCase.markMessagesDeliveredForRecipient(
+        {
+          conversationId: payload.conversationId,
+          recipientUserId: actor.id,
+          deliveredAt: new Date(),
+        },
+        (batch) => {
+          for (const delivered of batch) {
+            this.server
+              .to(this.careRoom(payload.conversationId))
+              .emit('chat:care:delivered', {
+                conversationId: payload.conversationId,
+                messageId: delivered.messageId,
+                deliveredAt: delivered.deliveredAt.toISOString(),
+              });
+          }
+        },
+      );
 
       return {
         ok: true,

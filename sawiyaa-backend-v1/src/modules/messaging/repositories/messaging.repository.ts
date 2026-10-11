@@ -361,32 +361,61 @@ export class MessagingRepository {
     });
   }
 
-  async markMessagesDeliveredForRecipient(input: {
-    conversationId: string;
-    recipientUserId: string;
-    deliveredAt: Date;
-  }) {
-    const pending = await this.prisma.message.findMany({
-      where: {
+  async markMessagesDeliveredForRecipient(
+    input: {
+      conversationId: string;
+      recipientUserId: string;
+      deliveredAt: Date;
+    },
+    onBatch?: (
+      messages: Array<{
+        messageId: string;
+        conversationId: string;
+        deliveredAt: Date;
+      }>,
+    ) => Promise<void> | void,
+  ) {
+    const batchSize = 500;
+    let deliveredCount = 0;
+
+    // Keep the socket side effect contract (return each changed message) while
+    // bounding Node memory. Re-querying after every batch also picks up new
+    // eligible messages that arrive during a reconnect acknowledgement.
+    while (true) {
+      const pending = await this.prisma.message.findMany({
+        where: {
+          conversationId: input.conversationId,
+          senderUserId: { not: input.recipientUserId },
+          status: MessageStatus.SENT,
+          deletedAt: null,
+          visibility: MessageVisibility.NORMAL,
+        },
+        select: { id: true },
+        orderBy: [{ sentAt: 'asc' }, { id: 'asc' }],
+        take: batchSize,
+      });
+      if (pending.length === 0) break;
+
+      await this.prisma.message.updateMany({
+        where: {
+          id: { in: pending.map((item) => item.id) },
+          status: MessageStatus.SENT,
+        },
+        data: {
+          status: MessageStatus.DELIVERED,
+          deliveredAt: input.deliveredAt,
+        },
+      });
+      const batch = pending.map((item) => ({
+        messageId: item.id,
         conversationId: input.conversationId,
-        senderUserId: { not: input.recipientUserId },
-        status: MessageStatus.SENT,
-        deletedAt: null,
-        visibility: MessageVisibility.NORMAL,
-      },
-      select: { id: true },
-      orderBy: [{ sentAt: 'asc' }, { id: 'asc' }],
-    });
-    if (pending.length === 0) return [];
-    await this.prisma.message.updateMany({
-      where: { id: { in: pending.map((item) => item.id) } },
-      data: { status: MessageStatus.DELIVERED, deliveredAt: input.deliveredAt },
-    });
-    return pending.map((item) => ({
-      messageId: item.id,
-      conversationId: input.conversationId,
-      deliveredAt: input.deliveredAt,
-    }));
+        deliveredAt: input.deliveredAt,
+      }));
+      await onBatch?.(batch);
+      deliveredCount += batch.length;
+    }
+
+    return deliveredCount;
   }
 
   async countUnread(
@@ -419,45 +448,45 @@ export class MessagingRepository {
   }
 
   async countSupportNeedsReply() {
-    const conversations = await this.prisma.conversation.findMany({
-      where: {
-        conversationType: ConversationType.SUPPORT,
-        status: { notIn: ['CLOSED'] },
-        supportTicket: { status: { notIn: ['CLOSED', 'RESOLVED'] } },
-      },
-      select: {
-        messages: {
-          where: { deletedAt: null, visibility: MessageVisibility.NORMAL },
-          orderBy: [{ sentAt: 'desc' }, { id: 'desc' }],
-          take: 1,
-          select: { senderUserId: true },
-        },
-        participants: {
-          where: { isActive: true },
-          select: { userId: true, participantRole: true },
-        },
-      },
-    });
+    const rows = await this.prisma.$queryRaw<
+      Array<{ count: bigint }>
+    >(Prisma.sql`
+      WITH latest_visible_message AS (
+        SELECT DISTINCT ON (m."conversationId")
+          m."conversationId",
+          m."senderUserId"
+        FROM "Message" m
+        WHERE m."deletedAt" IS NULL
+          AND m."visibility" = ${MessageVisibility.NORMAL}::"MessageVisibility"
+        ORDER BY m."conversationId", m."sentAt" DESC, m."id" DESC
+      )
+      SELECT COUNT(*)::bigint AS count
+      FROM "Conversation" c
+      INNER JOIN "SupportTicket" st
+        ON st."conversationId" = c."id"
+      LEFT JOIN latest_visible_message latest
+        ON latest."conversationId" = c."id"
+      WHERE c."conversationType" = ${ConversationType.SUPPORT}::"ConversationType"
+        AND c."status" <> 'CLOSED'::"ConversationStatus"
+        AND st."status" NOT IN ('CLOSED'::"SupportTicketStatus", 'RESOLVED'::"SupportTicketStatus")
+        AND (
+          latest."conversationId" IS NULL
+          OR latest."senderUserId" IS NULL
+          OR EXISTS (
+            SELECT 1
+            FROM "ConversationParticipant" cp
+            WHERE cp."conversationId" = c."id"
+              AND cp."userId" = latest."senderUserId"
+              AND cp."isActive" = TRUE
+              AND cp."participantRole" IN (
+                'PATIENT'::"ConversationParticipantRole",
+                'PRACTITIONER'::"ConversationParticipantRole"
+              )
+          )
+        )
+    `);
 
-    return (
-      conversations as Array<{
-        messages: Array<{ senderUserId: string | null }>;
-        participants: Array<{
-          userId: string;
-          participantRole: ConversationParticipantRole;
-        }>;
-      }>
-    ).filter((conversation) => {
-      const latestSenderId = conversation.messages[0]?.senderUserId;
-      if (!latestSenderId) return true;
-      const sender = conversation.participants.find(
-        (participant) => participant.userId === latestSenderId,
-      );
-      return (
-        sender?.participantRole === ConversationParticipantRole.PATIENT ||
-        sender?.participantRole === ConversationParticipantRole.PRACTITIONER
-      );
-    }).length;
+    return Number(rows[0]?.count ?? 0);
   }
 
   async loadUsers(userIds: string[]) {

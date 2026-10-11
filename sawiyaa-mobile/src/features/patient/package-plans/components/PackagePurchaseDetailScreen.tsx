@@ -435,6 +435,17 @@ export default function PackagePurchaseDetailScreen({
           </View>
         </Card>
 
+        {purchase.status === "REFUND_PENDING" ? (
+          <Card variant="outlined" padding="sm" style={styles.paymentCard}>
+            <Text
+              color={theme.colors.warning}
+              style={[styles.paymentNote, { textAlign }]}
+            >
+              {t("packagePurchases.detail.refundPendingNotice")}
+            </Text>
+          </Card>
+        ) : null}
+
         {purchase.status === "PENDING_PAYMENT" ? (
           <Card variant="outlined" padding="sm" style={styles.paymentCard}>
             <View style={styles.paymentHeader}>

@@ -18,6 +18,7 @@ const PACKAGE_PURCHASE_STATUS_TO_TONE: Record<
 > = {
   ACTIVE: "success",
   PENDING_PAYMENT: "warning",
+  REFUND_PENDING: "warning",
   COMPLETED: "default",
   CANCELLED: "default",
   EXPIRED: "default",
@@ -168,6 +169,8 @@ export function getPackagePurchaseStatusTranslationKey(
       return "packagePurchases.statuses.ACTIVE";
     case "PENDING_PAYMENT":
       return "packagePurchases.statuses.PENDING_PAYMENT";
+    case "REFUND_PENDING":
+      return "packagePurchases.statuses.REFUND_PENDING";
     case "COMPLETED":
       return "packagePurchases.statuses.COMPLETED";
     case "CANCELLED":

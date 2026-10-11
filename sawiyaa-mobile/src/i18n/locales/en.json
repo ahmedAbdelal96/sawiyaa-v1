@@ -170,6 +170,7 @@
     "statuses": {
       "ACTIVE": "Active",
       "PENDING_PAYMENT": "Pending payment",
+      "REFUND_PENDING": "Refund being processed",
       "COMPLETED": "Completed",
       "CANCELLED": "Cancelled",
       "EXPIRED": "Expired",
@@ -183,7 +184,8 @@
       "noNextSession": "No upcoming session yet",
       "paymentDueSummary": "Payment due: {{value}}",
       "viewDetails": "View package details",
-      "continuePayment": "Continue payment"
+      "continuePayment": "Continue payment",
+      "refundPendingNotice": "Your refund is being processed. The amount will be returned to your Sawiyaa wallet."
     },
     "list": {
       "bookSession": "Book a package session"
@@ -206,6 +208,7 @@
       "paymentDueHelper": "Complete payment before this time.",
       "paymentDueSummary": "Payment due: {{value}}",
       "continuePayment": "Continue payment",
+      "refundPendingNotice": "Your refund is being processed. The amount will be returned to your Sawiyaa wallet.",
       "timelineTitle": "Session timeline",
       "timelineSubtitle": "Your booked sessions and sessions waiting for a time.",
       "bookedSessionsTitle": "Booked sessions",

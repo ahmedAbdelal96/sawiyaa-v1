@@ -472,10 +472,12 @@ export const CONFIG_DEFINITIONS = deepFreeze(
       defaultPolicy: 'SAFE_DEFAULT',
       defaultValue: true,
       allowedScopes: GLOBAL,
-      status: 'SEEDED_BUT_UNUSED',
+      status: 'LEGACY',
       failureMode: 'USE_SAFE_DEFAULT',
       description:
-        'Seeded feature catalog entry awaiting an authoritative runtime consumer.',
+        'Mandatory practitioner administration review is code-governed. This historical seed entry is retained for compatibility and is not editable.',
+      deprecationReason:
+        'Practitioner administration review is mandatory and cannot be disabled by configuration.',
       catalog: {
         slug: 'features-practitioner-application-admin-review-enabled',
         displayName: 'Practitioner Admin Review Feature',

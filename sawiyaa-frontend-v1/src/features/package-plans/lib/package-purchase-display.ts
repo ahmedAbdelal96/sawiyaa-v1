@@ -64,6 +64,8 @@ export function getPackagePurchaseStatusConfig(
       return { labelKey: "list.status.COMPLETED", tone: "dark" };
     case "PENDING_PAYMENT":
       return { labelKey: "list.status.PENDING_PAYMENT", tone: "warning" };
+    case "REFUND_PENDING":
+      return { labelKey: "list.status.REFUND_PENDING", tone: "warning" };
     case "CANCELLED":
       return { labelKey: "list.status.CANCELLED", tone: "light" };
     case "EXPIRED":
@@ -71,7 +73,7 @@ export function getPackagePurchaseStatusConfig(
     case "REFUNDED":
       return { labelKey: "list.status.REFUNDED", tone: "light" };
     default:
-      return { labelKey: "list.status.ACTIVE", tone: "light" };
+      return { labelKey: "list.status.UNKNOWN", tone: "light" };
   }
 }
 

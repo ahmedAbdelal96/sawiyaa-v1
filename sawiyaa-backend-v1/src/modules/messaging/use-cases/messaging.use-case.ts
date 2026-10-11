@@ -409,12 +409,17 @@ export class MessagingUseCase {
     return this.repository.markMessageDelivered(input);
   }
 
-  markMessagesDeliveredForRecipient(input: {
-    conversationId: string;
-    recipientUserId: string;
-    deliveredAt: Date;
-  }) {
-    return this.repository.markMessagesDeliveredForRecipient(input);
+  markMessagesDeliveredForRecipient(
+    input: {
+      conversationId: string;
+      recipientUserId: string;
+      deliveredAt: Date;
+    },
+    onBatch?: Parameters<
+      MessagingRepository['markMessagesDeliveredForRecipient']
+    >[1],
+  ) {
+    return this.repository.markMessagesDeliveredForRecipient(input, onBatch);
   }
 
   async resolveAttachment(

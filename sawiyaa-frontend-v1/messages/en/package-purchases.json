@@ -17,6 +17,7 @@
     "eyebrow": "Packages",
     "heading": "My package purchases",
     "subtitle": "Keep track of your packages, linked sessions, and pending payments.",
+    "refundPendingNotice": "Your refund is being processed. The amount will be returned to your Sawiyaa wallet.",
     "emptyHeading": "No package purchases yet",
     "emptyNote": "Browse available packages and select the plan that fits your care.",
     "emptyAction": "Browse packages",
@@ -61,11 +62,13 @@
     },
     "status": {
       "PENDING_PAYMENT": "Pending payment",
+      "REFUND_PENDING": "Refund being processed",
       "ACTIVE": "Active",
       "COMPLETED": "Completed",
       "CANCELLED": "Cancelled",
       "EXPIRED": "Expired",
-      "REFUNDED": "Refunded"
+      "REFUNDED": "Refunded",
+      "UNKNOWN": "Status unavailable"
     }
   },
   "discovery": {
@@ -148,6 +151,7 @@
     "progressHeading": "Session completion progress",
     "progressValue": "{completed} of {total} sessions completed",
     "activeNotice": "Your package is active. Sessions are ready to book.",
+    "refundPendingNotice": "Your refund is being processed. The amount will be returned to your Sawiyaa wallet.",
     "progressFacts": {
       "live": "{count} active or upcoming",
       "pending": "{count} pending",

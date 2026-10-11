@@ -286,6 +286,22 @@ describe('AdminPlatformSettingsService', () => {
       ),
     );
 
+    const practitionerReview = result.legacySettings.find(
+      (setting) =>
+        setting.key === 'features.practitionerApplicationAdminReviewEnabled',
+    );
+    expect(practitionerReview).toMatchObject({
+      status: 'LEGACY',
+      editable: false,
+      readOnlyReason: 'LEGACY_DEPRECATED',
+    });
+    expect(
+      result.settings.some(
+        (setting) =>
+          setting.key === 'features.practitionerApplicationAdminReviewEnabled',
+      ),
+    ).toBe(false);
+
     // Verify DTO fields on a legacy setting
     const legacyEmail = result.legacySettings.find(
       (s) => s.key === 'SESSION_REMINDER_60_MINUTES_ENABLED',

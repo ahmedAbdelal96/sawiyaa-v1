@@ -231,6 +231,11 @@ export default function PatientPackagePurchaseDetailPanel({
                 <span>{t("detail.activeNotice")}</span>
               </div>
             ) : null}
+            {purchase.status === "REFUND_PENDING" ? (
+              <div className="flex items-center gap-2 rounded-xl border border-amber-100 bg-amber-50/70 px-3 py-2 text-xs font-semibold text-amber-800 dark:border-amber-800/30 dark:bg-amber-950/20 dark:text-amber-200">
+                <span>{t("detail.refundPendingNotice")}</span>
+              </div>
+            ) : null}
 
           {/* Direct CTA */}
           {canContinuePayment ? (

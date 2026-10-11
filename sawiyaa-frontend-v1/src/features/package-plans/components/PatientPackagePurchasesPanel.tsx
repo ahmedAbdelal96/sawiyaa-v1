@@ -184,6 +184,7 @@ export default function PatientPackagePurchasesPanel() {
             <option value="">{t("list.filterAllStatuses")}</option>
             <option value="ACTIVE">{t("list.status.ACTIVE")}</option>
             <option value="PENDING_PAYMENT">{t("list.status.PENDING_PAYMENT")}</option>
+            <option value="REFUND_PENDING">{t("list.status.REFUND_PENDING")}</option>
             <option value="COMPLETED">{t("list.status.COMPLETED")}</option>
             <option value="CANCELLED">{t("list.status.CANCELLED")}</option>
             <option value="EXPIRED">{t("list.status.EXPIRED")}</option>
@@ -266,6 +267,7 @@ export default function PatientPackagePurchasesPanel() {
             const canContinuePayment = canContinuePackagePurchasePayment(purchase);
 
             const isPending = purchase.status === "PENDING_PAYMENT";
+            const isRefundPending = purchase.status === "REFUND_PENDING";
             const isActive = purchase.status === "ACTIVE";
             const isCompleted = purchase.status === "COMPLETED";
 
@@ -273,6 +275,8 @@ export default function PatientPackagePurchasesPanel() {
               ? "bg-emerald-50 text-emerald-800 border-emerald-200 dark:bg-emerald-950/20 dark:text-emerald-300 dark:border-emerald-800/40"
               : isPending
                 ? "bg-amber-50 text-amber-800 border-amber-200 dark:bg-amber-950/20 dark:text-amber-300 dark:border-amber-800/40"
+                : isRefundPending
+                  ? "bg-amber-50 text-amber-800 border-amber-200 dark:bg-amber-950/20 dark:text-amber-300 dark:border-amber-800/40"
                 : isCompleted
                   ? "bg-sky-50 text-sky-800 border-sky-200 dark:bg-sky-950/20 dark:text-sky-300 dark:border-sky-800/40"
                   : "bg-surface-tertiary text-text-secondary border-border-light dark:bg-surface-tertiary dark:text-white/70";
@@ -358,6 +362,11 @@ export default function PatientPackagePurchasesPanel() {
                         {payableMoney ? <MoneyText money={payableMoney} /> : "—"}
                       </span>
                     </div>
+                    {isRefundPending ? (
+                      <span className="max-w-56 text-[10px] font-semibold leading-relaxed text-amber-800 dark:text-amber-300">
+                        {t("list.refundPendingNotice")}
+                      </span>
+                    ) : null}
 
                     <div className="flex items-center gap-1.5">
                       <Link

@@ -157,6 +157,14 @@ function PackagePurchaseCard({
       </View>
 
       <View style={styles.metaStack}>
+        {purchase.status === "REFUND_PENDING" ? (
+          <Text
+            color={theme.colors.warning}
+            style={[styles.metaLine, { textAlign }]}
+          >
+            {t("packagePurchases.card.refundPendingNotice")}
+          </Text>
+        ) : null}
         <View style={[styles.metaRow, { flexDirection: rowDirection }]}>
           <Ionicons name="calendar-outline" size={15} color={theme.colors.textSecondary} style={styles.metaIcon} />
           <Text color={theme.colors.textSecondary} style={[styles.metaLine, { textAlign }]}>

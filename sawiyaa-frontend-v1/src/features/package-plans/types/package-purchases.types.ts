@@ -22,6 +22,7 @@ export type PackagePurchaseStatus =
   | "COMPLETED"
   | "CANCELLED"
   | "EXPIRED"
+  | "REFUND_PENDING"
   | "REFUNDED";
 
 export type PatientPackagePurchaseSessionSummary = {
