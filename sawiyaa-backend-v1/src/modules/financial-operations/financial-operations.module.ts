@@ -236,6 +236,7 @@ import { PaymentsModule } from '@modules/payments/payments.module';
   ],
   exports: [
     AccountingJournalPostingService,
+    AccountingReconciliationSchedulerService,
     PostPaymentLedgerEntriesUseCase,
     PostPackageSessionLedgerEntriesUseCase,
     PostRefundLedgerEntriesUseCase,

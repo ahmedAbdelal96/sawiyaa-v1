@@ -149,9 +149,11 @@ describe('RequestPaymentRefundUseCase', () => {
       info: jest.fn(),
     };
     const prisma = {
-      $transaction: jest.fn().mockImplementation(async (fn) =>
-        fn({ $executeRaw: jest.fn().mockResolvedValue(undefined) }),
-      ),
+      $transaction: jest
+        .fn()
+        .mockImplementation(async (fn) =>
+          fn({ $executeRaw: jest.fn().mockResolvedValue(undefined) }),
+        ),
     };
 
     const useCase = new RequestPaymentRefundUseCase(
@@ -216,7 +218,9 @@ describe('RequestPaymentRefundUseCase', () => {
       setup.orchestrateSessionPaymentStatusService.markSessionRefundPending,
     ).toHaveBeenCalled();
     expect(setup.paymentRepository.createRefundEvent).toHaveBeenCalledTimes(1);
-    expect(setup.paymentRepository.createRefundEvent.mock.calls[0][0]).toMatchObject({
+    expect(
+      setup.paymentRepository.createRefundEvent.mock.calls[0][0],
+    ).toMatchObject({
       refundId: 'refund_1',
       paymentId: 'payment_1',
       eventType: 'REQUESTED',
@@ -227,6 +231,39 @@ describe('RequestPaymentRefundUseCase', () => {
       source: 'HTTP_REQUEST',
       reason: 'reason',
     });
+  });
+
+  it('converges an interrupted wallet refund without touching the provider', async () => {
+    const setup = buildUseCase();
+    setup.paymentRepository.findRefundById.mockResolvedValue({
+      id: 'refund_1',
+      paymentId: 'payment_1',
+      sessionId: 'session_1',
+      status: 'REQUESTED',
+      destination: RefundDestination.CUSTOMER_WALLET,
+      amount: new Prisma.Decimal('100.00'),
+      currencyCode: 'USD',
+      actorType: 'USER',
+      actorUserId: 'admin_1',
+      source: 'HTTP_REQUEST',
+      metadataJson: {},
+    });
+
+    await setup.useCase.reconcileWalletRefund('refund_1');
+
+    expect(
+      setup.customerWalletAccountingService.creditRefundToWallet,
+    ).toHaveBeenCalledWith(
+      expect.objectContaining({
+        refundId: 'refund_1',
+        patientId: 'patient_1',
+        amount: '100',
+      }),
+    );
+    expect(setup.paymentProviderRegistryService.get).not.toHaveBeenCalled();
+    expect(setup.postRefundLedgerEntriesUseCase.execute).toHaveBeenCalledWith(
+      expect.objectContaining({ refundId: 'refund_1' }),
+    );
   });
 
   it('handles provider failure and avoids ledger reversal posting', async () => {
@@ -253,7 +290,12 @@ describe('RequestPaymentRefundUseCase', () => {
         amount: new Prisma.Decimal('100'),
         currencyCode: 'USD',
       })
-      .mockResolvedValueOnce({ id: 'refund_1', status: 'FAILED', amount: new Prisma.Decimal('100'), currencyCode: 'USD' });
+      .mockResolvedValueOnce({
+        id: 'refund_1',
+        status: 'FAILED',
+        amount: new Prisma.Decimal('100'),
+        currencyCode: 'USD',
+      });
     await setup.useCase.execute({
       paymentId: 'payment_1',
       actorUserId: 'admin_1',
@@ -290,7 +332,9 @@ describe('RequestPaymentRefundUseCase', () => {
       destination: RefundDestination.CUSTOMER_WALLET,
     });
 
-    expect(setup.customerWalletAccountingService.creditRefundToWallet).toHaveBeenCalledWith(
+    expect(
+      setup.customerWalletAccountingService.creditRefundToWallet,
+    ).toHaveBeenCalledWith(
       expect.objectContaining({
         refundId: 'refund_1',
         tx: expect.any(Object),
@@ -389,7 +433,9 @@ describe('RequestPaymentRefundUseCase', () => {
       }),
       expect.anything(),
     );
-    expect(setup.postRefundLedgerEntriesUseCase.execute).toHaveBeenCalledTimes(1);
+    expect(setup.postRefundLedgerEntriesUseCase.execute).toHaveBeenCalledTimes(
+      1,
+    );
     expect(
       setup.sessionEarningReviewService.invalidatePendingReviewsForPayment,
     ).toHaveBeenCalledTimes(1);

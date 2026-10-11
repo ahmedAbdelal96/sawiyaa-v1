@@ -4,6 +4,8 @@ import { NotificationQueueService } from '@common/queue/notification-queue.servi
 import type { NotificationQueueHealthSnapshot } from '@common/queue/notification-queue.service';
 import { OperationsQueueService } from '@common/queue/operations-queue.service';
 import type { OperationsQueueHealthSnapshot } from '@common/queue/operations-queue.service';
+import { PaymentProviderRecoveryService } from '@modules/payments/services/payment-provider-recovery.service';
+import { AccountingReconciliationSchedulerService } from '@modules/financial-operations/services/accounting-reconciliation-scheduler.service';
 
 export type ReadinessState = 'READY' | 'DEGRADED' | 'NOT_READY';
 
@@ -15,7 +17,24 @@ export type ReadinessSnapshot = {
     attendanceReconciliation: { status: ReadinessState; detail: string };
     dailyWebhook: { status: ReadinessState; detail: string };
     paymentRouting: { status: ReadinessState; detail: string };
-    accountingReconciliation: { status: ReadinessState; detail: string };
+    providerPaymentRecovery: {
+      status: ReadinessState;
+      detail: string;
+      enabled: boolean;
+      running: boolean;
+      lastStartedAt: string | null;
+      lastSuccessAt: string | null;
+      lastFailureAt: string | null;
+      lastErrorCategory: string | null;
+      lastScannedCount: number | null;
+      lastRecoveredCount: number | null;
+    };
+    accountingReconciliation: {
+      status: ReadinessState;
+      detail: string;
+      enabled: boolean;
+      lastRunStatus: string | null;
+    };
     notificationQueue: {
       status: ReadinessState;
       detail: string;
@@ -44,24 +63,52 @@ export class ReadinessService {
     private readonly paymentRuntime: PaymentRuntimeConfigService,
     @Optional() private readonly notificationQueue?: NotificationQueueService,
     @Optional() private readonly operationsQueue?: OperationsQueueService,
+    @Optional()
+    private readonly providerRecovery?: PaymentProviderRecoveryService,
+    @Optional()
+    private readonly accountingScheduler?: AccountingReconciliationSchedulerService,
   ) {}
 
   async getSnapshot(): Promise<ReadinessSnapshot> {
     const production =
-      process.env.APP_ENV === 'production' || process.env.NODE_ENV === 'production';
+      process.env.APP_ENV === 'production' ||
+      process.env.NODE_ENV === 'production';
+    const providerRecoverySnapshot =
+      this.providerRecovery?.getStatusSnapshot() ?? {
+        enabled: false,
+        running: false,
+        lastStartedAt: null,
+        lastSuccessAt: null,
+        lastFailureAt: null,
+        lastErrorCategory: null,
+        lastScannedCount: null,
+        lastRecoveredCount: null,
+      };
+    let accountingSchedulerSnapshot: Awaited<
+      ReturnType<AccountingReconciliationSchedulerService['getStatusSnapshot']>
+    > | null = null;
+    try {
+      accountingSchedulerSnapshot = this.accountingScheduler
+        ? await this.accountingScheduler.getStatusSnapshot()
+        : null;
+    } catch {
+      accountingSchedulerSnapshot = null;
+    }
     const attendanceEnabled =
       process.env.SESSION_ATTENDANCE_RECONCILIATION_SWEEPER_ENABLED === 'true';
     const dailyConfigured = Boolean(
       process.env.DAILY_API_KEY?.trim() &&
-        process.env.DAILY_API_BASE_URL?.trim() &&
-        process.env.DAILY_WEBHOOK_SECRET?.trim(),
+      process.env.DAILY_API_BASE_URL?.trim() &&
+      process.env.DAILY_WEBHOOK_SECRET?.trim(),
     );
 
     let paymentStatus: ReadinessState = 'READY';
     let paymentDetail = 'Payment routing snapshot is available.';
     try {
       const routing = this.paymentRuntime.getPaymentRoutingConfig();
-      const enabledRoutes = routing.routeReadiness.filter(({ route }) => route.enabled);
+      const enabledRoutes = routing.routeReadiness.filter(
+        ({ route }) => route.enabled,
+      );
       if (enabledRoutes.some(({ ready }) => !ready)) {
         paymentStatus = 'NOT_READY';
         paymentDetail = 'One or more enabled payment routes are not ready.';
@@ -74,19 +121,25 @@ export class ReadinessService {
     const warnings: string[] = [];
     const notificationQueue = this.notificationQueue
       ? await this.notificationQueue.getHealthSnapshot()
-      : {
+      : ({
           enabled: false,
           status: 'DISABLED' as const,
           redis: 'NOT_REQUIRED' as const,
           worker: 'NOT_REQUIRED' as const,
           queueName: 'notifications',
-          counts: { waiting: 0, active: 0, completed: 0, failed: 0, delayed: 0 },
+          counts: {
+            waiting: 0,
+            active: 0,
+            completed: 0,
+            failed: 0,
+            delayed: 0,
+          },
           oldestWaitingJobAgeMs: null,
           lastEnqueuedAt: null,
           lastEnqueueFailureAt: null,
           lastWorkerHeartbeatAt: null,
           lastError: null,
-        } satisfies NotificationQueueHealthSnapshot;
+        } satisfies NotificationQueueHealthSnapshot);
     const notificationQueueStatus: ReadinessState =
       notificationQueue.status === 'DEGRADED' ? 'DEGRADED' : 'READY';
     if (notificationQueue.status === 'DEGRADED') {
@@ -96,19 +149,25 @@ export class ReadinessService {
     }
     const operationsQueue = this.operationsQueue
       ? await this.operationsQueue.getHealthSnapshot()
-      : {
+      : ({
           enabled: false,
           status: 'DISABLED' as const,
           redis: 'NOT_REQUIRED' as const,
           worker: 'NOT_REQUIRED' as const,
           queueName: 'operations',
-          counts: { waiting: 0, active: 0, completed: 0, failed: 0, delayed: 0 },
+          counts: {
+            waiting: 0,
+            active: 0,
+            completed: 0,
+            failed: 0,
+            delayed: 0,
+          },
           oldestWaitingJobAgeMs: null,
           lastEnqueuedAt: null,
           lastEnqueueFailureAt: null,
           lastWorkerHeartbeatAt: null,
           lastError: null,
-        } satisfies OperationsQueueHealthSnapshot;
+        } satisfies OperationsQueueHealthSnapshot);
     const operationsQueueStatus: ReadinessState =
       operationsQueue.status === 'DEGRADED' ? 'DEGRADED' : 'READY';
     if (operationsQueue.status === 'DEGRADED') {
@@ -116,13 +175,19 @@ export class ReadinessService {
         `Daily attendance operations queue is degraded; eligible sessions remain recoverable by the next sweep${operationsQueue.lastError ? ` (${operationsQueue.lastError})` : ''}.`,
       );
     }
-    const attendanceStatus: ReadinessState = attendanceEnabled ? 'READY' : 'DEGRADED';
+    const attendanceStatus: ReadinessState = attendanceEnabled
+      ? 'READY'
+      : 'DEGRADED';
     if (!attendanceEnabled) {
       warnings.push(
         'SESSION_ATTENDANCE_RECONCILIATION_SWEEPER_ENABLED is not true; attendance evidence reconciliation is disabled.',
       );
     }
-    const dailyStatus: ReadinessState = dailyConfigured ? 'READY' : production ? 'NOT_READY' : 'DEGRADED';
+    const dailyStatus: ReadinessState = dailyConfigured
+      ? 'READY'
+      : production
+        ? 'NOT_READY'
+        : 'DEGRADED';
     if (!dailyConfigured) {
       warnings.push('Daily webhook runtime configuration is incomplete.');
     }
@@ -153,10 +218,41 @@ export class ReadinessService {
       );
     }
 
+    const providerRecoveryFailureIsLatest =
+      providerRecoverySnapshot.lastFailureAt !== null &&
+      (providerRecoverySnapshot.lastSuccessAt === null ||
+        providerRecoverySnapshot.lastFailureAt >
+          providerRecoverySnapshot.lastSuccessAt);
+    const providerRecoveryStatus: ReadinessState =
+      !providerRecoverySnapshot.enabled
+        ? production
+          ? 'NOT_READY'
+          : 'DEGRADED'
+        : providerRecoveryFailureIsLatest
+          ? production
+            ? 'NOT_READY'
+            : 'DEGRADED'
+          : 'READY';
+    const providerRecoveryDetail = !providerRecoverySnapshot.enabled
+      ? 'Mandatory provider payment recovery scheduler is not active.'
+      : providerRecoveryFailureIsLatest
+        ? 'Mandatory provider payment recovery has failed on its latest recorded run.'
+        : 'Mandatory provider payment recovery scheduler is active independently of accounting reconciliation.';
+    if (!providerRecoverySnapshot.enabled) {
+      warnings.push(
+        'Mandatory provider payment recovery scheduler is not active; payment convergence is unsafe.',
+      );
+    } else if (providerRecoveryFailureIsLatest) {
+      warnings.push(
+        `Mandatory provider payment recovery failed${providerRecoverySnapshot.lastErrorCategory ? ` (${providerRecoverySnapshot.lastErrorCategory})` : ''}.`,
+      );
+    }
+
     const statuses = [
       attendanceStatus,
       dailyStatus,
       paymentStatus,
+      providerRecoveryStatus,
       reconciliationStatus,
       notificationQueueStatus,
       operationsQueueStatus,
@@ -173,20 +269,40 @@ export class ReadinessService {
       components: {
         sessionCompletionWorker: {
           status: 'READY',
-          detail: 'Production completion-confirmation worker is always started.',
+          detail:
+            'Production completion-confirmation worker is always started.',
         },
         attendanceReconciliation: {
           status: attendanceStatus,
-          detail: attendanceEnabled ? 'Evidence-only worker is enabled.' : 'Evidence-only worker is disabled.',
+          detail: attendanceEnabled
+            ? 'Evidence-only worker is enabled.'
+            : 'Evidence-only worker is disabled.',
         },
         dailyWebhook: {
           status: dailyStatus,
-          detail: dailyConfigured ? 'Daily webhook credentials are configured.' : 'Daily webhook credentials are incomplete.',
+          detail: dailyConfigured
+            ? 'Daily webhook credentials are configured.'
+            : 'Daily webhook credentials are incomplete.',
         },
         paymentRouting: { status: paymentStatus, detail: paymentDetail },
+        providerPaymentRecovery: {
+          status: providerRecoveryStatus,
+          detail: providerRecoveryDetail,
+          enabled: providerRecoverySnapshot.enabled,
+          running: providerRecoverySnapshot.running,
+          lastStartedAt: providerRecoverySnapshot.lastStartedAt,
+          lastSuccessAt: providerRecoverySnapshot.lastSuccessAt,
+          lastFailureAt: providerRecoverySnapshot.lastFailureAt,
+          lastErrorCategory: providerRecoverySnapshot.lastErrorCategory,
+          lastScannedCount: providerRecoverySnapshot.lastScannedCount,
+          lastRecoveredCount: providerRecoverySnapshot.lastRecoveredCount,
+        },
         accountingReconciliation: {
           status: reconciliationStatus,
           detail: reconciliationDetail,
+          enabled: reconciliationEnabled,
+          lastRunStatus:
+            accountingSchedulerSnapshot?.lastScheduledRunStatus ?? null,
         },
         notificationQueue: {
           status: notificationQueueStatus,

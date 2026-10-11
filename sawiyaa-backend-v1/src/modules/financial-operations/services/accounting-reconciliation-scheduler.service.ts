@@ -34,6 +34,14 @@ export class AccountingReconciliationSchedulerService
     null;
   private lastScheduledIssueCount: number | null = null;
   private lastScheduledCriticalCount: number | null = null;
+  private lastProviderRecoveryAt: Date | null = null;
+  private lastProviderRecoveryError: string | null = null;
+  private lastProviderRecoveryResult: {
+    payments: number;
+    refunds: number;
+    walletRefunds: number;
+    providerRefunds: number;
+  } | null = null;
   private running = false;
 
   constructor(
@@ -70,8 +78,10 @@ export class AccountingReconciliationSchedulerService
       this.logger.log(
         `Accounting reconciliation scheduler started with cron "${cronExpression}"`,
       );
+      this.setProviderRecoverySchedulerActive(true);
     } catch (error) {
       this.job = null;
+      this.setProviderRecoverySchedulerActive(false);
       this.logger.error(
         `Accounting reconciliation scheduler could not start: ${(error as Error).message}`,
       );
@@ -81,13 +91,10 @@ export class AccountingReconciliationSchedulerService
   async onModuleDestroy() {
     await this.job?.stop();
     this.job = null;
+    this.setProviderRecoverySchedulerActive(false);
   }
 
   async runScheduledReconciliation(triggeredBy: 'cron' | 'manual' = 'manual') {
-    if (!this.isEnabled()) {
-      return null;
-    }
-
     if (this.running) {
       this.logger.log(
         `accounting_reconciliation_scheduler_skipped_local_overlap trigger=${triggeredBy}`,
@@ -133,7 +140,24 @@ export class AccountingReconciliationSchedulerService
         PaymentProviderRecoveryService,
         { strict: false },
       );
-      await providerRecovery?.reconcileEligible(this.getBatchSize());
+      this.lastProviderRecoveryAt = startedAt;
+      this.lastProviderRecoveryError = null;
+      try {
+        this.lastProviderRecoveryResult = providerRecovery
+          ? await providerRecovery.reconcileEligible(this.getBatchSize())
+          : null;
+      } catch (error) {
+        this.lastProviderRecoveryError = this.errorMessage(error);
+        throw error;
+      }
+
+      if (!this.isEnabled()) {
+        this.logger.log(
+          `accounting_reconciliation_scheduler_accounting_disabled provider_recovery_completed trigger=${triggeredBy}`,
+        );
+        return null;
+      }
+
       const result = await this.operationsService.runFull({
         scope: 'FULL',
         trigger: 'SCHEDULED',
@@ -260,21 +284,29 @@ export class AccountingReconciliationSchedulerService
         lastScheduledRun?.totalCritical ??
         null,
       lastFullRunAt: lastFullRun?.startedAt?.toISOString() ?? null,
+      lastProviderRecoveryAt:
+        this.lastProviderRecoveryAt?.toISOString() ?? null,
+      lastProviderRecoveryError: this.lastProviderRecoveryError,
+      lastProviderRecoveryResult: this.lastProviderRecoveryResult,
       openCriticalCount: criticalCount,
       openWarningCount: warningCount,
     };
   }
 
   private shouldStartScheduler() {
-    if (!this.isEnabled()) {
-      return false;
-    }
-
     if (process.env.NODE_ENV === 'test') {
       return false;
     }
 
     return true;
+  }
+
+  private setProviderRecoverySchedulerActive(active: boolean) {
+    const providerRecovery = this.moduleRef?.get(
+      PaymentProviderRecoveryService,
+      { strict: false },
+    );
+    providerRecovery?.setSchedulerActive?.(active);
   }
 
   private isEnabled() {

@@ -3,6 +3,7 @@ import {
   PaymentProvider,
   PaymentStatus,
   Prisma,
+  RefundDestination,
   RefundStatus,
 } from '@prisma/client';
 import { PrismaService } from '@common/prisma/prisma.service';
@@ -12,8 +13,28 @@ import { MarkPaymentFailedUseCase } from '../use-cases/mark-payment-failed.use-c
 import { MarkPaymentSucceededUseCase } from '../use-cases/mark-payment-succeeded.use-case';
 import { RequestPaymentRefundUseCase } from '../use-cases/request-payment-refund.use-case';
 
+export type PaymentProviderRecoveryStatus = {
+  enabled: boolean;
+  running: boolean;
+  lastStartedAt: string | null;
+  lastSuccessAt: string | null;
+  lastFailureAt: string | null;
+  lastErrorCategory: string | null;
+  lastScannedCount: number | null;
+  lastRecoveredCount: number | null;
+};
+
 @Injectable()
 export class PaymentProviderRecoveryService {
+  private schedulerActive = false;
+  private running = false;
+  private lastStartedAt: Date | null = null;
+  private lastSuccessAt: Date | null = null;
+  private lastFailureAt: Date | null = null;
+  private lastErrorCategory: string | null = null;
+  private lastScannedCount: number | null = null;
+  private lastRecoveredCount: number | null = null;
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly registry: PaymentProviderRegistryService,
@@ -22,43 +43,115 @@ export class PaymentProviderRecoveryService {
     private readonly refunds: RequestPaymentRefundUseCase,
   ) {}
 
-  async reconcileEligible(batchSize = 100) {
-    const [payments, refunds] = await Promise.all([
-      this.prisma.payment.findMany({
-        where: {
-          provider: { in: [PaymentProvider.STRIPE, PaymentProvider.PAYMOB] },
-          status: {
-            in: [
-              PaymentStatus.CREATED,
-              PaymentStatus.PENDING,
-              PaymentStatus.REQUIRES_ACTION,
-              PaymentStatus.AUTHORIZED,
-            ],
-          },
-        },
-        orderBy: { updatedAt: 'asc' },
-        take: batchSize,
-        select: { id: true },
-      }),
-      this.prisma.refund.findMany({
-        where: { status: RefundStatus.PROCESSING },
-        orderBy: { updatedAt: 'asc' },
-        take: batchSize,
-        select: { id: true },
-      }),
-    ]);
+  setSchedulerActive(active: boolean) {
+    this.schedulerActive = active;
+  }
 
-    let paymentCount = 0;
-    for (const payment of payments) {
-      await this.reconcilePayment(payment.id, false);
-      paymentCount += 1;
+  getStatusSnapshot(): PaymentProviderRecoveryStatus {
+    return {
+      enabled: this.schedulerActive,
+      running: this.running,
+      lastStartedAt: this.lastStartedAt?.toISOString() ?? null,
+      lastSuccessAt: this.lastSuccessAt?.toISOString() ?? null,
+      lastFailureAt: this.lastFailureAt?.toISOString() ?? null,
+      lastErrorCategory: this.lastErrorCategory,
+      lastScannedCount: this.lastScannedCount,
+      lastRecoveredCount: this.lastRecoveredCount,
+    };
+  }
+
+  async reconcileEligible(batchSize = 100) {
+    const startedAt = new Date();
+    this.running = true;
+    this.lastStartedAt = startedAt;
+    this.lastErrorCategory = null;
+
+    try {
+      const [payments, walletRefunds, providerRefunds] = await Promise.all([
+        this.prisma.payment.findMany({
+          where: {
+            provider: { in: [PaymentProvider.STRIPE, PaymentProvider.PAYMOB] },
+            status: {
+              in: [
+                PaymentStatus.CREATED,
+                PaymentStatus.PENDING,
+                PaymentStatus.REQUIRES_ACTION,
+                PaymentStatus.AUTHORIZED,
+              ],
+            },
+          },
+          orderBy: { updatedAt: 'asc' },
+          take: batchSize,
+          select: { id: true },
+        }),
+        this.prisma.refund.findMany({
+          where: {
+            destination: RefundDestination.CUSTOMER_WALLET,
+            status: { in: [RefundStatus.REQUESTED, RefundStatus.PROCESSING] },
+          },
+          orderBy: { updatedAt: 'asc' },
+          take: batchSize,
+          select: { id: true },
+        }),
+        this.prisma.refund.findMany({
+          where: {
+            destination: RefundDestination.ORIGINAL_METHOD,
+            status: RefundStatus.PROCESSING,
+          },
+          orderBy: { updatedAt: 'asc' },
+          take: batchSize,
+          select: { id: true },
+        }),
+      ]);
+
+      this.lastScannedCount =
+        payments.length + walletRefunds.length + providerRefunds.length;
+      let recoveredCount = 0;
+      this.lastRecoveredCount = recoveredCount;
+
+      for (const payment of payments) {
+        await this.reconcilePayment(payment.id, false);
+        recoveredCount += 1;
+        this.lastRecoveredCount = recoveredCount;
+      }
+      let walletRefundCount = 0;
+      for (const refund of walletRefunds) {
+        await this.refunds.reconcileWalletRefund(refund.id);
+        walletRefundCount += 1;
+        recoveredCount += 1;
+        this.lastRecoveredCount = recoveredCount;
+      }
+
+      let providerRefundCount = 0;
+      for (const refund of providerRefunds) {
+        await this.refunds.reconcileProviderRefund(refund.id);
+        providerRefundCount += 1;
+        recoveredCount += 1;
+        this.lastRecoveredCount = recoveredCount;
+      }
+
+      this.lastSuccessAt = new Date();
+      return {
+        payments: payments.length,
+        refunds: walletRefundCount + providerRefundCount,
+        walletRefunds: walletRefundCount,
+        providerRefunds: providerRefundCount,
+      };
+    } catch (error) {
+      this.lastFailureAt = new Date();
+      this.lastErrorCategory = this.errorCategory(error);
+      throw error;
+    } finally {
+      this.running = false;
     }
-    let refundCount = 0;
-    for (const refund of refunds) {
-      await this.refunds.reconcileProviderRefund(refund.id);
-      refundCount += 1;
+  }
+
+  private errorCategory(error: unknown) {
+    if (error instanceof Error && error.name) {
+      return error.name;
     }
-    return { payments: paymentCount, refunds: refundCount };
+
+    return 'UNKNOWN_ERROR';
   }
 
   async reconcilePayment(paymentId: string, allowStripeReplay: boolean) {

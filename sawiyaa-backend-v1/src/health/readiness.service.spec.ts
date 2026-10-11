@@ -4,11 +4,40 @@ describe('ReadinessService', () => {
   const paymentRuntime = {
     getPaymentRoutingConfig: jest.fn(),
   };
-  const service = new ReadinessService(paymentRuntime as never);
+  const providerRecovery = {
+    getStatusSnapshot: jest.fn().mockReturnValue({
+      enabled: true,
+      running: false,
+      lastStartedAt: null,
+      lastSuccessAt: null,
+      lastFailureAt: null,
+      lastErrorCategory: null,
+      lastScannedCount: null,
+      lastRecoveredCount: null,
+    }),
+  };
+  const service = new ReadinessService(
+    paymentRuntime as never,
+    undefined,
+    undefined,
+    providerRecovery as never,
+  );
 
   beforeEach(() => {
     jest.resetAllMocks();
-    paymentRuntime.getPaymentRoutingConfig.mockReturnValue({ routeReadiness: [] });
+    paymentRuntime.getPaymentRoutingConfig.mockReturnValue({
+      routeReadiness: [],
+    });
+    providerRecovery.getStatusSnapshot.mockReturnValue({
+      enabled: true,
+      running: false,
+      lastStartedAt: null,
+      lastSuccessAt: null,
+      lastFailureAt: null,
+      lastErrorCategory: null,
+      lastScannedCount: null,
+      lastRecoveredCount: null,
+    });
     process.env.APP_ENV = 'production';
     process.env.NODE_ENV = 'production';
     process.env.SESSION_ATTENDANCE_RECONCILIATION_SWEEPER_ENABLED = 'true';
@@ -34,22 +63,33 @@ describe('ReadinessService', () => {
     process.env.SESSION_ATTENDANCE_RECONCILIATION_SWEEPER_ENABLED = 'false';
     const snapshot = await service.getSnapshot();
     expect(snapshot.components.sessionCompletionWorker.status).toBe('READY');
-    expect(snapshot.components.attendanceReconciliation.status).toBe('DEGRADED');
+    expect(snapshot.components.attendanceReconciliation.status).toBe(
+      'DEGRADED',
+    );
     expect(snapshot.status).toBe('DEGRADED');
   });
 
   it('reports production Daily configuration as not ready when incomplete', async () => {
     delete process.env.DAILY_WEBHOOK_SECRET;
-    expect((await service.getSnapshot()).components.dailyWebhook.status).toBe('NOT_READY');
+    expect((await service.getSnapshot()).components.dailyWebhook.status).toBe(
+      'NOT_READY',
+    );
   });
 
   it('makes disabled reconciliation explicit in readiness', async () => {
     const snapshot = await service.getSnapshot();
 
-    expect(snapshot.components.accountingReconciliation).toEqual({
-      status: 'DEGRADED',
-      detail: expect.stringContaining('disabled'),
-    });
+    expect(snapshot.components.accountingReconciliation.status).toBe(
+      'DEGRADED',
+    );
+    expect(snapshot.components.accountingReconciliation.detail).toContain(
+      'disabled',
+    );
+    expect(snapshot.components.accountingReconciliation.enabled).toBe(false);
+    expect(
+      snapshot.components.accountingReconciliation.lastRunStatus,
+    ).toBeNull();
+    expect(snapshot.components.providerPaymentRecovery.status).toBe('READY');
     expect(snapshot.warnings).toEqual(
       expect.arrayContaining([
         expect.stringContaining('ACCOUNTING_RECONCILIATION_ENABLED'),
@@ -76,6 +116,8 @@ describe('ReadinessService', () => {
     const degradedService = new ReadinessService(
       paymentRuntime as never,
       notificationQueue as never,
+      undefined,
+      providerRecovery as never,
     );
 
     const snapshot = await degradedService.getSnapshot();
@@ -108,6 +150,7 @@ describe('ReadinessService', () => {
       paymentRuntime as never,
       undefined,
       operationsQueue as never,
+      providerRecovery as never,
     );
 
     const snapshot = await degradedService.getSnapshot();
@@ -117,7 +160,36 @@ describe('ReadinessService', () => {
     expect(snapshot.status).not.toBe('NOT_READY');
     expect(snapshot.warnings).toEqual(
       expect.arrayContaining([
-        expect.stringContaining('Daily attendance operations queue is degraded'),
+        expect.stringContaining(
+          'Daily attendance operations queue is degraded',
+        ),
+      ]),
+    );
+  });
+
+  it('marks mandatory provider recovery not ready when its scheduler is inactive', async () => {
+    providerRecovery.getStatusSnapshot.mockReturnValue({
+      enabled: false,
+      running: false,
+      lastStartedAt: null,
+      lastSuccessAt: null,
+      lastFailureAt: null,
+      lastErrorCategory: null,
+      lastScannedCount: null,
+      lastRecoveredCount: null,
+    });
+
+    const snapshot = await service.getSnapshot();
+
+    expect(snapshot.components.providerPaymentRecovery.status).toBe(
+      'NOT_READY',
+    );
+    expect(snapshot.status).toBe('NOT_READY');
+    expect(snapshot.warnings).toEqual(
+      expect.arrayContaining([
+        expect.stringContaining(
+          'Mandatory provider payment recovery scheduler',
+        ),
       ]),
     );
   });

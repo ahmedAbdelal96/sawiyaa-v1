@@ -147,6 +147,14 @@ export type AccountingReconciliationSchedulerState = {
   lastScheduledIssueCount: number | null;
   lastScheduledCriticalCount: number | null;
   lastFullRunAt: string | null;
+  lastProviderRecoveryAt: string | null;
+  lastProviderRecoveryError: string | null;
+  lastProviderRecoveryResult: {
+    payments: number;
+    refunds: number;
+    walletRefunds: number;
+    providerRefunds: number;
+  } | null;
   openCriticalCount: number;
   openWarningCount: number;
 };

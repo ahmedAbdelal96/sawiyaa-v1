@@ -387,6 +387,13 @@ export class RequestPaymentRefundUseCase {
       return refund;
     }
 
+    // Customer-wallet refunds never call a payment provider. They converge
+    // through the wallet ledger path below, even if an old or interrupted
+    // execution left the refund in PROCESSING.
+    if (refund.destination !== RefundDestination.ORIGINAL_METHOD) {
+      return this.reconcileWalletRefund(refund.id);
+    }
+
     const payment = await this.paymentRepository.findById(refund.paymentId);
     if (!payment || payment.provider === PaymentProvider.INTERNAL_WALLET) {
       return refund;
@@ -482,6 +489,37 @@ export class RequestPaymentRefundUseCase {
         currencyMatches,
         evidence: result.evidence,
       },
+    });
+  }
+
+  async reconcileWalletRefund(refundId: string) {
+    const refund = await this.paymentRepository.findRefundById(refundId);
+    if (!refund) {
+      throw new NotFoundException({ error: 'PAYMENT_REFUND_NOT_FOUND' });
+    }
+
+    if (
+      refund.status === RefundStatus.SUCCEEDED ||
+      refund.status === RefundStatus.FAILED
+    ) {
+      return refund;
+    }
+
+    if (refund.destination !== RefundDestination.CUSTOMER_WALLET) {
+      return refund;
+    }
+
+    const payment = await this.paymentRepository.findById(refund.paymentId);
+    if (!payment || !payment.patientId) {
+      throw new BadRequestException({
+        messageKey: 'payments.errors.patientRequiredForWalletRefund',
+        error: 'PAYMENT_PATIENT_REQUIRED_FOR_WALLET_REFUND',
+      });
+    }
+
+    return this.finalizeWalletRefundOutcome({
+      payment,
+      refundId: refund.id,
     });
   }
 

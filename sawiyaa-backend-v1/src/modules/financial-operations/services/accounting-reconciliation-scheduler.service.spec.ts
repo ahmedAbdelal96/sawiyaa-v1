@@ -8,6 +8,7 @@ const cronFromMock = jest.fn();
 
 jest.mock('cron', () => ({
   CronJob: {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-return
     from: (...args: unknown[]) => cronFromMock(...args),
   },
 }));
@@ -110,12 +111,19 @@ describe('AccountingReconciliationSchedulerService', () => {
     process.env.NODE_ENV = originalNodeEnv;
   });
 
-  it('does not start when disabled', () => {
+  it('starts provider recovery when full accounting reconciliation is disabled', () => {
+    process.env.NODE_ENV = 'production';
+    cronFromMock.mockReturnValue({
+      stop: jest.fn(),
+      nextDate: jest.fn(() => ({
+        toJSDate: () => new Date('2026-05-15T03:00:00.000Z'),
+      })),
+    });
     const setup = buildService(false);
 
     setup.service.onModuleInit();
 
-    expect(cronFromMock).not.toHaveBeenCalled();
+    expect(cronFromMock).toHaveBeenCalledTimes(1);
   });
 
   it('starts the cron job when enabled', () => {
@@ -157,6 +165,15 @@ describe('AccountingReconciliationSchedulerService', () => {
     expect(setup.providerRecovery.reconcileEligible).toHaveBeenCalledWith(100);
   });
 
+  it('does not gate provider recovery on full accounting reconciliation', async () => {
+    const setup = buildService(false);
+
+    await setup.service.runScheduledReconciliation();
+
+    expect(setup.providerRecovery.reconcileEligible).toHaveBeenCalledWith(100);
+    expect(setup.operationsService.runFull).not.toHaveBeenCalled();
+  });
+
   it('allows one replica to execute while another replica skips safely', async () => {
     let owner = false;
     let releaseRun!: () => void;
@@ -164,17 +181,18 @@ describe('AccountingReconciliationSchedulerService', () => {
       releaseRun = resolve;
     });
     const sharedLockService = {
-      tryAcquire: jest.fn(async () => {
+      tryAcquire: jest.fn(() => {
         if (owner) {
-          return null;
+          return Promise.resolve(null);
         }
 
         owner = true;
-        return {
-          release: jest.fn(async () => {
+        return Promise.resolve({
+          release: jest.fn(() => {
             owner = false;
+            return Promise.resolve();
           }),
-        };
+        });
       }),
     };
     const runFull = jest.fn(async () => {
