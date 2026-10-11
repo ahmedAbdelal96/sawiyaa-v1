@@ -4,6 +4,8 @@ export const adminNotificationsQueryKeys = {
   all: ["admin", "notifications"] as const,
   list: (params: ListAdminNotificationsParams) =>
     [...adminNotificationsQueryKeys.all, "list", params] as const,
+  actionCenter: (params: ListAdminNotificationsParams) =>
+    [...adminNotificationsQueryKeys.all, "action-center", params] as const,
   details: (notificationId: string) =>
     [...adminNotificationsQueryKeys.all, "details", notificationId] as const,
 };

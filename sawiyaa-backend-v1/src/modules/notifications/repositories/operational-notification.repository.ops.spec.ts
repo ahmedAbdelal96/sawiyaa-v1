@@ -77,4 +77,39 @@ describe('OperationalNotificationRepository ops surfaces', () => {
       }),
     );
   });
+
+  it('lists only explicit Action Center types scoped to the current reviewer', async () => {
+    (prisma.notification.findMany as jest.Mock).mockResolvedValue([]);
+    (prisma.notification.count as jest.Mock).mockResolvedValue(0);
+
+    await repository.listAdminActionCenterNotifications({
+      userId: 'reviewer-1',
+      typeSlugs: ['moderation.report-created'],
+      statuses: [NotificationStatus.SENT],
+      page: 1,
+      limit: 20,
+    });
+
+    expect(prisma.notification.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          userId: 'reviewer-1',
+          status: { in: [NotificationStatus.SENT] },
+          notificationType: {
+            slug: { in: ['moderation.report-created'] },
+          },
+        }),
+      }),
+    );
+    expect(prisma.notification.count).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          userId: 'reviewer-1',
+          notificationType: {
+            slug: { in: ['moderation.report-created'] },
+          },
+        }),
+      }),
+    );
+  });
 });

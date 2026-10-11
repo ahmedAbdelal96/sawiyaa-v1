@@ -124,6 +124,21 @@ export function resolveNotificationClickTarget(
   const primaryAction = input.item.primaryAction;
 
   if (primaryAction) {
+    const canonicalHref = normalizeNotificationHref(primaryAction.href);
+    if (canonicalHref && primaryAction.kind !== "details") {
+      return { kind: "href", href: canonicalHref };
+    }
+
+    if (primaryAction.kind === "moderation") {
+      if (input.role === "admin" && primaryAction.targetId) {
+        return {
+          kind: "href",
+          href: `/admin/moderation/reports/${encodeURIComponent(primaryAction.targetId)}`,
+        };
+      }
+      return { kind: "href", href: buildRoleHomeHref(input.role) };
+    }
+
     if (primaryAction.kind === "messages") {
       if (input.role === "admin") {
         const lane = primaryAction.lane || "session";
@@ -146,7 +161,7 @@ export function resolveNotificationClickTarget(
     }
     if (primaryAction.kind === "session") {
       if (input.role === "admin") {
-        return { kind: "href", href: "/admin" };
+        return { kind: "href", href: `/admin/sessions/${primaryAction.targetId ?? primaryAction.id ?? ""}` };
       }
       return {
         kind: "href",
@@ -169,6 +184,12 @@ export function resolveNotificationClickTarget(
         lane: "support",
         threadId: primaryAction.id || undefined,
       };
+    }
+    if (primaryAction.kind === "payment") {
+      if (canonicalHref) {
+        return { kind: "href", href: canonicalHref };
+      }
+      return { kind: "href", href: buildRoleHomeHref(input.role) };
     }
     if (primaryAction.kind === "details") {
       if (input.role === "admin" && input.item.id) {

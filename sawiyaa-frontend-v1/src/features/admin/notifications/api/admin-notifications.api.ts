@@ -16,6 +16,17 @@ export async function listAdminNotifications(params: ListAdminNotificationsParam
   return extractData(response.data);
 }
 
+export async function listAdminActionCenterNotifications(
+  params: ListAdminNotificationsParams,
+) {
+  const response = await httpClient.get<ApiPayload<AdminNotificationsListResponseData>>(
+    "/admin/notifications/action-center",
+    { params },
+  );
+
+  return extractData(response.data);
+}
+
 export async function getAdminNotificationDetails(notificationId: string) {
   const response = await httpClient.get<ApiPayload<AdminNotificationDetailResponseData>>(
     `/admin/notifications/${notificationId}`,

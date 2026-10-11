@@ -41,6 +41,7 @@ import {
 } from '../dto/notification-ops-response.dto';
 import { GetAdminOperationalNotificationDetailsUseCase } from '../use-cases/get-admin-operational-notification-details.use-case';
 import { ListAdminOperationalNotificationsUseCase } from '../use-cases/list-admin-operational-notifications.use-case';
+import { ListAdminActionCenterItemsUseCase } from '../use-cases/list-admin-action-center-items.use-case';
 import { SendDevTestPushNotificationUseCase } from '../use-cases/send-dev-test-push-notification.use-case';
 
 @ApiTags('Admin - Notification Ops')
@@ -58,6 +59,7 @@ import { SendDevTestPushNotificationUseCase } from '../use-cases/send-dev-test-p
 export class AdminNotificationOpsController {
   constructor(
     private readonly listAdminOperationalNotificationsUseCase: ListAdminOperationalNotificationsUseCase,
+    private readonly listAdminActionCenterItemsUseCase: ListAdminActionCenterItemsUseCase,
     private readonly getAdminOperationalNotificationDetailsUseCase: GetAdminOperationalNotificationDetailsUseCase,
     private readonly sendDevTestPushNotificationUseCase: SendDevTestPushNotificationUseCase,
   ) {}
@@ -82,6 +84,30 @@ export class AdminNotificationOpsController {
   })
   list(@Query() query: ListAdminNotificationsDto) {
     return this.listAdminOperationalNotificationsUseCase.execute({ query });
+  }
+
+  @Get('action-center')
+  @ApiOperation({
+    summary: 'List Admin Action Center items',
+    description:
+      'Lists only explicit reviewer/action-center notifications for the authenticated reviewer. Routine participant notifications are never projected here.',
+  })
+  @ApiQuery({ name: 'status', required: false })
+  @ApiQuery({ name: 'channel', required: false })
+  @ApiQuery({ name: 'category', required: false })
+  @ApiQuery({ name: 'scheduledFrom', required: false })
+  @ApiQuery({ name: 'scheduledTo', required: false })
+  @ApiQuery({ name: 'page', required: false })
+  @ApiQuery({ name: 'limit', required: false })
+  @ApiResponse({ status: 200, type: NotificationOpsListSuccessResponseDto })
+  actionCenter(
+    @CurrentUser() authenticatedUser: AuthenticatedUser,
+    @Query() query: ListAdminNotificationsDto,
+  ) {
+    return this.listAdminActionCenterItemsUseCase.execute({
+      authenticatedUserId: authenticatedUser.id,
+      query,
+    });
   }
 
   @Get(':id')

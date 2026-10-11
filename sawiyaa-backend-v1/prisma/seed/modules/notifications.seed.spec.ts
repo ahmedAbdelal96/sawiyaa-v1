@@ -150,4 +150,50 @@ describe('notifications seed', () => {
       (prisma as unknown as { notification: unknown }).notification,
     ).toBeUndefined();
   });
+
+  it('seeds readable Arabic copy for the pre-start session reminder', async () => {
+    const translationCreates: Array<{ data: Record<string, unknown> }> = [];
+    const prisma = {
+      notificationType: {
+        findUnique: jest.fn(() => Promise.resolve(null)),
+        create: jest.fn((args: { data: Record<string, unknown> }) =>
+          Promise.resolve({ id: `type-${args.data.slug}` }),
+        ),
+        findUniqueOrThrow: jest.fn(({ where }: { where: { slug: string } }) =>
+          Promise.resolve({ id: `type-${where.slug}` }),
+        ),
+      },
+      notificationTemplate: {
+        findUnique: jest.fn(() => Promise.resolve(null)),
+        create: jest.fn((args: { data: Record<string, unknown> }) =>
+          Promise.resolve({ id: `template-${args.data.slug}` }),
+        ),
+      },
+      notificationTemplateTranslation: {
+        findUnique: jest.fn(() => Promise.resolve(null)),
+        create: jest.fn((args: { data: Record<string, unknown> }) => {
+          translationCreates.push(args);
+          return Promise.resolve(args);
+        }),
+      },
+    } as unknown as PrismaClient;
+
+    await notificationsSeedModule.run(prisma);
+
+    const arabicTranslations = translationCreates.filter(
+      (args) => args.data.locale === 'ar',
+    );
+    const beforeStart = arabicTranslations.find(
+      (args) =>
+        args.data.notificationTemplateId ===
+          'template-sessions.session-reminder-before-start.in-app.v1' ||
+        args.data.notificationTemplateId ===
+          'template-sessions.session-reminder-before-start.email.v1',
+    );
+
+    expect(beforeStart).toBeDefined();
+    expect(String(beforeStart?.data.titleTemplate)).toContain('تذكير');
+    expect(String(beforeStart?.data.bodyTemplate)).toContain('ستبدأ');
+    expect(String(beforeStart?.data.ctaLabel)).toContain('افتح');
+  });
 });

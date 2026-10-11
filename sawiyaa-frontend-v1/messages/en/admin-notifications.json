@@ -1,15 +1,15 @@
 {
   "notifications": {
     "meta": {
-      "listTitle": "Operational Notifications — Admin",
-      "listDescription": "Inspect pending, queued, failed, and suppressed notification diagnostics in the current admin baseline.",
+      "listTitle": "Delivery Operations — Admin",
+      "listDescription": "Inspect pending, queued, failed, and suppressed delivery diagnostics separately from the Admin Action Center.",
       "detailTitle": "Notification Diagnostics — Admin",
       "detailDescription": "Inspect notification lifecycle state, payload snapshots, and delivery attempts."
     },
     "list": {
-      "eyebrow": "Runtime notifications baseline",
-      "title": "Inspect operational notifications",
-      "note": "This surface shows the notification diagnostics the backend currently exposes for admin and support operations. It stays intentionally lightweight and does not behave like a notification center.",
+      "eyebrow": "Delivery operations",
+      "title": "Inspect delivery operations",
+      "note": "This surface shows delivery diagnostics for Admin and support operations. The Admin header uses a separate Action Center.",
       "count": "{value, number} active diagnostics",
       "countLoading": "Loading diagnostics",
       "itemTitle": "{slug}",
@@ -73,16 +73,16 @@
       "breadcrumb": "Notification Diagnostics"
     },
     "dropdown": {
-      "ariaLabel": "Operational notifications",
-      "title": "Notifications",
-      "note": "Operational diagnostics only",
-      "count": "{value, number} active",
-      "errorHeading": "Notifications are not available right now",
-      "errorNote": "Could not load notification diagnostics.",
+      "ariaLabel": "Admin action center",
+      "title": "Action Center",
+      "note": "Items that need Admin or reviewer action",
+      "count": "{value, number} action items",
+      "errorHeading": "Action Center is not available right now",
+      "errorNote": "Could not load Admin action items.",
       "retry": "Try again",
-      "emptyHeading": "No active notification diagnostics",
-      "emptyNote": "There are no pending, queued, failed, or suppressed notification items right now.",
-      "openAll": "Open notifications"
+      "emptyHeading": "No action items",
+      "emptyNote": "There are no Admin or reviewer action items right now.",
+      "openAll": "Open Delivery Operations"
     },
     "queue": {
       "heading": "Notification diagnostics",
@@ -309,6 +309,10 @@
         "title": "Session reminder",
         "subtitle": "Session · Reminder"
       },
+      "sessions-session-reminder-before-start": {
+        "title": "Session reminder",
+        "subtitle": "Session · Starts soon"
+      },
       "sessions-session-booked": {
         "title": "New session booked",
         "subtitle": "Session · Booking"
@@ -336,6 +340,10 @@
       "payments-payment-failed": {
         "title": "Payment failed",
         "subtitle": "Finance · Payment"
+      },
+      "moderation-report-created": {
+        "title": "Moderation report requires review",
+        "subtitle": "Review · Moderation report"
       },
       "payments-refund-created": {
         "title": "Refund request created",

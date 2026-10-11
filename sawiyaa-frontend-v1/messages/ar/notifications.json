@@ -81,6 +81,10 @@
       "title": "اقترب موعد جلستك",
       "subtitle": "جلسة · تبدأ خلال 15 دقيقة"
     },
+    "sessions-session-reminder-before-start": {
+      "title": "اقترب موعد جلستك",
+      "subtitle": "جلسة · تبدأ قريبًا"
+    },
     "sessions-session-starting-now": {
       "title": "جلستك تبدأ الآن",
       "subtitle": "جلسة · حان وقت الانضمام"

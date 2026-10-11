@@ -225,9 +225,18 @@ describe('NotificationContextEnrichmentService professional content', () => {
       arabicAgain.get('notification-session')?.context.practitionerName,
     ).toBe('أخصائي نفسي');
 
-    expect(arabic.get('notification-session')?.primaryAction).toEqual(
-      english.get('notification-session')?.primaryAction,
-    );
+    expect(arabic.get('notification-session')?.primaryAction).toMatchObject({
+      kind: 'session',
+      targetType: 'SESSION',
+      targetId: 'session-a',
+      href: '/ar/patient/sessions/session-a',
+    });
+    expect(english.get('notification-session')?.primaryAction).toMatchObject({
+      kind: 'session',
+      targetType: 'SESSION',
+      targetId: 'session-a',
+      href: '/en/patient/sessions/session-a',
+    });
     expect(arabic.get('notification-session')?.context.sessionCode).toBe(
       english.get('notification-session')?.context.sessionCode,
     );

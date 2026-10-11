@@ -28,6 +28,7 @@ import { SessionReminderQueueRepository } from './repositories/session-reminder-
 import { GetAdminAuditEventDetailsUseCase } from './use-cases/get-admin-audit-event-details.use-case';
 import { ListAdminAuditEventsUseCase } from './use-cases/list-admin-audit-events.use-case';
 import { ListAdminOperationalNotificationsUseCase } from './use-cases/list-admin-operational-notifications.use-case';
+import { ListAdminActionCenterItemsUseCase } from './use-cases/list-admin-action-center-items.use-case';
 import { GetAdminOperationalNotificationDetailsUseCase } from './use-cases/get-admin-operational-notification-details.use-case';
 import { ListMyNotificationsUseCase } from './use-cases/list-my-notifications.use-case';
 import { GetMyUnreadNotificationCountUseCase } from './use-cases/get-my-unread-notification-count.use-case';
@@ -103,6 +104,7 @@ import { NotificationQueueModule } from '@common/queue/notification-queue.module
     ListAdminAuditEventsUseCase,
     GetAdminAuditEventDetailsUseCase,
     ListAdminOperationalNotificationsUseCase,
+    ListAdminActionCenterItemsUseCase,
     GetAdminOperationalNotificationDetailsUseCase,
     NotificationDeliveryAttemptEngineService,
     OperationalNotificationService,

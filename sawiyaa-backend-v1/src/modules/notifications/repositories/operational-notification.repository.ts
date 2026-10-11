@@ -529,6 +529,80 @@ export class OperationalNotificationRepository {
     ]);
   }
 
+  listAdminActionCenterNotifications(input: {
+    userId: string;
+    typeSlugs: string[];
+    statuses: NotificationStatus[];
+    channel?: NotificationChannel;
+    category?: NotificationCategory;
+    scheduledFrom?: Date;
+    scheduledTo?: Date;
+    page: number;
+    limit: number;
+  }) {
+    const skip = (input.page - 1) * input.limit;
+    const where: Prisma.NotificationWhereInput = {
+      userId: input.userId,
+      status: { in: input.statuses },
+      channel: input.channel,
+      notificationType: {
+        slug: { in: input.typeSlugs },
+        category: input.category,
+      },
+      scheduledFor:
+        input.scheduledFrom || input.scheduledTo
+          ? {
+              gte: input.scheduledFrom,
+              lte: input.scheduledTo,
+            }
+          : undefined,
+    };
+
+    return this.prisma.$transaction([
+      this.prisma.notification.findMany({
+        where,
+        orderBy: [{ updatedAt: 'desc' }, { createdAt: 'desc' }],
+        skip,
+        take: input.limit,
+        select: {
+          id: true,
+          status: true,
+          channel: true,
+          userId: true,
+          relatedEntityType: true,
+          relatedEntityId: true,
+          scheduledFor: true,
+          sentAt: true,
+          failedAt: true,
+          suppressedReason: true,
+          createdAt: true,
+          updatedAt: true,
+          notificationType: {
+            select: {
+              category: true,
+              slug: true,
+            },
+          },
+          _count: {
+            select: {
+              deliveryAttempts: true,
+            },
+          },
+          deliveryAttempts: {
+            orderBy: { attemptedAt: 'desc' },
+            take: 1,
+            select: {
+              status: true,
+              errorCode: true,
+              attemptedAt: true,
+            },
+          },
+        },
+      }),
+      this.prisma.notification.count({ where }),
+    ]);
+  }
+
   findOperationalNotificationById(
     notificationId: string,
     excludedTypeSlugs?: string[],
@@ -1215,9 +1289,9 @@ export class OperationalNotificationRepository {
   private isIdempotencyConflict(error: unknown): boolean {
     return Boolean(
       error &&
-        typeof error === 'object' &&
-        'code' in error &&
-        (error as { code?: string }).code === 'P2002',
+      typeof error === 'object' &&
+      'code' in error &&
+      (error as { code?: string }).code === 'P2002',
     );
   }
 

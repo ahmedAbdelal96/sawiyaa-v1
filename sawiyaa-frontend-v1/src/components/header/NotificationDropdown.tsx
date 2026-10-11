@@ -5,13 +5,14 @@ import { useLocale, useTranslations } from "next-intl";
 import { Dropdown } from "../ui/dropdown/Dropdown";
 import { Link, usePathname } from "@/i18n/navigation";
 import { ListStateSkeleton, StateCard } from "@/components/shared/ContentStates";
-import { useAdminNotifications } from "@/features/admin/notifications/hooks/use-admin-notifications";
+import { useAdminActionCenterNotifications } from "@/features/admin/notifications/hooks/use-admin-notifications";
 import { getAdminNotificationStatusTone } from "@/features/admin/notifications/lib/admin-notification-status";
 import { formatAdminNotificationDateTime } from "@/features/admin/notifications/components/admin-notification-utils";
 import { useCurrentUserPermissions } from "@/features/users/hooks/use-users";
 import { PermissionKey } from "@/lib/auth/permissions";
 import { getNotificationVisualProps } from "@/features/notifications/lib/notification-visual-mapper";
 import { useMySettings } from "@/features/settings/hooks/use-settings";
+import { resolveNotificationClickTarget } from "@/features/notifications/lib/resolve-notification-click-target";
 
 const TONE_CLASSES: Record<string, string> = {
   message: "bg-teal-50/50 text-teal-700 border border-teal-100 dark:bg-teal-500/5 dark:text-teal-300 dark:border-teal-500/10",
@@ -40,7 +41,7 @@ export default function NotificationDropdown() {
   const canReadNotifications = permissionData?.permissions.includes(PermissionKey.NOTIFICATION_OPS_READ) ?? false;
   const settingsQuery = useMySettings(isAdminArea);
   const viewerTimeZone = settingsQuery.data?.item.preferences.timezone;
-  const notifications = useAdminNotifications(
+  const notifications = useAdminActionCenterNotifications(
     { page: 1, limit: 5 },
     { enabled: isAdminArea && canReadNotifications },
   );
@@ -128,13 +129,27 @@ export default function NotificationDropdown() {
                   viewerTimeZone,
                 );
                 const toneClass = TONE_CLASSES[visual.tone] || TONE_CLASSES.system;
+                const target = resolveNotificationClickTarget({
+                  item: {
+                    id: item.id,
+                    typeSlug: item.typeSlug,
+                    action: null,
+                    payload: {},
+                    context: item.context,
+                    primaryAction: item.primaryAction,
+                  },
+                  role: "admin",
+                });
+                const href = target.kind === "href"
+                  ? target.href
+                  : `/admin/notifications/${item.id}`;
 
                 const isUnread = item.status !== "READ";
 
                 return (
                   <Link
                     key={item.id}
-                    href={`/admin/notifications/${item.id}` as never}
+                    href={href as never}
                     onClick={() => setIsOpen(false)}
                     className="block w-full text-start focus:outline-none transition first:mt-0"
                   >

@@ -13,10 +13,18 @@ describe('AdminNotificationOpsController', () => {
   const detailUseCase = {
     execute: jest.fn().mockResolvedValue({ item: { id: 'n1' } }),
   } as never;
+  const actionCenterUseCase = {
+    execute: jest.fn().mockResolvedValue({ items: [], pagination: {} }),
+  } as never;
+  const devTestPushUseCase = {
+    execute: jest.fn().mockResolvedValue({}),
+  } as never;
 
   const controller = new AdminNotificationOpsController(
     listUseCase,
+    actionCenterUseCase,
     detailUseCase,
+    devTestPushUseCase,
   );
 
   beforeEach(() => {
@@ -27,7 +35,7 @@ describe('AdminNotificationOpsController', () => {
     const roles = Reflect.getMetadata(
       ROLES_KEY,
       AdminNotificationOpsController,
-    );
+    ) as AppRole[];
     expect(roles).toEqual([
       AppRole.ADMIN,
       AppRole.SUPER_ADMIN,
@@ -38,7 +46,7 @@ describe('AdminNotificationOpsController', () => {
     const permissions = Reflect.getMetadata(
       PERMISSIONS_KEY,
       AdminNotificationOpsController,
-    );
+    ) as PermissionKey[];
     expect(permissions).toEqual([PermissionKey.NOTIFICATION_OPS_READ]);
   });
 
@@ -47,6 +55,19 @@ describe('AdminNotificationOpsController', () => {
     await controller.list(query as never);
 
     expect(listUseCase.execute).toHaveBeenCalledWith({ query });
+  });
+
+  it('delegates Action Center requests with the authenticated reviewer id', async () => {
+    const query = { page: 1, limit: 20 };
+    await controller.actionCenter(
+      { id: 'reviewer-1' } as never,
+      query as never,
+    );
+
+    expect(actionCenterUseCase.execute).toHaveBeenCalledWith({
+      authenticatedUserId: 'reviewer-1',
+      query,
+    });
   });
 
   it('delegates details request to detail use case', async () => {

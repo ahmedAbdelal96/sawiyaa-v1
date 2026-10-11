@@ -21,7 +21,9 @@ export type NotificationContext = {
 };
 
 export type NotificationPrimaryAction = {
-  kind: "messages" | "session" | "support" | "details";
+  kind: "messages" | "session" | "support" | "payment" | "moderation" | "details";
+  targetType?: string;
+  targetId?: string;
   label?: string;
   lane?: "session" | "support" | "care";
   id?: string;

@@ -1303,10 +1303,9 @@ export const notificationsSeedModule: SeedModule = {
           },
           ar: {
             subjectTemplate: null,
-            titleTemplate: 'ØªØ°ÙƒÙŠØ± Ø¨Ù…ÙˆØ¹Ø¯ Ø§Ù„Ø¬Ù„Ø³Ø©',
-            bodyTemplate:
-              'Ø³ØªØ¨Ø¯Ø£ Ø¬Ù„Ø³ØªÙƒ Ø®Ù„Ø§Ù„ {{offsetMinutes}} Ø¯Ù‚ÙŠÙ‚Ø©.',
-            ctaLabel: 'Ø§ÙØªØ­ Ø§Ù„Ø¬Ù„Ø³Ø©',
+            titleTemplate: 'تذكير بموعد الجلسة',
+            bodyTemplate: 'ستبدأ جلستك خلال {{offsetMinutes}} دقيقة.',
+            ctaLabel: 'افتح الجلسة',
             ctaUrlTemplate: '{{appUrl}}{{routePath}}',
           },
         },
@@ -1324,11 +1323,10 @@ export const notificationsSeedModule: SeedModule = {
             ctaUrlTemplate: '{{appUrl}}{{routePath}}',
           },
           ar: {
-            subjectTemplate: 'ØªØ°ÙƒÙŠØ± Ø¨Ù…ÙˆØ¹Ø¯ Ø§Ù„Ø¬Ù„Ø³Ø©',
-            titleTemplate: 'ØªØ°ÙƒÙŠØ± Ø¨Ù…ÙˆØ¹Ø¯ Ø§Ù„Ø¬Ù„Ø³Ø©',
-            bodyTemplate:
-              'Ø³ØªØ¨Ø¯Ø£ Ø¬Ù„Ø³ØªÙƒ Ø®Ù„Ø§Ù„ {{offsetMinutes}} Ø¯Ù‚ÙŠÙ‚Ø©.',
-            ctaLabel: 'Ø§ÙØªØ­ Ø§Ù„Ø¬Ù„Ø³Ø©',
+            subjectTemplate: 'تذكير بموعد الجلسة',
+            titleTemplate: 'تذكير بموعد الجلسة',
+            bodyTemplate: 'ستبدأ جلستك خلال {{offsetMinutes}} دقيقة.',
+            ctaLabel: 'افتح الجلسة',
             ctaUrlTemplate: '{{appUrl}}{{routePath}}',
           },
         },

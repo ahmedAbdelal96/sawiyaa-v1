@@ -447,6 +447,7 @@ export class NotificationContextEnrichmentService {
             }
 
             primaryAction.kind = 'messages';
+            primaryAction.targetType = 'CONVERSATION';
             // Infer lane by relationships first, then fall back to conversationType
             if (
               slug === 'messages.support-message-received' ||
@@ -456,6 +457,9 @@ export class NotificationContextEnrichmentService {
               primaryAction.lane = 'support';
               primaryAction.id =
                 conversation.supportTicketId ?? conversation.id;
+              primaryAction.targetType = conversation.supportTicketId
+                ? 'SUPPORT_TICKET'
+                : 'CONVERSATION';
             } else if (
               slug === 'messages.follow-up-message-received' ||
               conversation.conversationType === 'CARE_APPROVED'
@@ -466,6 +470,7 @@ export class NotificationContextEnrichmentService {
               primaryAction.lane = 'session';
               primaryAction.id = conversation.sessionId ?? conversation.id;
             }
+            primaryAction.targetId = primaryAction.id;
           }
         }
         // Session context
@@ -487,6 +492,30 @@ export class NotificationContextEnrichmentService {
 
             primaryAction.kind = 'session';
             primaryAction.id = session.id;
+            primaryAction.targetType = 'SESSION';
+            primaryAction.targetId = session.id;
+            const routePath = asString(payload.routePath);
+            const recipientRole =
+              asString(payload.recipientRole) ?? context.recipientRole;
+            const roleSegment =
+              recipientRole === 'PRACTITIONER' ? 'practitioner' : 'patient';
+            primaryAction.href = routePath?.startsWith('/')
+              ? routePath
+              : `/${requestedLocale ?? 'en'}/${roleSegment}/sessions/${session.id}`;
+          }
+        }
+        // Moderation review context
+        else if (
+          slug === 'moderation.report-created' &&
+          (entityType === 'MODERATION_REPORT' || asString(payload.reportId))
+        ) {
+          const reportId = entityId ?? asString(payload.reportId);
+          if (reportId) {
+            primaryAction.kind = 'moderation';
+            primaryAction.id = reportId;
+            primaryAction.targetType = 'MODERATION_REPORT';
+            primaryAction.targetId = reportId;
+            primaryAction.href = `/admin/moderation/reports/${encodeURIComponent(reportId)}`;
           }
         }
         // Support ticket context
@@ -509,6 +538,8 @@ export class NotificationContextEnrichmentService {
 
             primaryAction.kind = 'support';
             primaryAction.id = ticket.id;
+            primaryAction.targetType = 'SUPPORT_TICKET';
+            primaryAction.targetId = ticket.id;
           }
         }
         // Payment context
@@ -533,8 +564,14 @@ export class NotificationContextEnrichmentService {
             context.sessionCode = session.sessionCode;
             context.sessionStatus = session.status;
 
-            primaryAction.kind = 'session';
-            primaryAction.id = session.id;
+            primaryAction.kind = 'payment';
+            primaryAction.id = entityId ?? undefined;
+            primaryAction.targetType = entityType ?? 'PAYMENT';
+            primaryAction.targetId = entityId ?? undefined;
+            const routePath = asString(payload.routePath);
+            primaryAction.href = routePath?.startsWith('/')
+              ? routePath
+              : undefined;
           }
         }
 

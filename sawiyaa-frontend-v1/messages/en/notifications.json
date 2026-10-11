@@ -81,6 +81,10 @@
       "title": "Your session starts soon",
       "subtitle": "Session · starts in 15 minutes"
     },
+    "sessions-session-reminder-before-start": {
+      "title": "Your session is coming up",
+      "subtitle": "Session · starts soon"
+    },
     "sessions-session-starting-now": {
       "title": "Your session starts now",
       "subtitle": "Session · it is time to join"
