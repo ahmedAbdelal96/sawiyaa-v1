@@ -13,6 +13,7 @@ import { SessionRepository } from '../repositories/session.repository';
 import { ParseDailyAttendanceWebhookService } from '../services/parse-daily-attendance-webhook.service';
 import { NormalizeDailyAttendanceEvidenceService } from '../services/normalize-daily-attendance-evidence.service';
 import { MarkSessionInProgressFromAttendanceService } from '../services/mark-session-in-progress-from-attendance.service';
+import { AutomaticSessionCompletionService } from '../services/automatic-session-completion.service';
 import { DailyAttendanceWebhookParseResult } from '../types/session-attendance.types';
 import {
   SecurityAuditActorType,
@@ -34,6 +35,7 @@ export class HandleDailyAttendanceWebhookUseCase {
     private readonly sessionRepository: SessionRepository,
     private readonly normalizeDailyAttendanceEvidenceService: NormalizeDailyAttendanceEvidenceService,
     private readonly markSessionInProgressFromAttendanceService: MarkSessionInProgressFromAttendanceService,
+    private readonly automaticSessionCompletionService: AutomaticSessionCompletionService,
     private readonly logger: AppLoggerService,
   ) {}
 
@@ -77,7 +79,8 @@ export class HandleDailyAttendanceWebhookUseCase {
 
     // meeting.started / meeting.ended are evidence-only events.
     // They are stored as SessionEvent records, not SessionAttendanceEvent.
-    // They do NOT change session state (no auto-complete, no no-show, no refund).
+    // meeting.ended may trigger an evaluation, but it is never completion
+    // evidence by itself (no blind auto-complete, no no-show, no refund).
     if (this.isMeetingEvent(parsed.providerEventType)) {
       return this.handleMeetingEvent({
         parsed,
@@ -318,6 +321,31 @@ export class HandleDailyAttendanceWebhookUseCase {
         payload: parsed.payload,
       }),
     });
+
+    if (eventType === SessionEventType.MEETING_ENDED) {
+      try {
+        // Provider closure is only an evaluation trigger. The automatic
+        // completion service still requires trusted participant evidence and
+        // the configured recovery policy.
+        await this.automaticSessionCompletionService.execute({
+          sessionId: session.id,
+          trigger: 'PROVIDER_MEETING_ENDED',
+          at: new Date(),
+        });
+      } catch (error) {
+        // Do not turn a provider webhook retry into a lifecycle outage. The
+        // mandatory API recovery sweeper will retry the evaluation.
+        this.logger.error(
+          {
+            message: 'Automatic completion trigger failed after meeting ended',
+            sessionId: session.id,
+            error: error instanceof Error ? error : new Error(String(error)),
+          },
+          undefined,
+          'Sessions',
+        );
+      }
+    }
 
     return this.buildResponse({
       handled: true,

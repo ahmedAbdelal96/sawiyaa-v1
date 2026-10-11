@@ -97,6 +97,8 @@ export type SessionOutcomeEvaluationInput = {
   policy: SessionOutcomeEvaluationPolicy;
   policySnapshotPresent?: boolean;
   evaluatedAt: Date;
+  /** Explicit trusted finalization boundary for immediate completion. */
+  finalizationBoundaryAt?: Date;
 };
 
 export type SessionOutcomeEvaluationResult = {

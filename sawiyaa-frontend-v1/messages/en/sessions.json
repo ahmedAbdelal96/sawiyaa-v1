@@ -144,6 +144,36 @@
   "detail": {
     "backToSessions": "Back to sessions",
     "heading": "Session Details",
+    "ui": {
+      "timeline": "Event Timeline",
+      "timelineEmpty": "No events recorded for this session yet.",
+      "previousAppointment": "Previous Appointment",
+      "newAppointment": "New Appointment",
+      "reason": "Reason:"
+    },
+    "eventTypes": {
+      "SESSION_CREATED": "Session created",
+      "PAYMENT_PENDING": "Payment pending",
+      "PAYMENT_CONFIRMED": "Payment confirmed",
+      "PRACTITIONER_ACCEPTED": "Practitioner accepted session",
+      "PRACTITIONER_REJECTED": "Practitioner rejected session",
+      "SESSION_CONFIRMED": "Session confirmed",
+      "SESSION_READY_TO_JOIN": "Session ready to join",
+      "PATIENT_JOINED": "You joined the room",
+      "PRACTITIONER_JOINED": "Practitioner joined the room",
+      "SESSION_STARTED": "Session started",
+      "SESSION_AWAITING_COMPLETION_CONFIRMATION": "Awaiting completion confirmation",
+      "SESSION_COMPLETED": "Session completed",
+      "CANCELLED_BY_PATIENT": "You cancelled the session",
+      "CANCELLED_BY_PRACTITIONER": "Practitioner cancelled the session",
+      "EXPIRED_UNPAID": "Expired unpaid",
+      "NO_SHOW_PATIENT": "Patient no-show",
+      "NO_SHOW_PRACTITIONER": "Practitioner no-show",
+      "PROVIDER_ROOM_CREATED": "Live room created",
+      "PROVIDER_ROOM_ENDED": "Live room ended",
+      "RESCHEDULED": "Session rescheduled",
+      "UNKNOWN": "Session update"
+    },
     "reviewAction": {
       "heading": "Rate your session",
       "note": "Share your experience by rating this session.",

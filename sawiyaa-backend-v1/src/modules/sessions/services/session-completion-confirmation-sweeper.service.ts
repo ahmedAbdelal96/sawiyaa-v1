@@ -3,30 +3,30 @@ import {
   OnApplicationBootstrap,
   OnModuleDestroy,
 } from '@nestjs/common';
-import { PrismaService } from '@common/prisma/prisma.service';
 import { AppLoggerService } from '@common/logging/app-logger.service';
-import { SessionStatus } from '@prisma/client';
 import { SessionRepository } from '../repositories/session.repository';
-import { SessionLifecycleService } from './session-lifecycle.service';
-import {
-  SecurityAuditActorType,
-  SecurityAuditSource,
-} from '@common/security-audit/security-audit.types';
+import { AutomaticSessionCompletionService } from './automatic-session-completion.service';
 
 const SWEEP_INTERVAL_MS = 60_000;
 const DEFAULT_BATCH_SIZE = 50;
 const DEFAULT_MAX_ROWS = 5_000;
-const DEFAULT_GRACE_MINUTES = 15;
 
 export type SessionCompletionSweepResult = {
   scanned: number;
+  /** Kept for result compatibility; the automatic attempt owns transitions. */
   transitioned: number;
+  completed: number;
+  awaitingReview: number;
   skipped: number;
   failed: number;
   batches: number;
 };
 
-/** Persists time-ended sessions as awaiting confirmation; it never completes them. */
+/**
+ * Mandatory API-process recovery path for elapsed sessions. It invokes the
+ * automatic attempt directly; that attempt evaluates first and persists the
+ * exception state only when review is actually required.
+ */
 @Injectable()
 export class SessionCompletionConfirmationSweeperService
   implements OnApplicationBootstrap, OnModuleDestroy
@@ -35,9 +35,8 @@ export class SessionCompletionConfirmationSweeperService
   private isSweeping = false;
 
   constructor(
-    private readonly prisma: PrismaService,
     private readonly sessionRepository: SessionRepository,
-    private readonly lifecycle: SessionLifecycleService,
+    private readonly automaticCompletion: AutomaticSessionCompletionService,
     private readonly logger: AppLoggerService,
   ) {}
 
@@ -59,6 +58,8 @@ export class SessionCompletionConfirmationSweeperService
     const empty: SessionCompletionSweepResult = {
       scanned: 0,
       transitioned: 0,
+      completed: 0,
+      awaitingReview: 0,
       skipped: 0,
       failed: 0,
       batches: 0,
@@ -74,20 +75,16 @@ export class SessionCompletionConfirmationSweeperService
         'SESSION_COMPLETION_CONFIRMATION_SWEEPER_MAX_ROWS',
         DEFAULT_MAX_ROWS,
       );
-      const graceMinutes = this.readPositiveInt(
-        'SESSION_COMPLETION_CONFIRMATION_SWEEPER_GRACE_MINUTES',
-        DEFAULT_GRACE_MINUTES,
-      );
       const result: SessionCompletionSweepResult = { ...empty };
       const failedIds = new Set<string>();
       let cursor: { scheduledEndAt: Date; id: string } | undefined;
-      const cutoff = new Date(now.getTime() - graceMinutes * 60_000);
+
       while (true) {
         if (result.scanned >= maxRows) break;
         const sessions =
           await this.sessionRepository.listSessionsDueForCompletionConfirmation(
             {
-              now: cutoff,
+              now,
               take: Math.min(batchSize, maxRows - result.scanned),
               excludeIds: [...failedIds],
               cursor,
@@ -95,45 +92,19 @@ export class SessionCompletionConfirmationSweeperService
           );
         if (sessions.length === 0) break;
         result.batches += 1;
+
         for (const session of sessions) {
           result.scanned += 1;
           try {
-            const transitionResult = await this.prisma.$transaction(
-              async (tx) => {
-                // Claim and transition the same row in one transaction. SKIP
-                // LOCKED lets another worker continue without waiting on us.
-                const claimed =
-                  await this.sessionRepository.tryLockDueSessionForCompletionConfirmation(
-                    { sessionId: session.id, now: cutoff },
-                    tx,
-                  );
-                if (!claimed) {
-                  return { outcome: 'skipped' as const, session: null };
-                }
-                return this.lifecycle.transitionIfCurrentStatus({
-                  sessionId: claimed.id,
-                  expectedStatuses: [
-                    SessionStatus.UPCOMING,
-                    SessionStatus.READY_TO_JOIN,
-                    SessionStatus.IN_PROGRESS,
-                  ],
-                  to: SessionStatus.AWAITING_COMPLETION_CONFIRMATION,
-                  actorType: SecurityAuditActorType.SCHEDULED_JOB,
-                  source: SecurityAuditSource.SCHEDULED_JOB,
-                  at: now,
-                  metadata: {
-                    source: 'scheduledEndSweep',
-                    evaluationDueAt: new Date(
-                      (claimed.scheduledEndAt?.getTime?.() ?? now.getTime()) +
-                        graceMinutes * 60_000,
-                    ).toISOString(),
-                  },
-                  tx,
-                });
-              },
-            );
-            if (transitionResult.outcome === 'transitioned') {
-              result.transitioned += 1;
+            const completionResult = await this.automaticCompletion.execute({
+              sessionId: session.id,
+              at: now,
+              trigger: 'RECOVERY_SWEEPER',
+            });
+            if (completionResult.outcome === 'COMPLETED') {
+              result.completed += 1;
+            } else if (completionResult.outcome === 'AWAITING_REVIEW') {
+              result.awaitingReview += 1;
             } else {
               result.skipped += 1;
             }
@@ -143,7 +114,7 @@ export class SessionCompletionConfirmationSweeperService
             this.logger.error(
               {
                 message:
-                  'Failed to move elapsed session to awaiting confirmation',
+                  'Failed to process elapsed session completion lifecycle',
                 sessionId: session.id,
                 error:
                   error instanceof Error ? error : new Error(String(error)),
@@ -158,9 +129,10 @@ export class SessionCompletionConfirmationSweeperService
         }
         if (sessions.length < batchSize) break;
       }
+
       this.logger.log(
         {
-          message: 'Session completion confirmation sweep finished',
+          message: 'Session completion recovery sweep finished',
           ...result,
         },
         'Sessions',

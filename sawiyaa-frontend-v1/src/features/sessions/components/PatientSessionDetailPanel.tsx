@@ -255,6 +255,18 @@ const PATIENT_EVENT_TYPES = new Set([
   "PROVIDER_ROOM_ENDED",
 ]);
 
+function formatCleanReason(reason: string | null | undefined): string | null {
+  if (!reason) return null;
+  if (
+    reason.startsWith("sawiyaa.dev") ||
+    reason.includes(".v1:") ||
+    reason.includes("primary-immediately-joinable")
+  ) {
+    return null;
+  }
+  return reason;
+}
+
 function formatPatientEventType(eventType: string, t: any) {
   return PATIENT_EVENT_TYPES.has(eventType)
     ? t(`detail.eventTypes.${eventType}`)
@@ -651,9 +663,9 @@ export default function PatientSessionDetailPanel({ sessionId }: Props) {
                         </div>
                       </div>
                     ) : null}
-                    {event.reason ? (
+                    {formatCleanReason(event.reason) ? (
                       <p className="mt-2 inline-block rounded-lg bg-surface-tertiary px-2 py-1 text-xs text-text-secondary dark:bg-white/5">
-                        {t("detail.ui.reason")} {event.reason}
+                        {t("detail.ui.reason")} {formatCleanReason(event.reason)}
                       </p>
                     ) : null}
                   </div>

@@ -66,6 +66,7 @@ import { ListAdminSessionManualDecisionsUseCase } from './use-cases/list-admin-s
 import { ResolvePatientSessionActionsService } from './services/resolve-patient-session-actions.service';
 import { SessionLifecycleService } from './services/session-lifecycle.service';
 import { SessionCompletionConfirmationSweeperService } from './services/session-completion-confirmation-sweeper.service';
+import { AutomaticSessionCompletionService } from './services/automatic-session-completion.service';
 import { SessionCodeGeneratorService } from './services/session-code-generator.service';
 import { NormalizeDailyAttendanceEvidenceService } from './services/normalize-daily-attendance-evidence.service';
 import { MarkSessionInProgressFromAttendanceService } from './services/mark-session-in-progress-from-attendance.service';
@@ -131,6 +132,7 @@ import { GetAdminSessionSupportSummaryUseCase } from './use-cases/get-admin-sess
     SessionLifecycleService,
     ParticipantSessionOutcomeBoundaryService,
     SessionCompletionConfirmationSweeperService,
+    AutomaticSessionCompletionService,
     ValidateSessionCancellationPolicyRulesService,
     EvaluateSessionCancellationPolicyService,
     ResolvePatientSessionActionsService,

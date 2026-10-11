@@ -144,6 +144,36 @@
   "detail": {
     "backToSessions": "العودة إلى الجلسات",
     "heading": "تفاصيل الجلسة",
+    "ui": {
+      "timeline": "السجل الزمني للأحداث",
+      "timelineEmpty": "لا توجد أحداث مسجلة للجلسة حتى الآن.",
+      "previousAppointment": "الموعد السابق",
+      "newAppointment": "الموعد الجديد",
+      "reason": "السبب:"
+    },
+    "eventTypes": {
+      "SESSION_CREATED": "أُنشئت الجلسة",
+      "PAYMENT_PENDING": "الدفع قيد الانتظار",
+      "PAYMENT_CONFIRMED": "تم تأكيد الدفع",
+      "PRACTITIONER_ACCEPTED": "وافق المختص على الجلسة",
+      "PRACTITIONER_REJECTED": "رفض المختص الجلسة",
+      "SESSION_CONFIRMED": "تم تأكيد الجلسة",
+      "SESSION_READY_TO_JOIN": "الجلسة جاهزة للانضمام",
+      "PATIENT_JOINED": "انضممت إلى الغرفة",
+      "PRACTITIONER_JOINED": "انضم المختص إلى الغرفة",
+      "SESSION_STARTED": "بدأت الجلسة",
+      "SESSION_AWAITING_COMPLETION_CONFIRMATION": "في انتظار تأكيد الإكمال",
+      "SESSION_COMPLETED": "اكتملت الجلسة",
+      "CANCELLED_BY_PATIENT": "ألغيتَ الجلسة",
+      "CANCELLED_BY_PRACTITIONER": "ألغى المختص الجلسة",
+      "EXPIRED_UNPAID": "انتهت دون إتمام الدفع",
+      "NO_SHOW_PATIENT": "تغيبتَ عن الجلسة",
+      "NO_SHOW_PRACTITIONER": "تغيب المختص",
+      "PROVIDER_ROOM_CREATED": "أُنشئت الغرفة المباشرة",
+      "PROVIDER_ROOM_ENDED": "أُغلقت الغرفة المباشرة",
+      "RESCHEDULED": "تم تغيير موعد الجلسة",
+      "UNKNOWN": "تحديث على الجلسة"
+    },
     "reviewAction": {
       "heading": "\u0634\u0627\u0631\u0643\u0646\u0627 \u062a\u0642\u064a\u064a\u0645\u0643",
       "note": "\u0633\u0627\u0639\u062f\u0646\u0627 \u0639\u0644\u0649 \u062a\u062d\u0633\u064a\u0646 \u062a\u062c\u0631\u0628\u062a\u0643 \u0645\u0646 \u062e\u0644\u0627\u0644 \u062a\u0642\u064a\u064a\u0645 \u0647\u0630\u0647 \u0627\u0644\u062c\u0644\u0633\u0629.",

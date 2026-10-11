@@ -66,12 +66,20 @@ export class SessionOutcomeEvaluator {
       return notReady(['EVIDENCE_INCOMPLETE', 'SESSION_NOT_ENDED']);
     }
 
-    const finalizationAt = new Date(
+    const policyFinalizationAt = new Date(
       input.session.scheduledEndAt.getTime() +
         (input.policy.finalizationGraceMinutes +
           (input.policy.lateEvidenceWaitingMinutes ?? 0)) *
           60_000,
     );
+    const finalizationAt = input.finalizationBoundaryAt
+      ? new Date(
+          Math.max(
+            input.finalizationBoundaryAt.getTime(),
+            input.session.scheduledEndAt.getTime(),
+          ),
+        )
+      : policyFinalizationAt;
     if (input.evaluatedAt < input.session.scheduledEndAt) {
       return notReady(['SESSION_NOT_ENDED']);
     }

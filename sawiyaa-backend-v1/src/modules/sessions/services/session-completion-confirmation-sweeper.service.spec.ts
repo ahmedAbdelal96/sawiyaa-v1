@@ -3,29 +3,23 @@ import { SessionCompletionConfirmationSweeperService } from './session-completio
 
 describe('SessionCompletionConfirmationSweeperService', () => {
   const listSessionsDueForCompletionConfirmation = jest.fn();
-  const tryLockDueSessionForCompletionConfirmation = jest.fn();
-  const transitionIfCurrentStatus = jest.fn();
-  const transaction = jest.fn();
+  const automaticCompletion = { execute: jest.fn() };
   const logger = { error: jest.fn(), log: jest.fn(), warn: jest.fn() };
   const service = new SessionCompletionConfirmationSweeperService(
-    { $transaction: transaction } as never,
     {
       listSessionsDueForCompletionConfirmation,
-      tryLockDueSessionForCompletionConfirmation,
     } as never,
-    { transitionIfCurrentStatus } as never,
+    automaticCompletion as never,
     logger as never,
   );
 
   beforeEach(() => {
     jest.resetAllMocks();
     listSessionsDueForCompletionConfirmation.mockResolvedValue([]);
-    transaction.mockImplementation((fn: (tx: unknown) => unknown) => fn({}));
-    tryLockDueSessionForCompletionConfirmation.mockImplementation(
-      ({ sessionId }: { sessionId: string }) =>
-        Promise.resolve({ id: sessionId, status: SessionStatus.UPCOMING }),
-    );
-    transitionIfCurrentStatus.mockResolvedValue({ outcome: 'transitioned' });
+    automaticCompletion.execute.mockResolvedValue({
+      outcome: 'WAITING_FOR_EVIDENCE',
+      reason: 'INSUFFICIENT_EVIDENCE',
+    });
   });
 
   it('starts regardless of the removed completion enable flag', () => {
@@ -34,52 +28,89 @@ describe('SessionCompletionConfirmationSweeperService', () => {
     service.onModuleDestroy();
   });
 
-  it('moves elapsed upcoming rows to awaiting confirmation after grace', async () => {
+  it('sends an elapsed active row directly to automatic completion without a review transition', async () => {
     listSessionsDueForCompletionConfirmation
       .mockResolvedValueOnce([
-        { id: 'session-1', status: SessionStatus.UPCOMING },
+        {
+          id: 'session-1',
+          status: SessionStatus.IN_PROGRESS,
+          scheduledEndAt: new Date('2026-07-15T11:00:00.000Z'),
+        },
       ])
       .mockResolvedValueOnce([]);
 
-    expect(
-      await service.sweepOnce(new Date('2026-07-15T10:30:00.000Z')),
-    ).toEqual(
+    await expect(
+      service.sweepOnce(new Date('2026-07-15T11:00:01.000Z')),
+    ).resolves.toEqual(
       expect.objectContaining({
         scanned: 1,
-        transitioned: 1,
-        skipped: 0,
+        transitioned: 0,
+        completed: 0,
+        awaitingReview: 0,
+        skipped: 1,
         failed: 0,
-        batches: 1,
       }),
     );
-    expect(transitionIfCurrentStatus).toHaveBeenCalledWith(
+    expect(automaticCompletion.execute).toHaveBeenCalledWith({
+      sessionId: 'session-1',
+      at: new Date('2026-07-15T11:00:01.000Z'),
+      trigger: 'RECOVERY_SWEEPER',
+    });
+  });
+
+  it('counts direct completion from a happy-path recovery attempt', async () => {
+    listSessionsDueForCompletionConfirmation
+      .mockResolvedValueOnce([
+        {
+          id: 'session-1',
+          status: SessionStatus.IN_PROGRESS,
+          scheduledEndAt: new Date('2026-07-15T11:00:00.000Z'),
+        },
+      ])
+      .mockResolvedValueOnce([]);
+    automaticCompletion.execute.mockResolvedValueOnce({
+      outcome: 'COMPLETED',
+      sessionId: 'session-1',
+    });
+
+    await expect(service.sweepOnce()).resolves.toEqual(
       expect.objectContaining({
-        sessionId: 'session-1',
-        expectedStatuses: [
-          SessionStatus.UPCOMING,
-          SessionStatus.READY_TO_JOIN,
-          SessionStatus.IN_PROGRESS,
-        ],
-        to: SessionStatus.AWAITING_COMPLETION_CONFIRMATION,
+        scanned: 1,
+        transitioned: 0,
+        completed: 1,
+        awaitingReview: 0,
+        failed: 0,
       }),
     );
   });
 
-  it('does not create a duplicate transition for an already handled row', async () => {
+  it('retries an existing awaiting row for stranded-session recovery', async () => {
     listSessionsDueForCompletionConfirmation
       .mockResolvedValueOnce([
-        { id: 'session-1', status: SessionStatus.UPCOMING },
+        {
+          id: 'session-awaiting',
+          status: SessionStatus.AWAITING_COMPLETION_CONFIRMATION,
+          scheduledEndAt: new Date('2026-07-15T11:00:00.000Z'),
+        },
       ])
       .mockResolvedValueOnce([]);
-    transitionIfCurrentStatus.mockResolvedValue({ outcome: 'idempotent' });
+    automaticCompletion.execute.mockResolvedValueOnce({
+      outcome: 'COMPLETED',
+      sessionId: 'session-awaiting',
+    });
 
-    expect(await service.sweepOnce()).toEqual(
+    await expect(service.sweepOnce()).resolves.toEqual(
       expect.objectContaining({
         scanned: 1,
         transitioned: 0,
-        skipped: 1,
+        completed: 1,
         failed: 0,
-        batches: 1,
+      }),
+    );
+    expect(automaticCompletion.execute).toHaveBeenCalledWith(
+      expect.objectContaining({
+        sessionId: 'session-awaiting',
+        trigger: 'RECOVERY_SWEEPER',
       }),
     );
   });
@@ -88,19 +119,27 @@ describe('SessionCompletionConfirmationSweeperService', () => {
     process.env.SESSION_COMPLETION_CONFIRMATION_SWEEPER_BATCH_SIZE = '2';
     listSessionsDueForCompletionConfirmation
       .mockResolvedValueOnce([
-        { id: 'session-1', status: SessionStatus.UPCOMING },
-        { id: 'session-2', status: SessionStatus.READY_TO_JOIN },
+        {
+          id: 'session-1',
+          status: SessionStatus.IN_PROGRESS,
+          scheduledEndAt: new Date('2026-07-15T11:00:00.000Z'),
+        },
+        {
+          id: 'session-2',
+          status: SessionStatus.IN_PROGRESS,
+          scheduledEndAt: new Date('2026-07-15T11:01:00.000Z'),
+        },
       ])
       .mockResolvedValueOnce([]);
-    transitionIfCurrentStatus
+    automaticCompletion.execute
       .mockRejectedValueOnce(new Error('transient'))
-      .mockResolvedValueOnce({ outcome: 'transitioned' });
+      .mockResolvedValueOnce({ outcome: 'COMPLETED' });
 
     await expect(service.sweepOnce()).resolves.toEqual(
       expect.objectContaining({
         scanned: 2,
-        transitioned: 1,
-        skipped: 0,
+        transitioned: 0,
+        completed: 1,
         failed: 1,
         batches: 1,
       }),
@@ -112,48 +151,28 @@ describe('SessionCompletionConfirmationSweeperService', () => {
     process.env.SESSION_COMPLETION_CONFIRMATION_SWEEPER_BATCH_SIZE = '1';
     listSessionsDueForCompletionConfirmation
       .mockResolvedValueOnce([
-        { id: 'session-1', status: SessionStatus.UPCOMING },
+        {
+          id: 'session-1',
+          status: SessionStatus.IN_PROGRESS,
+          scheduledEndAt: new Date('2026-07-15T11:00:00.000Z'),
+        },
       ])
       .mockResolvedValueOnce([
-        { id: 'session-2', status: SessionStatus.READY_TO_JOIN },
+        {
+          id: 'session-2',
+          status: SessionStatus.IN_PROGRESS,
+          scheduledEndAt: new Date('2026-07-15T11:01:00.000Z'),
+        },
       ])
       .mockResolvedValueOnce([]);
 
     await expect(service.sweepOnce()).resolves.toEqual(
       expect.objectContaining({
         scanned: 2,
-        transitioned: 2,
+        transitioned: 0,
         batches: 2,
       }),
     );
     delete process.env.SESSION_COMPLETION_CONFIRMATION_SWEEPER_BATCH_SIZE;
-  });
-
-  it('moves an ended in-progress row to awaiting confirmation', async () => {
-    listSessionsDueForCompletionConfirmation
-      .mockResolvedValueOnce([
-        { id: 'session-1', status: SessionStatus.IN_PROGRESS },
-      ])
-      .mockResolvedValueOnce([]);
-    tryLockDueSessionForCompletionConfirmation.mockResolvedValueOnce({
-      id: 'session-1',
-      status: SessionStatus.IN_PROGRESS,
-    });
-    transitionIfCurrentStatus.mockResolvedValueOnce({
-      outcome: 'transitioned',
-    });
-
-    await expect(service.sweepOnce()).resolves.toEqual(
-      expect.objectContaining({ transitioned: 1, skipped: 0, failed: 0 }),
-    );
-    expect(transitionIfCurrentStatus).toHaveBeenCalledWith(
-      expect.objectContaining({
-        expectedStatuses: [
-          SessionStatus.UPCOMING,
-          SessionStatus.READY_TO_JOIN,
-          SessionStatus.IN_PROGRESS,
-        ],
-      }),
-    );
   });
 });

@@ -19,6 +19,7 @@ describe('SessionOutcomeEvaluator', () => {
     providerHealth?: Partial<SessionOutcomeEvaluationInput['providerHealth']>;
     policy?: Partial<SessionOutcomeEvaluationInput['policy']>;
     evaluatedAt?: Date;
+    finalizationBoundaryAt?: Date;
   };
 
   function input(
@@ -62,6 +63,7 @@ describe('SessionOutcomeEvaluator', () => {
       },
       policy: { ...policy, ...overrides.policy },
       evaluatedAt: overrides.evaluatedAt ?? evaluatedAt,
+      finalizationBoundaryAt: overrides.finalizationBoundaryAt,
     };
   }
 
@@ -117,6 +119,19 @@ describe('SessionOutcomeEvaluator', () => {
 
     expect(result.classification).toBe('NOT_READY_FOR_EVALUATION');
     expect(result.reasonCodes).toEqual(['FINALIZATION_GRACE_NOT_ELAPSED']);
+  });
+
+  it('allows trusted normal completion at the explicit scheduled finalization boundary', () => {
+    const scheduledEnd = new Date('2026-08-03T10:30:00.000Z');
+    const result = evaluator.evaluate(
+      input({
+        evaluatedAt: scheduledEnd,
+        finalizationBoundaryAt: scheduledEnd,
+      }),
+    );
+
+    expect(result.classification).toBe('COMPLETION_CANDIDATE');
+    expect(result.recommendedTerminalStatus).toBe('COMPLETED');
   });
 
   it('classifies a healthy patient no-show after grace', () => {

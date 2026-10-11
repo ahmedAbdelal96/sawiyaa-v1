@@ -4,6 +4,8 @@ import {
   PaymentProvider,
   PaymentPurpose,
   PaymentStatus,
+  SessionAttendanceEventType,
+  SessionAttendanceParticipantRole,
   SessionEventType,
   SessionFlowType,
   SessionMode,
@@ -15,6 +17,8 @@ import { AppModule } from '../../../app.module';
 import { PrismaService } from '@common/prisma/prisma.service';
 import { MarkSessionInProgressFromAttendanceService } from '../services/mark-session-in-progress-from-attendance.service';
 import { CompleteSessionTransactionService } from '../services/complete-session-transaction.service';
+import { AutomaticSessionCompletionService } from '../services/automatic-session-completion.service';
+import { resolveCurrentSessionOutcomePolicy } from '../config/session-outcome-policy.config';
 import { GetSessionGeneralChatConversationUseCase } from '@modules/chat/use-cases/get-session-general-chat-conversation.use-case';
 
 const databaseUrl = process.env.DATABASE_URL;
@@ -41,6 +45,7 @@ describeIfAuthorized('Final session lifecycle PostgreSQL proof', () => {
   let prisma: PrismaService;
   let attendance: MarkSessionInProgressFromAttendanceService;
   let completeSession: CompleteSessionTransactionService;
+  let automaticCompletion: AutomaticSessionCompletionService;
   let sessionChat: GetSessionGeneralChatConversationUseCase;
   let patientUserId: string;
   let practitionerUserId: string;
@@ -54,6 +59,7 @@ describeIfAuthorized('Final session lifecycle PostgreSQL proof', () => {
     prisma = moduleRef.get(PrismaService);
     attendance = moduleRef.get(MarkSessionInProgressFromAttendanceService);
     completeSession = moduleRef.get(CompleteSessionTransactionService);
+    automaticCompletion = moduleRef.get(AutomaticSessionCompletionService);
     sessionChat = moduleRef.get(GetSessionGeneralChatConversationUseCase);
     await prisma.$connect();
 
@@ -278,6 +284,153 @@ describeIfAuthorized('Final session lifecycle PostgreSQL proof', () => {
       }),
     ).toBe(1);
     expect(await prisma.sessionEarningReview.count({ where: { sessionId: session.id } })).toBe(1);
+  });
+
+  it('completes a realistic trusted-attendance happy path directly at scheduled end', async () => {
+    const session = await createSession({
+      status: SessionStatus.IN_PROGRESS,
+      provider: SessionProvider.DAILY,
+      scheduled: false,
+    });
+    const now = new Date();
+    const scheduledStartAt = new Date(now.getTime() - 36 * 60_000);
+    const scheduledEndAt = new Date(now.getTime() - 5 * 60_000);
+    await prisma.session.update({
+      where: { id: session.id },
+      data: {
+        scheduledStartAt,
+        scheduledEndAt,
+        joinOpenAt: scheduledStartAt,
+        joinCloseAt: scheduledEndAt,
+      },
+    });
+    await prisma.sessionOutcomePolicySnapshot.create({
+      data: {
+        sessionId: session.id,
+        ...resolveCurrentSessionOutcomePolicy(scheduledStartAt),
+      },
+    });
+
+    const patientJoinAt = new Date(scheduledStartAt.getTime() + 30_000);
+    const practitionerJoinAt = new Date(scheduledStartAt.getTime() + 45_000);
+    const patientLeftAt = new Date(scheduledEndAt.getTime() - 15_000);
+    const practitionerLeftAt = new Date(scheduledEndAt.getTime() - 15_000);
+    const attendanceRows = [
+      {
+        participantRole: SessionAttendanceParticipantRole.PATIENT,
+        participantUserId: patientUserId,
+        attendanceEventType: SessionAttendanceEventType.JOINED,
+        occurredAt: patientJoinAt,
+      },
+      {
+        participantRole: SessionAttendanceParticipantRole.PATIENT,
+        participantUserId: patientUserId,
+        attendanceEventType: SessionAttendanceEventType.LEFT,
+        occurredAt: patientLeftAt,
+      },
+      {
+        participantRole: SessionAttendanceParticipantRole.PRACTITIONER,
+        participantUserId: practitionerUserId,
+        attendanceEventType: SessionAttendanceEventType.JOINED,
+        occurredAt: practitionerJoinAt,
+      },
+      {
+        participantRole: SessionAttendanceParticipantRole.PRACTITIONER,
+        participantUserId: practitionerUserId,
+        attendanceEventType: SessionAttendanceEventType.LEFT,
+        occurredAt: practitionerLeftAt,
+      },
+    ];
+    await prisma.sessionAttendanceEvent.createMany({
+      data: attendanceRows.map((row, index) => ({
+        id: randomUUID(),
+        sessionId: session.id,
+        provider: SessionProvider.DAILY,
+        attendanceEventType: row.attendanceEventType,
+        participantRole: row.participantRole,
+        participantUserId: row.participantUserId,
+        providerEventType:
+          row.attendanceEventType === SessionAttendanceEventType.JOINED
+            ? 'participant.joined'
+            : 'participant.left',
+        providerEventRef: `happy-path-${index}`,
+        providerRoomRef: session.providerRoomId,
+        providerParticipantRef: `participant-${index}`,
+        occurredAt: row.occurredAt,
+        ingestionKey: `happy-path-${session.id}-${index}`,
+        payloadJson: {},
+        ingestionMetaJson: {
+          trustLevel: 'TRUSTED',
+          lifecycleEligible: true,
+          roleResolutionBy: 'USER_ID_MATCH',
+        },
+      })),
+    });
+    await prisma.sessionEvent.create({
+      data: {
+        sessionId: session.id,
+        eventType: SessionEventType.MEETING_ENDED,
+        actorType: 'SYSTEM',
+        source: 'SYSTEM',
+        occurredAt: scheduledEndAt,
+        metadataJson: { source: 'SIGNED' },
+      },
+    });
+
+    const paymentId = randomUUID();
+    paymentIds.push(paymentId);
+    await prisma.payment.create({
+      data: {
+        id: paymentId,
+        sessionId: session.id,
+        patientId,
+        practitionerId,
+        paymentPurpose: PaymentPurpose.SESSION_BOOKING,
+        provider: PaymentProvider.STRIPE,
+        status: PaymentStatus.CAPTURED,
+        amountSubtotal: 400,
+        amountDiscount: 0,
+        amountTotal: 400,
+        amountFromWallet: 0,
+        amountFromGateway: 400,
+        currencyCode: 'EGP',
+        commissionPlatformRatePercent: 20,
+        capturedAt: scheduledEndAt,
+      },
+    });
+
+    const result = await automaticCompletion.execute({
+      sessionId: session.id,
+      at: now,
+      trigger: 'PROVIDER_MEETING_ENDED',
+    });
+
+    expect(result.outcome).toBe('COMPLETED');
+    expect(
+      await prisma.session.findUniqueOrThrow({
+        where: { id: session.id },
+        select: { status: true },
+      }),
+    ).toMatchObject({ status: SessionStatus.COMPLETED });
+    expect(
+      await prisma.sessionEvent.count({
+        where: {
+          sessionId: session.id,
+          eventType: SessionEventType.SESSION_AWAITING_COMPLETION_CONFIRMATION,
+        },
+      }),
+    ).toBe(0);
+    expect(
+      await prisma.sessionEvent.count({
+        where: {
+          sessionId: session.id,
+          eventType: SessionEventType.SESSION_COMPLETED,
+        },
+      }),
+    ).toBe(1);
+    expect(
+      await prisma.sessionEarningReview.count({ where: { sessionId: session.id } }),
+    ).toBe(1);
   });
 
   it('uses persisted canonical status for session-backed chat availability', async () => {

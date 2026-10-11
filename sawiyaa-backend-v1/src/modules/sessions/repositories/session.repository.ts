@@ -1216,23 +1216,25 @@ export class SessionRepository {
             SessionStatus.UPCOMING,
             SessionStatus.READY_TO_JOIN,
             SessionStatus.IN_PROGRESS,
+            SessionStatus.AWAITING_COMPLETION_CONFIRMATION,
           ],
         },
-        OR: [
-          { joinCloseAt: { not: null, lte: input.now } },
-          { joinCloseAt: null, scheduledEndAt: { not: null, lte: input.now } },
-        ],
-        ...(input.cursor
-          ? {
-              OR: [
-                { scheduledEndAt: { gt: input.cursor.scheduledEndAt } },
+        AND: [
+          { scheduledEndAt: { not: null, lte: input.now } },
+          ...(input.cursor
+            ? [
                 {
-                  scheduledEndAt: input.cursor.scheduledEndAt,
-                  id: { gt: input.cursor.id },
+                  OR: [
+                    { scheduledEndAt: { gt: input.cursor.scheduledEndAt } },
+                    {
+                      scheduledEndAt: input.cursor.scheduledEndAt,
+                      id: { gt: input.cursor.id },
+                    },
+                  ],
                 },
-              ],
-            }
-          : {}),
+              ]
+            : []),
+        ],
         ...(input.excludeIds?.length
           ? { id: { notIn: input.excludeIds } }
           : {}),
@@ -1290,7 +1292,7 @@ export class SessionRepository {
     status: SessionStatus;
     scheduledEndAt: Date;
   } | null> {
-    const eligibleStatuses = [
+    const activeStatuses = [
       SessionStatus.UPCOMING,
       SessionStatus.READY_TO_JOIN,
       SessionStatus.IN_PROGRESS,
@@ -1303,15 +1305,23 @@ export class SessionRepository {
         FROM "Session"
         WHERE "id" = ${input.sessionId}::uuid
           AND (
-            ("joinCloseAt" IS NOT NULL AND "joinCloseAt" <= ${input.now})
+            (
+              "status" IN (${Prisma.join(
+                activeStatuses.map(
+                  (status) => Prisma.sql`${status}::"SessionStatus"`,
+                ),
+              )})
+              AND (
+                ("scheduledEndAt" IS NOT NULL AND "scheduledEndAt" <= ${input.now})
+              )
+            )
             OR
-            ("joinCloseAt" IS NULL AND "scheduledEndAt" IS NOT NULL AND "scheduledEndAt" <= ${input.now})
+            (
+              "status" = ${SessionStatus.AWAITING_COMPLETION_CONFIRMATION}::"SessionStatus"
+              AND "scheduledEndAt" IS NOT NULL
+              AND "scheduledEndAt" <= ${input.now}
+            )
           )
-          AND "status" IN (${Prisma.join(
-            eligibleStatuses.map(
-              (status) => Prisma.sql`${status}::"SessionStatus"`,
-            ),
-          )})
         FOR UPDATE SKIP LOCKED
       `,
     );

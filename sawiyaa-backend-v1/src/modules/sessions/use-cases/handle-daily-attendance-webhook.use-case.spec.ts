@@ -10,6 +10,7 @@ import { ParseDailyAttendanceWebhookService } from '../services/parse-daily-atte
 import { HandleDailyAttendanceWebhookUseCase } from './handle-daily-attendance-webhook.use-case';
 import { NormalizeDailyAttendanceEvidenceService } from '../services/normalize-daily-attendance-evidence.service';
 import { MarkSessionInProgressFromAttendanceService } from '../services/mark-session-in-progress-from-attendance.service';
+import { AutomaticSessionCompletionService } from '../services/automatic-session-completion.service';
 
 describe('HandleDailyAttendanceWebhookUseCase', () => {
   function buildUseCase() {
@@ -78,6 +79,9 @@ describe('HandleDailyAttendanceWebhookUseCase', () => {
       ),
     };
     const markInProgress = { execute: jest.fn().mockResolvedValue('skipped') };
+    const automaticCompletion = {
+      execute: jest.fn().mockResolvedValue({ outcome: 'NOT_DUE' }),
+    };
     const sessionRepository =
       sessionRepositoryMocks as unknown as SessionRepository;
 
@@ -93,6 +97,7 @@ describe('HandleDailyAttendanceWebhookUseCase', () => {
       sessionRepository,
       normalize as unknown as NormalizeDailyAttendanceEvidenceService,
       markInProgress as unknown as MarkSessionInProgressFromAttendanceService,
+      automaticCompletion as unknown as AutomaticSessionCompletionService,
       logger,
     );
 
@@ -106,6 +111,7 @@ describe('HandleDailyAttendanceWebhookUseCase', () => {
       prisma,
       normalize,
       markInProgress,
+      automaticCompletion,
     };
   }
 
@@ -337,6 +343,12 @@ describe('HandleDailyAttendanceWebhookUseCase', () => {
       expect.objectContaining({
         eventType: SessionEventType.MEETING_ENDED,
         sessionId: 'session_1',
+      }),
+    );
+    expect(setup.automaticCompletion.execute).toHaveBeenCalledWith(
+      expect.objectContaining({
+        sessionId: 'session_1',
+        trigger: 'PROVIDER_MEETING_ENDED',
       }),
     );
   });

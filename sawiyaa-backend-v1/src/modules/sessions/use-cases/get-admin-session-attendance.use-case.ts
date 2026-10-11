@@ -57,6 +57,7 @@ export class GetAdminSessionAttendanceUseCase {
     sessionId: string;
     tx?: Prisma.TransactionClient;
     evaluatedAt?: Date;
+    finalizationBoundaryAt?: Date;
   }) {
     // Phase 3 — fetch the session with the participant identity include so we
     // can surface patient/practitioner display names + primary contact
@@ -269,6 +270,7 @@ export class GetAdminSessionAttendanceUseCase {
       policy,
       policySnapshotPresent: Boolean(policySnapshot),
       evaluatedAt,
+      finalizationBoundaryAt: input.finalizationBoundaryAt,
     });
 
     // Phase 3 — build the new evidence surfaces.
