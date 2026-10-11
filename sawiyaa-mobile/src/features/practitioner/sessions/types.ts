@@ -22,7 +22,8 @@ export type SessionPresentationFilter =
   | "finished"
   | "unavailable";
 
-export type SessionMode = "VIDEO" | "AUDIO" | "CHAT";
+export type LegacySessionMode = "VIDEO" | "AUDIO" | "CHAT";
+export type SessionMode = "VIDEO";
 
 export type SessionChatAvailabilityReason =
   | "ALLOWED"
@@ -58,7 +59,7 @@ export interface PractitionerSessionListItem {
   scheduledStartAt: string | null;
   scheduledEndAt: string | null;
   durationMinutes: number;
-  sessionMode: SessionMode;
+  sessionMode: LegacySessionMode;
   practitioner: SessionPractitionerSummary;
   patient: SessionPatientSummary | null;
   chatAvailability: SessionChatAvailability;

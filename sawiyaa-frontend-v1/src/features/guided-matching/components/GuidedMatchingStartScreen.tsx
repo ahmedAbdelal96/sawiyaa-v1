@@ -50,7 +50,6 @@ import {
   Minus,
   MonitorPlay,
   MoonStar,
-  PhoneCall,
   Rocket,
   Search,
   SearchCheck,
@@ -786,10 +785,9 @@ export default function GuidedMatchingStartScreen({ specialties }: GuidedMatchin
 
           {/* STEP 6: Session Mode */}
           {currentStep === "sessionMode" && (
-            <div className="grid gap-3 sm:grid-cols-3">
+            <div className="grid gap-3 sm:grid-cols-2">
               {[
                 { value: "VIDEO", icon: MonitorPlay, tone: "cyan" as const, subtitle: "محادثة مرئية مباشرة عبر المنصة" },
-                { value: "AUDIO", icon: PhoneCall, tone: "teal" as const, subtitle: "مكالمة صوتية خاصة عبر المنصة" },
                 { value: "ANY", icon: CircleDashed, tone: "slate" as const, subtitle: "مرن بحسب المتاح" },
               ].map(({ value, icon, tone, subtitle }) => (
                 <ChoiceCard

@@ -1,7 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import {
   MatchingAnswerKey,
-  PractitionerType,
   SessionMode,
 } from '@prisma/client';
 import {
@@ -124,7 +123,7 @@ export class NormalizeMatchingInputService {
   private normalizeSessionMode(
     mode: SessionMode | undefined,
   ): SessionMode | null {
-    if (mode === SessionMode.VIDEO || mode === SessionMode.AUDIO) {
+    if (mode === SessionMode.VIDEO) {
       return mode;
     }
     return null;

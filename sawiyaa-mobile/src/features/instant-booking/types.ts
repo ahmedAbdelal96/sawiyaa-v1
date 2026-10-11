@@ -5,7 +5,7 @@ export type InstantBookingRequestStatus =
   | "EXPIRED"
   | "CANCELLED";
 
-export type InstantBookingSessionMode = "VIDEO" | "AUDIO";
+export type InstantBookingSessionMode = "VIDEO";
 
 export type InstantBookingDiscoveryDuration = 30 | 60;
 export type InstantBookingDiscoveryCurrency = "EGP" | "USD";

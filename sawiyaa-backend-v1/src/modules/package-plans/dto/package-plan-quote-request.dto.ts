@@ -1,7 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { SessionMode } from '@prisma/client';
 import { Type } from 'class-transformer';
-import { IsEnum, IsInt, IsString, MaxLength, Min, Max } from 'class-validator';
+import { IsIn, IsInt, IsString, MaxLength, Min, Max } from 'class-validator';
 
 export class PackagePlanQuoteRequestDto {
   @ApiProperty({
@@ -32,10 +32,10 @@ export class PackagePlanQuoteRequestDto {
   durationMinutes!: number;
 
   @ApiProperty({
-    enum: SessionMode,
-    description: 'Selected session mode',
+    enum: [SessionMode.VIDEO],
+    description: 'Sawiyaa currently supports video consultations only',
   })
-  @IsEnum(SessionMode)
-  sessionMode!: SessionMode;
+  @IsIn([SessionMode.VIDEO])
+  sessionMode!: 'VIDEO';
 
 }

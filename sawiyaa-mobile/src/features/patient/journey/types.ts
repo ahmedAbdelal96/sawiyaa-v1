@@ -18,7 +18,8 @@ export type InstantBookingRequestStatus =
   | "EXPIRED"
   | "CANCELLED";
 
-export type SessionMode = "VIDEO" | "AUDIO" | "CHAT";
+export type LegacySessionMode = "VIDEO" | "AUDIO" | "CHAT";
+export type SessionMode = "VIDEO";
 
 export interface JourneyPractitionerSummaryDto {
   slug: string;
@@ -49,7 +50,7 @@ export interface JourneyUpcomingInstantBookingDto {
   requestedAt: string;
   expiresAt: string;
   durationMinutes: number;
-  sessionMode: SessionMode;
+  sessionMode: LegacySessionMode;
   practitioner: JourneyPractitionerSummaryDto;
 }
 

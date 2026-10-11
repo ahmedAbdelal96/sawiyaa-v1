@@ -5,7 +5,8 @@ export type MatchingUrgencyPreference =
 
 export type PractitionerGenderPreference = "ANY" | "MALE" | "FEMALE";
 
-export type MatchingSessionMode = "VIDEO" | "AUDIO";
+export type MatchingSessionMode = "VIDEO";
+export type LegacyMatchingSessionMode = "VIDEO" | "AUDIO" | "CHAT";
 
 export type MatchingPractitionerType =
   | "PSYCHOLOGIST"
@@ -40,7 +41,7 @@ export interface MatchingAnswersSummary {
   preferredSpecialtySlug: string | null;
   preferredLanguage: string | null;
   preferredPractitionerGender: PractitionerGenderPreference;
-  sessionMode: MatchingSessionMode | null;
+  sessionMode: LegacyMatchingSessionMode | null;
   urgency: MatchingUrgencyPreference;
 }
 

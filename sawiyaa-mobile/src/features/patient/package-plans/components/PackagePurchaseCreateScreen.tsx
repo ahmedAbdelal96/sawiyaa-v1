@@ -89,8 +89,7 @@ export default function PackagePurchaseCreateScreen() {
   }>();
 
   const durationMinutes = Number(params.durationMinutes) >= 60 ? 60 : 30;
-  const sessionMode = (params.sessionMode === "AUDIO" ? "AUDIO" : "VIDEO") as
-    "VIDEO" | "AUDIO";
+  const sessionMode = "VIDEO" as const;
   const authScopeKey = useMemo(() => {
     if (isAuthLoading) {
       return "bootstrapping";

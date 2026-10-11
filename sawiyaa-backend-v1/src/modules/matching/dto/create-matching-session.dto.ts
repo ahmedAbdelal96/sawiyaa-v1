@@ -1,4 +1,4 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { ApiPropertyOptional } from '@nestjs/swagger';
 import { PractitionerType, SessionMode } from '@prisma/client';
 import { Type } from 'class-transformer';
 import {
@@ -80,12 +80,12 @@ export class CreateMatchingSessionDto {
   preferredPractitionerGender?: PractitionerGenderPreference;
 
   @ApiPropertyOptional({
-    enum: [SessionMode.VIDEO, SessionMode.AUDIO],
+    enum: [SessionMode.VIDEO],
     example: SessionMode.VIDEO,
   })
   @IsOptional()
-  @IsIn([SessionMode.VIDEO, SessionMode.AUDIO])
-  sessionMode?: SessionMode;
+  @IsIn([SessionMode.VIDEO])
+  sessionMode?: 'VIDEO';
 
   @ApiPropertyOptional({
     enum: MatchingUrgencyPreference,

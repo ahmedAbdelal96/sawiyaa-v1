@@ -10,7 +10,6 @@ import {
   PatientPackagePurchaseStatus,
   SessionFlowType,
   SessionPaymentCoverageType,
-  SessionMode,
   SessionStatus,
 } from '@prisma/client';
 import { SupportedLocale } from '@common/i18n/types/locale.types';
@@ -26,6 +25,7 @@ import { PackageQuoteCalculatorService } from '../services/package-quote-calcula
 import { ValidatePackagePurchaseSlotsService } from '../services/validate-package-purchase-slots.service';
 import { toSessionOverlapConflictException } from '@modules/sessions/utils/session-overlap-conflict.util';
 import { PatientPackagePurchaseResultViewModel } from '../types/package-purchases.types';
+import { assertSupportedSessionMode } from '@modules/sessions/policies/session-modality.policy';
 
 type CreatedSessionRecord = Awaited<
   ReturnType<SessionRepository['createSession']>
@@ -85,12 +85,13 @@ export class CreatePackagePurchaseUseCase {
     packagePlanCode: string;
     practitionerSlug: string;
     durationMinutes: 30 | 60;
-    sessionMode: SessionMode;
+    sessionMode: 'VIDEO';
     requestCountryIsoCode?: string | null;
     selectedSessionSlots?: Array<{
       scheduledStartAt: string;
     }>;
   }): Promise<PatientPackagePurchaseResultViewModel> {
+    assertSupportedSessionMode(input.sessionMode);
     await this.packagePlanPolicyService.assertPackagesEnabled();
     await this.packagePlanPolicyService.assertPurchasesEnabled();
 

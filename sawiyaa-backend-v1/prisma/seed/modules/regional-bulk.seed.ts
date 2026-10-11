@@ -694,10 +694,9 @@ export const regionalBulkSeedModule: SeedModule = {
           practitionerId: practitioner.profileId,
           flowType:
             i % 4 === 0 ? SessionFlowType.INSTANT : SessionFlowType.SCHEDULED,
-          sessionMode: pick(
-            [SessionMode.VIDEO, SessionMode.CHAT, SessionMode.AUDIO],
-            i,
-          ),
+          // New seeded sessions follow the live product contract: video only.
+          // Historical AUDIO/CHAT rows remain readable through compatibility types.
+          sessionMode: SessionMode.VIDEO,
           durationMinutes: 60,
           status,
           requestedStartAt: startAt,

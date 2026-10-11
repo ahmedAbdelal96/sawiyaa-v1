@@ -1,4 +1,5 @@
 import type {
+  LegacySessionMode,
   SessionMode,
   SessionOperationalInterpretation,
 } from "../sessions/types";
@@ -101,7 +102,7 @@ export type PatientPackagePurchaseSessionSummary = {
   scheduledStartAt: string | null;
   scheduledEndAt: string | null;
   durationMinutes: number;
-  sessionMode: SessionMode;
+  sessionMode: LegacySessionMode;
   packageSessionIndex: number;
 };
 
@@ -123,7 +124,7 @@ export type PatientPackagePurchaseItem = {
     professionalTitle: string | null;
   };
   durationMinutes: number;
-  sessionMode: SessionMode;
+  sessionMode: LegacySessionMode;
   selectedCurrencyCode: string;
   regionalPricingMode: "EGYPT_LOCAL" | "INTERNATIONAL";
   resolvedCountryIsoCode: string | null;

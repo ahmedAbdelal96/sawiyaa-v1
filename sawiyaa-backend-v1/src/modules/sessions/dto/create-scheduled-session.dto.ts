@@ -1,7 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { SessionMode } from '@prisma/client';
 import {
-  IsEnum,
   IsIn,
   IsISO8601,
   IsString,
@@ -38,10 +37,10 @@ export class CreateScheduledSessionDto {
   durationMinutes!: 30 | 60;
 
   @ApiPropertyOptional({
-    enum: SessionMode,
+    enum: [SessionMode.VIDEO],
     default: SessionMode.VIDEO,
-    description: 'Optional consultation modality baseline',
+    description: 'Sawiyaa currently supports video consultations only',
   })
-  @IsEnum(SessionMode)
-  sessionMode: SessionMode = SessionMode.VIDEO;
+  @IsIn([SessionMode.VIDEO])
+  sessionMode: 'VIDEO' = SessionMode.VIDEO;
 }

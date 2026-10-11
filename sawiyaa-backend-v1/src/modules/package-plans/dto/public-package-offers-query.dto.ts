@@ -2,6 +2,7 @@ import { ApiPropertyOptional } from '@nestjs/swagger';
 import { SessionMode } from '@prisma/client';
 import { Type } from 'class-transformer';
 import {
+  IsIn,
   IsEnum,
   IsInt,
   IsOptional,
@@ -61,12 +62,12 @@ export class PublicPackageOffersQueryDto {
   durationMinutes?: number;
 
   @ApiPropertyOptional({
-    enum: SessionMode,
+    enum: [SessionMode.VIDEO],
     default: SessionMode.VIDEO,
   })
   @IsOptional()
-  @IsEnum(SessionMode)
-  sessionMode?: SessionMode;
+  @IsIn([SessionMode.VIDEO])
+  sessionMode?: 'VIDEO';
 
   @ApiPropertyOptional({
     enum: PackageOfferSortOption,

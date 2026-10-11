@@ -125,11 +125,6 @@ export default function MatchingQuestionsScreen() {
       title: t("matching.question.mode.video"),
       icon: "videocam-outline",
     },
-    {
-      id: "AUDIO",
-      title: t("matching.question.mode.audio"),
-      icon: "call-outline",
-    },
   ];
 
   const urgencyChoices: ChoiceItem<MatchingUrgencyPreference>[] = [

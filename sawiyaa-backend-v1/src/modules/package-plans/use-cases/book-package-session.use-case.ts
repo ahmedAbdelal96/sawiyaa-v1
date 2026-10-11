@@ -29,6 +29,7 @@ import { SessionSchedulePolicyService } from '@modules/config/services/session-s
 import { OperationalNotificationService } from '@modules/notifications/services/operational-notification.service';
 import { PatientPackagePurchaseRepository } from '../repositories/package-purchase.repository';
 import { PackageEntitlementService } from '../services/package-entitlement.service';
+import { assertSupportedSessionMode } from '@modules/sessions/policies/session-modality.policy';
 
 @Injectable()
 export class BookPackageSessionUseCase {
@@ -113,6 +114,7 @@ export class BookPackageSessionUseCase {
         purchase.sessionCountSnapshot,
         purchase.sessions,
       );
+      assertSupportedSessionMode(purchase.sessionModeSnapshot);
       if (entitlement.availableSessions <= 0) {
         throw new ConflictException({
           messageKey: 'packagePurchases.errors.noAvailableSessions',

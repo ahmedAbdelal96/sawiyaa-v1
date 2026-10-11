@@ -22,6 +22,7 @@ import {
   SessionCodeGenerationError,
   SessionCodeGeneratorService,
 } from '../services/session-code-generator.service';
+import { assertSupportedSessionMode } from '../policies/session-modality.policy';
 
 type DbClient = PrismaService | Prisma.TransactionClient;
 
@@ -167,6 +168,7 @@ export class SessionRepository {
       include: typeof SessionRepository.prototype.sessionInclude;
     }>
   > {
+    assertSupportedSessionMode(data.sessionMode);
     if (!tx) {
       return this.prisma.$transaction((transaction) =>
         this.createSession(data, transaction, creationFlow),

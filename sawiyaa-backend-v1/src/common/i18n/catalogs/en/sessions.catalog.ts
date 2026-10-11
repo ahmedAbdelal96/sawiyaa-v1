@@ -71,6 +71,7 @@ export const enSessionsCatalog = {
     sessionNotFound: 'Session was not found',
     sessionAccessDenied: 'You do not have access to this session',
     invalidDuration: 'Session duration must be 30 or 60 minutes',
+    invalidSessionMode: 'Only video sessions are supported',
     invalidScheduledStartAt: 'Scheduled start datetime is invalid',
     scheduledStartTimezoneRequired:
       'Scheduled start datetime must include Z or a numeric UTC offset',

@@ -2,7 +2,7 @@ import { ApiPropertyOptional } from '@nestjs/swagger';
 import { SessionMode } from '@prisma/client';
 import { Type } from 'class-transformer';
 import {
-  IsEnum,
+  IsIn,
   IsOptional,
   Min,
   Max,
@@ -23,12 +23,12 @@ export class PublicPackagePlansQueryDto {
   durationMinutes?: number;
 
   @ApiPropertyOptional({
-    enum: SessionMode,
+    enum: [SessionMode.VIDEO],
     description: 'Session mode used for the public price preview',
     default: SessionMode.VIDEO,
   })
   @IsOptional()
-  @IsEnum(SessionMode)
-  sessionMode?: SessionMode;
+  @IsIn([SessionMode.VIDEO])
+  sessionMode?: 'VIDEO';
 
 }

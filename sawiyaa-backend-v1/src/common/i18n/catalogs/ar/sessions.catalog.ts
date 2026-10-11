@@ -67,6 +67,7 @@ export const arSessionsCatalog = {
     sessionNotFound: 'لم يتم العثور على الجلسة',
     sessionAccessDenied: 'ليس لديك صلاحية الوصول إلى هذه الجلسة',
     invalidDuration: 'مدة الجلسة يجب أن تكون 30 أو 60 دقيقة',
+    invalidSessionMode: 'الجلسات المرئية فقط هي المدعومة حاليًا',
     invalidScheduledStartAt: 'وقت بداية الجلسة غير صالح',
     scheduledStartMustBeFuture: 'يجب أن يكون وقت بداية الجلسة في المستقبل',
     unavailableTimeWindow: 'الفترة المطلوبة لا تتوافق مع توفر المعالج',

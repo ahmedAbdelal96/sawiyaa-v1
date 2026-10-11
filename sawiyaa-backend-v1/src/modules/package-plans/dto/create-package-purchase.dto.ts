@@ -4,7 +4,6 @@ import { Type } from 'class-transformer';
 import {
   ArrayMaxSize,
   IsArray,
-  IsEnum,
   IsOptional,
   IsIn,
   IsInt,
@@ -40,11 +39,11 @@ export class CreatePackagePurchaseDto {
   durationMinutes!: 30 | 60;
 
   @ApiProperty({
-    enum: SessionMode,
+    enum: [SessionMode.VIDEO],
     example: SessionMode.VIDEO,
   })
-  @IsEnum(SessionMode)
-  sessionMode!: SessionMode;
+  @IsIn([SessionMode.VIDEO])
+  sessionMode!: 'VIDEO';
 
   @ApiProperty({
     type: [PackagePurchaseSessionSlotDto],

@@ -7,7 +7,6 @@ import { ConfigService } from '@nestjs/config';
 import {
   SessionEventType,
   SessionFlowType,
-  SessionMode,
   SessionStatus,
 } from '@prisma/client';
 import { SupportedLocale } from '@common/i18n/types/locale.types';
@@ -23,6 +22,7 @@ import { ValidateSessionConflictsService } from '../services/validate-session-co
 import { ValidateSessionDurationService } from '../services/validate-session-duration.service';
 import { ValidateSessionScheduleCompatibilityService } from '../services/validate-session-schedule-compatibility.service';
 import { toSessionOverlapConflictException } from '../utils/session-overlap-conflict.util';
+import { assertSupportedSessionMode } from '../policies/session-modality.policy';
 import {
   SecurityAuditActorType,
   SecurityAuditSource,
@@ -61,9 +61,10 @@ export class CreateScheduledSessionUseCase {
     practitionerSlug: string;
     scheduledStartAt: string;
     durationMinutes: 30 | 60;
-    sessionMode: SessionMode;
+    sessionMode: 'VIDEO';
     requestCountryIsoCode?: string | null;
   }) {
+    assertSupportedSessionMode(input.sessionMode);
     this.validateSessionBookingRequestService.assertScheduledStartHasExplicitTimezone(
       input.scheduledStartAt,
     );

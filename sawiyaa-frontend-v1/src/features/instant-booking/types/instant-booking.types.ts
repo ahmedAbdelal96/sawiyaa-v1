@@ -18,7 +18,8 @@ export type InstantBookingRequestStatus =
   | "EXPIRED"
   | "CANCELLED";
 
-export type SessionMode = "VIDEO" | "AUDIO";
+export type SessionMode = "VIDEO";
+export type LegacySessionMode = "VIDEO" | "AUDIO" | "CHAT";
 
 export type InstantBookingParticipantSummary = {
   id: string;
@@ -85,7 +86,8 @@ export type InstantBookingRequest = {
   id: string;
   status: InstantBookingRequestStatus;
   requestedDurationMinutes: number;
-  sessionMode: SessionMode;
+  /** Historical requests may still be returned with legacy modes; new requests are video-only. */
+  sessionMode: LegacySessionMode;
   requestedAt: string;
   createdAt?: string;
   expiresAt: string;

@@ -22,7 +22,8 @@ export type SessionPresentationFilter =
   | "finished"
   | "unavailable";
 
-export type SessionMode = "VIDEO" | "AUDIO" | "CHAT";
+export type LegacySessionMode = "VIDEO" | "AUDIO" | "CHAT";
+export type SessionMode = "VIDEO";
 
 export type SessionCancellationBookingType = "STANDARD" | "INSTANT";
 
@@ -128,7 +129,7 @@ export interface SessionListItem {
   scheduledStartAt: string | null;
   scheduledEndAt: string | null;
   durationMinutes: number;
-  sessionMode: SessionMode;
+  sessionMode: LegacySessionMode;
   practitioner: SessionPractitionerSummary;
   patient: SessionPatientSummary | null;
   paymentCoverageType?: "DIRECT_PAYMENT" | "PACKAGE" | "CORPORATE_SPONSORSHIP";

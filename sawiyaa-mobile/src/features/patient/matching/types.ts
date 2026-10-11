@@ -10,7 +10,7 @@ export enum MatchingUrgencyPreference {
   AVAILABLE_NOW = "AVAILABLE_NOW",
 }
 
-export type SessionMode = "VIDEO" | "AUDIO";
+export type SessionMode = "VIDEO";
 export type PractitionerType =
   | "PSYCHOLOGIST"
   | "PSYCHIATRIST"

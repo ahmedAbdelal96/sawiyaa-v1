@@ -3,7 +3,6 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { SessionMode } from '@prisma/client';
 import { SupportedLocale } from '@common/i18n/types/locale.types';
 import { PatientProfileRepository } from '@modules/patients/repositories/patient-profile.repository';
 import { PublicPractitionerReadRepository } from '@modules/practitioners/repositories/public-practitioner-read.repository';
@@ -14,6 +13,7 @@ import { PackagePlanRepository } from '../repositories/package-plan.repository';
 import { PackagePlanPolicyService } from '../services/package-plan-policy.service';
 import { PackageQuoteCalculatorService } from '../services/package-quote-calculator.service';
 import { PackagePlanQuotedResultViewModel } from '../types/package-plans.types';
+import { assertSupportedSessionMode } from '@modules/sessions/policies/session-modality.policy';
 
 type PublicPackagePricingPractitioner = {
   sessionPrice30Egp: string | { toString(): string } | null;
@@ -44,9 +44,10 @@ export class QuotePackagePlanUseCase {
     packagePlanCode: string;
     practitionerSlug: string;
     durationMinutes: number;
-    sessionMode: SessionMode;
+    sessionMode: 'VIDEO';
     requestCountryIsoCode?: string | null;
   }): Promise<PackagePlanQuotedResultViewModel> {
+    assertSupportedSessionMode(input.sessionMode);
     await this.packagePlanPolicyService.assertPackagesEnabled();
     await this.packagePlanPolicyService.assertPurchasesEnabled();
 
