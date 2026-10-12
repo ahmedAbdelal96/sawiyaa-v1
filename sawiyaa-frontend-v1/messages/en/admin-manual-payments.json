@@ -2,6 +2,8 @@
   "eyebrow": "Manual payments",
   "title": "Manual payment review",
   "description": "Manage reusable Academy payment methods and review submitted proofs.",
+  "settingsTitle": "Manual payment methods",
+  "settingsDescription": "Manage manual payment methods from Payment Settings.",
   "methods": "Payment methods",
   "queue": "Review queue",
   "enabled": "Enabled",

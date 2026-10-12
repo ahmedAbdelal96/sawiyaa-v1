@@ -50,7 +50,7 @@ const domains = [
     attentionCount: 0,
     permissionState: "MANAGED_ELSEWHERE" as const,
     lastChange: null,
-    dedicatedRoute: "/admin/payments",
+    dedicatedRoute: "/admin/platform-settings/payments",
     status: "MANAGED_ELSEWHERE" as const,
   },
   {
@@ -106,7 +106,7 @@ describe("PlatformSettingsDirectory", () => {
 
     expect(
       screen.getByRole("link", { name: /المدفوعات والمالية/ }),
-    ).toHaveAttribute("href", "/admin/payments");
+    ).toHaveAttribute("href", "/admin/platform-settings/payments");
   });
 
   it("uses URL-safe route segments for camel-cased domain identities", () => {

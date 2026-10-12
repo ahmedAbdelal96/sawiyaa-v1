@@ -53,7 +53,7 @@ describe("AdminPlatformSettingsScreen", () => {
             attentionCount: 0,
             permissionState: "MANAGED_ELSEWHERE",
             status: "MANAGED_ELSEWHERE",
-            dedicatedRoute: "/admin/payments",
+            dedicatedRoute: "/admin/platform-settings/payments",
           },
         ],
       },

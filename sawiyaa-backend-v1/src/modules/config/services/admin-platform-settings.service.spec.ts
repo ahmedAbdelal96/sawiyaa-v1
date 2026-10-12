@@ -137,7 +137,7 @@ describe('AdminPlatformSettingsService', () => {
       section: 'providers',
       effectiveSource: 'DEDICATED_CONTROL',
       ownership: 'FINANCIAL',
-      dedicatedRoute: '/admin/payments',
+      dedicatedRoute: '/admin/platform-settings/payments',
       capabilities: {
         canView: true,
         canEdit: false,
@@ -216,6 +216,83 @@ describe('AdminPlatformSettingsService', () => {
     expect(management.changeSet).not.toHaveBeenCalled();
   });
 
+  it('exposes the manual payment capability through the financial Platform Settings flow', async () => {
+    const { service, management } = createService();
+    management.changeSet.mockResolvedValue([
+      {
+        key: 'payments.manualPayment.enabledDomains',
+        kind: 'update',
+        changed: true,
+        value: [],
+        valueId: 'value-1',
+        previousValueId: null,
+        updatedAt: new Date('2026-10-12T00:00:00.000Z'),
+        changeLogId: 'change-1',
+      },
+    ]);
+
+    const listed = await service.list({ domain: 'paymentsFinance' }, [
+      'configuration.view',
+      'configuration.edit.financial',
+    ]);
+    const capability = listed.settings.find(
+      (setting) => setting.key === 'payments.manualPayment.enabledDomains',
+    );
+    expect(capability).toMatchObject({
+      editable: true,
+      primaryDomain: 'paymentsFinance',
+      section: 'manualAvailability',
+      effectiveSource: 'CATALOG_DEFAULT',
+      dedicatedRoute: '/admin/platform-settings/payments',
+      capabilities: {
+        canEdit: true,
+        managedByDedicatedControl: false,
+        advancedOnly: false,
+      },
+    });
+
+    await service.changeSet(
+      {
+        domain: 'paymentsFinance',
+        reason: 'Disable Academy manual payment for maintenance',
+        changes: [
+          {
+            key: 'payments.manualPayment.enabledDomains',
+            value: [],
+          },
+        ],
+      },
+      { id: 'admin-1', roles: [] } as never,
+      ['configuration.view', 'configuration.edit.financial'],
+    );
+
+    expect(management.changeSet).toHaveBeenCalled();
+  });
+
+  it('rejects unsupported manual payment domains before persistence', async () => {
+    const { service, management } = createService();
+
+    await expect(
+      service.changeSet(
+        {
+          domain: 'paymentsFinance',
+          reason: 'Invalid capability value',
+          changes: [
+            {
+              key: 'payments.manualPayment.enabledDomains',
+              value: ['ACADEMY', 'UNKNOWN'],
+            },
+          ],
+        },
+        { id: 'admin-1', roles: [] } as never,
+        ['configuration.view', 'configuration.edit.financial'],
+      ),
+    ).rejects.toMatchObject({
+      response: { error: 'CONFIG_VALUE_INVALID' },
+    });
+    expect(management.changeSet).not.toHaveBeenCalled();
+  });
+
   it('returns domain summaries whose ordinary counts equal unique ordinary settings', async () => {
     const { service } = createService();
     const result = await service.list({}, [
@@ -228,11 +305,7 @@ describe('AdminPlatformSettingsService', () => {
         !setting.capabilities.advancedOnly,
     );
     const ordinaryDomainCount = result.domains
-      .filter(
-        (domain) =>
-          domain.primaryDomain !== 'advanced' &&
-          domain.primaryDomain !== 'paymentsFinance',
-      )
+      .filter((domain) => domain.primaryDomain !== 'advanced')
       .reduce((sum, domain) => sum + domain.ordinaryCount, 0);
 
     expect(ordinaryDomainCount).toBe(ordinarySettings.length);

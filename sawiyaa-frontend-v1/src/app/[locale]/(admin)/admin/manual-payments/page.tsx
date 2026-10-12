@@ -12,5 +12,5 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 export default async function AdminManualPaymentsPage({ params }: Props) {
   const { locale } = await params; setRequestLocale(locale);
-  return <AdminPermissionGate requiredPermissions={[PermissionKey.MANUAL_PAYMENTS_METHODS_READ, PermissionKey.MANUAL_PAYMENTS_SUBMISSIONS_READ]}><AdminManualPaymentsScreen /></AdminPermissionGate>;
+  return <AdminPermissionGate requiredPermissions={[PermissionKey.MANUAL_PAYMENTS_SUBMISSIONS_READ]}><AdminManualPaymentsScreen mode="review" /></AdminPermissionGate>;
 }

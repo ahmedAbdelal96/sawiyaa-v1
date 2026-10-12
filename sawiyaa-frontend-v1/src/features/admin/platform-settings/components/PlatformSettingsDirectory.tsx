@@ -94,8 +94,8 @@ const DOMAIN_FALLBACKS: Record<
   paymentsFinance: {
     title: "Payments & Finance",
     titleAr: "المدفوعات والمالية",
-    description: "Status for dedicated payment controls.",
-    descriptionAr: "حالة الضوابط المخصصة للمدفوعات.",
+    description: "Configure automatic and manual payment availability.",
+    descriptionAr: "إدارة إعدادات الدفع الإلكتروني واليدوي.",
   },
   advanced: {
     title: "Advanced / Technical",
@@ -149,7 +149,10 @@ function mergeDomainSummary(
     attentionCount: 0,
     permissionState: "VIEW_ONLY",
     lastChange: null,
-    dedicatedRoute: domain === "paymentsFinance" ? "/admin/payments" : null,
+    dedicatedRoute:
+      domain === "paymentsFinance"
+        ? "/admin/platform-settings/payments"
+        : null,
     status: domain === "advanced" ? "ADVANCED" : "READY",
     ...summary,
   };

@@ -203,7 +203,7 @@ export default async function AdminFinanceHubScreen({ locale }: Props) {
     {
       title: t("hub.advanced.paymentGatewayControl.title"),
       description: t("hub.advanced.paymentGatewayControl.description"),
-      href: "/admin/payments/gateway-control",
+      href: "/admin/platform-settings/payments?tab=automatic",
       icon: <Settings2 className="h-5 w-5" />,
     },
   ];

@@ -51,6 +51,7 @@ export type AdminPlatformSettingSection =
   | 'academyAssets'
   | 'certificates'
   | 'providers'
+  | 'manualAvailability'
   | 'routing'
   | 'payoutProof'
   | 'localization'
@@ -137,10 +138,10 @@ export const ADMIN_SETTING_DOMAIN_DEFINITIONS: readonly AdminPlatformSettingDoma
       title: 'Payments & Finance',
       titleAr: 'المدفوعات والمالية',
       description:
-        'Payment readiness and finance controls managed in dedicated workflows.',
+        'Configure automatic and manual payment availability from one settings workspace.',
       descriptionAr:
-        'حالة المدفوعات والضوابط المالية المدارة من مساراتها المخصصة.',
-      dedicatedRoute: '/admin/payments',
+        'إدارة إتاحة الدفع الإلكتروني واليدوي من مساحة إعدادات موحدة.',
+      dedicatedRoute: '/admin/platform-settings/payments',
     },
     {
       primaryDomain: 'advanced',
@@ -252,6 +253,14 @@ const EXACT_METADATA: Readonly<Record<string, AdminPlatformSettingMetadata>> = {
     advancedOnly: true,
     managedByDedicatedControl: false,
   },
+  'payments.manualPayment.enabledDomains': {
+    primaryDomain: 'paymentsFinance',
+    section: 'manualAvailability',
+    ownership: 'FINANCIAL',
+    advancedOnly: false,
+    managedByDedicatedControl: false,
+    dedicatedRoute: '/admin/platform-settings/payments',
+  },
 };
 
 const PREFIX_METADATA: readonly [string, AdminPlatformSettingMetadata][] = [
@@ -343,7 +352,7 @@ const PREFIX_METADATA: readonly [string, AdminPlatformSettingMetadata][] = [
       ownership: 'FINANCIAL',
       advancedOnly: true,
       managedByDedicatedControl: true,
-      dedicatedRoute: '/admin/payments',
+      dedicatedRoute: '/admin/platform-settings/payments',
     },
   ],
 ];
@@ -380,7 +389,7 @@ export function getAdminPlatformSettingMetadata(
       ownership: 'FINANCIAL',
       advancedOnly: true,
       managedByDedicatedControl: true,
-      dedicatedRoute: '/admin/payments',
+      dedicatedRoute: '/admin/platform-settings/payments',
     };
   }
 

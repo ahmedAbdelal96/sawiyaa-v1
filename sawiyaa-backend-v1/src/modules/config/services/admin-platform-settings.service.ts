@@ -20,6 +20,8 @@ import { ConfigRuntimeService } from './config-runtime.service';
 import { ConfigurationManagementService } from './configuration-management.service';
 
 type PermissionSet = readonly string[];
+const MANUAL_PAYMENT_ENABLED_DOMAINS_KEY =
+  'payments.manualPayment.enabledDomains';
 
 @Injectable()
 export class AdminPlatformSettingsService {
@@ -119,6 +121,7 @@ export class AdminPlatformSettingsService {
     permissions: PermissionSet,
   ) {
     const definition = this.requireEditable(definitionFor(key), permissions);
+    this.validateManualPaymentCapability(definition, input.value);
     const scopeType = input.scopeType ?? ConfigScopeType.GLOBAL;
     const scopeRefId =
       scopeType === ConfigScopeType.GLOBAL ? null : (input.scopeRefId ?? null);
@@ -205,6 +208,7 @@ export class AdminPlatformSettingsService {
           error: 'CONFIG_CHANGE_SET_VALUE_REQUIRED',
         });
       }
+      this.validateManualPaymentCapability(definition, change.value);
       return {
         kind: 'update' as const,
         command: { ...common, value: change.value as never },
@@ -237,7 +241,10 @@ export class AdminPlatformSettingsService {
     permissions: PermissionSet,
   ) {
     const definition = this.requireEditable(definitionFor(key), permissions);
-    if (definition.category === ConfigCategory.PAYMENT)
+    if (
+      definition.category === ConfigCategory.PAYMENT &&
+      definition.key !== MANUAL_PAYMENT_ENABLED_DOMAINS_KEY
+    )
       throw this.financialFlowError();
     const scopeType = input.scopeType ?? ConfigScopeType.GLOBAL;
     const scopeRefId =
@@ -341,21 +348,25 @@ export class AdminPlatformSettingsService {
       definition.owner === 'ENV_INFRASTRUCTURE';
     const systemManaged = metadata.ownership === 'SYSTEM';
     const financial = definition.category === ConfigCategory.PAYMENT;
+    const manualPaymentCapability =
+      definition.key === MANUAL_PAYMENT_ENABLED_DOMAINS_KEY;
     const isEditable =
       definition.editable &&
-      !financial &&
+      (manualPaymentCapability
+        ? permissions.includes(PermissionKey.CONFIGURATION_EDIT_FINANCIAL)
+        : !financial &&
+          permissions.includes(PermissionKey.CONFIGURATION_EDIT_OPERATIONAL)) &&
       !isLegacySetting &&
       !environmentOwned &&
       !systemManaged &&
-      !metadata.managedByDedicatedControl &&
-      permissions.includes(PermissionKey.CONFIGURATION_EDIT_OPERATIONAL);
+      !metadata.managedByDedicatedControl;
 
     let readOnlyReason: string | undefined = undefined;
     if (environmentOwned) {
       readOnlyReason = 'ENVIRONMENT_MANAGED';
     } else if (isLegacySetting) {
       readOnlyReason = 'LEGACY_DEPRECATED';
-    } else if (financial) {
+    } else if (financial && !manualPaymentCapability) {
       readOnlyReason = 'DEDICATED_PAYMENT_CONTROL';
     } else if (systemManaged) {
       readOnlyReason = 'SYSTEM_MANAGED';
@@ -364,7 +375,7 @@ export class AdminPlatformSettingsService {
     }
 
     let effect = 'IMMEDIATE';
-    if (financial) {
+    if (financial && !manualPaymentCapability) {
       effect = 'DEDICATED_CONTROL';
     } else if (
       definition.key === 'SESSION_REMINDER_OFFSETS_MINUTES' ||
@@ -443,6 +454,28 @@ export class AdminPlatformSettingsService {
         advancedOnly: metadata.advancedOnly,
       },
     };
+  }
+
+  private validateManualPaymentCapability(
+    definition: ConfigDefinition,
+    value: unknown,
+  ) {
+    if (definition.key !== MANUAL_PAYMENT_ENABLED_DOMAINS_KEY) return;
+
+    const allowed = new Set(['ACADEMY', 'PACKAGES', 'SESSIONS']);
+    const valid =
+      Array.isArray(value) &&
+      new Set(value).size === value.length &&
+      value.every(
+        (item) => typeof item === 'string' && allowed.has(item),
+      );
+    if (!valid) {
+      throw new BadRequestException({
+        error: 'CONFIG_VALUE_INVALID',
+        message:
+          'Manual payment availability must contain only unique supported domains.',
+      });
+    }
   }
 
   private domainSummaries(
@@ -554,7 +587,10 @@ export class AdminPlatformSettingsService {
     permissions: PermissionSet,
   ) {
     const value = this.requireVisible(definition, permissions);
-    if (value.category === ConfigCategory.PAYMENT)
+    if (
+      value.category === ConfigCategory.PAYMENT &&
+      value.key !== MANUAL_PAYMENT_ENABLED_DOMAINS_KEY
+    )
       throw this.financialFlowError();
     if (value.status === 'LEGACY') {
       throw new ForbiddenException({
@@ -571,9 +607,16 @@ export class AdminPlatformSettingsService {
     }
     if (!value.editable)
       throw new ForbiddenException({ error: 'CONFIG_NOT_EDITABLE' });
-    if (!permissions.includes(PermissionKey.CONFIGURATION_EDIT_OPERATIONAL))
+    const requiredPermission =
+      value.category === ConfigCategory.PAYMENT
+        ? PermissionKey.CONFIGURATION_EDIT_FINANCIAL
+        : PermissionKey.CONFIGURATION_EDIT_OPERATIONAL;
+    if (!permissions.includes(requiredPermission))
       throw new ForbiddenException({
-        error: 'CONFIGURATION_EDIT_OPERATIONAL_REQUIRED',
+        error:
+          requiredPermission === PermissionKey.CONFIGURATION_EDIT_FINANCIAL
+            ? 'CONFIGURATION_EDIT_FINANCIAL_REQUIRED'
+            : 'CONFIGURATION_EDIT_OPERATIONAL_REQUIRED',
       });
     return value;
   }

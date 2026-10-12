@@ -173,13 +173,6 @@ export const adminNavigation: NavigationConfig = [
         requiredPermissions: [PK.PRACTITIONER_PAYOUTS_READ],
       },
       {
-        key: "paymentGateways",
-        icon: <NavigationIcons.payments />,
-        path: "/payments/gateway-control",
-        namespace: "main",
-        requiredPermissions: [PK.FINANCE_EVENTS_READ],
-      },
-      {
         key: "financeLedger",
         icon: <NavigationIcons.ledger />,
         path: "/finance/ledger",

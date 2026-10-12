@@ -56,7 +56,28 @@
     "needsAttention": "Needs review",
     "advancedStatus": "Advanced information",
     "noResults": "No results in the settings available to this account.",
-    "paymentNote": "Status is shown here; changes are made in Payment Controls."
+    "paymentNote": "Automatic and manual payment settings in one workspace."
+  },
+  "paymentsSettings": {
+    "eyebrow": "Payment settings",
+    "title": "Payment Settings",
+    "description": "Manage automatic and manual payments in one place while keeping operations and reviews in their operational workflows.",
+    "automaticTab": "Automatic Payments",
+    "manualTab": "Manual Payments",
+    "manualAvailability": "Manual payment availability",
+    "manualAvailabilityDescription": "Allow Academy customers to use eligible manual payment methods.",
+    "academyLabel": "Academy manual payments",
+    "academyDescription": "When enabled, eligible Academy methods appear according to method status and country eligibility.",
+    "enabled": "Enabled",
+    "disabled": "Disabled",
+    "saveError": "Manual payment availability could not be updated.",
+    "reviewQueue": "Open manual payment review",
+    "reviewQueueDescription": "Review customer proofs in the separate operational workflow.",
+    "managedByPermission": "You do not have permission to edit this financial setting.",
+    "loading": "Loading payment settings...",
+    "error": "Payment settings could not be loaded.",
+    "manualMethodsDescription": "Manage manual payment destinations, countries, and display order.",
+    "backToDirectory": "Back to Platform Settings"
   },
   "domainPage": {
     "back": "Back to settings directory",

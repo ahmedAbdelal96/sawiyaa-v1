@@ -35,15 +35,13 @@ export default async function PlatformSettingsPage({
     general: "general",
     advanced: "advanced",
     storage: "advanced",
-    payments: "../payments",
-    revenue_share: "../payments",
+    payments: "payments",
+    revenue_share: "payments",
   };
 
   if (domain && routeByLegacyDomain[domain]) {
     redirect(
-      routeByLegacyDomain[domain].startsWith("../")
-        ? `/${locale}/admin/${routeByLegacyDomain[domain].slice(3)}`
-        : `/${locale}/admin/platform-settings/${routeByLegacyDomain[domain]}`,
+      `/${locale}/admin/platform-settings/${routeByLegacyDomain[domain]}`,
     );
   }
 

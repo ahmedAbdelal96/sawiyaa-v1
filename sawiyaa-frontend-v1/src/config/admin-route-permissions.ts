@@ -63,6 +63,7 @@ export const ADMIN_ROUTE_PERMISSIONS: AdminRoutePermissionConfig[] = [
   { path: "/package-plans", requiresAny: [] },
   { path: "/refund-policies", requiresAny: [] },
   { path: "/help", requiresAny: [] },
+  { path: "/platform-settings", requiresAny: [PK.CONFIGURATION_VIEW] },
   {
     path: "/notifications",
     requiresAny: [PK.NOTIFICATION_OPS_READ],
