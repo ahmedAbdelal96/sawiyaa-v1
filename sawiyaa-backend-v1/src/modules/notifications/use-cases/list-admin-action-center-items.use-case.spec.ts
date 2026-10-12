@@ -43,7 +43,10 @@ describe('ListAdminActionCenterItemsUseCase', () => {
     expect(listActionCenterNotifications).toHaveBeenCalledWith(
       expect.objectContaining({
         userId: 'reviewer-1',
-        typeSlugs: ['moderation.report-created'],
+        typeSlugs: [
+          'payments.manual-payment-review-required',
+          'moderation.report-created',
+        ],
         statuses: [
           NotificationStatus.PENDING,
           NotificationStatus.QUEUED,

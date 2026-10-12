@@ -59,7 +59,10 @@ describe('Notification Admin Action Center synthetic projection', () => {
     expect(enrichMany).toHaveBeenCalledWith([]);
     expect(listAdminActionCenterNotifications).toHaveBeenCalledWith(
       expect.objectContaining({
-        typeSlugs: ['moderation.report-created'],
+        typeSlugs: [
+          'payments.manual-payment-review-required',
+          'moderation.report-created',
+        ],
         userId: 'reviewer-1',
       }),
     );
