@@ -33,6 +33,7 @@ import {
   useCreatePublicAcademyProgramEnrollment,
   usePublicAcademyProgram,
 } from "@/features/academy-programs/hooks/use-academy-programs";
+import { getManualPaymentMethods } from "@/features/academy-programs/api/manual-payments.api";
 import type {
   AcademyProgramEnrollmentItem,
   AcademyProgramItem,
@@ -189,6 +190,7 @@ function PublicAcademyEnrollmentForm({
   feedback,
   isRestrictedLearner,
   disableSubmit,
+  manualPaymentAvailable,
 }: {
   locale: string;
   t: ReturnType<typeof useTranslations>;
@@ -200,6 +202,7 @@ function PublicAcademyEnrollmentForm({
   feedback: string | null;
   isRestrictedLearner: boolean;
   disableSubmit: boolean;
+  manualPaymentAvailable: boolean;
 }) {
   const price = resolvePublicPrice(program);
 
@@ -271,7 +274,9 @@ function PublicAcademyEnrollmentForm({
             className="h-11 w-full rounded-[12px] border border-border-light bg-white px-3 text-sm text-text-primary outline-none focus:border-primary"
           >
             <option value="GATEWAY">{t("public.form.gatewayPayment")}</option>
-            <option value="MANUAL">{t("public.form.manualPayment")}</option>
+            {manualPaymentAvailable ? (
+              <option value="MANUAL">{t("public.form.manualPayment")}</option>
+            ) : null}
           </select>
         </label>
       </div>
@@ -447,6 +452,7 @@ function PublicAcademyProgramDetailScreen({
     sourceLabel: "public-academy-program",
   });
   const [enrollment, setEnrollment] = useState<AcademyProgramEnrollmentItem | null>(null);
+  const [manualPaymentAvailable, setManualPaymentAvailable] = useState(false);
   const isRestrictedLearner = Boolean(
     currentUserQuery.data?.roles.hasAdminRole ||
       currentUserQuery.data?.roles.hasSupportAgentRole ||
@@ -485,6 +491,42 @@ function PublicAcademyProgramDetailScreen({
   const canEnroll = Boolean(
     program?.publishedAt && program.registrationOpen && program.priceStatus === "PAID",
   );
+
+  useEffect(() => {
+    let active = true;
+
+    // Fail closed while availability is loading or if the public eligibility
+    // endpoint is unavailable. The backend remains the final authority.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setManualPaymentAvailable(false);
+    setForm((current) =>
+      current.paymentMethod === "MANUAL"
+        ? { ...current, paymentMethod: "GATEWAY" }
+        : current,
+    );
+
+    if (!canEnroll) {
+      return () => {
+        active = false;
+      };
+    }
+
+    void getManualPaymentMethods()
+      .then((methods) => {
+        if (active) {
+          setManualPaymentAvailable(methods.length > 0);
+        }
+      })
+      .catch(() => {
+        if (active) {
+          setManualPaymentAvailable(false);
+        }
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [canEnroll, setForm, slug]);
   const programTitle = program ? resolveProgramTitle(program, locale) : null;
   const programDescription = program ? resolveProgramDescription(program, locale) : null;
 
@@ -755,6 +797,7 @@ function PublicAcademyProgramDetailScreen({
             feedback={feedback}
             isRestrictedLearner={isRestrictedLearner}
             disableSubmit={!programTitle}
+            manualPaymentAvailable={manualPaymentAvailable}
           />
         ) : (
           <StateCard
