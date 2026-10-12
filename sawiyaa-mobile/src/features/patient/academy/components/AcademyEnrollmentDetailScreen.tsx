@@ -1,5 +1,6 @@
-import React from "react";
-import { Linking, Platform, StyleSheet, View } from "react-native";
+import React, { useEffect, useState } from "react";
+import { Alert, Linking, Platform, StyleSheet, TextInput, View } from "react-native";
+import * as ImagePicker from "expo-image-picker";
 import * as WebBrowser from "expo-web-browser";
 import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
@@ -18,6 +19,8 @@ import { useTheme } from "../../../../providers/ThemeProvider";
 import { useAppDirection } from "../../../../i18n/direction";
 import { formatViewerDateTime } from "../../../../lib/time-formatting";
 import { usePublicAcademyProgramEnrollment } from "../hooks";
+import { getManualPaymentMethods, listManualPaymentSubmissions, submitManualPaymentProof } from "../api";
+import type { ManualPaymentMethod, ManualPaymentSubmission } from "../types";
 import {
   buildAcademyEnrollmentPaymentRedirectUrl,
   buildAcademyEnrollmentPaymentReturnUrl,
@@ -49,6 +52,22 @@ export default function AcademyEnrollmentDetailScreen({
   const isMissingAccessLink = !enrollmentId || !token;
 
   const payment = enrollment?.payment ?? null;
+  const [manualMethods, setManualMethods] = useState<ManualPaymentMethod[]>([]);
+  const [manualMethodId, setManualMethodId] = useState("");
+  const [senderAccountName, setSenderAccountName] = useState("");
+  const [manualNotes, setManualNotes] = useState("");
+  const [manualProof, setManualProof] = useState<{ uri: string; name: string; type: string } | null>(null);
+  const [manualSubmissions, setManualSubmissions] = useState<ManualPaymentSubmission[]>([]);
+  const [manualSubmitting, setManualSubmitting] = useState(false);
+  const isManualPayment = payment?.provider === "MANUAL";
+  useEffect(() => {
+    if (!isManualPayment) return;
+    void getManualPaymentMethods().then((methods) => {
+      setManualMethods(methods);
+      setManualMethodId((current) => current || methods[0]?.id || "");
+    }).catch(() => undefined);
+    void listManualPaymentSubmissions(enrollmentId, token).then(setManualSubmissions).catch(() => undefined);
+  }, [enrollmentId, isManualPayment, token]);
   const isNotFound =
     isMissingAccessLink || (enrollmentQuery.isSuccess && !enrollment);
   const paymentAmountLabel =
@@ -89,6 +108,29 @@ export default function AcademyEnrollmentDetailScreen({
     }
 
     await WebBrowser.openAuthSessionAsync(redirectUrl, returnUrl);
+  };
+
+  const chooseManualProof = async () => {
+    const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images, quality: 0.85, allowsEditing: false });
+    if (result.canceled || !result.assets[0]) return;
+    const asset = result.assets[0];
+    const type = asset.mimeType === "image/png" ? "image/png" : asset.mimeType === "image/webp" ? "image/webp" : "image/jpeg";
+    if (asset.fileSize && asset.fileSize > 5 * 1024 * 1024) { Alert.alert(t("academy.enrollment.manual.invalidFile")); return; }
+    setManualProof({ uri: asset.uri, name: asset.fileName ?? "manual-payment-proof.jpg", type });
+  };
+
+  const submitManualProof = async () => {
+    if (!manualProof || !manualMethodId || !senderAccountName.trim()) { Alert.alert(t("academy.enrollment.manual.required")); return; }
+    setManualSubmitting(true);
+    try {
+      await submitManualPaymentProof({ enrollmentId, token, methodId: manualMethodId, senderAccountName: senderAccountName.trim(), notes: manualNotes.trim() || undefined, proof: manualProof });
+      Alert.alert(t("academy.enrollment.manual.success"));
+      setManualNotes("");
+      setManualProof(null);
+      setManualSubmissions(await listManualPaymentSubmissions(enrollmentId, token));
+      await enrollmentQuery.refetch();
+    } catch { Alert.alert(t("academy.enrollment.manual.failed")); }
+    finally { setManualSubmitting(false); }
   };
 
   return (
@@ -188,12 +230,26 @@ export default function AcademyEnrollmentDetailScreen({
                   {accessLockedCopy}
                 </Text>
               ) : null}
-              {isPendingPaymentFlow ? (
+              {isPendingPaymentFlow && !isManualPayment ? (
                 <Button
                   title={t("academy.enrollment.payNow")}
                   onPress={() => void openPaymentRedirect()}
                   style={styles.button}
                 />
+              ) : null}
+              {isPendingPaymentFlow && isManualPayment ? (
+                <View style={styles.manualBox}>
+                  <SectionHeader title={t("academy.enrollment.manual.title")} subtitle={t("academy.enrollment.manual.note")} />
+                  {manualSubmissions[0]?.status === "UNDER_REVIEW" ? <Text color={theme.colors.textSecondary}>{t("academy.enrollment.manual.underReview")}</Text> : null}
+                  {manualSubmissions[0]?.status === "REJECTED" ? <Text color={theme.colors.textSecondary}>{t("academy.enrollment.manual.rejected", { reason: manualSubmissions[0].rejectionReason ?? "" })}</Text> : null}
+                  {manualSubmissions[0]?.status !== "UNDER_REVIEW" && manualSubmissions[0]?.status !== "APPROVED" ? <>
+                  {manualMethods.map((method) => method.id === manualMethodId ? <View key={method.id} style={styles.manualDetails}><Text color={theme.colors.textSecondary}>{locale === "ar" ? method.displayNameAr : method.displayNameEn}</Text><Text color={theme.colors.textSecondary}>{method.accountHolderName}</Text><Text color={theme.colors.textSecondary}>{method.accountIdentifier}</Text><Text color={theme.colors.textSecondary}>{locale === "ar" ? method.instructionsAr : method.instructionsEn}</Text></View> : null)}
+                  <TextInput value={senderAccountName} onChangeText={setSenderAccountName} placeholder={t("academy.enrollment.manual.senderName")} style={[styles.manualInput, { textAlign }]} />
+                  <TextInput value={manualNotes} onChangeText={setManualNotes} placeholder={t("academy.enrollment.manual.notes")} multiline style={[styles.manualInput, { textAlign, minHeight: 72 }]} />
+                  <Button title={manualProof ? manualProof.name : t("academy.enrollment.manual.chooseProof")} variant="secondary" onPress={() => void chooseManualProof()} />
+                  <Button title={t("academy.enrollment.manual.submit")} onPress={() => void submitManualProof()} loading={manualSubmitting} disabled={manualSubmitting} style={styles.button} />
+                  </> : null}
+                </View>
               ) : null}
             </Card>
           ) : null}
@@ -280,5 +336,23 @@ const styles = StyleSheet.create({
   joinStack: {
     gap: 10,
     marginTop: 12,
+  },
+  manualBox: {
+    marginTop: 12,
+    gap: 10,
+  },
+  manualDetails: {
+    gap: 6,
+    padding: 12,
+    borderRadius: 12,
+    backgroundColor: "#F5F7F7",
+  },
+  manualInput: {
+    minHeight: 48,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: "#CBD5D6",
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    backgroundColor: "#FFFFFF",
   },
 });

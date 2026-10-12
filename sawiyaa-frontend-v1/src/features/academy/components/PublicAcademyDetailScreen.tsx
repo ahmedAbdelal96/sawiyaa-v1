@@ -165,6 +165,13 @@ function EnrollmentResultCard({
         >
           {t("public.result.continuePayment")}
         </a>
+      ) : enrollment.payment?.provider === "MANUAL" ? (
+        <Link
+          href={`/${locale}/patient/academy/program-enrollments/${enrollment.id}/pay`}
+          className="mt-4 inline-flex w-full items-center justify-center rounded-[14px] bg-primary px-4 py-3 text-sm font-semibold text-white transition hover:bg-primary-hover shadow-sm"
+        >
+          {t("public.result.continueManualPayment")}
+        </Link>
       ) : null}
 
     </div>
@@ -251,6 +258,22 @@ function PublicAcademyEnrollmentForm({
           placeholder={t("public.form.email")}
           className="w-full"
         />
+        <label className="block space-y-1.5 text-sm font-semibold text-text-secondary">
+          <span>{t("public.form.paymentMethod")}</span>
+          <select
+            value={form.paymentMethod ?? "GATEWAY"}
+            onChange={(event) =>
+              setForm((current) => ({
+                ...current,
+                paymentMethod: event.target.value as "GATEWAY" | "MANUAL",
+              }))
+            }
+            className="h-11 w-full rounded-[12px] border border-border-light bg-white px-3 text-sm text-text-primary outline-none focus:border-primary"
+          >
+            <option value="GATEWAY">{t("public.form.gatewayPayment")}</option>
+            <option value="MANUAL">{t("public.form.manualPayment")}</option>
+          </select>
+        </label>
       </div>
 
       <div className="mt-4 space-y-2 rounded-xl border border-border-light bg-surface-tertiary px-4 py-3.5 text-xs leading-normal">
@@ -416,6 +439,7 @@ function PublicAcademyProgramDetailScreen({
   const createEnrollment = useCreatePublicAcademyProgramEnrollment();
   const [feedback, setFeedback] = useState<string | null>(null);
   const [form, setForm] = useState<CreateAcademyProgramEnrollmentInput>({
+    paymentMethod: "GATEWAY",
     fullName: "",
     phoneNumber: "",
     whatsappNumber: "",
@@ -491,6 +515,7 @@ function PublicAcademyProgramDetailScreen({
           phoneNumber: form.phoneNumber.trim(),
           whatsappNumber: form.whatsappNumber?.trim() || undefined,
           email: form.email?.trim() || undefined,
+          paymentMethod: form.paymentMethod ?? "GATEWAY",
           sourceLabel: form.sourceLabel?.trim() || undefined,
         },
       });

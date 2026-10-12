@@ -278,12 +278,47 @@ export type CreateAcademyProgramInput = {
 };
 
 export type CreateAcademyProgramEnrollmentInput = {
+  paymentMethod?: "GATEWAY" | "MANUAL";
   fullName: string;
   phoneNumber: string;
   whatsappNumber?: string;
   email?: string;
   sourceLabel?: string;
   returnUrlBase?: string;
+};
+
+export type ManualPaymentMethod = {
+  id: string;
+  code: string;
+  type: "INSTAPAY" | "PAYPAL" | "ELECTRONIC_WALLET" | "CUSTOM" | string;
+  displayNameAr: string;
+  displayNameEn: string;
+  accountHolderName: string;
+  accountIdentifier: string;
+  instructionsAr: string | null;
+  instructionsEn: string | null;
+  availabilityMode: "ALL" | "SELECTED" | string;
+  countryIsoCodes: string[];
+  isEnabled: boolean;
+  sortOrder: number;
+};
+
+export type ManualPaymentSubmission = {
+  id: string;
+  paymentId: string;
+  methodId: string;
+  attemptNumber: number;
+  status: "UNDER_REVIEW" | "APPROVED" | "REJECTED" | "EXPIRED" | string;
+  senderAccountName: string;
+  notes: string | null;
+  submittedAt: string;
+  reviewedAt: string | null;
+  rejectionReason: string | null;
+  resubmitUntil: string | null;
+  amount: string;
+  currencyCode: string;
+  method: ManualPaymentMethod;
+  proofStoredFileId: string;
 };
 
 export type CreateAdminAcademyProgramEnrollmentInput = {

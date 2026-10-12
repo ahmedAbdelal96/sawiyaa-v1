@@ -1,7 +1,7 @@
 export type AcademyLocale = "ar" | "en" | string;
 export type AcademyProgramStatus = "DRAFT" | "PUBLISHED" | "ARCHIVED" | string;
 export type AcademyProgramDeliveryMethod = "ZOOM" | "GOOGLE_MEET" | "WHATSAPP" | "OFFLINE" | "OTHER" | string;
-export type PaymentProvider = "STRIPE" | "PAYMOB" | string;
+export type PaymentProvider = "STRIPE" | "PAYMOB" | "MANUAL" | string;
 export type PaymentStatus = "CREATED" | "PENDING" | "REQUIRES_ACTION" | "AUTHORIZED" | "CAPTURED" | "FAILED" | "CANCELLED" | "EXPIRED" | "REFUND_PENDING" | "PARTIALLY_REFUNDED" | "REFUNDED" | string;
 export type AcademyProgramEnrollmentStatus = "PENDING_PAYMENT" | "CONFIRMED" | "CANCELLED" | "EXPIRED" | string;
 
@@ -47,6 +47,8 @@ export type AcademyProgramEnrollmentItem = {
   certificate?: { status: string; issuedAt: string | null; uploadedAt: string | null; fileName: string | null; downloadAvailable: boolean } | null;
 };
 export type AcademyProgramEnrollmentResponse = { item: AcademyProgramEnrollmentItem };
+export type ManualPaymentMethod = { id: string; type: string; displayNameAr: string; displayNameEn: string; accountHolderName: string; accountIdentifier: string; instructionsAr: string | null; instructionsEn: string | null };
+export type ManualPaymentSubmission = { id: string; status: string; attemptNumber: number; senderAccountName: string; rejectionReason: string | null; resubmitUntil: string | null; notes?: string | null };
 export type AcademyProgramEnrollmentsListData = { items: AcademyProgramEnrollmentItem[]; pagination: AcademyPagination };
 export type CreateAcademyProgramEnrollmentInput = { fullName: string; phoneNumber: string; whatsappNumber?: string; email?: string; sourceLabel?: string; declaredCountryCode?: string; returnUrlBase?: string };
 export type ListAcademyProgramsParams = { page?: number; limit?: number; q?: string };

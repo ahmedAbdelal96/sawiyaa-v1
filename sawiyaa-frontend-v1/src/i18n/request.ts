@@ -61,6 +61,7 @@ export default getRequestConfig(async ({ requestLocale }) => {
     "admin-sessions",
     "admin-settings",
     "admin-platform-settings",
+    "admin-manual-payments",
     "admin-package-plans",
     "admin-practitioner-payouts",
     "admin-package-settlements",
