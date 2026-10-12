@@ -273,6 +273,26 @@ export const permissionDefinitions: Array<{
     description: 'Read customer wallet balances and ledger entries in Admin',
   },
   {
+    key: 'manual-payments.methods.read',
+    description: 'Read reusable manual payment method configuration',
+  },
+  {
+    key: 'manual-payments.methods.manage',
+    description: 'Create, edit, order, enable, and disable manual payment methods',
+  },
+  {
+    key: 'manual-payments.submissions.read',
+    description: 'Read manual payment submission queue and details',
+  },
+  {
+    key: 'manual-payments.submissions.review',
+    description: 'Approve or reject manual payment submissions',
+  },
+  {
+    key: 'manual-payments.proofs.read',
+    description: 'Read private manual payment proof files',
+  },
+  {
     key: 'coupons.manage',
     description: 'Create and configure discount coupons and revenue shares',
   },
@@ -400,6 +420,11 @@ export const rolePermissionBundles: Array<{
       'refunds.approve',
       'refunds.retry',
       'customer-wallets.read',
+      'manual-payments.methods.read',
+      'manual-payments.methods.manage',
+      'manual-payments.submissions.read',
+      'manual-payments.submissions.review',
+      'manual-payments.proofs.read',
       'package-plans.read',
     ],
   },

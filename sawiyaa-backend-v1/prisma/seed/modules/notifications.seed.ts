@@ -130,6 +130,24 @@ export const notificationsSeedModule: SeedModule = {
         category: NotificationCategory.PAYMENT,
       },
       {
+        slug: 'payments.manual-payment-review-required',
+        displayName: 'Manual Payment Review Required',
+        description: 'Reviewer notification for a submitted manual payment proof',
+        category: NotificationCategory.PAYMENT,
+      },
+      {
+        slug: 'payments.manual-payment-submitted',
+        displayName: 'Manual Payment Proof Submitted',
+        description: 'Patient notification when a manual payment proof enters review',
+        category: NotificationCategory.PAYMENT,
+      },
+      {
+        slug: 'payments.manual-payment-rejected',
+        displayName: 'Manual Payment Proof Rejected',
+        description: 'Patient notification when a manual payment proof is rejected',
+        category: NotificationCategory.PAYMENT,
+      },
+      {
         slug: 'financial.practitioner-earning-credited',
         displayName: 'Practitioner Earning Credited',
         description:
@@ -1384,6 +1402,57 @@ export const notificationsSeedModule: SeedModule = {
             subjectTemplate: null,
             titleTemplate: 'انشر إتاحة الأسبوع القادم',
             bodyTemplate: 'انشر إتاحة الأسبوع القادم ليستمر المرضى في الحجز.',
+          },
+        },
+      },
+      {
+        typeSlug: 'payments.manual-payment-review-required',
+        channel: NotificationChannel.IN_APP,
+        slug: 'payments.manual-payment-review-required.in-app.v1',
+        translations: {
+          en: {
+            subjectTemplate: null,
+            titleTemplate: 'Manual payment review required',
+            bodyTemplate: 'A manual payment proof is ready for review.',
+          },
+          ar: {
+            subjectTemplate: null,
+            titleTemplate: 'مراجعة دفعة يدوية',
+            bodyTemplate: 'يوجد إثبات دفع يدوي جديد يحتاج إلى مراجعة.',
+          },
+        },
+      },
+      {
+        typeSlug: 'payments.manual-payment-submitted',
+        channel: NotificationChannel.IN_APP,
+        slug: 'payments.manual-payment-submitted.in-app.v1',
+        translations: {
+          en: {
+            subjectTemplate: null,
+            titleTemplate: 'Payment proof received',
+            bodyTemplate: 'Your manual payment proof is under review.',
+          },
+          ar: {
+            subjectTemplate: null,
+            titleTemplate: 'تم استلام إثبات الدفع',
+            bodyTemplate: 'إثبات الدفع اليدوي الخاص بك قيد المراجعة.',
+          },
+        },
+      },
+      {
+        typeSlug: 'payments.manual-payment-rejected',
+        channel: NotificationChannel.IN_APP,
+        slug: 'payments.manual-payment-rejected.in-app.v1',
+        translations: {
+          en: {
+            subjectTemplate: null,
+            titleTemplate: 'Payment proof needs changes',
+            bodyTemplate: 'Your manual payment proof was rejected. Reason: {{reason}}',
+          },
+          ar: {
+            subjectTemplate: null,
+            titleTemplate: 'يحتاج إثبات الدفع إلى تعديل',
+            bodyTemplate: 'تم رفض إثبات الدفع اليدوي. السبب: {{reason}}',
           },
         },
       },

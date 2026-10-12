@@ -147,6 +147,16 @@ export const NOTIFICATION_POLICY_CATALOG: Record<string, NotificationPolicy> = {
   'payments.refund-failed': patientTransactional('REFUND'),
   'payments.package-purchase-succeeded': patientTransactional('PAYMENT'),
   'payments.academy-payment-succeeded': patientTransactional('PAYMENT'),
+  'payments.manual-payment-submitted': patientTransactional('PAYMENT'),
+  'payments.manual-payment-rejected': patientTransactional('PAYMENT'),
+  'payments.manual-payment-review-required': {
+    purpose: 'ACTION_REQUIRED',
+    audienceKind: 'ROLE_REVIEWERS',
+    adminActionCenterVisible: true,
+    deliveryOperationsVisible: true,
+    actionKind: 'PAYMENT',
+    priority: 'HIGH',
+  },
   'financial.practitioner-earning-credited':
     practitionerTransactional('PAYMENT'),
   'financial.practitioner-payout-completed':

@@ -21,6 +21,7 @@ export type ConfigKey =
   | 'payment.routing.defaultProvider'
   | 'payment.routing.fallbackProvider'
   | 'payment.routing.priorityOrder'
+  | 'payments.manualPayment.enabledDomains'
   | 'platform.defaultLocale'
   | 'security.jwt.accessTokenTtlMinutes'
   | 'finance.practitionerSharePercent.crossCountry'
@@ -71,6 +72,9 @@ export type ConfigKey =
       | 'academy-certificate.enabled'
       | 'academy-certificate.allowedMimeTypes'
       | 'academy-certificate.maxBytes'
+      | 'manual-payment-proof.enabled'
+      | 'manual-payment-proof.allowedMimeTypes'
+      | 'manual-payment-proof.maxBytes'
     }`;
 
 type NestedKey<K extends string> = K extends infer Current extends string

@@ -65,6 +65,11 @@ export enum PermissionKey {
   ASSESSMENTS_AUTHORING_READ = 'assessments.authoring.read',
   ASSESSMENTS_AUTHORING_MANAGE = 'assessments.authoring.manage',
   CUSTOMER_WALLETS_READ = 'customer-wallets.read',
+  MANUAL_PAYMENTS_METHODS_READ = 'manual-payments.methods.read',
+  MANUAL_PAYMENTS_METHODS_MANAGE = 'manual-payments.methods.manage',
+  MANUAL_PAYMENTS_SUBMISSIONS_READ = 'manual-payments.submissions.read',
+  MANUAL_PAYMENTS_SUBMISSIONS_REVIEW = 'manual-payments.submissions.review',
+  MANUAL_PAYMENTS_PROOFS_READ = 'manual-payments.proofs.read',
   COUPONS_MANAGE = 'coupons.manage',
 
   ADMIN_USERS_READ = 'admin-users.read',

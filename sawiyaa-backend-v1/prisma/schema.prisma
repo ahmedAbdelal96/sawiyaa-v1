@@ -472,6 +472,26 @@ enum PaymentProvider {
   STRIPE
   PAYMOB
   INTERNAL_WALLET
+  MANUAL
+}
+
+enum ManualPaymentMethodType {
+  INSTAPAY
+  PAYPAL
+  ELECTRONIC_WALLET
+  CUSTOM
+}
+
+enum ManualPaymentAvailabilityMode {
+  ALL
+  SELECTED
+}
+
+enum ManualPaymentSubmissionStatus {
+  UNDER_REVIEW
+  APPROVED
+  REJECTED
+  EXPIRED
 }
 
 enum PaymentStatus {
@@ -1404,6 +1424,7 @@ enum StoredFilePurpose {
   ARTICLE_COVER
   ACADEMY_PROGRAM_COVER
   ACADEMY_CERTIFICATE
+  MANUAL_PAYMENT_PROOF
 }
 
 enum ConfigChangeAction {
@@ -1545,6 +1566,7 @@ model StoredFile {
   articleCover           Article?                           @relation("ArticleCoverFile")
   academyProgramCover    AcademyProgram?                    @relation("AcademyProgramCoverFile")
   academyCertificate     AcademyProgramEnrollment?          @relation("AcademyProgramCertificateFile")
+  manualPaymentProof     ManualPaymentSubmission?           @relation("ManualPaymentProofFile")
 
   @@index([purpose, status])
   @@index([uploadedByUserId, createdAt])
@@ -3306,6 +3328,7 @@ model Payment {
   academyProgramEnrollment     AcademyProgramEnrollment?     @relation("AcademyProgramEnrollmentPayment")
   academyProgramPaymentAttempt AcademyProgramPaymentAttempt? @relation("AcademyProgramPaymentAttemptPayment")
   patientPackagePurchase       PatientPackagePurchase?       @relation("PatientPackagePurchasePayment")
+  manualPaymentSubmissions     ManualPaymentSubmission[]
 
   @@unique([provider, providerPaymentRef], map: "uq_payment_provider_payment_ref")
   @@index([provider, providerOrderRef])
@@ -3314,6 +3337,80 @@ model Payment {
   @@index([practitionerId, status])
   @@index([provider, status, createdAt])
   @@index([currencyCode, status])
+}
+
+model ManualPaymentMethod {
+  id                   String                         @id @default(uuid()) @db.Uuid
+  code                 String                         @unique @db.VarChar(80)
+  type                 ManualPaymentMethodType
+  displayNameAr        String                         @db.VarChar(191)
+  displayNameEn        String                         @db.VarChar(191)
+  accountHolderName    String                         @db.VarChar(191)
+  accountIdentifier    String                         @db.VarChar(191)
+  instructionsAr       String?                        @db.VarChar(2000)
+  instructionsEn       String?                        @db.VarChar(2000)
+  availabilityMode     ManualPaymentAvailabilityMode @default(ALL)
+  isEnabled            Boolean                        @default(false)
+  sortOrder            Int                            @default(0)
+  createdByUserId      String?                        @db.Uuid
+  updatedByUserId      String?                        @db.Uuid
+  createdAt            DateTime                       @default(now())
+  updatedAt            DateTime                       @updatedAt
+  disabledAt           DateTime?
+
+  countries            ManualPaymentMethodCountry[]
+  submissions          ManualPaymentSubmission[]
+
+  @@index([isEnabled, sortOrder])
+  @@index([type, isEnabled])
+}
+
+model ManualPaymentMethodCountry {
+  id                   String               @id @default(uuid()) @db.Uuid
+  manualPaymentMethodId String              @db.Uuid
+  countryIsoCode       String               @db.Char(2)
+  createdAt            DateTime             @default(now())
+
+  manualPaymentMethod  ManualPaymentMethod @relation(fields: [manualPaymentMethodId], references: [id], onDelete: Cascade)
+
+  @@unique([manualPaymentMethodId, countryIsoCode])
+  @@index([countryIsoCode, manualPaymentMethodId])
+}
+
+model ManualPaymentSubmission {
+  id                         String                       @id @default(uuid()) @db.Uuid
+  paymentId                  String                       @db.Uuid
+  manualPaymentMethodId      String                       @db.Uuid
+  attemptNumber              Int                          @default(1)
+  status                     ManualPaymentSubmissionStatus @default(UNDER_REVIEW)
+  senderAccountName          String                       @db.VarChar(191)
+  proofStoredFileId          String                       @unique @db.Uuid
+  notes                      String?                      @db.VarChar(1000)
+  submittedAt                DateTime                     @default(now())
+  reviewedAt                 DateTime?
+  reviewedByUserId           String?                      @db.Uuid
+  rejectionReason            String?                      @db.VarChar(1000)
+  resubmitUntil              DateTime?
+  paymentAmountSnapshot      Decimal                      @db.Decimal(18, 2)
+  paymentCurrencySnapshot    String                       @db.VarChar(3)
+  methodTypeSnapshot         ManualPaymentMethodType
+  methodDisplayNameArSnapshot String                      @db.VarChar(191)
+  methodDisplayNameEnSnapshot String                      @db.VarChar(191)
+  accountHolderSnapshot      String                       @db.VarChar(191)
+  accountIdentifierSnapshot  String                       @db.VarChar(191)
+  instructionsArSnapshot     String?                      @db.VarChar(2000)
+  instructionsEnSnapshot     String?                      @db.VarChar(2000)
+  countrySnapshot            String?                      @db.Char(2)
+  createdAt                  DateTime                     @default(now())
+  updatedAt                  DateTime                     @updatedAt
+
+  payment                    Payment                      @relation(fields: [paymentId], references: [id], onDelete: Restrict)
+  manualPaymentMethod        ManualPaymentMethod          @relation(fields: [manualPaymentMethodId], references: [id], onDelete: Restrict)
+  proofStoredFile            StoredFile                   @relation("ManualPaymentProofFile", fields: [proofStoredFileId], references: [id], onDelete: Restrict)
+
+  @@index([paymentId, status, createdAt])
+  @@index([status, submittedAt])
+  @@index([manualPaymentMethodId, status])
 }
 
 /// Safe, auditable back-office case record. This is operational metadata only;

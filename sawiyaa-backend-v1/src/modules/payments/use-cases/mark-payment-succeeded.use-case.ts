@@ -50,6 +50,9 @@ export class MarkPaymentSucceededUseCase {
     paymentId: string;
     providerEventRef: string;
     payload: Record<string, unknown>;
+    source?: 'PROVIDER_WEBHOOK' | 'MANUAL_REVIEW' | 'RECONCILIATION';
+    actorUserId?: string;
+    actorRoles?: string[];
   }) {
     const payment = await this.paymentRepository.findById(input.paymentId);
 
@@ -79,23 +82,25 @@ export class MarkPaymentSucceededUseCase {
         PaymentStatus.CAPTURED,
       );
       const alreadyCaptured = current.status === PaymentStatus.CAPTURED;
-      const receipt = await this.paymentRepository.findWebhookReceipt(
-        current.provider,
-        input.providerEventRef,
-        tx,
-      );
-      if (!receipt) {
-        await this.paymentRepository.createWebhookReceipt(
-          {
-            provider: payment.provider,
-            providerEventRef: input.providerEventRef,
-            paymentId: payment.id,
-          },
+      if (input.source !== 'MANUAL_REVIEW') {
+        const receipt = await this.paymentRepository.findWebhookReceipt(
+          current.provider,
+          input.providerEventRef,
           tx,
         );
+        if (!receipt) {
+          await this.paymentRepository.createWebhookReceipt(
+            {
+              provider: payment.provider,
+              providerEventRef: input.providerEventRef,
+              paymentId: payment.id,
+            },
+            tx,
+          );
+        }
       }
 
-      if (!alreadyCaptured) {
+      if (!alreadyCaptured && input.source !== 'MANUAL_REVIEW') {
         await this.paymentRepository.createEvent(
           {
             paymentId: payment.id,
@@ -133,8 +138,16 @@ export class MarkPaymentSucceededUseCase {
             paymentId: payment.id,
             eventType: PaymentEventType.PAYMENT_CAPTURED,
             providerEventRef: input.providerEventRef,
-            actorType: AuditActorType.PAYMENT_WEBHOOK,
-            source: SecurityAuditSource.PAYMENT_WEBHOOK,
+            actorType:
+              input.source === 'MANUAL_REVIEW'
+                ? AuditActorType.USER
+                : AuditActorType.PAYMENT_WEBHOOK,
+            source:
+              input.source === 'MANUAL_REVIEW'
+                ? SecurityAuditSource.HTTP_REQUEST
+                : SecurityAuditSource.PAYMENT_WEBHOOK,
+            actorUserId: input.actorUserId,
+            actorRolesJson: input.actorRoles,
             previousStatus: current.status,
             newStatus: PaymentStatus.CAPTURED,
           },

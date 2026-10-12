@@ -35,9 +35,9 @@ const ROUTINE_ADMIN_EXCLUSIONS = [
 ] as const;
 
 describe('notification policy catalog', () => {
-  it('reconciles the authoritative inventory to 41 types and 53 templates', () => {
-    expect(PRODUCTION_NOTIFICATION_TYPE_SLUGS).toHaveLength(41);
-    expect(PRODUCTION_NOTIFICATION_TEMPLATE_SLUGS).toHaveLength(53);
+  it('reconciles the authoritative inventory to 44 types and 56 templates', () => {
+    expect(PRODUCTION_NOTIFICATION_TYPE_SLUGS).toHaveLength(44);
+    expect(PRODUCTION_NOTIFICATION_TEMPLATE_SLUGS).toHaveLength(56);
     expect(PRODUCTION_NOTIFICATION_TYPE_SLUGS).toEqual(
       expect.arrayContaining([
         'payments.package-purchase-succeeded',
@@ -49,7 +49,7 @@ describe('notification policy catalog', () => {
   });
 
   it('has explicit policy entries for every runtime notification type', () => {
-    expect(Object.keys(NOTIFICATION_POLICY_CATALOG)).toHaveLength(41);
+    expect(Object.keys(NOTIFICATION_POLICY_CATALOG)).toHaveLength(44);
     for (const slug of PRODUCTION_NOTIFICATION_TYPE_SLUGS) {
       expect(getNotificationPolicy(slug)).toBeDefined();
     }
@@ -78,11 +78,21 @@ describe('notification policy catalog', () => {
     });
   });
 
+  it('keeps manual payment review as an explicit reviewer action', () => {
+    expect(isAdminActionCenterVisible('payments.manual-payment-review-required')).toBe(true);
+    expect(getNotificationPolicy('payments.manual-payment-review-required')).toMatchObject({
+      audienceKind: 'ROLE_REVIEWERS',
+      purpose: 'ACTION_REQUIRED',
+      actionKind: 'PAYMENT',
+    });
+  });
+
   it('exposes only explicit action-center types as an allowlist', async () => {
     const { getAdminActionCenterTypeSlugs } =
       await import('./notification-policy.catalog');
 
     expect(getAdminActionCenterTypeSlugs()).toEqual([
+      'payments.manual-payment-review-required',
       'moderation.report-created',
     ]);
   });

@@ -57,6 +57,8 @@ import { PaymentProviderRecoveryService } from './services/payment-provider-reco
 import { PackageRefundPolicyService } from './services/package-refund-policy.service';
 import { AdminPaymentOperationalExceptionsController } from './controllers/admin-payment-operational-exceptions.controller';
 import { PaymentOperationalExceptionService } from './services/payment-operational-exception.service';
+import { ManualPaymentService } from './services/manual-payment.service';
+import { ManualPaymentsController } from './controllers/manual-payments.controller';
 
 /**
  * Payments Module owns payment initiation, provider webhook handling,
@@ -82,6 +84,7 @@ import { PaymentOperationalExceptionService } from './services/payment-operation
     AdminPaymentRefundsController,
     AdminPatientPaymentsController,
     AdminPaymentOperationalExceptionsController,
+    ManualPaymentsController,
   ],
   providers: [
     PaymentAccessPolicy,
@@ -127,6 +130,7 @@ import { PaymentOperationalExceptionService } from './services/payment-operation
     PaymentProviderRecoveryService,
     PackageRefundPolicyService,
     PaymentOperationalExceptionService,
+    ManualPaymentService,
   ],
   exports: [
     PaymentRepository,
@@ -140,6 +144,7 @@ import { PaymentOperationalExceptionService } from './services/payment-operation
     ExpirePaymentUseCase,
     PaymentProviderRecoveryService,
     PaymentOperationalExceptionService,
+    ManualPaymentService,
   ],
 })
 export class PaymentsModule {}

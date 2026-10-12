@@ -166,7 +166,11 @@ export class PaymentProviderRecoveryService {
         },
       },
     });
-    if (!payment || payment.provider === PaymentProvider.INTERNAL_WALLET)
+    if (
+      !payment ||
+      payment.provider === PaymentProvider.INTERNAL_WALLET ||
+      payment.provider === PaymentProvider.MANUAL
+    )
       return payment;
 
     const adapter = this.registry.get(payment.provider, {

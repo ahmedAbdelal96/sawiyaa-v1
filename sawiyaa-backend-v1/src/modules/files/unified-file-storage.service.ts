@@ -43,14 +43,18 @@ export class UnifiedFileStorageService {
     });
     const sha256 = createHash('sha256').update(input.fileBuffer).digest('hex');
     const now = new Date();
-    const year = String(now.getUTCFullYear());
-    const month = String(now.getUTCMonth() + 1).padStart(2, '0');
-    const storageKey = path.posix.join(
-      PURPOSE_DIRECTORY[input.purpose],
-      year,
-      month,
-      `${randomUUID()}${validated.extension}`,
-    );
+    const storageKey =
+      input.purpose === 'MANUAL_PAYMENT_PROOF'
+        ? path.posix.join(
+            PURPOSE_DIRECTORY[input.purpose],
+            `${randomUUID()}${validated.extension}`,
+          )
+        : path.posix.join(
+            PURPOSE_DIRECTORY[input.purpose],
+            String(now.getUTCFullYear()),
+            String(now.getUTCMonth() + 1).padStart(2, '0'),
+            `${randomUUID()}${validated.extension}`,
+          );
     const absolutePath = this.safeAbsolutePath(storageKey);
     await fs.mkdir(path.dirname(absolutePath), { recursive: true });
     await fs.writeFile(absolutePath, input.fileBuffer, { flag: 'wx' });

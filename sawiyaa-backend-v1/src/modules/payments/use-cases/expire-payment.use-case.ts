@@ -49,12 +49,26 @@ export class ExpirePaymentUseCase {
       PaymentStatus.EXPIRED,
     );
 
+    let expiryHeldByManualReview = false;
     const updated = await this.prisma.$transaction(async (tx) => {
       await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${payment.id})::bigint)`;
       const current = await this.paymentRepository.findById(payment.id, tx);
       if (!current) throw new NotFoundException({ error: 'PAYMENT_NOT_FOUND' });
       this.validatePaymentStatusTransitionService.assertCanTransition(current.status, PaymentStatus.EXPIRED);
       if (current.status === PaymentStatus.EXPIRED) return current;
+      if (current.provider === 'MANUAL') {
+        const activeSubmission = await tx.manualPaymentSubmission.findFirst({
+          where: {
+            paymentId: current.id,
+            status: 'UNDER_REVIEW',
+          },
+          select: { id: true },
+        });
+        if (activeSubmission) {
+          expiryHeldByManualReview = true;
+          return current;
+        }
+      }
       await this.paymentRepository.createWebhookReceipt(
         {
           provider: payment.provider,
@@ -105,6 +119,10 @@ export class ExpirePaymentUseCase {
       }
       return expired;
     });
+
+    if (expiryHeldByManualReview) {
+      return { item: this.paymentMapper.toViewModel(updated) };
+    }
 
     const paymentMetadata = (payment.metadataJson ?? {}) as Record<
       string,

@@ -58,6 +58,7 @@ export const PURPOSE_DIRECTORY: Record<StoredFilePurpose, string> = {
   ARTICLE_COVER: 'article-covers',
   ACADEMY_PROGRAM_COVER: 'academy-program-covers',
   ACADEMY_CERTIFICATE: 'academy-certificates',
+  MANUAL_PAYMENT_PROOF: 'manual-payments',
 };
 
 export const CHAT_IMAGE_MIME_TYPES = [
@@ -84,4 +85,5 @@ export const DEFAULT_FILE_LIMITS = Object.freeze({
   ARTICLE_COVER: 10 * 1024 * 1024,
   ACADEMY_PROGRAM_COVER: 10 * 1024 * 1024,
   ACADEMY_CERTIFICATE: 10 * 1024 * 1024,
+  MANUAL_PAYMENT_PROOF: 5 * 1024 * 1024,
 } satisfies Record<StoredFilePurpose, number>);

@@ -544,6 +544,20 @@ export class NotificationContextEnrichmentService {
         }
         // Payment context
         else if (
+          slug === 'payments.manual-payment-review-required' &&
+          (entityType === 'MANUAL_PAYMENT_SUBMISSION' || asString(payload.submissionId))
+        ) {
+          const submissionId = entityId ?? asString(payload.submissionId);
+          if (submissionId) {
+            primaryAction.kind = 'payment';
+            primaryAction.id = submissionId;
+            primaryAction.targetType = 'MANUAL_PAYMENT_SUBMISSION';
+            primaryAction.targetId = submissionId;
+            primaryAction.href = `/admin/manual-payments?submissionId=${encodeURIComponent(submissionId)}`;
+          }
+        }
+        // Payment context
+        else if (
           slug.startsWith('payments.') ||
           entityType === 'PAYMENT' ||
           entityType === 'REFUND'
