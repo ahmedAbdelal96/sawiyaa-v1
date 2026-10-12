@@ -1,6 +1,10 @@
-import { IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
+import { IsIn, IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
 
 export class CreateAcademyProgramEnrollmentDto {
+  @IsOptional()
+  @IsIn(['GATEWAY', 'MANUAL'])
+  paymentMethod?: 'GATEWAY' | 'MANUAL';
+
   @IsString()
   @MinLength(2)
   @MaxLength(191)

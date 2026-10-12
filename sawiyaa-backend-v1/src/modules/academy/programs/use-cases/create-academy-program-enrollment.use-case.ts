@@ -14,6 +14,7 @@ import {
   PaymentStatus,
 } from '@prisma/client';
 import { ConfigService } from '@nestjs/config';
+import { ConfigRuntimeService } from '@modules/config/services/config-runtime.service';
 import { PrismaService } from '@common/prisma/prisma.service';
 import { SupportedLocale } from '@common/i18n/types/locale.types';
 import { resolveProviderForCurrency } from '@common/payments/payment-region.resolver';
@@ -59,6 +60,7 @@ export class CreateAcademyProgramEnrollmentUseCase {
 
   constructor(
     private readonly configService: ConfigService,
+    private readonly configRuntime: ConfigRuntimeService,
     private readonly prisma: PrismaService,
     private readonly academyProgramRepository: AcademyProgramRepository,
     private readonly academyProgramEnrollmentRepository: AcademyProgramEnrollmentRepository,
@@ -126,13 +128,6 @@ export class CreateAcademyProgramEnrollmentUseCase {
       };
     }
 
-    const previousActiveLearnerCount = !existing
-      ? await this.academyProgramEnrollmentRepository.countActiveLearnersByProgramId(
-          program.id,
-          new Date(),
-        )
-      : null;
-
     const pricing = resolveAcademyCheckoutPricing({
       priceAmountEgp: program.priceEgp,
       priceAmountUsd: program.priceUsd,
@@ -150,49 +145,113 @@ export class CreateAcademyProgramEnrollmentUseCase {
       Date.now() + this.paymentReservationMinutes * 60 * 1000,
     );
 
-    const enrollment =
-      existing ??
-      (await this.createEnrollmentSafely({
-        academyProgramId: program.id,
-        academyLearnerId: learner.id,
-        publicAccessToken,
-        status: AcademyProgramEnrollmentStatus.PENDING_PAYMENT,
-        paymentStatus: PaymentStatus.CREATED,
-        registeredAt: now,
-        lockedAt: null,
-        seatReservedAt: now,
-        seatReservationExpiresAt,
-        confirmedAt: null,
-        cancelledAt: null,
-        expiredAt: null,
-        selectedCurrencyCode: paymentCurrencyCode,
-        selectedAmountSnapshot: paymentAmount,
-        submittedCountry: countryResolution.declaredCountryCode,
-        lockedCountry: countryResolution.resolvedCountryCode,
-        lockedCountrySource: countryResolution.countrySource,
-        contactFullName: input.payload.fullName.trim(),
-        contactEmail: input.payload.email?.trim() || null,
-        contactPhone: input.payload.phoneNumber.trim(),
-        contactWhatsapp: input.payload.whatsappNumber?.trim() || null,
-        contactCountry: countryResolution.resolvedCountryCode,
-        contactNotes: input.payload.sourceLabel?.trim() || null,
-        userId: input.currentUser?.id ?? null,
-      }));
-
-    const paymentRoute = this.resolvePaymentRoute({
-      currencyCode: paymentCurrencyCode,
-      learnerCountryIsoCode: learner.countryCode ?? null,
-    });
-    const provider = paymentRoute.provider;
-    const providerAdapter = this.paymentProviderRegistryService.get(provider);
+    const isManualPayment = input.payload.paymentMethod === 'MANUAL';
+    if (isManualPayment) {
+      const enabledDomains = await this.configRuntime.getJson<string[]>(
+        'payments.manualPayment.enabledDomains',
+      );
+      if (!Array.isArray(enabledDomains) || !enabledDomains.includes('ACADEMY')) {
+        throw new BadRequestException({ error: 'MANUAL_PAYMENT_DOMAIN_DISABLED' });
+      }
+    }
+    const paymentRoute = isManualPayment
+      ? null
+      : this.resolvePaymentRoute({
+          currencyCode: paymentCurrencyCode,
+          learnerCountryIsoCode: learner.countryCode ?? null,
+        });
+    const provider = isManualPayment ? PaymentProvider.MANUAL : paymentRoute!.provider;
 
     let paymentAttemptId: string | null = null;
+    let previousActiveLearnerCount: number | null = null;
 
-    const payment = await this.prisma.$transaction(async (tx) => {
+    const transactionResult = await this.prisma.$transaction(async (tx) => {
+      // Serialize all public reservations for one Academy program before
+      // counting active seats and creating a new enrollment reservation.
+      await tx.$executeRaw`SELECT id FROM "AcademyProgram" WHERE id = ${program.id}::uuid FOR UPDATE`;
+      const currentProgram = await tx.academyProgram.findUnique({
+        where: { id: program.id },
+      });
+      if (!currentProgram) {
+        throw new NotFoundException({
+          messageKey: 'academyProgram.errors.notFound',
+          error: 'ACADEMY_PROGRAM_NOT_FOUND',
+        });
+      }
+      if (!currentProgram.registrationOpen) {
+        throw new BadRequestException({
+          messageKey: 'academyProgram.errors.registrationClosed',
+          error: 'ACADEMY_PROGRAM_REGISTRATION_CLOSED',
+        });
+      }
+
+      const currentEnrollment =
+        await this.academyProgramEnrollmentRepository.findEnrollmentByProgramAndLearner(
+          program.id,
+          learner.id,
+          tx,
+        );
+      if (
+        currentEnrollment &&
+        currentEnrollment.status === AcademyProgramEnrollmentStatus.CONFIRMED
+      ) {
+        return { enrollment: currentEnrollment, payment: null };
+      }
+
+      const activeLearnerCount =
+        await this.academyProgramEnrollmentRepository.countActiveLearnersByProgramId(
+          program.id,
+          now,
+          tx,
+        );
+      if (
+        !currentEnrollment &&
+        currentProgram.maxSeats !== null &&
+        activeLearnerCount >= currentProgram.maxSeats
+      ) {
+        throw new ConflictException({
+          messageKey: 'academyProgram.errors.capacityReached',
+          error: 'ACADEMY_PROGRAM_SEAT_CAPACITY_REACHED',
+        });
+      }
+      previousActiveLearnerCount = currentEnrollment ? null : activeLearnerCount;
+
+      const enrollment =
+        currentEnrollment ??
+        (await this.academyProgramEnrollmentRepository.createEnrollment(
+          {
+            academyProgramId: program.id,
+            academyLearnerId: learner.id,
+            publicAccessToken,
+            status: AcademyProgramEnrollmentStatus.PENDING_PAYMENT,
+            paymentStatus: PaymentStatus.CREATED,
+            registeredAt: now,
+            lockedAt: null,
+            seatReservedAt: now,
+            seatReservationExpiresAt,
+            confirmedAt: null,
+            cancelledAt: null,
+            expiredAt: null,
+            selectedCurrencyCode: paymentCurrencyCode,
+            selectedAmountSnapshot: paymentAmount,
+            submittedCountry: countryResolution.declaredCountryCode,
+            lockedCountry: countryResolution.resolvedCountryCode,
+            lockedCountrySource: countryResolution.countrySource,
+            contactFullName: input.payload.fullName.trim(),
+            contactEmail: input.payload.email?.trim() || null,
+            contactPhone: input.payload.phoneNumber.trim(),
+            contactWhatsapp: input.payload.whatsappNumber?.trim() || null,
+            contactCountry: countryResolution.resolvedCountryCode,
+            contactNotes: input.payload.sourceLabel?.trim() || null,
+            userId: input.currentUser?.id ?? null,
+          },
+          tx,
+        ));
+
       const createdPayment = await this.paymentRepository.createPayment(
         {
           sessionId: null,
-          patientId: null,
+          patientId: isManualPayment ? input.currentUser?.id ?? null : null,
           practitionerId: null,
           paymentPurpose: PaymentPurpose.ACADEMY_PROGRAM_ENROLLMENT,
           provider,
@@ -200,6 +259,8 @@ export class CreateAcademyProgramEnrollmentUseCase {
           amountSubtotal: paymentAmount,
           amountDiscount: '0',
           amountTotal: paymentAmount,
+          amountFromWallet: '0',
+          amountFromGateway: paymentAmount,
           currencyCode: paymentCurrencyCode,
           metadataJson: {
             source: 'academy-program-enrollment',
@@ -272,17 +333,30 @@ export class CreateAcademyProgramEnrollmentUseCase {
         tx,
       );
 
-      return createdPayment;
+      return { enrollment, payment: createdPayment };
     });
 
-    const academyProgramPaymentReturnUrl = this.resolvePaymentReturnUrl({
-      locale: input.locale,
-      enrollmentId: enrollment.id,
-      publicAccessToken,
-      returnUrlBase: input.payload.returnUrlBase ?? null,
-    });
+    const enrollment = transactionResult.enrollment;
+    if (!transactionResult.payment) {
+      return {
+        item: this.academyProgramEnrollmentPresenter.presentEnrollmentItem(
+          enrollment,
+          input.locale,
+        ),
+      };
+    }
+    const payment = transactionResult.payment;
 
-    try {
+    if (!isManualPayment) {
+      const providerAdapter = this.paymentProviderRegistryService.get(provider);
+      const academyProgramPaymentReturnUrl = this.resolvePaymentReturnUrl({
+        locale: input.locale,
+        enrollmentId: enrollment.id,
+        publicAccessToken,
+        returnUrlBase: input.payload.returnUrlBase ?? null,
+      });
+
+      try {
       const providerResult = await providerAdapter.initiateSessionPayment({
         paymentId: payment.id,
         amountMinor: toGatewayMinorUnits(paymentAmount, paymentCurrencyCode),
@@ -291,7 +365,7 @@ export class CreateAcademyProgramEnrollmentUseCase {
         sessionId: program.id,
         patientEmail: learner.email ?? null,
         redirectionUrl: academyProgramPaymentReturnUrl,
-        routeIntegrationKey: paymentRoute.integrationKey,
+        routeIntegrationKey: paymentRoute!.integrationKey,
       });
 
       this.validatePaymentStatusTransitionService.assertCanTransition(
@@ -379,7 +453,7 @@ export class CreateAcademyProgramEnrollmentUseCase {
           );
         }
       });
-    } catch (error) {
+      } catch (error) {
       await this.prisma.$transaction(async (tx) => {
         await this.paymentRepository.updateStatus(
           payment.id,
@@ -428,7 +502,8 @@ export class CreateAcademyProgramEnrollmentUseCase {
         });
       }
 
-      throw error;
+        throw error;
+      }
     }
 
     const refreshed =
@@ -531,58 +606,4 @@ export class CreateAcademyProgramEnrollmentUseCase {
     return normalized.slice(0, maxLength);
   }
 
-  private async createEnrollmentSafely(input: {
-    academyProgramId: string;
-    academyLearnerId: string;
-    publicAccessToken: string;
-    status: AcademyProgramEnrollmentStatus;
-    paymentStatus: PaymentStatus;
-    registeredAt: Date;
-    lockedAt: Date | null;
-    seatReservedAt: Date | null;
-    seatReservationExpiresAt: Date | null;
-    confirmedAt: Date | null;
-    cancelledAt: Date | null;
-    expiredAt: Date | null;
-    selectedCurrencyCode: string;
-    selectedAmountSnapshot: string;
-    submittedCountry: string | null;
-    lockedCountry: string | null;
-    lockedCountrySource: string | null;
-    contactFullName: string;
-    contactEmail: string | null;
-    contactPhone: string;
-    contactWhatsapp: string | null;
-    contactCountry: string | null;
-    contactNotes: string | null;
-    userId: string | null;
-  }) {
-    try {
-      return await this.academyProgramEnrollmentRepository.createEnrollment(
-        input,
-      );
-    } catch (error) {
-      if (this.isUniqueConstraintError(error)) {
-        const existing =
-          await this.academyProgramEnrollmentRepository.findEnrollmentByProgramAndLearner(
-            input.academyProgramId,
-            input.academyLearnerId,
-          );
-        if (existing) {
-          return existing;
-        }
-
-        throw new ConflictException({
-          messageKey: 'academyProgram.errors.enrollmentAlreadyExists',
-          error: 'ACADEMY_PROGRAM_ENROLLMENT_ALREADY_EXISTS',
-        });
-      }
-
-      throw error;
-    }
-  }
-
-  private isUniqueConstraintError(error: unknown): boolean {
-    return (error as { code?: string } | null | undefined)?.code === 'P2002';
-  }
 }
