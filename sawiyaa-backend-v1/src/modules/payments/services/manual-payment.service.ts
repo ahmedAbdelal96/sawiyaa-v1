@@ -8,8 +8,11 @@ import {
 import {
   ManualPaymentAvailabilityMode,
   ManualPaymentSubmissionStatus,
+  PaymentEventType,
   PaymentProvider,
+  PaymentPurpose,
   PaymentStatus,
+  Prisma,
   NotificationCategory,
   SecurityAuditOutcome,
   StoredFilePurpose,
@@ -205,13 +208,20 @@ export class ManualPaymentService {
     }
 
     const enrollment = await this.findAuthorizedEnrollment(input.enrollmentId, input.token, input.userId);
-    if (!enrollment.paymentId) throw new BadRequestException({ error: 'MANUAL_PAYMENT_PAYMENT_NOT_READY' });
-    const payment = await this.prisma.payment.findUnique({ where: { id: enrollment.paymentId } });
-    if (!payment || payment.provider !== PaymentProvider.MANUAL) {
-      throw new BadRequestException({ error: 'MANUAL_PAYMENT_NOT_SELECTED' });
+    const initialNow = new Date();
+    const initialReservationUntil = enrollment.seatReservationExpiresAt ?? null;
+    if (enrollment.status !== 'PENDING_PAYMENT' || !initialReservationUntil || initialReservationUntil <= initialNow) {
+      throw new ConflictException({ error: 'MANUAL_PAYMENT_RESERVATION_EXPIRED' });
     }
-    if (!this.isManualPaymentSubmittableStatus(payment.status)) {
-      throw new ConflictException({ error: 'MANUAL_PAYMENT_NOT_SUBMITTABLE' });
+
+    if (enrollment.paymentId) {
+      const payment = await this.prisma.payment.findUnique({ where: { id: enrollment.paymentId } });
+      if (!payment || payment.provider !== PaymentProvider.MANUAL) {
+        throw new BadRequestException({ error: 'MANUAL_PAYMENT_NOT_SELECTED' });
+      }
+      if (!this.isManualPaymentSubmittableStatus(payment.status)) {
+        throw new ConflictException({ error: 'MANUAL_PAYMENT_NOT_SUBMITTABLE' });
+      }
     }
 
     const method = await this.prisma.manualPaymentMethod.findUnique({
@@ -233,40 +243,113 @@ export class ManualPaymentService {
       allowedMimeTypes: IMAGE_MIME_TYPES,
     });
 
-    let submission: Awaited<ReturnType<PrismaService['manualPaymentSubmission']['create']>>;
+    let submissionResult: {
+      submission: Awaited<ReturnType<PrismaService['manualPaymentSubmission']['create']>>;
+      paymentId: string;
+      userId: string | null;
+    };
     try {
-      submission = await this.prisma.$transaction(async (tx) => {
-        await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${payment.id})::bigint)`;
-        const currentPayment = await tx.payment.findUnique({ where: { id: payment.id } });
+      submissionResult = await this.prisma.$transaction(async (tx) => {
+        await tx.$executeRaw`SELECT id FROM "AcademyProgramEnrollment" WHERE id = ${enrollment.id}::uuid FOR UPDATE`;
         const currentEnrollment = await tx.academyProgramEnrollment.findUnique({
           where: { id: enrollment.id },
           include: { academyProgram: true },
         });
-        if (!currentPayment || currentPayment.provider !== PaymentProvider.MANUAL) {
-          throw new ConflictException({ error: 'MANUAL_PAYMENT_NOT_SELECTED' });
-        }
-        if (!this.isManualPaymentSubmittableStatus(currentPayment.status)) {
-          throw new ConflictException({ error: 'MANUAL_PAYMENT_NOT_SUBMITTABLE' });
-        }
         const now = new Date();
         const viableUntil = currentEnrollment?.academyProgram.endAt ?? null;
         const reservationUntil = currentEnrollment?.seatReservationExpiresAt ?? null;
-        const resubmitUntil = currentEnrollment?.seatReservationExpiresAt && currentEnrollment.seatReservationExpiresAt > now
-          ? currentEnrollment.seatReservationExpiresAt
-          : reservationUntil;
-        if (!currentEnrollment || currentEnrollment.status !== 'PENDING_PAYMENT' || !resubmitUntil || resubmitUntil <= now) {
+        if (!currentEnrollment || currentEnrollment.status !== 'PENDING_PAYMENT' || !reservationUntil || reservationUntil <= now) {
           throw new ConflictException({ error: 'MANUAL_PAYMENT_RESERVATION_EXPIRED' });
         }
+
+        let targetPayment: {
+          id: string;
+          provider: PaymentProvider;
+          status: PaymentStatus;
+          amountTotal: Prisma.Decimal;
+          currencyCode: string;
+        };
+
+        if (currentEnrollment.paymentId) {
+          const currentPayment = await tx.payment.findUnique({ where: { id: currentEnrollment.paymentId } });
+          if (!currentPayment || currentPayment.provider !== PaymentProvider.MANUAL) {
+            throw new ConflictException({ error: 'MANUAL_PAYMENT_NOT_SELECTED' });
+          }
+          if (!this.isManualPaymentSubmittableStatus(currentPayment.status)) {
+            throw new ConflictException({ error: 'MANUAL_PAYMENT_NOT_SUBMITTABLE' });
+          }
+          targetPayment = currentPayment;
+        } else {
+          const createdPayment = await tx.payment.create({
+            data: {
+              sessionId: null,
+              patientId: null,
+              practitionerId: null,
+              paymentPurpose: PaymentPurpose.ACADEMY_PROGRAM_ENROLLMENT,
+              provider: PaymentProvider.MANUAL,
+              status: PaymentStatus.CREATED,
+              amountSubtotal: currentEnrollment.selectedAmountSnapshot,
+              amountDiscount: new Prisma.Decimal(0),
+              amountTotal: currentEnrollment.selectedAmountSnapshot,
+              amountFromWallet: new Prisma.Decimal(0),
+              amountFromGateway: currentEnrollment.selectedAmountSnapshot,
+              currencyCode: currentEnrollment.selectedCurrencyCode,
+              metadataJson: {
+                source: 'academy-program-enrollment',
+                academyProgramId: currentEnrollment.academyProgramId,
+                academyProgramEnrollmentId: currentEnrollment.id,
+                learnerId: currentEnrollment.academyLearnerId,
+              },
+            },
+          });
+
+          await tx.paymentEvent.create({
+            data: {
+              paymentId: createdPayment.id,
+              eventType: PaymentEventType.PAYMENT_CREATED,
+              payloadJson: {
+                source: 'academy-program-enrollment',
+                academyProgramEnrollmentId: currentEnrollment.id,
+                provider: PaymentProvider.MANUAL,
+              },
+            },
+          });
+
+          await tx.academyProgramPaymentAttempt.create({
+            data: {
+              academyProgramId: currentEnrollment.academyProgramId,
+              academyProgramEnrollmentId: currentEnrollment.id,
+              paymentId: createdPayment.id,
+              provider: PaymentProvider.MANUAL,
+              status: PaymentStatus.CREATED,
+              amountSubtotal: currentEnrollment.selectedAmountSnapshot,
+              amountDiscount: new Prisma.Decimal(0),
+              amountTotal: currentEnrollment.selectedAmountSnapshot,
+              currencyCode: currentEnrollment.selectedCurrencyCode,
+            },
+          });
+
+          await tx.academyProgramEnrollment.update({
+            where: { id: currentEnrollment.id },
+            data: {
+              paymentId: createdPayment.id,
+              paymentStatus: PaymentStatus.CREATED,
+            },
+          });
+
+          targetPayment = createdPayment;
+        }
+
         const active = await tx.manualPaymentSubmission.findFirst({
-          where: { paymentId: payment.id, status: ManualPaymentSubmissionStatus.UNDER_REVIEW },
+          where: { paymentId: targetPayment.id, status: ManualPaymentSubmissionStatus.UNDER_REVIEW },
         });
         if (active) throw new ConflictException({ error: 'MANUAL_PAYMENT_SUBMISSION_ALREADY_UNDER_REVIEW' });
         const latest = await tx.manualPaymentSubmission.findFirst({
-          where: { paymentId: payment.id }, orderBy: { attemptNumber: 'desc' }, select: { attemptNumber: true },
+          where: { paymentId: targetPayment.id }, orderBy: { attemptNumber: 'desc' }, select: { attemptNumber: true },
         });
         const created = await tx.manualPaymentSubmission.create({
           data: {
-            paymentId: payment.id,
+            paymentId: targetPayment.id,
             manualPaymentMethodId: method.id,
             attemptNumber: (latest?.attemptNumber ?? 0) + 1,
             status: ManualPaymentSubmissionStatus.UNDER_REVIEW,
@@ -274,8 +357,8 @@ export class ManualPaymentService {
             proofStoredFileId: stored.id,
             notes: input.payload.notes?.trim() || null,
             submittedAt: now,
-            paymentAmountSnapshot: currentPayment.amountTotal,
-            paymentCurrencySnapshot: currentPayment.currencyCode,
+            paymentAmountSnapshot: targetPayment.amountTotal,
+            paymentCurrencySnapshot: targetPayment.currencyCode,
             methodTypeSnapshot: method.type,
             methodDisplayNameArSnapshot: method.displayNameAr,
             methodDisplayNameEnSnapshot: method.displayNameEn,
@@ -294,19 +377,23 @@ export class ManualPaymentService {
           resourceType: 'ManualPaymentSubmission',
           resourceId: created.id,
           targetUserId: currentEnrollment.userId,
-          metadata: { paymentId: payment.id, attemptNumber: created.attemptNumber, viableUntil },
+          metadata: { paymentId: targetPayment.id, attemptNumber: created.attemptNumber, viableUntil },
         });
-        return created;
+        return {
+          submission: created,
+          paymentId: targetPayment.id,
+          userId: currentEnrollment.userId,
+        };
       });
     } catch (error) {
       await this.storage.delete(stored.id).catch(() => undefined);
       throw error;
     }
     await Promise.allSettled([
-      this.notifyReviewers(submission.id, payment.id),
-      enrollment.userId ? this.notifyPatientSubmission(enrollment.userId, submission.id, payment.id) : Promise.resolve(),
+      this.notifyReviewers(submissionResult.submission.id, submissionResult.paymentId),
+      submissionResult.userId ? this.notifyPatientSubmission(submissionResult.userId, submissionResult.submission.id, submissionResult.paymentId) : Promise.resolve(),
     ]);
-    return { item: this.presentSubmission(submission) };
+    return { item: this.presentSubmission(submissionResult.submission) };
   }
 
   async listSubmissions(query: ListManualPaymentSubmissionsDto) {
@@ -333,8 +420,10 @@ export class ManualPaymentService {
 
   async listPatientSubmissions(input: { enrollmentId: string; token?: string; userId?: string }) {
     const enrollment = await this.findAuthorizedEnrollment(input.enrollmentId, input.token, input.userId);
+    if (!enrollment.paymentId) return { items: [] };
+
     const items = await this.prisma.manualPaymentSubmission.findMany({
-      where: { paymentId: enrollment.paymentId ?? '__missing__' },
+      where: { paymentId: enrollment.paymentId },
       include: { manualPaymentMethod: true },
       orderBy: { attemptNumber: 'desc' },
     });
@@ -529,8 +618,16 @@ export class ManualPaymentService {
   }
 
   private async findAuthorizedEnrollment(id: string, token?: string, userId?: string) {
+    const authFilter =
+      userId && token
+        ? { OR: [{ userId }, { publicAccessToken: token }] }
+        : userId
+          ? { userId }
+          : token
+            ? { publicAccessToken: token }
+            : { id: '__unauthorized__' };
     const enrollment = await this.prisma.academyProgramEnrollment.findFirst({
-      where: { id, ...(userId ? { userId } : token ? { publicAccessToken: token } : { id: '__unauthorized__' }) },
+      where: { id, ...authFilter },
     });
     if (!enrollment) throw new ForbiddenException({ error: 'MANUAL_PAYMENT_ENROLLMENT_FORBIDDEN' });
     return enrollment;

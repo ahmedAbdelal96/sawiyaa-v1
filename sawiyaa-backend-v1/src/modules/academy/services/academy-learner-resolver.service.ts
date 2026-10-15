@@ -51,6 +51,36 @@ export class AcademyLearnerResolverService {
         await this.prisma.academyLearner.findUnique({
           where: { phoneNumber: normalizedPhoneNumber },
         });
+      const learnerByEmail = normalizedEmail
+        ? await this.prisma.academyLearner.findUnique({
+            where: { email: normalizedEmail },
+          })
+        : null;
+      const accountByEmail = normalizedEmail
+        ? await this.prisma.userEmail.findUnique({
+            where: { email: normalizedEmail },
+            select: { userId: true },
+          })
+        : null;
+
+      if (
+        learnerByEmail &&
+        (learnerByEmail.userId || learnerByEmail.id !== existingLearner?.id)
+      ) {
+        throw new ConflictException({
+          messageKey: 'academy.errors.learnerEmailAlreadyExists',
+          error: 'ACADEMY_LEARNER_EMAIL_ALREADY_EXISTS',
+        });
+      }
+
+      if (accountByEmail) {
+        throw new ConflictException({
+          messageKey: 'academy.errors.learnerEmailAlreadyExists',
+          error: 'ACADEMY_ACCOUNT_EMAIL_REQUIRES_LOGIN',
+          data: { userId: accountByEmail.userId },
+        });
+      }
+
       const countryResolution =
         await this.paymentGeoContextService.resolveCountryResolution({
           phoneNumber: normalizedPhoneNumber,

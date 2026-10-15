@@ -9,6 +9,7 @@ import type {
   AcademyProgramEnrollmentsListData,
   AcademyProgramCoverUploadResponse,
   AcademyProgramResponse,
+  AcademyRegistrationAttemptsListData,
   AcademyProgramsListData,
   CreateAcademyProgramInput,
   CreateAcademyProgramSessionInput,
@@ -28,6 +29,7 @@ import type {
   CreateAdminAcademyProgramEnrollmentInput,
   AcademyAdminEnrollmentAccountStatus,
   AcademyAdminEnrollmentAccountResponse,
+  ConfirmAdminAcademyProgramEnrollmentPaymentInput,
 } from "../types/academy-programs.types";
 
 export async function getPublicAcademyPrograms(
@@ -49,13 +51,28 @@ export async function getPublicAcademyProgram(
   return extractData(response.data).item;
 }
 
+export async function getAdminAcademyRegistrationAttempts(
+  programId: string,
+  params?: { page?: number; limit?: number; q?: string; status?: string },
+): Promise<AcademyRegistrationAttemptsListData> {
+  const response = await httpClient.get<ApiPayload<AcademyRegistrationAttemptsListData>>(
+    `/admin/academy/programs/${programId}/registration-attempts`,
+    { params },
+  );
+  return extractData(response.data);
+}
+
 export async function createPublicAcademyProgramEnrollment(
   slug: string,
   input: CreateAcademyProgramEnrollmentInput,
 ): Promise<AcademyProgramEnrollmentItem> {
+  const { idempotencyKey, ...payload } = input;
   const response = await httpClient.post<ApiPayload<AcademyProgramEnrollmentResponse>>(
     `/academy/programs/${slug}/enrollments`,
-    input,
+    payload,
+    idempotencyKey
+      ? { headers: { "Idempotency-Key": idempotencyKey } }
+      : undefined,
   );
   return extractData(response.data).item;
 }
@@ -224,6 +241,17 @@ export async function getAdminAcademyProgramEnrollment(
 ): Promise<AcademyProgramEnrollmentDetailResponse> {
   const response = await httpClient.get<ApiPayload<AcademyProgramEnrollmentDetailResponse>>(
     `/admin/academy/program-enrollments/${enrollmentId}`,
+  );
+  return extractData(response.data);
+}
+
+export async function confirmAdminAcademyProgramEnrollmentPayment(
+  enrollmentId: string,
+  input: ConfirmAdminAcademyProgramEnrollmentPaymentInput,
+): Promise<AcademyProgramEnrollmentResponse> {
+  const response = await httpClient.post<ApiPayload<AcademyProgramEnrollmentResponse>>(
+    `/admin/academy/program-enrollments/${enrollmentId}/payment/confirm-manual`,
+    input,
   );
   return extractData(response.data);
 }

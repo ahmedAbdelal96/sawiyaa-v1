@@ -73,7 +73,10 @@ import { NotificationsGateway } from './modules/notifications/gateways/notificat
 import notificationQueueConfig from './config/notification-queue.config';
 import { NotificationQueueModule } from './common/queue/notification-queue.module';
 import operationsQueueConfig from './config/operations-queue.config';
+import sessionReminderDispatchConfig from './config/session-reminder-dispatch.config';
 import { OperationsQueueModule } from './common/queue/operations-queue.module';
+import sessionReminderRedisConfig from './config/session-reminder-redis.config';
+import { SessionReminderQueueModule } from './common/queue/session-reminder-queue.module';
 
 @Module({
   imports: [
@@ -97,6 +100,8 @@ import { OperationsQueueModule } from './common/queue/operations-queue.module';
         availabilityConfig,
         notificationQueueConfig,
         operationsQueueConfig,
+        sessionReminderDispatchConfig,
+        sessionReminderRedisConfig,
       ],
     }),
     LoggingModule,
@@ -143,6 +148,7 @@ import { OperationsQueueModule } from './common/queue/operations-queue.module';
     NotificationsModule,
     NotificationQueueModule,
     OperationsQueueModule,
+    SessionReminderQueueModule,
   ],
   providers: [
     NotificationsGateway,

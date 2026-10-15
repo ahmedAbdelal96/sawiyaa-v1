@@ -1,9 +1,13 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Optional } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import {
   EmailProviderAdapter,
   EmailDeliveryResult,
 } from './email-provider.adapter';
+import {
+  isProviderCapacityAdmissionError,
+  ProviderCapacityService,
+} from '../services/provider-capacity.service';
 
 type EmailTransporter = {
   sendMail(input: {
@@ -11,7 +15,13 @@ type EmailTransporter = {
     to: string;
     subject: string;
     text: string;
-  }): Promise<unknown>;
+  }): Promise<{
+    messageId?: string;
+    accepted?: string[];
+    rejected?: string[];
+    response?: string;
+  }>;
+  close?: () => void;
 };
 
 type NodemailerModule = {
@@ -38,7 +48,10 @@ export class SmtpEmailProvider implements EmailProviderAdapter {
   private transporter: EmailTransporter | null = null;
   private loggedTransportConfig = false;
 
-  constructor(private readonly configService: ConfigService) {}
+  constructor(
+    private readonly configService: ConfigService,
+    @Optional() private readonly capacity?: ProviderCapacityService,
+  ) {}
 
   get name(): string {
     return 'smtp';
@@ -90,6 +103,9 @@ export class SmtpEmailProvider implements EmailProviderAdapter {
       port,
       secure: Boolean(secure),
       auth: user && pass ? { user, pass } : undefined,
+      connectionTimeout: 30_000,
+      greetingTimeout: 10_000,
+      socketTimeout: 30_000,
     });
   }
 
@@ -98,6 +114,7 @@ export class SmtpEmailProvider implements EmailProviderAdapter {
     subject: string;
     body: string;
     isOtp?: boolean;
+    operationKey?: string;
   }): Promise<EmailDeliveryResult> {
     const from = this.configService.get<string>('notification.mail.from');
 
@@ -107,37 +124,137 @@ export class SmtpEmailProvider implements EmailProviderAdapter {
         delivered: false,
         deliveryTarget: input.to,
         error: 'MAIL_TRANSPORT_NOT_CONFIGURED',
+        ...(input.operationKey
+          ? { errorCategory: 'CONFIGURATION' as const }
+          : {}),
       };
     }
 
     const purposeLabel = input.isOtp ? 'OTP' : 'notification';
 
-    if (!this.transporter) {
-      this.logTransportConfigOnce();
-      this.transporter = await this.buildTransporter();
-    }
-
     try {
+      if (!this.transporter) {
+        this.logTransportConfigOnce();
+        this.transporter = await this.buildTransporter();
+      }
+
       // Provider sends to exactly the `to` address it receives.
       // Dev redirect / bypass is handled by NotificationEmailService.
-      await this.transporter.sendMail({
-        from,
-        to: input.to,
-        subject: input.subject,
-        text: input.body,
-      });
+      const transport = this.transporter;
+      const send = async () => {
+        const sendPromise = transport.sendMail({
+          from,
+          to: input.to,
+          subject: input.subject,
+          text: input.body,
+        });
+        let timeoutHandle: NodeJS.Timeout | undefined;
+        const timeoutPromise = new Promise<never>((_, reject) => {
+          timeoutHandle = setTimeout(() => {
+            transport.close?.();
+            reject(new Error('SMTP_OPERATION_TIMEOUT'));
+          }, 30_000);
+          timeoutHandle.unref?.();
+        });
+        return Promise.race([sendPromise, timeoutPromise]).finally(() => {
+          if (timeoutHandle) clearTimeout(timeoutHandle);
+        });
+      };
+      const info = this.capacity
+        ? await this.capacity.execute('SMTP', send)
+        : await send();
 
       this.logger.log(
         `${purposeLabel} email delivered to ${this.maskTarget(input.to)}`,
       );
 
-      return { delivered: true, deliveryTarget: input.to };
+      return {
+        delivered: true,
+        deliveryTarget: input.to,
+        ...(input.operationKey
+          ? {
+              providerMessageId: info.messageId,
+              providerOutcome: 'ACCEPTED' as const,
+              responsePayload: {
+                ...(info.accepted ? { accepted: info.accepted } : {}),
+                ...(info.rejected ? { rejected: info.rejected } : {}),
+                ...(info.response ? { response: info.response } : {}),
+              },
+            }
+          : {}),
+      };
     } catch (error) {
+      if (isProviderCapacityAdmissionError(error)) {
+        return {
+          delivered: false,
+          deliveryTarget: input.to,
+          error: error.code,
+          ...(input.operationKey
+            ? {
+                providerOutcome: 'FAILED' as const,
+                errorCategory: 'TRANSIENT' as const,
+                providerErrorCode: error.code,
+                retryAfterMs: error.retryAfterMs || undefined,
+                responsePayload: {
+                  capacityReason: error.reason,
+                  providerSendAttempted: false,
+                },
+              }
+            : {}),
+        };
+      }
       this.logger.error(
         `Failed to deliver ${purposeLabel.toLowerCase()} email`,
         error instanceof Error ? error.stack : String(error),
       );
-      return { delivered: false, deliveryTarget: input.to, error: 'MAIL_SEND_FAILED' };
+      const errorRecord =
+        error && typeof error === 'object'
+          ? (error as {
+              code?: string;
+              command?: string;
+              response?: string;
+              responseCode?: number;
+            })
+          : {};
+      const command = errorRecord.command?.toUpperCase();
+      const unknown =
+        error instanceof Error &&
+        (error.message === 'SMTP_OPERATION_TIMEOUT' ||
+          ['DATA', 'UNKNOWN'].includes(command ?? '') ||
+          ['ETIMEDOUT', 'ESOCKET', 'EPIPE'].includes(errorRecord.code ?? ''));
+      const responseCode = errorRecord.responseCode;
+      const errorCategory = unknown
+        ? ('UNKNOWN_OUTCOME' as const)
+        : responseCode && responseCode >= 400 && responseCode < 500
+          ? ('TRANSIENT' as const)
+          : responseCode && responseCode >= 500
+            ? responseCode === 550 ||
+              responseCode === 551 ||
+              responseCode === 553
+              ? ('RECIPIENT_INVALID' as const)
+              : ('PERMANENT' as const)
+            : ('TRANSIENT' as const);
+      return {
+        delivered: false,
+        deliveryTarget: input.to,
+        error: unknown ? 'SMTP_OUTCOME_UNKNOWN' : 'MAIL_SEND_FAILED',
+        ...(input.operationKey
+          ? {
+              providerOutcome: unknown
+                ? ('UNKNOWN' as const)
+                : ('FAILED' as const),
+              errorCategory,
+              providerErrorCode: errorRecord.code ?? command,
+              responsePayload: {
+                ...(errorRecord.code ? { code: errorRecord.code } : {}),
+                ...(command ? { command } : {}),
+                ...(errorRecord.responseCode
+                  ? { responseCode: errorRecord.responseCode }
+                  : {}),
+              },
+            }
+          : {}),
+      };
     }
   }
 }

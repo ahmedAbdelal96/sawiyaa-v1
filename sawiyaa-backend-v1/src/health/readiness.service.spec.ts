@@ -130,6 +130,67 @@ describe('ReadinessService', () => {
     );
   });
 
+  it('keeps overall reminder readiness healthy when the dormant Redis path is unavailable', async () => {
+    const sessionReminderQueue = {
+      getHealthSnapshot: jest.fn().mockResolvedValue({
+        enabled: false,
+        mode: 'DB_ONLY',
+        status: 'DISABLED',
+        redis: 'NOT_REQUIRED',
+        worker: 'NOT_REQUIRED',
+        queueName: 'session-reminder-execution',
+        counts: {
+          waiting: 0,
+          active: 0,
+          completed: 0,
+          failed: 0,
+          delayed: 0,
+        },
+        oldestDelayedOrWaitingJobAgeMs: null,
+        lastStageSuccessAt: null,
+        lastStageFailureAt: null,
+        lastExecutionSuccessAt: null,
+        lastRedisErrorAt: null,
+        lastWorkerHeartbeatAt: null,
+        lastError: null,
+        metrics: {
+          candidates: 0,
+          staged: 0,
+          duplicateStage: 0,
+          executions: 0,
+          noops: 0,
+          stale: 0,
+          recovery: 0,
+          stageFailures: 0,
+          workerFailures: 0,
+        },
+      }),
+    };
+    const healthyDormantService = new ReadinessService(
+      paymentRuntime as never,
+      undefined,
+      undefined,
+      providerRecovery as never,
+      undefined,
+      sessionReminderQueue as never,
+    );
+
+    const snapshot = await healthyDormantService.getSnapshot();
+
+    expect(snapshot.components.sessionReminderRedis).toMatchObject({
+      status: 'READY',
+      enabled: false,
+      mode: 'DB_ONLY',
+      redis: 'NOT_REQUIRED',
+      worker: 'NOT_REQUIRED',
+    });
+    expect(snapshot.warnings).not.toEqual(
+      expect.arrayContaining([
+        expect.stringContaining('Session reminder Redis staging is degraded'),
+      ]),
+    );
+  });
+
   it('keeps a degraded Daily attendance queue separate from API availability', async () => {
     const operationsQueue = {
       getHealthSnapshot: jest.fn().mockResolvedValue({
@@ -190,6 +251,57 @@ describe('ReadinessService', () => {
         expect.stringContaining(
           'Mandatory provider payment recovery scheduler',
         ),
+      ]),
+    );
+  });
+
+  it('marks enforced external capacity not ready while PostgreSQL remains authoritative', async () => {
+    const providerCapacity = {
+      getSnapshot: jest.fn().mockReturnValue({
+        mode: 'ENFORCED',
+        globalRateAdmission: 'ENFORCED',
+        globalCoordinator: {
+          mode: 'ENFORCED',
+          configured: true,
+          redisUrlConfigured: true,
+          redisReady: false,
+          health: 'UNAVAILABLE',
+          keyPrefix: 'sawiyaa:test:capacity',
+          stateTtlMs: 120_000,
+          providers: {
+            BREVO: { ratePerSecond: 20, burst: 20 },
+            EXPO: { ratePerSecond: 20, burst: 20 },
+            SMTP: { ratePerSecond: 20, burst: 20 },
+          },
+          allowedTotal: 0,
+          throttledTotal: 0,
+          shadowWouldThrottleTotal: 0,
+          coordinatorErrors: 1,
+          failClosedDeferrals: 1,
+          cooldownEvents: 0,
+          lastError: 'capacity redis unavailable',
+        },
+        metrics: [],
+        providers: {},
+      }),
+    };
+    const enforcedService = new ReadinessService(
+      paymentRuntime as never,
+      undefined,
+      undefined,
+      providerRecovery as never,
+      undefined,
+      undefined,
+      providerCapacity as never,
+    );
+
+    const snapshot = await enforcedService.getSnapshot();
+
+    expect(snapshot.components.notificationCapacity.status).toBe('NOT_READY');
+    expect(snapshot.status).toBe('NOT_READY');
+    expect(snapshot.warnings).toEqual(
+      expect.arrayContaining([
+        expect.stringContaining('external provider capacity is not ready'),
       ]),
     );
   });

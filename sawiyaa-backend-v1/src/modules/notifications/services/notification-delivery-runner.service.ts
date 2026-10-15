@@ -74,11 +74,15 @@ export class NotificationDeliveryRunnerService
         };
       }
 
-      const executionResult =
-        await this.deliveryAttemptEngineService.executeClaimedNotifications({
-          notificationIds: claimResult.claimedNotificationIds,
-          now,
-        });
+      const executionResult = claimResult.claims
+        ? await this.deliveryAttemptEngineService.executeClaimedNotifications({
+            claims: claimResult.claims,
+            now,
+          })
+        : await this.deliveryAttemptEngineService.executeClaimedNotifications({
+            notificationIds: claimResult.claimedNotificationIds,
+            now,
+          });
 
       if (executionResult.total > 0) {
         this.logger.log(

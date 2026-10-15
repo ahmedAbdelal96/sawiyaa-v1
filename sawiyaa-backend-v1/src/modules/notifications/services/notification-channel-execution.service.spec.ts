@@ -94,8 +94,12 @@ describe('NotificationChannelExecutionService', () => {
     expect(result).toEqual({
       success: false,
       provider: 'SMTP',
+      providerOutcome: 'FAILED',
       errorCode: 'EMAIL_TARGET_MISSING',
       errorMessage: 'EMAIL_TARGET_MISSING',
+      errorCategory: 'PERMANENT',
+      providerErrorCode: 'EMAIL_TARGET_MISSING',
+      providerSendAttempted: false,
     });
   });
 });

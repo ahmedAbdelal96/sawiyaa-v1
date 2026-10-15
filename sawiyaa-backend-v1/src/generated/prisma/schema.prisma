@@ -472,6 +472,26 @@ enum PaymentProvider {
   STRIPE
   PAYMOB
   INTERNAL_WALLET
+  MANUAL
+}
+
+enum ManualPaymentMethodType {
+  INSTAPAY
+  PAYPAL
+  ELECTRONIC_WALLET
+  CUSTOM
+}
+
+enum ManualPaymentAvailabilityMode {
+  ALL
+  SELECTED
+}
+
+enum ManualPaymentSubmissionStatus {
+  UNDER_REVIEW
+  APPROVED
+  REJECTED
+  EXPIRED
 }
 
 enum PaymentStatus {
@@ -1404,6 +1424,7 @@ enum StoredFilePurpose {
   ARTICLE_COVER
   ACADEMY_PROGRAM_COVER
   ACADEMY_CERTIFICATE
+  MANUAL_PAYMENT_PROOF
 }
 
 enum ConfigChangeAction {
@@ -1545,6 +1566,7 @@ model StoredFile {
   articleCover           Article?                           @relation("ArticleCoverFile")
   academyProgramCover    AcademyProgram?                    @relation("AcademyProgramCoverFile")
   academyCertificate     AcademyProgramEnrollment?          @relation("AcademyProgramCertificateFile")
+  manualPaymentProof     ManualPaymentSubmission?           @relation("ManualPaymentProofFile")
 
   @@index([purpose, status])
   @@index([uploadedByUserId, createdAt])
@@ -1579,6 +1601,7 @@ model User {
   uploadedFiles                          StoredFile[]                        @relation("StoredFileUploadedByUser")
   academyLearner                         AcademyLearner?
   academyProgramEnrollments              AcademyProgramEnrollment[]
+  academyRegistrationAttempts            AcademyRegistrationAttempt[]
   academyProgramCertificatesUploaded     AcademyProgramEnrollment[]          @relation("AcademyProgramEnrollmentCertificateUploadedByUser")
   academyProgramSessionAttendancesMarked AcademyProgramSessionAttendance[]   @relation("AcademyProgramSessionAttendanceMarkedByUser")
   sessionReviewsModerated                SessionReview[]                     @relation("SessionReviewModeratedByUser")
@@ -2991,6 +3014,8 @@ model SessionReminderQueue {
   dueAt                     DateTime
   sentAt                    DateTime?
   cancelledAt               DateTime?
+  claimToken                String?             @db.VarChar(64)
+  claimUntil                DateTime?
   idempotencyKey            String              @unique @db.VarChar(191)
   createdAt                 DateTime            @default(now())
   updatedAt                 DateTime            @updatedAt
@@ -2999,6 +3024,7 @@ model SessionReminderQueue {
   recipientUser User    @relation(fields: [recipientUserId], references: [id], onDelete: Cascade)
 
   @@index([dueAt, sentAt, cancelledAt])
+  @@index([dueAt, sentAt, cancelledAt, claimUntil])
   @@index([sessionId])
 }
 
@@ -3306,6 +3332,7 @@ model Payment {
   academyProgramEnrollment     AcademyProgramEnrollment?     @relation("AcademyProgramEnrollmentPayment")
   academyProgramPaymentAttempt AcademyProgramPaymentAttempt? @relation("AcademyProgramPaymentAttemptPayment")
   patientPackagePurchase       PatientPackagePurchase?       @relation("PatientPackagePurchasePayment")
+  manualPaymentSubmissions     ManualPaymentSubmission[]
 
   @@unique([provider, providerPaymentRef], map: "uq_payment_provider_payment_ref")
   @@index([provider, providerOrderRef])
@@ -3314,6 +3341,80 @@ model Payment {
   @@index([practitionerId, status])
   @@index([provider, status, createdAt])
   @@index([currencyCode, status])
+}
+
+model ManualPaymentMethod {
+  id                String                        @id @default(uuid()) @db.Uuid
+  code              String                        @unique @db.VarChar(80)
+  type              ManualPaymentMethodType
+  displayNameAr     String                        @db.VarChar(191)
+  displayNameEn     String                        @db.VarChar(191)
+  accountHolderName String                        @db.VarChar(191)
+  accountIdentifier String                        @db.VarChar(191)
+  instructionsAr    String?                       @db.VarChar(2000)
+  instructionsEn    String?                       @db.VarChar(2000)
+  availabilityMode  ManualPaymentAvailabilityMode @default(ALL)
+  isEnabled         Boolean                       @default(false)
+  sortOrder         Int                           @default(0)
+  createdByUserId   String?                       @db.Uuid
+  updatedByUserId   String?                       @db.Uuid
+  createdAt         DateTime                      @default(now())
+  updatedAt         DateTime                      @updatedAt
+  disabledAt        DateTime?
+
+  countries   ManualPaymentMethodCountry[]
+  submissions ManualPaymentSubmission[]
+
+  @@index([isEnabled, sortOrder])
+  @@index([type, isEnabled])
+}
+
+model ManualPaymentMethodCountry {
+  id                    String   @id @default(uuid()) @db.Uuid
+  manualPaymentMethodId String   @db.Uuid
+  countryIsoCode        String   @db.Char(2)
+  createdAt             DateTime @default(now())
+
+  manualPaymentMethod ManualPaymentMethod @relation(fields: [manualPaymentMethodId], references: [id], onDelete: Cascade)
+
+  @@unique([manualPaymentMethodId, countryIsoCode])
+  @@index([countryIsoCode, manualPaymentMethodId])
+}
+
+model ManualPaymentSubmission {
+  id                          String                        @id @default(uuid()) @db.Uuid
+  paymentId                   String                        @db.Uuid
+  manualPaymentMethodId       String                        @db.Uuid
+  attemptNumber               Int                           @default(1)
+  status                      ManualPaymentSubmissionStatus @default(UNDER_REVIEW)
+  senderAccountName           String                        @db.VarChar(191)
+  proofStoredFileId           String                        @unique @db.Uuid
+  notes                       String?                       @db.VarChar(1000)
+  submittedAt                 DateTime                      @default(now())
+  reviewedAt                  DateTime?
+  reviewedByUserId            String?                       @db.Uuid
+  rejectionReason             String?                       @db.VarChar(1000)
+  resubmitUntil               DateTime?
+  paymentAmountSnapshot       Decimal                       @db.Decimal(18, 2)
+  paymentCurrencySnapshot     String                        @db.VarChar(3)
+  methodTypeSnapshot          ManualPaymentMethodType
+  methodDisplayNameArSnapshot String                        @db.VarChar(191)
+  methodDisplayNameEnSnapshot String                        @db.VarChar(191)
+  accountHolderSnapshot       String                        @db.VarChar(191)
+  accountIdentifierSnapshot   String                        @db.VarChar(191)
+  instructionsArSnapshot      String?                       @db.VarChar(2000)
+  instructionsEnSnapshot      String?                       @db.VarChar(2000)
+  countrySnapshot             String?                       @db.Char(2)
+  createdAt                   DateTime                      @default(now())
+  updatedAt                   DateTime                      @updatedAt
+
+  payment             Payment             @relation(fields: [paymentId], references: [id], onDelete: Restrict)
+  manualPaymentMethod ManualPaymentMethod @relation(fields: [manualPaymentMethodId], references: [id], onDelete: Restrict)
+  proofStoredFile     StoredFile          @relation("ManualPaymentProofFile", fields: [proofStoredFileId], references: [id], onDelete: Restrict)
+
+  @@index([paymentId, status, createdAt])
+  @@index([status, submittedAt])
+  @@index([manualPaymentMethodId, status])
 }
 
 /// Safe, auditable back-office case record. This is operational metadata only;
@@ -4938,6 +5039,9 @@ model Notification {
   idempotencyKey    String? @db.VarChar(191)
 
   scheduledFor     DateTime?
+  claimToken       String?   @db.VarChar(64)
+  claimedAt        DateTime?
+  claimUntil       DateTime?
   sentAt           DateTime?
   deliveredAt      DateTime?
   readAt           DateTime?
@@ -4959,6 +5063,7 @@ model Notification {
   @@index([userId, channel, createdAt])
   @@index([notificationTypeId, channel, createdAt])
   @@index([scheduledFor, status])
+  @@index([status, claimUntil, scheduledFor, createdAt])
   @@index([relatedEntityType, relatedEntityId])
   @@index([readAt])
   @@index([failedAt])
@@ -5020,6 +5125,7 @@ model NotificationDeliveryAttempt {
 
   notification Notification @relation(fields: [notificationId], references: [id], onDelete: Cascade)
 
+  @@unique([notificationId, attemptNumber])
   @@index([notificationId, attemptNumber])
   @@index([provider, status, attemptedAt])
   @@index([providerMessageRef])
@@ -5325,8 +5431,9 @@ model AcademyLearner {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  user                      User?                      @relation(fields: [userId], references: [id], onDelete: SetNull)
+  user                      User?                        @relation(fields: [userId], references: [id], onDelete: SetNull)
   academyProgramEnrollments AcademyProgramEnrollment[]
+  registrationAttempts      AcademyRegistrationAttempt[]
 
   @@index([fullName])
   @@index([sourceLabel])
@@ -5355,12 +5462,13 @@ model AcademyProgram {
   createdAt         DateTime             @default(now())
   updatedAt         DateTime             @updatedAt
 
-  category        CourseCategory?                @relation(fields: [categoryId], references: [id], onDelete: SetNull)
-  coverStoredFile StoredFile?                    @relation("AcademyProgramCoverFile", fields: [coverStoredFileId], references: [id], onDelete: SetNull)
-  createdByUser   User?                          @relation("AcademyProgramCreatedByUser", fields: [createdByUserId], references: [id], onDelete: SetNull)
-  sessions        AcademyProgramSession[]
-  enrollments     AcademyProgramEnrollment[]
-  paymentAttempts AcademyProgramPaymentAttempt[]
+  category             CourseCategory?                @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  coverStoredFile      StoredFile?                    @relation("AcademyProgramCoverFile", fields: [coverStoredFileId], references: [id], onDelete: SetNull)
+  createdByUser        User?                          @relation("AcademyProgramCreatedByUser", fields: [createdByUserId], references: [id], onDelete: SetNull)
+  sessions             AcademyProgramSession[]
+  enrollments          AcademyProgramEnrollment[]
+  paymentAttempts      AcademyProgramPaymentAttempt[]
+  registrationAttempts AcademyRegistrationAttempt[]
 
   @@index([status, publishedAt])
   @@index([categoryId, status])
@@ -5444,6 +5552,7 @@ model AcademyProgramEnrollment {
   certificateUploadedByUser User?                             @relation("AcademyProgramEnrollmentCertificateUploadedByUser", fields: [certificateUploadedByUserId], references: [id], onDelete: SetNull)
   payment                   Payment?                          @relation("AcademyProgramEnrollmentPayment", fields: [paymentId], references: [id], onDelete: SetNull)
   paymentAttempts           AcademyProgramPaymentAttempt[]
+  registrationAttempts      AcademyRegistrationAttempt[]
   attendanceRecords         AcademyProgramSessionAttendance[]
 
   @@unique([academyProgramId, academyLearnerId])
@@ -5453,6 +5562,59 @@ model AcademyProgramEnrollment {
   @@index([userId, status])
   @@index([paymentStatus])
   @@index([paymentId])
+}
+
+enum AcademyRegistrationAttemptStatus {
+  SUBMITTED
+  REQUIRES_LOGIN
+  PENDING_PAYMENT
+  PAYMENT_ISSUE
+  CONVERTED
+  DUPLICATE
+  EXPIRED
+  CANCELLED
+}
+
+enum AcademyRegistrationAttemptResolution {
+  NEW_GUEST
+  EXISTING_LEARNER
+  AUTHENTICATED_ACCOUNT
+  EXISTING_ACCOUNT_REQUIRES_LOGIN
+  EXISTING_ENROLLMENT
+  CONFLICT
+}
+
+model AcademyRegistrationAttempt {
+  id                    String                               @id @default(uuid()) @db.Uuid
+  academyProgramId      String                               @db.Uuid
+  academyLearnerId      String?                              @db.Uuid
+  academyEnrollmentId   String?                              @db.Uuid
+  userId                String?                              @db.Uuid
+  idempotencyKey        String                               @unique @db.VarChar(120)
+  fullName              String                               @db.VarChar(191)
+  phoneNumber           String                               @db.VarChar(50)
+  normalizedPhoneNumber String                               @db.VarChar(50)
+  whatsappNumber        String?                              @db.VarChar(50)
+  email                 String?                              @db.VarChar(191)
+  normalizedEmail       String?                              @db.VarChar(191)
+  sourceLabel           String?                              @db.VarChar(191)
+  paymentMethod         String?                              @db.VarChar(30)
+  status                AcademyRegistrationAttemptStatus     @default(SUBMITTED)
+  resolution            AcademyRegistrationAttemptResolution @default(NEW_GUEST)
+  createdAt             DateTime                             @default(now())
+  updatedAt             DateTime                             @updatedAt
+  convertedAt           DateTime?
+
+  academyProgram    AcademyProgram            @relation(fields: [academyProgramId], references: [id], onDelete: Cascade)
+  academyLearner    AcademyLearner?           @relation(fields: [academyLearnerId], references: [id], onDelete: SetNull)
+  academyEnrollment AcademyProgramEnrollment? @relation(fields: [academyEnrollmentId], references: [id], onDelete: SetNull)
+  user              User?                     @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([academyProgramId, status, createdAt])
+  @@index([academyProgramId, normalizedEmail])
+  @@index([academyProgramId, normalizedPhoneNumber])
+  @@index([academyLearnerId, createdAt])
+  @@index([academyEnrollmentId, createdAt])
 }
 
 model AcademyProgramSessionAttendance {

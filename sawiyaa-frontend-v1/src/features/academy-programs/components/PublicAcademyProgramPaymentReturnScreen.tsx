@@ -69,7 +69,7 @@ function getReturnState(enrollment: AcademyProgramEnrollmentItem, redirectStatus
 }
 
 function buildRetryHref(enrollmentId: string, token: string) {
-  return `/academy/program-enrollments/${enrollmentId}/pay/redirect?token=${encodeURIComponent(
+  return `/academy/program-enrollments/${enrollmentId}/pay?token=${encodeURIComponent(
     token,
   )}`;
 }
@@ -171,8 +171,11 @@ export default function PublicAcademyProgramPaymentReturnScreen({
     token,
   );
 
+  const isFinal = Boolean(enrollment && isFinalEnrollmentState(enrollment));
+  const shouldPoll = pollingActive && !isFinal;
+
   useEffect(() => {
-    if (!pollingActive) {
+    if (!shouldPoll) {
       return;
     }
 
@@ -194,26 +197,10 @@ export default function PublicAcademyProgramPaymentReturnScreen({
         clearTimeout(timeoutRef.current);
       }
     };
-  }, [pollingActive, refetch]);
-
-  useEffect(() => {
-    if (!enrollment || !pollingActive) {
-      return;
-    }
-
-    if (isFinalEnrollmentState(enrollment)) {
-      setPollingActive(false);
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-      }
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
-      }
-    }
-  }, [enrollment, pollingActive]);
+  }, [refetch, shouldPoll]);
 
   const state = enrollment ? getReturnState(enrollment, redirectStatus) : "pending";
-  const isVerifying = pollingActive && redirectStatus === "succeeded" && state === "pending";
+  const isVerifying = shouldPoll && redirectStatus === "succeeded" && state === "pending";
   const headerState: ReturnState = isVerifying ? "verifying" : state;
   const retryHref = buildRetryHref(enrollmentId, token);
   const programHref = enrollment ? `/academy/${enrollment.program.slug}` : "/academy";
@@ -264,20 +251,12 @@ export default function PublicAcademyProgramPaymentReturnScreen({
           <ResultHeader state={headerState} t={t} />
         </div>
 
-        <div className="mt-6 grid gap-3 sm:grid-cols-2">
+        <div className="mt-6 grid gap-3 sm:grid-cols-3">
           <div className="rounded-xl border border-border-light bg-surface-tertiary p-4 text-xs">
             <div className="text-[10px] uppercase font-bold text-text-muted">
               {t("return.details.program")}
             </div>
             <div className="mt-1 text-sm font-bold text-text-primary">{programTitle}</div>
-          </div>
-          <div className="rounded-xl border border-border-light bg-surface-tertiary p-4 text-xs">
-            <div className="text-[10px] uppercase font-bold text-text-muted">
-              {t("return.details.reference")}
-            </div>
-            <div className="mt-1 break-all font-mono text-sm font-bold text-text-primary">
-              {enrollment.publicAccessToken}
-            </div>
           </div>
           <div className="rounded-xl border border-border-light bg-surface-tertiary p-4 text-xs">
             <div className="text-[10px] uppercase font-bold text-text-muted">

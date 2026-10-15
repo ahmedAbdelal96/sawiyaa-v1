@@ -7,6 +7,7 @@ type EmailTransporterMock = {
     Promise<unknown>,
     [{ from: string; to: string; subject: string; text: string }]
   >;
+  close?: jest.Mock;
 };
 
 type TransportConfig = {
@@ -47,7 +48,10 @@ describe('SmtpEmailProvider', () => {
   describe('sendEmail — success', () => {
     it('sends the email via nodemailer and returns delivered=true', async () => {
       const sendMail = jest
-        .fn<Promise<unknown>, [{ from: string; to: string; subject: string; text: string }]>()
+        .fn<
+          Promise<unknown>,
+          [{ from: string; to: string; subject: string; text: string }]
+        >()
         .mockResolvedValue({ messageId: 'msg-123' });
       createTransportMock.mockReturnValue({ sendMail });
 
@@ -76,11 +80,56 @@ describe('SmtpEmailProvider', () => {
       });
     });
 
+    it('captures SMTP acceptance metadata when a logical operation is supplied', async () => {
+      const sendMail = jest
+        .fn<
+          Promise<unknown>,
+          [{ from: string; to: string; subject: string; text: string }]
+        >()
+        .mockResolvedValue({
+          messageId: 'smtp-message-1',
+          accepted: ['practitioner@fayed.local'],
+          rejected: [],
+          response: '250 2.0.0 queued',
+        });
+      createTransportMock.mockReturnValue({ sendMail });
+
+      const provider = makeProvider({
+        'notification.mail.from': 'no-reply@fayed.dev',
+        'notification.mail.smtp.host': 'smtp.mailtrap.io',
+        'notification.mail.smtp.port': 587,
+        'notification.mail.smtp.secure': false,
+      });
+
+      const result = await provider.sendEmail({
+        to: 'practitioner@fayed.local',
+        subject: 'Notification',
+        body: 'Body',
+        operationKey: 'notification:notification-3',
+      });
+
+      expect(result).toEqual(
+        expect.objectContaining({
+          delivered: true,
+          providerMessageId: 'smtp-message-1',
+          providerOutcome: 'ACCEPTED',
+          responsePayload: {
+            accepted: ['practitioner@fayed.local'],
+            rejected: [],
+            response: '250 2.0.0 queued',
+          },
+        }),
+      );
+    });
+
     it('sends to exactly the `to` address it receives (no redirect)', async () => {
       // Provider should pass through the `to` address unchanged — redirect is
       // handled by NotificationEmailService before calling the provider.
       const sendMail = jest
-        .fn<Promise<unknown>, [{ from: string; to: string; subject: string; text: string }]>()
+        .fn<
+          Promise<unknown>,
+          [{ from: string; to: string; subject: string; text: string }]
+        >()
         .mockResolvedValue({ messageId: 'msg-123' });
       createTransportMock.mockReturnValue({ sendMail });
 
@@ -134,7 +183,10 @@ describe('SmtpEmailProvider', () => {
   describe('sendEmail — SMTP failure', () => {
     it('returns delivered=false with MAIL_SEND_FAILED', async () => {
       const sendMail = jest
-        .fn<Promise<unknown>, [{ from: string; to: string; subject: string; text: string }]>()
+        .fn<
+          Promise<unknown>,
+          [{ from: string; to: string; subject: string; text: string }]
+        >()
         .mockRejectedValue(new Error('ESMTP connection closed'));
       createTransportMock.mockReturnValue({ sendMail });
 
@@ -157,6 +209,115 @@ describe('SmtpEmailProvider', () => {
         error: 'MAIL_SEND_FAILED',
       });
     });
+
+    it('classifies a post-transmission SMTP failure as UNKNOWN', async () => {
+      const sendMail = jest
+        .fn<
+          Promise<unknown>,
+          [{ from: string; to: string; subject: string; text: string }]
+        >()
+        .mockRejectedValue(
+          Object.assign(new Error('connection lost after DATA'), {
+            command: 'DATA',
+            code: 'ECONNRESET',
+          }),
+        );
+      createTransportMock.mockReturnValue({ sendMail });
+
+      const provider = makeProvider({
+        'notification.mail.from': 'no-reply@fayed.dev',
+        'notification.mail.smtp.host': 'smtp.mailtrap.io',
+        'notification.mail.smtp.port': 587,
+        'notification.mail.smtp.secure': false,
+      });
+
+      const result = await provider.sendEmail({
+        to: 'practitioner@fayed.local',
+        subject: 'Uncertain notification',
+        body: 'Body',
+        operationKey: 'notification:notification-4',
+      });
+
+      expect(result).toEqual(
+        expect.objectContaining({
+          delivered: false,
+          error: 'SMTP_OUTCOME_UNKNOWN',
+          providerOutcome: 'UNKNOWN',
+        }),
+      );
+    });
+
+    it('classifies a connection failure before SMTP acceptance as transient', async () => {
+      const sendMail = jest
+        .fn<
+          Promise<unknown>,
+          [{ from: string; to: string; subject: string; text: string }]
+        >()
+        .mockRejectedValue(
+          Object.assign(new Error('connection refused'), {
+            code: 'ECONNECTION',
+          }),
+        );
+      createTransportMock.mockReturnValue({ sendMail });
+
+      const provider = makeProvider({
+        'notification.mail.from': 'no-reply@fayed.dev',
+        'notification.mail.smtp.host': 'smtp.mailtrap.io',
+        'notification.mail.smtp.port': 587,
+        'notification.mail.smtp.secure': false,
+      });
+
+      const result = await provider.sendEmail({
+        to: 'practitioner@fayed.local',
+        subject: 'Transient notification',
+        body: 'Body',
+        operationKey: 'notification:notification-4b',
+      });
+
+      expect(result).toEqual(
+        expect.objectContaining({
+          providerOutcome: 'FAILED',
+          errorCategory: 'TRANSIENT',
+          providerErrorCode: 'ECONNECTION',
+        }),
+      );
+    });
+
+    it('aborts a hanging SMTP operation before the 300-second notification lease', async () => {
+      jest.useFakeTimers();
+      try {
+        const sendMail = jest.fn(() => new Promise<unknown>(() => undefined));
+        const close = jest.fn();
+        createTransportMock.mockReturnValue({ sendMail, close });
+
+        const provider = makeProvider({
+          'notification.mail.from': 'no-reply@fayed.dev',
+          'notification.mail.smtp.host': 'smtp.mailtrap.io',
+          'notification.mail.smtp.port': 587,
+          'notification.mail.smtp.secure': false,
+        });
+
+        const resultPromise = provider.sendEmail({
+          to: 'practitioner@fayed.local',
+          subject: 'Hanging notification',
+          body: 'Body',
+          operationKey: 'notification:notification-5',
+        });
+        await jest.advanceTimersByTimeAsync(30_000);
+        const result = await resultPromise;
+
+        expect(result).toEqual(
+          expect.objectContaining({
+            delivered: false,
+            error: 'SMTP_OUTCOME_UNKNOWN',
+            providerOutcome: 'UNKNOWN',
+          }),
+        );
+        expect(close).toHaveBeenCalledTimes(1);
+      } finally {
+        jest.useRealTimers();
+      }
+    });
   });
 
   describe('sendEmail — OTP bypass is NOT handled here', () => {
@@ -164,7 +325,10 @@ describe('SmtpEmailProvider', () => {
     // SmtpEmailProvider returns failure so the service can apply bypass.
     it('returns failure for SMTP errors regardless of isOtp flag', async () => {
       const sendMail = jest
-        .fn<Promise<unknown>, [{ from: string; to: string; subject: string; text: string }]>()
+        .fn<
+          Promise<unknown>,
+          [{ from: string; to: string; subject: string; text: string }]
+        >()
         .mockRejectedValue(new Error('SMTP timeout'));
       createTransportMock.mockReturnValue({ sendMail });
 

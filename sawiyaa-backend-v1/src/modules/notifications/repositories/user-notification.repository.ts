@@ -312,6 +312,7 @@ export class UserNotificationRepository {
     notificationId: string | undefined,
     input: {
       status: NotificationStatus;
+      channel: NotificationChannel;
       relatedEntityType?: string | null;
     },
   ): void {
@@ -324,7 +325,7 @@ export class UserNotificationRepository {
     }
 
     void this.notificationQueue
-      ?.enqueueNotification(notificationId)
+      ?.enqueueNotification(notificationId, { channel: input.channel })
       .catch(() => undefined);
   }
 

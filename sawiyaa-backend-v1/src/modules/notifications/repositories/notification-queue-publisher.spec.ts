@@ -6,8 +6,9 @@ import { OperationalNotificationRepository } from './operational-notification.re
 describe('notification persistence queue bridge', () => {
   const notificationCreate = jest.fn();
   const notificationFindFirst = jest.fn();
+  const enqueueNotification = jest.fn();
   const queuePublisher = {
-    enqueueNotification: jest.fn(),
+    enqueueNotification,
   } as unknown as NotificationQueueService;
   const prisma = {
     notification: {
@@ -15,9 +16,11 @@ describe('notification persistence queue bridge', () => {
       findFirst: notificationFindFirst,
     },
     auditEvent: undefined,
-    $transaction: jest.fn().mockImplementation((handler: unknown) =>
-      (handler as (tx: unknown) => unknown)(prisma),
-    ),
+    $transaction: jest
+      .fn()
+      .mockImplementation((handler: unknown) =>
+        (handler as (tx: unknown) => unknown)(prisma),
+      ),
   } as unknown as PrismaService;
 
   const repository = new OperationalNotificationRepository(
@@ -50,9 +53,9 @@ describe('notification persistence queue bridge', () => {
     });
 
     expect(notificationCreate).toHaveBeenCalledTimes(1);
-    expect(queuePublisher.enqueueNotification).toHaveBeenCalledWith(
-      'notification_1',
-    );
+    expect(enqueueNotification).toHaveBeenCalledWith('notification_1', {
+      channel: NotificationChannel.EMAIL,
+    });
   });
 
   it('does not enqueue OTP rows that are delivered synchronously', async () => {
@@ -67,7 +70,7 @@ describe('notification persistence queue bridge', () => {
       relatedEntityType: 'OTP_CHALLENGE',
     });
 
-    expect(queuePublisher.enqueueNotification).not.toHaveBeenCalled();
+    expect(enqueueNotification).not.toHaveBeenCalled();
   });
 
   it('does not make notification persistence depend on enqueue success', async () => {

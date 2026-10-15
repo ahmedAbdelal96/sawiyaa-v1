@@ -30,6 +30,9 @@ import { ResolveSessionJoinReadinessService } from './services/resolve-session-j
 import { SessionJoinAvailableNotificationSweeperService } from './services/session-join-available-notification-sweeper.service';
 import { SessionRuntimePreparationService } from './services/session-runtime-preparation.service';
 import { SessionReminderNotificationSweeperService } from './services/session-reminder-notification-sweeper.service';
+import { SessionReminderRedisStagingService } from './services/session-reminder-redis-staging.service';
+import { SessionReminderRedisExecutionService } from './services/session-reminder-redis-execution.service';
+import { SessionReminderWorkerService } from '../../worker/session-reminder-worker.service';
 import { ParseDailyAttendanceWebhookService } from './services/parse-daily-attendance-webhook.service';
 import { SessionVideoProviderRegistryService } from './services/session-video-provider-registry.service';
 import { SessionVideoProviderResolverService } from './services/session-video-provider-resolver.service';
@@ -174,6 +177,9 @@ import { GetAdminSessionSupportSummaryUseCase } from './use-cases/get-admin-sess
     SessionJoinAvailableNotificationSweeperService,
     SessionRuntimePreparationService,
     SessionReminderNotificationSweeperService,
+    SessionReminderRedisStagingService,
+    SessionReminderRedisExecutionService,
+    SessionReminderWorkerService,
     NormalizeDailyAttendanceEvidenceService,
     MarkSessionInProgressFromAttendanceService,
     SessionOutcomeEvaluator,

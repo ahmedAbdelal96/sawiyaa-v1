@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { AcademyProgramEnrollmentStatus, AcademyProgramStatus, Prisma } from '@prisma/client';
+import { AcademyProgramEnrollmentStatus, AcademyProgramStatus, PaymentStatus, Prisma } from '@prisma/client';
 import { PrismaService } from '@common/prisma/prisma.service';
 
 type AcademyProgramCapacitySummary = {
@@ -270,6 +270,7 @@ export class AcademyProgramRepository {
         OR: [
           {
             status: AcademyProgramEnrollmentStatus.CONFIRMED,
+            paymentStatus: PaymentStatus.CAPTURED,
           },
           {
             status: AcademyProgramEnrollmentStatus.PENDING_PAYMENT,

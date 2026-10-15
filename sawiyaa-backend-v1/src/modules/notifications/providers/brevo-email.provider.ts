@@ -1,6 +1,18 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Optional } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { EmailProviderAdapter, EmailDeliveryResult } from './email-provider.adapter';
+import {
+  EmailProviderAdapter,
+  EmailDeliveryResult,
+} from './email-provider.adapter';
+import {
+  classifyNetworkError,
+  classifyProviderHttpStatus,
+  parseRetryAfterMs,
+} from '../services/notification-provider-error';
+import {
+  isProviderCapacityAdmissionError,
+  ProviderCapacityService,
+} from '../services/provider-capacity.service';
 
 /**
  * Brevo (formerly Sendinblue) transactional email provider.
@@ -16,7 +28,10 @@ import { EmailProviderAdapter, EmailDeliveryResult } from './email-provider.adap
 export class BrevoEmailProvider implements EmailProviderAdapter {
   private readonly logger = new Logger(BrevoEmailProvider.name);
 
-  constructor(private readonly configService: ConfigService) {}
+  constructor(
+    private readonly configService: ConfigService,
+    @Optional() private readonly capacity?: ProviderCapacityService,
+  ) {}
 
   get name(): string {
     return 'brevo';
@@ -37,9 +52,7 @@ export class BrevoEmailProvider implements EmailProviderAdapter {
   }
 
   private get apiKey(): string {
-    return (
-      this.configService.get<string>('notification.brevo.apiKey') ?? ''
-    );
+    return this.configService.get<string>('notification.brevo.apiKey') ?? '';
   }
 
   private get apiUrl(): string {
@@ -58,7 +71,30 @@ export class BrevoEmailProvider implements EmailProviderAdapter {
     subject: string;
     textContent?: string;
     htmlContent?: string;
-  }): Promise<{ ok: boolean; messageId?: string; statusCode?: number }> {
+    idempotencyKey?: string;
+  }) {
+    const operation = () => this.sendViaApiUnbounded(payload);
+    return this.capacity
+      ? this.capacity.execute('BREVO', operation)
+      : operation();
+  }
+
+  private async sendViaApiUnbounded(payload: {
+    to: string;
+    subject: string;
+    textContent?: string;
+    htmlContent?: string;
+    idempotencyKey?: string;
+  }): Promise<{
+    ok: boolean;
+    outcome: 'ACCEPTED' | 'FAILED' | 'UNKNOWN';
+    messageId?: string;
+    statusCode?: number;
+    errorCategory?: import('../services/notification-provider-outcome').NotificationProviderErrorCategory;
+    providerErrorCode?: string;
+    retryAfterMs?: number;
+    responsePayload?: Record<string, unknown>;
+  }> {
     const url = `${this.apiUrl}/v3/smtp/email`;
     const apiKey = this.apiKey;
 
@@ -82,7 +118,10 @@ export class BrevoEmailProvider implements EmailProviderAdapter {
       // Fail-fast guard: Brevo would return 400 missing_parameter if we sent an
       // empty body. Surface a safe internal error before the HTTP call.
       this.logger.error('Brevo send aborted: no htmlContent or textContent');
-      return { ok: false };
+      return { ok: false, outcome: 'FAILED' };
+    }
+    if (payload.idempotencyKey) {
+      emailPayload.headers = { 'Idempotency-Key': payload.idempotencyKey };
     }
 
     let response: Response;
@@ -103,10 +142,22 @@ export class BrevoEmailProvider implements EmailProviderAdapter {
       this.logger.error(
         `Brevo API network error: ${err instanceof Error ? err.message : String(err)}`,
       );
-      return { ok: false };
+      const knownPreAcceptanceCategory = classifyNetworkError(err);
+      this.capacity?.recordProviderResponse('BREVO', 0);
+      return {
+        ok: false,
+        outcome: knownPreAcceptanceCategory ? 'FAILED' : 'UNKNOWN',
+        ...(knownPreAcceptanceCategory
+          ? { errorCategory: knownPreAcceptanceCategory }
+          : {}),
+      };
     }
 
     if (response.ok) {
+      this.capacity?.recordRateLimitHeaders('BREVO', {
+        remaining: response.headers.get('x-sib-ratelimit-remaining'),
+        resetSeconds: response.headers.get('x-sib-ratelimit-reset'),
+      });
       let messageId: string | undefined;
       try {
         const json = (await response.json()) as { messageId?: string };
@@ -114,21 +165,64 @@ export class BrevoEmailProvider implements EmailProviderAdapter {
       } catch {
         // ignore parse error — success is determined by status
       }
-      return { ok: true, messageId };
+      return {
+        ok: true,
+        outcome: 'ACCEPTED',
+        messageId,
+        statusCode: response.status,
+        responsePayload: {
+          status: response.status,
+          ...(messageId ? { messageId } : {}),
+        },
+      };
     }
+
+    const retryAfterMs = parseRetryAfterMs(
+      response.headers?.get('retry-after'),
+    );
+    this.capacity?.recordProviderResponse(
+      'BREVO',
+      response.status,
+      retryAfterMs,
+    );
+    this.capacity?.recordRateLimitHeaders('BREVO', {
+      remaining: response.headers.get('x-sib-ratelimit-remaining'),
+      resetSeconds: response.headers.get('x-sib-ratelimit-reset'),
+    });
 
     // Log truncated body to aid debugging without leaking payload/creds
     let causeInfo = '';
+    let providerErrorCode: string | undefined;
+    let responsePayload: Record<string, unknown> = { status: response.status };
     try {
       const body = await response.text();
-      causeInfo = body.length > 200 ? ` body=${body.slice(0, 200)}...` : ` body=${body}`;
+      causeInfo =
+        body.length > 200 ? ` body=${body.slice(0, 200)}...` : ` body=${body}`;
+      try {
+        const parsed = JSON.parse(body) as { code?: unknown; error?: unknown };
+        if (typeof parsed.code === 'string') providerErrorCode = parsed.code;
+        if (typeof parsed.error === 'string') providerErrorCode = parsed.error;
+      } catch {
+        // Provider error bodies are diagnostic only; keep the safe status code.
+      }
     } catch {
       // ignore
     }
-    this.logger.warn(
-      `Brevo API returned ${response.status}${causeInfo}`,
-    );
-    return { ok: false, statusCode: response.status };
+    if (providerErrorCode)
+      responsePayload = { ...responsePayload, providerErrorCode };
+    this.logger.warn(`Brevo API returned ${response.status}${causeInfo}`);
+    return {
+      ok: false,
+      outcome: 'FAILED',
+      statusCode: response.status,
+      errorCategory: classifyProviderHttpStatus(
+        response.status,
+        providerErrorCode,
+      ),
+      providerErrorCode,
+      retryAfterMs,
+      responsePayload,
+    };
   }
 
   async sendEmail(input: {
@@ -137,6 +231,8 @@ export class BrevoEmailProvider implements EmailProviderAdapter {
     body: string;
     html?: string;
     isOtp?: boolean;
+    operationKey?: string;
+    idempotencyKey?: string;
   }): Promise<EmailDeliveryResult> {
     if (!this.fromAddress) {
       this.logger.warn('Brevo from address not configured');
@@ -144,6 +240,9 @@ export class BrevoEmailProvider implements EmailProviderAdapter {
         delivered: false,
         deliveryTarget: input.to,
         error: 'MAIL_TRANSPORT_NOT_CONFIGURED',
+        ...(input.operationKey
+          ? { errorCategory: 'CONFIGURATION' as const }
+          : {}),
       };
     }
 
@@ -153,6 +252,9 @@ export class BrevoEmailProvider implements EmailProviderAdapter {
         delivered: false,
         deliveryTarget: input.to,
         error: 'BREVO_API_KEY_NOT_CONFIGURED',
+        ...(input.operationKey
+          ? { errorCategory: 'CONFIGURATION' as const }
+          : {}),
       };
     }
 
@@ -170,16 +272,38 @@ export class BrevoEmailProvider implements EmailProviderAdapter {
         delivered: false,
         deliveryTarget: input.to,
         error: 'EMAIL_CONTENT_REQUIRED',
+        ...(input.operationKey ? { errorCategory: 'PERMANENT' as const } : {}),
       };
     }
 
     const purposeLabel = input.isOtp ? 'OTP' : 'notification';
-    const result = await this.sendViaApi({
-      to: input.to,
-      subject: input.subject,
-      ...(htmlContent ? { htmlContent } : {}),
-      ...(textContent ? { textContent } : {}),
-    });
+    let result: Awaited<ReturnType<typeof this.sendViaApi>>;
+    try {
+      result = await this.sendViaApi({
+        to: input.to,
+        subject: input.subject,
+        ...(htmlContent ? { htmlContent } : {}),
+        ...(textContent ? { textContent } : {}),
+        ...(input.idempotencyKey
+          ? { idempotencyKey: input.idempotencyKey }
+          : {}),
+      });
+    } catch (error) {
+      if (!isProviderCapacityAdmissionError(error)) throw error;
+      return {
+        delivered: false,
+        deliveryTarget: input.to,
+        error: error.code,
+        providerOutcome: 'FAILED',
+        errorCategory: 'TRANSIENT',
+        providerErrorCode: error.code,
+        retryAfterMs: error.retryAfterMs || undefined,
+        responsePayload: {
+          capacityReason: error.reason,
+          providerSendAttempted: false,
+        },
+      };
+    }
 
     if (result.ok) {
       this.logger.log(
@@ -189,6 +313,17 @@ export class BrevoEmailProvider implements EmailProviderAdapter {
         delivered: true,
         deliveryTarget: input.to,
         providerMessageId: result.messageId,
+        ...(input.operationKey
+          ? {
+              providerOutcome: 'ACCEPTED' as const,
+              httpStatus: result.statusCode,
+              providerRespondedAt: new Date().toISOString(),
+              errorCategory: result.errorCategory,
+              providerErrorCode: result.providerErrorCode,
+              retryAfterMs: result.retryAfterMs,
+              responsePayload: result.responsePayload,
+            }
+          : {}),
       };
     }
 
@@ -199,6 +334,24 @@ export class BrevoEmailProvider implements EmailProviderAdapter {
       delivered: false,
       deliveryTarget: input.to,
       error: 'BREVO_SEND_FAILED',
+      ...(input.operationKey
+        ? {
+            providerOutcome:
+              result.outcome === 'UNKNOWN'
+                ? ('UNKNOWN' as const)
+                : ('FAILED' as const),
+            httpStatus: result.statusCode,
+            providerRespondedAt: result.statusCode
+              ? new Date().toISOString()
+              : undefined,
+            errorCategory:
+              result.errorCategory ??
+              (result.outcome === 'UNKNOWN' ? 'UNKNOWN_OUTCOME' : 'TRANSIENT'),
+            providerErrorCode: result.providerErrorCode,
+            retryAfterMs: result.retryAfterMs,
+            responsePayload: result.responsePayload,
+          }
+        : {}),
     };
   }
 }

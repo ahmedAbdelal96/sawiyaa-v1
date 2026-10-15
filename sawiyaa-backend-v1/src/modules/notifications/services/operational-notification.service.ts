@@ -1177,6 +1177,7 @@ export class OperationalNotificationService {
         inApp: policy.reminder.inAppRemindersEnabled,
         email: policy.reminder.emailRemindersEnabled,
       },
+      throwOnError: true,
       payload: {
         sessionId: reminder.sessionId,
         routePath,
@@ -1671,6 +1672,7 @@ export class OperationalNotificationService {
       inApp?: boolean;
       email?: boolean;
     };
+    throwOnError?: boolean;
     payload?: Record<string, unknown> | null;
     /** Optional push-specific body key to use instead of bodyKey when rendering push notification body.
      *  Use when the default body contains PHI (e.g. {{sessionAt}} timestamps) that should not appear on lock screen.
@@ -1915,7 +1917,7 @@ export class OperationalNotificationService {
       return;
     }
 
-    const notification = await this.repository.createNotification({
+    const result = await this.repository.createNotificationWithCreationState({
       userId: input.userId,
       notificationTypeId: input.notificationTypeId,
       templateId: input.templateId,
@@ -1930,7 +1932,16 @@ export class OperationalNotificationService {
       relatedEntityId: input.relatedEntityId,
       idempotencyKey: input.idempotencyKey ?? null,
     });
+    const notification = result.notification;
 
+    if (!result.created) {
+      return;
+    }
+
+    /*
+     * Notification persistence is idempotent, but realtime publication is an
+     * external side effect. Only publish when this invocation created the row.
+     */
     this.notificationRealtimePublisher?.publish(input.userId, {
       notificationId: notification.id,
       typeSlug: input.typeSlug,
@@ -2083,6 +2094,7 @@ export class OperationalNotificationService {
       inApp?: boolean;
       email?: boolean;
     };
+    throwOnError?: boolean;
     payload?: Record<string, unknown> | null;
     /** Optional push-specific body key to use instead of bodyKey for push notifications.
      *  Use when the default body contains PHI (e.g. {{sessionAt}} timestamps).
@@ -2254,6 +2266,9 @@ export class OperationalNotificationService {
       this.logger.warn(
         `Best-effort scheduled operational notification failed for "${input.slug}": ${(error as Error).message}`,
       );
+      if (input.throwOnError) {
+        throw error;
+      }
     }
   }
 }

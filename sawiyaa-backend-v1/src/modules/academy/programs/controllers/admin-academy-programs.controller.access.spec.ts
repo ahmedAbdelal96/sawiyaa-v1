@@ -10,7 +10,7 @@ describe('AdminAcademyProgramsController access contract', () => {
   it('keeps SUPER_ADMIN in the administrative role boundary', () => {
     expect(
       Reflect.getMetadata(ROLES_KEY, AdminAcademyProgramsController),
-    ).toEqual([AppRole.ADMIN, AppRole.SUPER_ADMIN]);
+    ).toEqual([AppRole.ADMIN, AppRole.SUPER_ADMIN, AppRole.MARKETING_STAFF]);
   });
 
   it('requires the dedicated permission for manual enrollments', () => {

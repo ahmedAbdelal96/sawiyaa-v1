@@ -38,6 +38,12 @@ describe('env.schema payment validation', () => {
     expect(env.NOTIFICATION_QUEUE_ENABLED).toBe('false');
   });
 
+  it('uses METRICS_ONLY as the safe notification capacity default', () => {
+    expect(validate(buildValidEnv()).NOTIFICATION_CAPACITY_MODE).toBe(
+      'METRICS_ONLY',
+    );
+  });
+
   it('requires Redis configuration when the notification queue is enabled', () => {
     expect(() =>
       validate(
@@ -59,6 +65,55 @@ describe('env.schema payment validation', () => {
         }),
       ),
     ).not.toThrow();
+  });
+
+  it('accepts the approved SHADOW capacity configuration and parses its values', () => {
+    const env = validate(
+      buildValidEnv({
+        NOTIFICATION_CAPACITY_MODE: 'shadow',
+        NOTIFICATION_CAPACITY_REDIS_URL: 'redis://capacity-redis:6379',
+        NOTIFICATION_BREVO_REQUESTS_PER_SECOND: '20',
+        NOTIFICATION_BREVO_BURST: '20',
+        NOTIFICATION_EXPO_MESSAGES_PER_SECOND: '200',
+        NOTIFICATION_EXPO_BURST: '200',
+        NOTIFICATION_SMTP_SENDS_PER_SECOND: '5',
+        NOTIFICATION_SMTP_BURST: '10',
+        NOTIFICATION_BREVO_MAX_CONCURRENCY: '5',
+        NOTIFICATION_EXPO_MAX_CONCURRENCY: '4',
+        NOTIFICATION_SMTP_MAX_CONCURRENCY: '3',
+      }),
+    );
+
+    expect(env.NOTIFICATION_CAPACITY_MODE).toBe('SHADOW');
+    expect(env.NOTIFICATION_BREVO_REQUESTS_PER_SECOND).toBe(20);
+    expect(env.NOTIFICATION_BREVO_BURST).toBe(20);
+    expect(env.NOTIFICATION_EXPO_MESSAGES_PER_SECOND).toBe(200);
+    expect(env.NOTIFICATION_EXPO_BURST).toBe(200);
+    expect(env.NOTIFICATION_SMTP_SENDS_PER_SECOND).toBe(5);
+    expect(env.NOTIFICATION_SMTP_BURST).toBe(10);
+    expect(env.NOTIFICATION_BREVO_MAX_CONCURRENCY).toBe(5);
+    expect(env.NOTIFICATION_EXPO_MAX_CONCURRENCY).toBe(4);
+    expect(env.NOTIFICATION_SMTP_MAX_CONCURRENCY).toBe(3);
+  });
+
+  it('rejects zero or negative provider capacity values', () => {
+    for (const name of [
+      'NOTIFICATION_BREVO_REQUESTS_PER_SECOND',
+      'NOTIFICATION_BREVO_BURST',
+      'NOTIFICATION_EXPO_MESSAGES_PER_SECOND',
+      'NOTIFICATION_EXPO_BURST',
+      'NOTIFICATION_SMTP_SENDS_PER_SECOND',
+      'NOTIFICATION_SMTP_BURST',
+    ]) {
+      expect(() => validate(buildValidEnv({ [name]: '0' }))).toThrow(name);
+      expect(() => validate(buildValidEnv({ [name]: '-1' }))).toThrow(name);
+    }
+  });
+
+  it('requires every provider limit and the dedicated Redis URL in ENFORCED mode', () => {
+    expect(() =>
+      validate(buildValidEnv({ NOTIFICATION_CAPACITY_MODE: 'ENFORCED' })),
+    ).toThrow(/NOTIFICATION_CAPACITY_REDIS_URL/);
   });
 
   it('accepts the secure default when practitioner OTP configuration is missing', () => {
@@ -108,7 +163,9 @@ describe('env.schema payment validation', () => {
   it('keeps the log-size default and accepted units aligned with the parser', () => {
     expect(validate(buildValidEnv()).LOG_MAX_FILE_SIZE).toBe('20mb');
     for (const value of ['20mb', '512kb', '1gb', '2048b']) {
-      expect(validate(buildValidEnv({ LOG_MAX_FILE_SIZE: value })).LOG_MAX_FILE_SIZE).toBe(value);
+      expect(
+        validate(buildValidEnv({ LOG_MAX_FILE_SIZE: value })).LOG_MAX_FILE_SIZE,
+      ).toBe(value);
     }
     expect(() => validate(buildValidEnv({ LOG_MAX_FILE_SIZE: '20m' }))).toThrow(
       /LOG_MAX_FILE_SIZE/,

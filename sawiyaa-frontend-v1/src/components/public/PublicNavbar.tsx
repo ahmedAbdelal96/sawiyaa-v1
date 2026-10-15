@@ -11,6 +11,7 @@ import { useAuthState } from "@/stores/auth-store";
 
 export default function PublicNavbar() {
   const t = useTranslations("home.nav");
+  const tNavigation = useTranslations("navigation");
   const locale = useLocale();
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -22,6 +23,7 @@ export default function PublicNavbar() {
     { href: "/specialties", label: t("specialties") },
     { href: "/articles", label: t("articles") },
     { href: "/packages", label: t("packages") },
+    { href: "/academy", label: tNavigation("academy") },
   ];
 
   return (

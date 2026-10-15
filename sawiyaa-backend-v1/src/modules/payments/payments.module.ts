@@ -131,6 +131,7 @@ import { ManualPaymentsController } from './controllers/manual-payments.controll
     PackageRefundPolicyService,
     PaymentOperationalExceptionService,
     ManualPaymentService,
+    MarkPaymentSucceededUseCase,
   ],
   exports: [
     PaymentRepository,
@@ -145,6 +146,7 @@ import { ManualPaymentsController } from './controllers/manual-payments.controll
     PaymentProviderRecoveryService,
     PaymentOperationalExceptionService,
     ManualPaymentService,
+    MarkPaymentSucceededUseCase,
   ],
 })
 export class PaymentsModule {}

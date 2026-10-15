@@ -4,9 +4,14 @@ import { FinancialOperationsModule } from '@modules/financial-operations/financi
 import { HealthController } from './health.controller';
 import { ReadinessController } from './readiness.controller';
 import { ReadinessService } from './readiness.service';
+import { NotificationsModule } from '@modules/notifications/notifications.module';
 
 @Module({
-  imports: [PaymentsModule, forwardRef(() => FinancialOperationsModule)],
+  imports: [
+    PaymentsModule,
+    forwardRef(() => FinancialOperationsModule),
+    NotificationsModule,
+  ],
   controllers: [HealthController, ReadinessController],
   providers: [ReadinessService],
 })

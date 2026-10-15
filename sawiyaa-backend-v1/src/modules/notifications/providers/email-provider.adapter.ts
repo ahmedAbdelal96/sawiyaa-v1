@@ -31,6 +31,8 @@ export interface EmailProviderAdapter {
     body: string;
     html?: string;
     isOtp?: boolean;
+    operationKey?: string;
+    idempotencyKey?: string;
   }): Promise<EmailDeliveryResult>;
 }
 
@@ -39,5 +41,27 @@ export interface EmailProviderAdapter {
  * The `error` field, if present, is a safe internal code — never a raw provider message.
  */
 export type EmailDeliveryResult =
-  | { delivered: true; deliveryTarget: string; providerMessageId?: string }
-  | { delivered: false; deliveryTarget: string; error: string };
+  | {
+      delivered: true;
+      deliveryTarget: string;
+      providerMessageId?: string;
+      providerOutcome?: 'ACCEPTED' | 'PARTIAL';
+      httpStatus?: number;
+      providerRespondedAt?: string;
+      errorCategory?: import('../services/notification-provider-outcome').NotificationProviderErrorCategory;
+      providerErrorCode?: string;
+      retryAfterMs?: number;
+      responsePayload?: Record<string, unknown>;
+    }
+  | {
+      delivered: false;
+      deliveryTarget: string;
+      error: string;
+      providerOutcome?: 'FAILED' | 'UNKNOWN' | 'PARTIAL';
+      httpStatus?: number;
+      providerRespondedAt?: string;
+      errorCategory?: import('../services/notification-provider-outcome').NotificationProviderErrorCategory;
+      providerErrorCode?: string;
+      retryAfterMs?: number;
+      responsePayload?: Record<string, unknown>;
+    };

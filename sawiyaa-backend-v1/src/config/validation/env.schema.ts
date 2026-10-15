@@ -97,10 +97,82 @@ const baseEnvSchema = z.object({
   // Notification delivery queue. Disabled keeps the existing DB runner as
   // the only executor and does not require queue Redis configuration.
   NOTIFICATION_QUEUE_ENABLED: z.enum(['true', 'false']).default('false'),
-  NOTIFICATION_QUEUE_REDIS_URL: z.string().url().optional(),
-  NOTIFICATION_QUEUE_PREFIX: z
+  NOTIFICATION_CAPACITY_MODE: z
+    .preprocess(
+      (value) =>
+        typeof value === 'string' ? value.trim().toUpperCase() : value,
+      z.enum(['METRICS_ONLY', 'SHADOW', 'ENFORCED']).catch('METRICS_ONLY'),
+    )
+    .default('METRICS_ONLY'),
+  NOTIFICATION_CAPACITY_REDIS_URL: z.string().url().optional(),
+  NOTIFICATION_CAPACITY_KEY_PREFIX: z
     .string()
-    .default('sawiyaa:notifications'),
+    .trim()
+    .min(1)
+    .max(128)
+    .default('sawiyaa:notification-capacity'),
+  NOTIFICATION_CAPACITY_REDIS_CONNECTION_TIMEOUT_MS: z.coerce
+    .number()
+    .int()
+    .min(100)
+    .max(60_000)
+    .default(1_000),
+  NOTIFICATION_CAPACITY_STATE_TTL_MS: z.coerce
+    .number()
+    .int()
+    .min(1_000)
+    .max(3_600_000)
+    .default(120_000),
+  NOTIFICATION_CAPACITY_MAX_COOLDOWN_MS: z.coerce
+    .number()
+    .int()
+    .min(1_000)
+    .max(86_400_000)
+    .default(3_600_000),
+  NOTIFICATION_BREVO_REQUESTS_PER_SECOND: optionalNumber({
+    min: 0.001,
+    max: 1_000_000,
+  }),
+  NOTIFICATION_BREVO_BURST: optionalNumber({ min: 1, max: 1_000_000 }),
+  NOTIFICATION_EXPO_MESSAGES_PER_SECOND: optionalNumber({
+    min: 0.001,
+    max: 1_000_000,
+  }),
+  NOTIFICATION_EXPO_BURST: optionalNumber({ min: 1, max: 1_000_000 }),
+  NOTIFICATION_SMTP_SENDS_PER_SECOND: optionalNumber({
+    min: 0.001,
+    max: 1_000_000,
+  }),
+  NOTIFICATION_SMTP_BURST: optionalNumber({ min: 1, max: 1_000_000 }),
+  NOTIFICATION_BREVO_MAX_CONCURRENCY: z.coerce
+    .number()
+    .int()
+    .min(1)
+    .max(20)
+    .default(1),
+  NOTIFICATION_EXPO_MAX_CONCURRENCY: z.coerce
+    .number()
+    .int()
+    .min(1)
+    .max(20)
+    .default(1),
+  NOTIFICATION_SMTP_MAX_CONCURRENCY: z.coerce
+    .number()
+    .int()
+    .min(1)
+    .max(20)
+    .default(1),
+  NOTIFICATION_QUEUE_REDIS_URL: z.string().url().optional(),
+  NOTIFICATION_QUEUE_PREFIX: z.string().default('sawiyaa:notifications'),
+  NOTIFICATION_PROVIDER_REQUEST_TIMEOUT_MS: optionalNumber({
+    min: 1_000,
+    max: 30_000,
+  }),
+  NOTIFICATION_RETRY_MAX_ATTEMPTS: optionalNumber({ min: 1, max: 20 }),
+  NOTIFICATION_RETRY_BASE_DELAY_MS: optionalNumber({ min: 1, max: 86_400_000 }),
+  NOTIFICATION_RETRY_MAX_DELAY_MS: optionalNumber({ min: 1, max: 86_400_000 }),
+  NOTIFICATION_RETRY_JITTER_MS: optionalNumber({ min: 0, max: 86_400_000 }),
+  NOTIFICATION_RETRY_AFTER_MAX_MS: optionalNumber({ min: 1, max: 86_400_000 }),
   NOTIFICATION_QUEUE_CONNECTION_TIMEOUT_MS: z.coerce
     .number()
     .int()
@@ -113,11 +185,177 @@ const baseEnvSchema = z.object({
     .min(1)
     .max(20)
     .default(2),
+  NOTIFICATION_EMAIL_WORKER_CONCURRENCY: z.coerce
+    .number()
+    .int()
+    .min(1)
+    .max(20)
+    .default(1),
+  NOTIFICATION_PUSH_WORKER_CONCURRENCY: z.coerce
+    .number()
+    .int()
+    .min(1)
+    .max(20)
+    .default(1),
   NOTIFICATION_WORKER_HEARTBEAT_INTERVAL_MS: z.coerce
     .number()
     .int()
     .min(1_000)
     .max(60_000)
+    .default(10_000),
+  NOTIFICATION_CLAIM_LEASE_DURATION_MS: z.coerce
+    .number()
+    .int()
+    .min(10_000)
+    .max(3_600_000)
+    .default(300_000),
+  NOTIFICATION_STALE_QUEUED_RECONCILER_ENABLED: z
+    .enum(['true', 'false'])
+    .default('true'),
+  NOTIFICATION_STALE_QUEUED_RECONCILIATION_INTERVAL_MS: z.coerce
+    .number()
+    .int()
+    .min(1_000)
+    .max(600_000)
+    .default(60_000),
+  NOTIFICATION_STALE_QUEUED_RECONCILIATION_BATCH_SIZE: z.coerce
+    .number()
+    .int()
+    .min(1)
+    .max(500)
+    .default(25),
+  NOTIFICATION_STALE_QUEUED_RECONCILIATION_MAX_ROWS_PER_SWEEP: z.coerce
+    .number()
+    .int()
+    .min(1)
+    .max(5_000)
+    .default(100),
+  NOTIFICATION_STALE_QUEUED_RECONCILIATION_MAX_DURATION_MS: z.coerce
+    .number()
+    .int()
+    .min(250)
+    .max(60_000)
+    .default(5_000),
+
+  // PostgreSQL-backed session reminder dispatcher. These values bound each
+  // drain cycle so reminder processing cannot monopolize the API process or
+  // the Prisma connection pool.
+  REMINDER_DISPATCH_BATCH_SIZE: z.coerce
+    .number()
+    .int()
+    .min(1)
+    .max(500)
+    .default(100),
+  REMINDER_DISPATCH_MAX_ROWS_PER_SWEEP: z.coerce
+    .number()
+    .int()
+    .min(1)
+    .max(5_000)
+    .default(500),
+  REMINDER_DISPATCH_MAX_DURATION_MS: z.coerce
+    .number()
+    .int()
+    .min(250)
+    .max(60_000)
+    .default(5_000),
+  REMINDER_DISPATCH_CONCURRENCY: z.coerce
+    .number()
+    .int()
+    .min(1)
+    .max(20)
+    .default(4),
+  REMINDER_LEASE_DURATION_MS: z.coerce
+    .number()
+    .int()
+    .min(5_000)
+    .max(600_000)
+    .default(60_000),
+
+  // Near-term Redis/BullMQ reminder staging. PostgreSQL remains authoritative;
+  // DB_ONLY is the safe default and is also the one-switch rollback mode.
+  REMINDER_REDIS_ENABLED: z.enum(['true', 'false']).default('false'),
+  REMINDER_REDIS_MODE: z
+    .preprocess(
+      (value) =>
+        typeof value === 'string' && value.trim() === '' ? undefined : value,
+      z
+        .enum(['DB_ONLY', 'REDIS_SHADOW', 'REDIS_PRIMARY_WITH_DB_RECOVERY'])
+        .catch('DB_ONLY'),
+    )
+    .default('DB_ONLY'),
+  REMINDER_REDIS_URL: z.string().url().optional(),
+  REMINDER_REDIS_QUEUE_PREFIX: z.string().default('sawiyaa:session-reminders'),
+  REMINDER_REDIS_CONNECTION_TIMEOUT_MS: z.coerce
+    .number()
+    .int()
+    .min(100)
+    .max(60_000)
+    .default(10_000),
+  REMINDER_REDIS_HORIZON_MINUTES: z.coerce
+    .number()
+    .int()
+    .min(1)
+    .max(240)
+    .default(60),
+  REMINDER_REDIS_LOOKBACK_MINUTES: z.coerce
+    .number()
+    .int()
+    .min(1)
+    .max(30)
+    .default(15),
+  REMINDER_REDIS_REFILL_INTERVAL_MS: z.coerce
+    .number()
+    .int()
+    .min(1_000)
+    .max(300_000)
+    .default(30_000),
+  REMINDER_REDIS_STAGE_BATCH_SIZE: z.coerce
+    .number()
+    .int()
+    .min(1)
+    .max(5_000)
+    .default(500),
+  REMINDER_REDIS_STAGE_MAX_ROWS: z.coerce
+    .number()
+    .int()
+    .min(1)
+    .max(20_000)
+    .default(5_000),
+  REMINDER_REDIS_WORKER_CONCURRENCY: z.coerce
+    .number()
+    .int()
+    .min(1)
+    .max(50)
+    .default(10),
+  REMINDER_REDIS_WORKER_HEARTBEAT_INTERVAL_MS: z.coerce
+    .number()
+    .int()
+    .min(1_000)
+    .max(60_000)
+    .default(10_000),
+  REMINDER_REDIS_REMOVE_ON_COMPLETE_AGE_SECONDS: z.coerce
+    .number()
+    .int()
+    .min(60)
+    .max(2_592_000)
+    .default(86_400),
+  REMINDER_REDIS_REMOVE_ON_COMPLETE_COUNT: z.coerce
+    .number()
+    .int()
+    .min(100)
+    .max(100_000)
+    .default(10_000),
+  REMINDER_REDIS_REMOVE_ON_FAIL_AGE_SECONDS: z.coerce
+    .number()
+    .int()
+    .min(60)
+    .max(2_592_000)
+    .default(604_800),
+  REMINDER_REDIS_REMOVE_ON_FAIL_COUNT: z.coerce
+    .number()
+    .int()
+    .min(100)
+    .max(100_000)
     .default(10_000),
 
   // Daily attendance operations queue. Disabled keeps the existing inline
@@ -336,7 +574,8 @@ export const envSchema = baseEnvSchema.superRefine((env, ctx) => {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
       path: ['WEB_APP_URL'],
-      message: 'WEB_APP_URL is required in production for transactional session links',
+      message:
+        'WEB_APP_URL is required in production for transactional session links',
     });
   }
 
@@ -379,6 +618,37 @@ export const envSchema = baseEnvSchema.superRefine((env, ctx) => {
     });
   }
 
+  if (env.NOTIFICATION_CAPACITY_MODE === 'ENFORCED') {
+    const enforcedCapacityInputs = [
+      ['NOTIFICATION_CAPACITY_REDIS_URL', env.NOTIFICATION_CAPACITY_REDIS_URL],
+      [
+        'NOTIFICATION_BREVO_REQUESTS_PER_SECOND',
+        env.NOTIFICATION_BREVO_REQUESTS_PER_SECOND,
+      ],
+      ['NOTIFICATION_BREVO_BURST', env.NOTIFICATION_BREVO_BURST],
+      [
+        'NOTIFICATION_EXPO_MESSAGES_PER_SECOND',
+        env.NOTIFICATION_EXPO_MESSAGES_PER_SECOND,
+      ],
+      ['NOTIFICATION_EXPO_BURST', env.NOTIFICATION_EXPO_BURST],
+      [
+        'NOTIFICATION_SMTP_SENDS_PER_SECOND',
+        env.NOTIFICATION_SMTP_SENDS_PER_SECOND,
+      ],
+      ['NOTIFICATION_SMTP_BURST', env.NOTIFICATION_SMTP_BURST],
+    ] as const;
+
+    for (const [name, value] of enforcedCapacityInputs) {
+      if (value === undefined || value === null || value === '') {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: [name],
+          message: `${name} is required when NOTIFICATION_CAPACITY_MODE=ENFORCED`,
+        });
+      }
+    }
+  }
+
   if (
     env.DAILY_ATTENDANCE_QUEUE_ENABLED === 'true' &&
     !env.OPERATIONS_QUEUE_REDIS_URL?.trim() &&
@@ -390,6 +660,21 @@ export const envSchema = baseEnvSchema.superRefine((env, ctx) => {
       path: ['OPERATIONS_QUEUE_REDIS_URL'],
       message:
         'OPERATIONS_QUEUE_REDIS_URL, NOTIFICATION_QUEUE_REDIS_URL, or REDIS_URL is required when DAILY_ATTENDANCE_QUEUE_ENABLED=true',
+    });
+  }
+
+  if (
+    env.REMINDER_REDIS_ENABLED === 'true' &&
+    env.REMINDER_REDIS_MODE !== 'DB_ONLY' &&
+    !env.REMINDER_REDIS_URL?.trim() &&
+    !env.NOTIFICATION_QUEUE_REDIS_URL?.trim() &&
+    !env.REDIS_URL?.trim()
+  ) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['REMINDER_REDIS_URL'],
+      message:
+        'REMINDER_REDIS_URL, NOTIFICATION_QUEUE_REDIS_URL, or REDIS_URL is required when reminder Redis staging is enabled',
     });
   }
 

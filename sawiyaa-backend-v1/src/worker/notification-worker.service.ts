@@ -1,4 +1,9 @@
-import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  OnModuleDestroy,
+  OnModuleInit,
+} from '@nestjs/common';
 import { Job } from 'bullmq';
 import { NotificationDeliveryAttemptEngineService } from '@modules/notifications/services/notification-delivery-attempt-engine.service';
 import { NotificationSchedulerCoreService } from '@modules/notifications/services/notification-scheduler-core.service';
@@ -13,7 +18,9 @@ export class NotificationQueueWorkerService
   implements OnModuleInit, OnModuleDestroy
 {
   private readonly logger = new Logger(NotificationQueueWorkerService.name);
-  private worker: ReturnType<NotificationQueueService['createWorker']> | null = null;
+  private workers: Array<
+    ReturnType<NotificationQueueService['createWorkers']>[number]
+  > = [];
   private heartbeatTimer: NodeJS.Timeout | null = null;
 
   constructor(
@@ -24,38 +31,44 @@ export class NotificationQueueWorkerService
 
   onModuleInit(): void {
     if (!this.queueService.isEnabled()) {
-      this.logger.log('Notification worker is disabled; DB fallback runner remains active');
+      this.logger.log(
+        'Notification worker is disabled; DB fallback runner remains active',
+      );
       return;
     }
 
-    this.worker = this.queueService.createWorker((job) => this.processJob(job));
-    this.worker.on('ready', () => {
-      this.queueService.recordWorkerHeartbeat();
-      this.logger.log('Notification worker is ready');
-    });
-    this.worker.on('active', (job) => {
-      this.queueService.recordWorkerHeartbeat();
-      this.logger.debug(`Notification job active: ${job.id}`);
-    });
-    this.worker.on('completed', (job) => {
-      this.queueService.recordWorkerHeartbeat();
-      this.logger.debug(`Notification job completed: ${job.id}`);
-    });
-    this.worker.on('failed', (job, error) => {
-      this.queueService.recordWorkerHeartbeat();
-      this.queueService.recordWorkerError(error);
-      this.logger.error(
-        `Notification job failed: ${job?.id ?? 'unknown'} (${error.message})`,
-      );
-    });
-    this.worker.on('stalled', (jobId) => {
-      this.queueService.recordWorkerHeartbeat();
-      this.logger.warn(`Notification job stalled: ${jobId}`);
-    });
-    this.worker.on('error', (error) => {
-      this.queueService.recordWorkerError(error);
-      this.logger.error(`Notification worker error: ${error.message}`);
-    });
+    this.workers = this.queueService.createWorkers((job) =>
+      this.processJob(job),
+    );
+    for (const worker of this.workers) {
+      worker.on('ready', () => {
+        this.queueService.recordWorkerHeartbeat();
+        this.logger.log('Notification worker lane is ready');
+      });
+      worker.on('active', (job) => {
+        this.queueService.recordWorkerHeartbeat();
+        this.logger.debug(`Notification job active: ${job.id}`);
+      });
+      worker.on('completed', (job) => {
+        this.queueService.recordWorkerHeartbeat();
+        this.logger.debug(`Notification job completed: ${job.id}`);
+      });
+      worker.on('failed', (job, error) => {
+        this.queueService.recordWorkerHeartbeat();
+        this.queueService.recordWorkerError(error);
+        this.logger.error(
+          `Notification job failed: ${job?.id ?? 'unknown'} (${error.message})`,
+        );
+      });
+      worker.on('stalled', (jobId) => {
+        this.queueService.recordWorkerHeartbeat();
+        this.logger.warn(`Notification job stalled: ${jobId}`);
+      });
+      worker.on('error', (error) => {
+        this.queueService.recordWorkerError(error);
+        this.logger.error(`Notification worker error: ${error.message}`);
+      });
+    }
 
     const intervalMs = this.queueService.getWorkerHeartbeatIntervalMs();
     this.heartbeatTimer = setInterval(() => {
@@ -69,10 +82,8 @@ export class NotificationQueueWorkerService
       clearInterval(this.heartbeatTimer);
       this.heartbeatTimer = null;
     }
-    if (this.worker) {
-      await this.worker.close();
-      this.worker = null;
-    }
+    await Promise.all(this.workers.map((worker) => worker.close()));
+    this.workers = [];
   }
 
   async processJob(job: Job<NotificationDeliveryJobData>) {
@@ -104,6 +115,7 @@ export class NotificationQueueWorkerService
     // terminal/retry state in PostgreSQL.
     return this.deliveryAttemptEngineService.executeClaimedNotification({
       notificationId,
+      claimToken: claimed.claimToken,
       now,
     });
   }

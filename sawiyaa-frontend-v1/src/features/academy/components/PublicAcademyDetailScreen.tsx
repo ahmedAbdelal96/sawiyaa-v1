@@ -1,16 +1,21 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import {
   ArrowLeft,
+  ArrowRight,
   BadgeCheck,
   CalendarClock,
-  Globe,
+  CheckCircle2,
+  CreditCard,
   Loader2,
   MessageSquareText,
   Sparkles,
+  Users,
+  Video,
 } from "lucide-react";
 import Button from "@/components/ui/button/Button";
 import Input from "@/components/form/input/InputField";
@@ -23,9 +28,7 @@ import {
 } from "@/features/academy-programs/lib/academy-program-errors";
 import {
   resolveAcademyProgramDeliveryMethodLabel,
-  resolveAcademyProgramEnrollmentStatusLabel,
   resolveAcademyProgramLocalizedValue,
-  resolveAcademyProgramPaymentStatusLabel,
   resolveAcademyProgramRegistrationStateLabel,
   resolveAcademyProgramSessionTitle,
 } from "@/features/academy-programs/lib/academy-program-localization";
@@ -33,7 +36,6 @@ import {
   useCreatePublicAcademyProgramEnrollment,
   usePublicAcademyProgram,
 } from "@/features/academy-programs/hooks/use-academy-programs";
-import { getManualPaymentMethods } from "@/features/academy-programs/api/manual-payments.api";
 import type {
   AcademyProgramEnrollmentItem,
   AcademyProgramItem,
@@ -103,84 +105,88 @@ function resolvePublicPrice(program: AcademyProgramItem) {
   });
 }
 
-function EnrollmentResultCard({
+type EnrollmentFeedback = {
+  message: string;
+  actionHref?: string;
+  actionLabel?: string;
+};
+
+function buildEnrollmentPaymentHref({
+  locale,
+  enrollment,
+  backHref,
+}: {
+  locale: string;
+  enrollment: AcademyProgramEnrollmentItem;
+  backHref?: string;
+}) {
+  const isPatientSurface = Boolean(backHref && backHref.includes("/patient/academy"));
+  const basePath = isPatientSurface
+    ? `/${locale}/patient/academy/program-enrollments/${enrollment.id}/pay`
+    : `/${locale}/academy/program-enrollments/${enrollment.id}/pay`;
+  const tokenQuery = enrollment.publicAccessToken
+    ? `?token=${encodeURIComponent(enrollment.publicAccessToken)}`
+    : "";
+  return `${basePath}${tokenQuery}`;
+}
+
+function EnrollmentSavedCard({
   locale,
   t,
   enrollment,
+  program,
+  backHref,
 }: {
   locale: string;
   t: ReturnType<typeof useTranslations>;
   enrollment: AcademyProgramEnrollmentItem;
+  program: AcademyProgramItem;
+  backHref?: string;
 }) {
-  const statusLabel = resolveAcademyProgramEnrollmentStatusLabel(enrollment.status, t);
-  const paymentStatusLabel = resolveAcademyProgramPaymentStatusLabel(
-    enrollment.paymentStatus,
-    t,
-  );
+  const price = resolvePublicPrice(program);
+  const paymentHref = buildEnrollmentPaymentHref({
+    locale,
+    enrollment,
+    backHref,
+  });
 
   return (
-    <div className="rounded-[24px] border border-primary/20 bg-primary/5 p-5 sm:p-6">
-      <div className="flex items-center gap-2 text-primary">
-        <Sparkles className="h-5 w-5" />
-        <span className="text-xs font-bold uppercase tracking-wider">
-          {t("public.result.eyebrow")}
-        </span>
+    <div className="rounded-[24px] border border-primary/25 bg-white p-5 shadow-xs sm:p-6 dark:bg-surface-secondary">
+      <div className="inline-flex items-center gap-2 rounded-full border border-emerald-500/20 bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700">
+        <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+        <span>{t("public.result.eyebrow")}</span>
       </div>
 
-      <h3 className="mt-3 text-lg font-bold text-text-primary">{t("public.result.title")}</h3>
-      <p className="mt-2 text-sm leading-relaxed text-text-secondary">
-        {t("public.result.status", { status: statusLabel })}
+      <h2 className="mt-3 text-lg font-bold text-text-primary">
+        {t("public.result.title")}
+      </h2>
+      <p className="mt-1.5 text-sm leading-relaxed text-text-secondary">
+        {t("public.form.success")}
       </p>
 
-      <div className="mt-4 grid gap-3 sm:grid-cols-2">
-        <div className="rounded-xl border border-border-light bg-white p-4 text-xs">
-          <div className="text-[10px] uppercase font-bold text-text-muted">
-            {t("public.result.reference")}
-          </div>
-          <div className="mt-1 break-all font-mono text-sm font-bold text-text-primary">
-            {enrollment.publicAccessToken}
-          </div>
-        </div>
-
-        <div className="rounded-xl border border-border-light bg-white p-4 text-xs">
-          <div className="text-[10px] uppercase font-bold text-text-muted">
-            {t("public.result.paymentStatus")}
-          </div>
-          <div className="mt-1 font-bold text-text-primary">{paymentStatusLabel}</div>
+      <div className="mt-4 rounded-2xl border border-border-light bg-surface-tertiary p-4">
+        <div className="flex items-center justify-between gap-3">
+          <span className="text-xs font-semibold text-text-secondary">
+            {t("public.detail.summary.price")}
+          </span>
+          <span className="text-base font-extrabold text-primary">
+            <PriceDisplay price={price} />
+          </span>
         </div>
       </div>
 
-      <div className="mt-4 rounded-xl border border-border-light bg-white p-4 text-xs text-text-secondary">
-        <div className="text-[10px] uppercase font-bold text-text-muted">
-          {t("public.result.program")}
-        </div>
-        <div className="mt-1 text-sm font-bold text-text-primary">
-          {enrollment.program.title}
-        </div>
-      </div>
-
-      {enrollment.payment?.checkoutUrl ? (
-        <a
-          href={enrollment.payment.checkoutUrl}
-          className="mt-4 inline-flex w-full items-center justify-center rounded-[14px] bg-primary px-4 py-3 text-sm font-semibold text-white transition hover:bg-primary-hover shadow-sm"
-        >
-          {t("public.result.continuePayment")}
-        </a>
-      ) : enrollment.payment?.provider === "MANUAL" ? (
-        <Link
-          href={`/${locale}/patient/academy/program-enrollments/${enrollment.id}/pay`}
-          className="mt-4 inline-flex w-full items-center justify-center rounded-[14px] bg-primary px-4 py-3 text-sm font-semibold text-white transition hover:bg-primary-hover shadow-sm"
-        >
-          {t("public.result.continueManualPayment")}
-        </Link>
-      ) : null}
-
+      <Link
+        href={paymentHref}
+        className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-[14px] bg-primary px-5 py-3.5 text-sm font-semibold text-white shadow-xs transition hover:bg-primary-hover"
+      >
+        <span>{t("public.result.continuePayment")}</span>
+        <ArrowRight className="h-4 w-4 rtl:rotate-180" />
+      </Link>
     </div>
   );
 }
 
 function PublicAcademyEnrollmentForm({
-  locale,
   t,
   program,
   onSubmit,
@@ -190,33 +196,47 @@ function PublicAcademyEnrollmentForm({
   feedback,
   isRestrictedLearner,
   disableSubmit,
-  manualPaymentAvailable,
 }: {
-  locale: string;
   t: ReturnType<typeof useTranslations>;
   program: AcademyProgramItem;
   onSubmit: (event: React.FormEvent<HTMLFormElement>) => Promise<void>;
   form: CreateAcademyProgramEnrollmentInput;
   setForm: React.Dispatch<React.SetStateAction<CreateAcademyProgramEnrollmentInput>>;
   pending: boolean;
-  feedback: string | null;
+  feedback: EnrollmentFeedback | null;
   isRestrictedLearner: boolean;
   disableSubmit: boolean;
-  manualPaymentAvailable: boolean;
 }) {
   const price = resolvePublicPrice(program);
 
   return (
     <form
       onSubmit={onSubmit}
-      className="rounded-[24px] border border-border-light bg-white p-5 sm:p-6"
+      className="rounded-[24px] border border-border-light bg-white p-5 shadow-xs sm:p-6 dark:bg-surface-secondary"
     >
-      <div className="flex items-center gap-3">
-        <MessageSquareText className="h-5 w-5 text-primary" />
-        <div>
-          <h2 className="text-base font-bold text-text-primary">{t("public.form.title")}</h2>
-          <p className="mt-0.5 text-xs text-text-muted">{t("public.form.subtitle")}</p>
+      <div className="flex items-start justify-between gap-3 border-b border-border-light/70 pb-4">
+        <div className="flex items-center gap-3">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+            <MessageSquareText className="h-5 w-5" />
+          </div>
+          <div>
+            <h2 className="text-base font-bold text-text-primary">
+              {t("public.form.title")}
+            </h2>
+            <p className="mt-0.5 text-xs text-text-muted">
+              {t("public.form.subtitle")}
+            </p>
+          </div>
         </div>
+      </div>
+
+      <div className="mt-4 flex items-center justify-between gap-4 rounded-2xl border border-primary/15 bg-primary/5 px-4 py-3">
+        <span className="text-xs font-bold text-text-secondary">
+          {t("public.detail.summary.price")}
+        </span>
+        <span className="text-base font-extrabold text-primary">
+          <PriceDisplay price={price} />
+        </span>
       </div>
 
       {isRestrictedLearner ? (
@@ -225,7 +245,7 @@ function PublicAcademyEnrollmentForm({
         </div>
       ) : null}
 
-      <div className="mt-5 space-y-4">
+      <div className="mt-4 space-y-3.5">
         <Input
           value={form.fullName}
           onChange={(event) =>
@@ -261,35 +281,6 @@ function PublicAcademyEnrollmentForm({
           placeholder={t("public.form.email")}
           className="w-full"
         />
-        <label className="block space-y-1.5 text-sm font-semibold text-text-secondary">
-          <span>{t("public.form.paymentMethod")}</span>
-          <select
-            value={form.paymentMethod ?? "GATEWAY"}
-            onChange={(event) =>
-              setForm((current) => ({
-                ...current,
-                paymentMethod: event.target.value as "GATEWAY" | "MANUAL",
-              }))
-            }
-            className="h-11 w-full rounded-[12px] border border-border-light bg-white px-3 text-sm text-text-primary outline-none focus:border-primary"
-          >
-            <option value="GATEWAY">{t("public.form.gatewayPayment")}</option>
-            {manualPaymentAvailable ? (
-              <option value="MANUAL">{t("public.form.manualPayment")}</option>
-            ) : null}
-          </select>
-        </label>
-      </div>
-
-      <div className="mt-4 space-y-2 rounded-xl border border-border-light bg-surface-tertiary px-4 py-3.5 text-xs leading-normal">
-        <div className="flex items-center justify-between gap-4">
-          <span className="font-bold text-text-secondary">
-            {t("public.detail.summary.price")}
-          </span>
-          <span className="text-sm font-extrabold text-primary">
-            <PriceDisplay price={price} />
-          </span>
-        </div>
       </div>
 
       {program.registrationOpen ? (
@@ -314,96 +305,45 @@ function PublicAcademyEnrollmentForm({
       )}
 
       {feedback ? (
-        <p className="mt-3 text-xs font-semibold text-text-muted">{feedback}</p>
-      ) : null}
-    </form>
-  );
-}
-
-function ProgramDetailsPanel({
-  locale,
-  t,
-  program,
-}: {
-  locale: string;
-  t: ReturnType<typeof useTranslations>;
-  program: AcademyProgramItem;
-}) {
-  const price = resolvePublicPrice(program);
-  const registrationState = resolveAcademyProgramRegistrationStateLabel(program.registrationOpen, t);
-  const dateStart = formatDate(program.startAt, locale);
-  const dateEnd = formatDate(program.endAt, locale);
-  const sessions = program.sessions ?? [];
-  const deliveryMethods = Array.from(
-    new Set(sessions.map((session) => session.deliveryMethod)),
-  );
-  const deliveryMethodLabels =
-    deliveryMethods.length > 0
-      ? deliveryMethods.map((method) => resolveAcademyProgramDeliveryMethodLabel(method, t))
-      : [];
-
-  return (
-    <div className="rounded-[24px] border border-border-light bg-white p-5 sm:p-6">
-      <div className="space-y-4">
-        <div className="text-sm font-bold text-text-primary">{t("public.detail.summary.title")}</div>
-        <p className="text-xs leading-relaxed text-text-secondary">
-          {resolveProgramDescription(program, locale) ?? t("public.detail.noFullDescription")}
-        </p>
-
-        <div className="grid gap-2.5 sm:grid-cols-2">
-          <div className="rounded-xl border border-border-light/50 bg-surface-tertiary px-3 py-2 text-xs">
-            <div className="text-[10px] uppercase font-bold text-text-muted">
-              {t("public.detail.summary.price")}
-            </div>
-            <div className="mt-0.5 space-y-1 font-bold text-text-primary">
-              <div><PriceDisplay price={price} /></div>
-            </div>
-          </div>
-          <div className="rounded-xl border border-border-light/50 bg-surface-tertiary px-3 py-2 text-xs">
-            <div className="text-[10px] uppercase font-bold text-text-muted">
-              {t("public.detail.summary.status")}
-            </div>
-            <div className="mt-0.5 font-bold text-text-primary">
-              {program.publishedAt
-                ? t("public.detail.summary.published")
-                : t("public.detail.summary.draft")}
-            </div>
-          </div>
-          <div className="rounded-xl border border-border-light/50 bg-surface-tertiary px-3 py-2 text-xs">
-            <div className="text-[10px] uppercase font-bold text-text-muted">
-              {t("public.detail.summary.registration")}
-            </div>
-            <div className="mt-0.5 font-bold text-text-primary">{registrationState}</div>
-          </div>
-          <div className="rounded-xl border border-border-light/50 bg-surface-tertiary px-3 py-2 text-xs">
-            <div className="text-[10px] uppercase font-bold text-text-muted">
-              {t("public.detail.summary.deliveryMethod")}
-            </div>
-            <div className="mt-0.5 font-bold text-text-primary">
-              {deliveryMethodLabels.length > 0
-                ? deliveryMethodLabels.join(" · ")
-                : t("public.detail.summary.notSet")}
-            </div>
-          </div>
-          <div className="rounded-xl border border-border-light/50 bg-surface-tertiary px-3 py-2 text-xs">
-            <div className="text-[10px] uppercase font-bold text-text-muted">
-              {t("public.detail.summary.startDate")}
-            </div>
-            <div className="mt-0.5 font-bold text-text-primary">
-              {dateStart ?? t("public.detail.summary.notSet")}
-            </div>
-          </div>
-          <div className="rounded-xl border border-border-light/50 bg-surface-tertiary px-3 py-2 text-xs">
-            <div className="text-[10px] uppercase font-bold text-text-muted">
-              {t("public.detail.summary.endDate")}
-            </div>
-            <div className="mt-0.5 font-bold text-text-primary">
-              {dateEnd ?? t("public.detail.summary.notSet")}
-            </div>
-          </div>
+        <div className="mt-3 space-y-2 text-xs font-semibold text-error-600">
+          <p>{feedback.message}</p>
+          {feedback.actionHref && feedback.actionLabel ? (
+            <Link
+              href={feedback.actionHref}
+              className="inline-flex items-center rounded-lg text-primary underline underline-offset-2 hover:text-primary-hover"
+            >
+              {feedback.actionLabel}
+            </Link>
+          ) : null}
         </div>
+      ) : null}
+
+      <div className="mt-5 border-t border-border-light/70 pt-4">
+        <div className="text-xs font-bold text-text-primary">
+          {t("public.detail.howItWorks.title")}
+        </div>
+        <ol className="mt-2.5 space-y-2 text-xs leading-relaxed text-text-secondary">
+          <li className="flex items-start gap-2">
+            <span className="mt-0.5 inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-primary-light font-mono text-[10px] font-bold text-primary">
+              1
+            </span>
+            <span>{t("public.detail.howItWorks.step1")}</span>
+          </li>
+          <li className="flex items-start gap-2">
+            <span className="mt-0.5 inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-primary-light font-mono text-[10px] font-bold text-primary">
+              2
+            </span>
+            <span>{t("public.detail.howItWorks.step2")}</span>
+          </li>
+          <li className="flex items-start gap-2">
+            <span className="mt-0.5 inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-primary-light font-mono text-[10px] font-bold text-primary">
+              3
+            </span>
+            <span>{t("public.detail.howItWorks.step3")}</span>
+          </li>
+        </ol>
       </div>
-    </div>
+    </form>
   );
 }
 
@@ -417,6 +357,7 @@ function PublicAcademyProgramDetailScreen({
   backHref?: string;
 }) {
   const t = useTranslations("academy");
+  const router = useRouter();
   const { user, isInitialized } = useAuthStore();
   const academyBackHref = backHref ?? `/${locale}/academy`;
   const authScopeKey = useMemo(() => {
@@ -433,18 +374,18 @@ function PublicAcademyProgramDetailScreen({
   const { data: program, isLoading, isError, refetch } = usePublicAcademyProgram(slug, {
     cacheScopeKey: authScopeKey,
   });
-  // Public Academy detail remains available to guests.  A Zustand snapshot can
+  // Public Academy detail remains available to guests. A Zustand snapshot can
   // outlive the browser authentication cookie (and is also rendered on the
   // server), so only ask the protected /users/me endpoint when the browser has
-  // a real access-token session.  Otherwise its 401 interceptor would redirect
+  // a real access-token session. Otherwise its 401 interceptor would redirect
   // a guest away before the public program request can render.
   const hasAuthenticatedBrowserSession =
     typeof window !== "undefined" && tokenManager.isAuthenticated();
   const currentUserQuery = useCurrentUser(Boolean(user && hasAuthenticatedBrowserSession));
   const createEnrollment = useCreatePublicAcademyProgramEnrollment();
-  const [feedback, setFeedback] = useState<string | null>(null);
+  const enrollmentIdempotencyKey = useRef<string | null>(null);
+  const [feedback, setFeedback] = useState<EnrollmentFeedback | null>(null);
   const [form, setForm] = useState<CreateAcademyProgramEnrollmentInput>({
-    paymentMethod: "GATEWAY",
     fullName: "",
     phoneNumber: "",
     whatsappNumber: "",
@@ -452,7 +393,6 @@ function PublicAcademyProgramDetailScreen({
     sourceLabel: "public-academy-program",
   });
   const [enrollment, setEnrollment] = useState<AcademyProgramEnrollmentItem | null>(null);
-  const [manualPaymentAvailable, setManualPaymentAvailable] = useState(false);
   const isRestrictedLearner = Boolean(
     currentUserQuery.data?.roles.hasAdminRole ||
       currentUserQuery.data?.roles.hasSupportAgentRole ||
@@ -486,47 +426,12 @@ function PublicAcademyProgramDetailScreen({
   }, [currentUserQuery.data, isRestrictedLearner, user]);
 
   // The public presenter is the sole authority for whether a program has a
-  // payable price.  A published program with unavailable regional pricing is
+  // payable price. A published program with unavailable regional pricing is
   // still a valid detail page, but it must not expose an enrollment action.
   const canEnroll = Boolean(
     program?.publishedAt && program.registrationOpen && program.priceStatus === "PAID",
   );
 
-  useEffect(() => {
-    let active = true;
-
-    // Fail closed while availability is loading or if the public eligibility
-    // endpoint is unavailable. The backend remains the final authority.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setManualPaymentAvailable(false);
-    setForm((current) =>
-      current.paymentMethod === "MANUAL"
-        ? { ...current, paymentMethod: "GATEWAY" }
-        : current,
-    );
-
-    if (!canEnroll) {
-      return () => {
-        active = false;
-      };
-    }
-
-    void getManualPaymentMethods()
-      .then((methods) => {
-        if (active) {
-          setManualPaymentAvailable(methods.length > 0);
-        }
-      })
-      .catch(() => {
-        if (active) {
-          setManualPaymentAvailable(false);
-        }
-      });
-
-    return () => {
-      active = false;
-    };
-  }, [canEnroll, setForm, slug]);
   const programTitle = program ? resolveProgramTitle(program, locale) : null;
   const programDescription = program ? resolveProgramDescription(program, locale) : null;
 
@@ -535,17 +440,17 @@ function PublicAcademyProgramDetailScreen({
     setFeedback(null);
 
     if (!program || !canEnroll) {
-      setFeedback(t("public.form.closed"));
+      setFeedback({ message: t("public.form.closed") });
       return;
     }
 
     if (isRestrictedLearner) {
-      setFeedback(t("public.form.restricted"));
+      setFeedback({ message: t("public.form.restricted") });
       return;
     }
 
     if (!form.fullName.trim() || !form.phoneNumber.trim()) {
-      setFeedback(t("public.form.validation.required"));
+      setFeedback({ message: t("public.form.validation.required") });
       return;
     }
 
@@ -553,18 +458,38 @@ function PublicAcademyProgramDetailScreen({
       const created = await createEnrollment.mutateAsync({
         slug,
         input: {
+          idempotencyKey:
+            enrollmentIdempotencyKey.current ??
+            (enrollmentIdempotencyKey.current = crypto.randomUUID()),
           fullName: form.fullName.trim(),
           phoneNumber: form.phoneNumber.trim(),
           whatsappNumber: form.whatsappNumber?.trim() || undefined,
           email: form.email?.trim() || undefined,
-          paymentMethod: form.paymentMethod ?? "GATEWAY",
           sourceLabel: form.sourceLabel?.trim() || undefined,
         },
       });
       setEnrollment(created);
-      setFeedback(t("public.form.success"));
+      router.push(
+        buildEnrollmentPaymentHref({
+          locale,
+          enrollment: created,
+          backHref,
+        }),
+      );
     } catch (error) {
-      setFeedback(t(getPublicAcademyProgramErrorKey(error)));
+      const errorKey = getPublicAcademyProgramErrorKey(error);
+      const requiresLogin = errorKey === "public.errors.learnerEmailAlreadyExists";
+      const callbackUrl = `/${locale}/academy/${slug}`;
+
+      setFeedback({
+        message: t(errorKey),
+        ...(requiresLogin
+          ? {
+              actionHref: `/${locale}/signin/patient?callbackUrl=${encodeURIComponent(callbackUrl)}`,
+              actionLabel: t("public.errors.loginToContinue"),
+            }
+          : {}),
+      });
     }
   };
 
@@ -572,9 +497,9 @@ function PublicAcademyProgramDetailScreen({
     return (
       <div className="space-y-4 px-4 py-6 sm:py-8">
         <div className="h-56 animate-pulse rounded-[24px] border border-border-light bg-surface-tertiary" />
-        <div className="grid gap-4 lg:grid-cols-[0.95fr_1.05fr]">
-          <div className="h-[34rem] animate-pulse rounded-[24px] border border-border-light bg-surface-tertiary" />
-          <div className="h-[34rem] animate-pulse rounded-[24px] border border-border-light bg-surface-tertiary" />
+        <div className="grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
+          <div className="h-[28rem] animate-pulse rounded-[24px] border border-border-light bg-surface-tertiary" />
+          <div className="h-[28rem] animate-pulse rounded-[24px] border border-border-light bg-surface-tertiary" />
         </div>
       </div>
     );
@@ -607,7 +532,7 @@ function PublicAcademyProgramDetailScreen({
             href: (
               <Link
                 href={academyBackHref}
-                className="inline-flex items-center gap-2 rounded-[14px] border border-border-light bg-white px-5 py-2 text-sm font-semibold text-text-primary transition hover:border-primary/30 hover:text-primary"
+                className="inline-flex items-center gap-2 rounded-[14px] border border-border-light bg-white px-5 py-2 text-sm font-semibold text-text-primary transition hover:border-primary/30 hover:text-primary dark:bg-surface-secondary"
               >
                 <ArrowLeft className="h-4 w-4" />
                 {t("public.detail.notFound.back")}
@@ -622,69 +547,133 @@ function PublicAcademyProgramDetailScreen({
 
   const price = resolvePublicPrice(program);
   const sessions = program.sessions ?? [];
+  const dateStart = formatDate(program.startAt, locale);
+  const dateEnd = formatDate(program.endAt, locale);
+  const deliveryMethods = Array.from(
+    new Set(sessions.map((session) => session.deliveryMethod)),
+  );
+  const deliveryMethodLabels =
+    deliveryMethods.length > 0
+      ? deliveryMethods.map((method) => resolveAcademyProgramDeliveryMethodLabel(method, t))
+      : [];
+  const seatCount = program.targetLearnerCount ?? program.maxSeats ?? null;
 
   return (
     <div className="app-max-content mx-auto space-y-6 px-4 py-6 sm:py-8">
-      <section className="overflow-hidden rounded-[24px] border border-border-light bg-surface-tertiary p-6 sm:p-8">
-        <div className="grid gap-6 lg:grid-cols-[1.18fr_0.82fr] lg:items-start">
-          <div className="space-y-5">
-            {program.coverImageUrl ? (
-              <div className="overflow-hidden rounded-[24px] border border-border-light bg-white shadow-sm">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={program.coverImageUrl}
-                  alt={programTitle ?? t("public.detail.badge")}
-                  className="max-h-[28rem] w-full bg-surface-tertiary object-contain p-2"
-                />
-              </div>
-            ) : null}
-            <div className="inline-flex items-center gap-1.5 rounded-full border border-primary/20 bg-white px-3.5 py-1.5 text-xs font-semibold text-primary">
+      <div className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr] lg:items-start">
+        <section className="space-y-6 rounded-[24px] border border-border-light bg-white p-6 shadow-xs sm:p-8 dark:bg-surface-secondary">
+          {program.coverImageUrl ? (
+            <div className="overflow-hidden rounded-[20px] border border-border-light bg-surface-tertiary">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={program.coverImageUrl}
+                alt={programTitle ?? t("public.detail.badge")}
+                className="max-h-[24rem] w-full object-contain p-2"
+              />
+            </div>
+          ) : null}
+
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/20 bg-primary/5 px-3.5 py-1.5 text-xs font-semibold text-primary">
               <Sparkles className="h-3.5 w-3.5" />
               {t("public.detail.badge")}
-            </div>
-
-            <div className="space-y-3">
-              <h1 className="text-2xl font-bold tracking-tight text-text-primary sm:text-4xl">
-                {programTitle}
-              </h1>
-              <p className="max-w-3xl text-sm leading-relaxed text-text-secondary">
-                {programDescription ?? t("public.detail.noShortDescription")}
-              </p>
-            </div>
-
-            <div className="flex flex-wrap gap-2.5">
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-border-light/75 bg-white px-3 py-1.5 text-xs font-semibold text-text-primary shadow-sm">
-                <CalendarClock className="h-3.5 w-3.5 text-primary" />
-                {formatDate(program.startAt, locale) ?? t("public.detail.noDate")}
-              </span>
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-border-light/75 bg-white px-3 py-1.5 text-xs font-semibold text-text-primary shadow-sm">
-                <CalendarClock className="h-3.5 w-3.5 text-primary" />
-                {formatDate(program.endAt, locale) ?? t("public.detail.noDate")}
-              </span>
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-border-light/75 bg-white px-3 py-1.5 text-xs font-semibold text-text-primary shadow-sm">
-                <Globe className="h-3.5 w-3.5 text-primary" />
-                <PriceDisplay price={price} />
-              </span>
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-border-light/75 bg-white px-3 py-1.5 text-xs font-semibold text-text-primary shadow-sm">
-                <BadgeCheck className="h-3.5 w-3.5 text-primary" />
-                {resolveAcademyProgramRegistrationStateLabel(program.registrationOpen, t)}
-              </span>
-              {program.targetLearnerCount ?? program.maxSeats ? (
-                <span className="inline-flex items-center gap-1.5 rounded-full border border-border-light/75 bg-white px-3 py-1.5 text-xs font-semibold text-text-primary shadow-sm">
-                  <Sparkles className="h-3.5 w-3.5 text-primary" />
-                  {t("public.detail.summary.targetLearners", {
-                    count: program.targetLearnerCount ?? program.maxSeats ?? 0,
-                  })}
-                </span>
-              ) : null}
-            </div>
+            </span>
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-border-light bg-surface-tertiary px-3 py-1.5 text-xs font-semibold text-text-primary">
+              <BadgeCheck className="h-3.5 w-3.5 text-primary" />
+              {resolveAcademyProgramRegistrationStateLabel(program.registrationOpen, t)}
+            </span>
           </div>
 
-          <ProgramDetailsPanel locale={locale} t={t} program={program} />
-        </div>
-      </section>
+          <div className="space-y-3">
+            <h1 className="text-2xl font-bold tracking-tight text-text-primary sm:text-3xl">
+              {programTitle}
+            </h1>
+            <p className="text-sm leading-relaxed text-text-secondary sm:text-base">
+              {programDescription ?? t("public.detail.noFullDescription")}
+            </p>
+          </div>
 
-      <section className="rounded-[24px] border border-border-light bg-white p-5 sm:p-6">
+          <div className="grid gap-3 border-t border-border-light/70 pt-5 sm:grid-cols-2">
+            <div className="rounded-2xl border border-border-light/80 bg-surface-tertiary px-4 py-3">
+              <div className="flex items-center gap-1.5 text-[11px] font-bold text-text-muted">
+                <CreditCard className="h-3.5 w-3.5 text-primary" />
+                <span>{t("public.detail.summary.price")}</span>
+              </div>
+              <div className="mt-1 text-sm font-extrabold text-primary">
+                <PriceDisplay price={price} />
+              </div>
+            </div>
+
+            <div className="rounded-2xl border border-border-light/80 bg-surface-tertiary px-4 py-3">
+              <div className="flex items-center gap-1.5 text-[11px] font-bold text-text-muted">
+                <Video className="h-3.5 w-3.5 text-primary" />
+                <span>{t("public.detail.summary.deliveryMethod")}</span>
+              </div>
+              <div className="mt-1 text-sm font-bold text-text-primary">
+                {deliveryMethodLabels.length > 0
+                  ? deliveryMethodLabels.join(" · ")
+                  : t("public.detail.summary.notSet")}
+              </div>
+            </div>
+
+            <div className="rounded-2xl border border-border-light/80 bg-surface-tertiary px-4 py-3">
+              <div className="flex items-center gap-1.5 text-[11px] font-bold text-text-muted">
+                <CalendarClock className="h-3.5 w-3.5 text-primary" />
+                <span>{t("public.detail.summary.startDate")}</span>
+              </div>
+              <div className="mt-1 text-sm font-bold text-text-primary">
+                {dateStart ?? t("public.detail.summary.notSet")}
+                {dateEnd ? ` — ${dateEnd}` : ""}
+              </div>
+            </div>
+
+            <div className="rounded-2xl border border-border-light/80 bg-surface-tertiary px-4 py-3">
+              <div className="flex items-center gap-1.5 text-[11px] font-bold text-text-muted">
+                <Users className="h-3.5 w-3.5 text-primary" />
+                <span>{t("public.detail.schedule.title")}</span>
+              </div>
+              <div className="mt-1 text-sm font-bold text-text-primary">
+                {t("public.detail.schedule.count", { count: sessions.length })}
+                {seatCount
+                  ? ` · ${t("public.detail.summary.targetLearners", { count: seatCount })}`
+                  : ""}
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <aside className="lg:sticky lg:top-6">
+          {enrollment ? (
+            <EnrollmentSavedCard
+              locale={locale}
+              t={t}
+              enrollment={enrollment}
+              program={program}
+              backHref={backHref}
+            />
+          ) : canEnroll ? (
+            <PublicAcademyEnrollmentForm
+              t={t}
+              program={program}
+              onSubmit={onSubmit}
+              form={form}
+              setForm={setForm}
+              pending={createEnrollment.isPending}
+              feedback={feedback}
+              isRestrictedLearner={isRestrictedLearner}
+              disableSubmit={!programTitle}
+            />
+          ) : (
+            <StateCard
+              title={t("public.form.closedTitle")}
+              note={t("public.form.closedNote")}
+              className="rounded-[24px]"
+            />
+          )}
+        </aside>
+      </div>
+
+      <section className="rounded-[24px] border border-border-light bg-white p-5 shadow-xs sm:p-6 dark:bg-surface-secondary">
         <div className="flex items-start justify-between gap-4 border-b border-border-light/60 pb-3">
           <div>
             <h2 className="text-lg font-bold text-text-primary">
@@ -700,81 +689,142 @@ function PublicAcademyProgramDetailScreen({
         </div>
 
         {sessions.length > 0 ? (
-          <DataTable
-            data={sessions}
-            columns={[
-              {
-                id: "order",
-                header: t("public.detail.schedule.columns.order"),
-                width: "80px",
-                align: "center" as const,
-                accessor: (row) => row.sortOrder,
-                cell: (row) => (
-                  <span className="font-semibold text-text-secondary">
-                    {new Intl.NumberFormat(locale === "ar" ? "ar-EG" : "en-US").format(
-                      row.sortOrder,
-                    )}
-                  </span>
-                ),
-              },
-              {
-                id: "title",
-                header: t("public.detail.schedule.columns.title"),
-                accessor: (row) => row.titleAr,
-                cell: (row) => (
-                  <span className="font-bold text-text-primary">
+          <>
+            <div className="mt-5 grid gap-3 md:hidden">
+              {sessions.map((row) => (
+                <article
+                  key={row.id}
+                  className="rounded-2xl border border-border-light bg-surface-secondary p-4 shadow-xs"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <span className="text-xs font-semibold text-text-muted">
+                      {t("public.detail.schedule.columns.title")}
+                    </span>
+                    <span className="rounded-full bg-surface-tertiary px-2.5 py-1 text-xs font-semibold text-text-secondary">
+                      {new Intl.NumberFormat(locale === "ar" ? "ar-EG" : "en-US").format(
+                        row.sortOrder,
+                      )}
+                    </span>
+                  </div>
+                  <h3 className="mt-1.5 text-base font-bold leading-relaxed text-text-primary">
                     {resolveAcademyProgramSessionTitle(row, locale)}
-                  </span>
-                ),
-              },
-              {
-                id: "deliveryMethod",
-                header: t("public.detail.schedule.columns.deliveryMethod"),
-                accessor: (row) => row.deliveryMethod,
-                cell: (row) => (
-                  <span className="rounded-full border border-border-light bg-surface-tertiary px-2.5 py-1 text-xs font-semibold text-text-primary">
-                    {resolveAcademyProgramDeliveryMethodLabel(row.deliveryMethod, t)}
-                  </span>
-                ),
-              },
-              {
-                id: "date",
-                header: t("public.detail.schedule.columns.date"),
-                accessor: (row) => row.startsAt,
-                cell: (row) => (
-                  <span className="font-medium text-text-secondary">
-                    {formatDate(row.startsAt, locale) ?? t("public.detail.noDate")}
-                  </span>
-                ),
-              },
-              {
-                id: "time",
-                header: t("public.detail.schedule.columns.time"),
-                accessor: (row) => row.startsAt,
-                cell: (row) => (
-                  <span className="font-medium text-text-secondary" dir="ltr">
-                    {formatTime(row.startsAt, locale)} - {formatTime(row.endsAt, locale)}
-                  </span>
-                ),
-              },
-              {
-                id: "duration",
-                header: t("public.detail.schedule.columns.duration"),
-                accessor: (row) => row.startsAt,
-                cell: (row) => (
-                  <span className="font-semibold text-text-secondary">
-                    {formatDurationMinutes(row.startsAt, row.endsAt, locale)}
-                  </span>
-                ),
-              },
-            ]}
-            getRowId={(row) => row.id}
-            striped
-            hoverable
-            className="mt-5"
-            ariaLabel={t("public.detail.schedule.title")}
-            caption={t("public.detail.schedule.title")}
-          />
+                  </h3>
+
+                  <dl className="mt-4 grid grid-cols-2 gap-3 text-sm">
+                    <div>
+                      <dt className="text-xs font-semibold text-text-muted">
+                        {t("public.detail.schedule.columns.date")}
+                      </dt>
+                      <dd className="mt-1 font-medium text-text-secondary">
+                        {formatDate(row.startsAt, locale) ?? t("public.detail.noDate")}
+                      </dd>
+                    </div>
+                    <div>
+                      <dt className="text-xs font-semibold text-text-muted">
+                        {t("public.detail.schedule.columns.time")}
+                      </dt>
+                      <dd className="mt-1 font-medium text-text-secondary" dir="ltr">
+                        {formatTime(row.startsAt, locale)} - {formatTime(row.endsAt, locale)}
+                      </dd>
+                    </div>
+                    <div>
+                      <dt className="text-xs font-semibold text-text-muted">
+                        {t("public.detail.schedule.columns.deliveryMethod")}
+                      </dt>
+                      <dd className="mt-1 font-semibold text-text-primary">
+                        {resolveAcademyProgramDeliveryMethodLabel(row.deliveryMethod, t)}
+                      </dd>
+                    </div>
+                    <div>
+                      <dt className="text-xs font-semibold text-text-muted">
+                        {t("public.detail.schedule.columns.duration")}
+                      </dt>
+                      <dd className="mt-1 font-semibold text-text-secondary">
+                        {formatDurationMinutes(row.startsAt, row.endsAt, locale)}
+                      </dd>
+                    </div>
+                  </dl>
+                </article>
+              ))}
+            </div>
+
+            <div className="mt-5 hidden md:block">
+              <DataTable
+                data={sessions}
+                columns={[
+                  {
+                    id: "order",
+                    header: t("public.detail.schedule.columns.order"),
+                    width: "80px",
+                    align: "center" as const,
+                    accessor: (row) => row.sortOrder,
+                    cell: (row) => (
+                      <span className="font-semibold text-text-secondary">
+                        {new Intl.NumberFormat(locale === "ar" ? "ar-EG" : "en-US").format(
+                          row.sortOrder,
+                        )}
+                      </span>
+                    ),
+                  },
+                  {
+                    id: "title",
+                    header: t("public.detail.schedule.columns.title"),
+                    accessor: (row) => row.titleAr,
+                    cell: (row) => (
+                      <span className="font-bold text-text-primary">
+                        {resolveAcademyProgramSessionTitle(row, locale)}
+                      </span>
+                    ),
+                  },
+                  {
+                    id: "deliveryMethod",
+                    header: t("public.detail.schedule.columns.deliveryMethod"),
+                    accessor: (row) => row.deliveryMethod,
+                    cell: (row) => (
+                      <span className="rounded-full border border-border-light bg-surface-tertiary px-2.5 py-1 text-xs font-semibold text-text-primary">
+                        {resolveAcademyProgramDeliveryMethodLabel(row.deliveryMethod, t)}
+                      </span>
+                    ),
+                  },
+                  {
+                    id: "date",
+                    header: t("public.detail.schedule.columns.date"),
+                    accessor: (row) => row.startsAt,
+                    cell: (row) => (
+                      <span className="font-medium text-text-secondary">
+                        {formatDate(row.startsAt, locale) ?? t("public.detail.noDate")}
+                      </span>
+                    ),
+                  },
+                  {
+                    id: "time",
+                    header: t("public.detail.schedule.columns.time"),
+                    accessor: (row) => row.startsAt,
+                    cell: (row) => (
+                      <span className="font-medium text-text-secondary" dir="ltr">
+                        {formatTime(row.startsAt, locale)} - {formatTime(row.endsAt, locale)}
+                      </span>
+                    ),
+                  },
+                  {
+                    id: "duration",
+                    header: t("public.detail.schedule.columns.duration"),
+                    accessor: (row) => row.startsAt,
+                    cell: (row) => (
+                      <span className="font-semibold text-text-secondary">
+                        {formatDurationMinutes(row.startsAt, row.endsAt, locale)}
+                      </span>
+                    ),
+                  },
+                ]}
+                getRowId={(row) => row.id}
+                striped
+                hoverable
+                ariaLabel={t("public.detail.schedule.title")}
+                caption={t("public.detail.schedule.title")}
+              />
+            </div>
+          </>
         ) : (
           <StateCard
             title={t("public.detail.schedule.empty.heading")}
@@ -782,87 +832,6 @@ function PublicAcademyProgramDetailScreen({
             className="mt-5 rounded-[16px]"
           />
         )}
-      </section>
-
-      <section className="grid gap-6 lg:grid-cols-[0.95fr_1.05fr]">
-        {canEnroll ? (
-          <PublicAcademyEnrollmentForm
-            locale={locale}
-            t={t}
-            program={program}
-            onSubmit={onSubmit}
-            form={form}
-            setForm={setForm}
-            pending={createEnrollment.isPending}
-            feedback={feedback}
-            isRestrictedLearner={isRestrictedLearner}
-            disableSubmit={!programTitle}
-            manualPaymentAvailable={manualPaymentAvailable}
-          />
-        ) : (
-          <StateCard
-            title={t("public.form.closedTitle")}
-            note={t("public.form.closedNote")}
-            className="rounded-[24px]"
-          />
-        )}
-
-        <div className="space-y-4">
-          <div className="rounded-[24px] border border-border-light bg-white p-5 sm:p-6">
-            <h2 className="text-base font-bold text-text-primary">{t("public.detail.howItWorks.title")}</h2>
-            <div className="mt-4 space-y-3.5 text-sm leading-relaxed text-text-secondary">
-              <div className="flex items-start gap-2.5">
-                <span className="mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary-light font-mono text-xs font-bold text-primary">
-                  1
-                </span>
-                <p>{t("public.detail.howItWorks.step1")}</p>
-              </div>
-              <div className="flex items-start gap-2.5">
-                <span className="mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary-light font-mono text-xs font-bold text-primary">
-                  2
-                </span>
-                <p>{t("public.detail.howItWorks.step2")}</p>
-              </div>
-              <div className="flex items-start gap-2.5">
-                <span className="mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary-light font-mono text-xs font-bold text-primary">
-                  3
-                </span>
-                <p>{t("public.detail.howItWorks.step3")}</p>
-              </div>
-            </div>
-          </div>
-
-          {enrollment ? (
-            <EnrollmentResultCard locale={locale} t={t} enrollment={enrollment} />
-          ) : (
-            <div className="rounded-[24px] border border-border-light bg-white p-5 sm:p-6">
-              <h3 className="text-base font-bold text-text-primary">
-                {t("public.result.preSubmitTitle")}
-              </h3>
-              <p className="mt-2 text-sm leading-relaxed text-text-secondary">
-                {t("public.result.preSubmitNote")}
-              </p>
-              <div className="mt-4 grid gap-2.5 sm:grid-cols-2">
-                <div className="rounded-xl border border-border-light bg-surface-tertiary px-3 py-2 text-xs">
-                  <div className="text-[10px] uppercase font-bold text-text-muted">
-                    {t("public.result.paymentStatus")}
-                  </div>
-                  <div className="mt-0.5 font-bold text-text-primary">
-                    {t("public.result.pendingState")}
-                  </div>
-                </div>
-                <div className="rounded-xl border border-border-light bg-surface-tertiary px-3 py-2 text-xs">
-                  <div className="text-[10px] uppercase font-bold text-text-muted">
-                    {t("public.result.reference")}
-                  </div>
-                  <div className="mt-0.5 font-bold text-text-primary">
-                    {t("public.result.automatic")}
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
       </section>
     </div>
   );

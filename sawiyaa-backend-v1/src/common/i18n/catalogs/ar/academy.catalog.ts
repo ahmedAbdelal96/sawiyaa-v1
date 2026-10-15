@@ -12,6 +12,10 @@ export const arAcademyCatalog = {
         'التسجيل في البرنامج الأكاديمي متاح فقط للمرضى والممارسين',
       learnerContactAlreadyExists:
         'رقم الهاتف أو واتساب أو البريد الإلكتروني مستخدم بالفعل لدى متدرب آخر',
+    learnerEmailAlreadyExists:
+      'هذا البريد الإلكتروني مرتبط بحساب موجود بالفعل. يرجى تسجيل الدخول أولًا ثم حجز الدورة التدريبية من حسابك',
+      registrationAttemptConflict:
+        'تعذر استكمال محاولة التسجيل الحالية. يرجى إعادة فتح صفحة الدورة والمحاولة مرة أخرى',
       enrollmentAlreadyExists:
         'يوجد تسجيل مسبق لهذا البرنامج الأكاديمي والمتدرب',
       enrollmentCancellationReasonRequired:
@@ -64,6 +68,8 @@ export const arAcademyCatalog = {
       'يمكن الاشتراك فقط للمرضى والممارسين',
     learnerContactAlreadyExists:
       'رقم الهاتف أو واتساب أو البريد الإلكتروني مستخدم بالفعل لدى متدرب آخر',
+    learnerEmailAlreadyExists:
+      'هذا البريد الإلكتروني مرتبط بحساب موجود بالفعل. يرجى تسجيل الدخول أولًا ثم حجز الدورة التدريبية من حسابك',
     enrollmentAlreadyExists:
       'يوجد تسجيل مسبق لهذا البرنامج والمتدرب',
   },

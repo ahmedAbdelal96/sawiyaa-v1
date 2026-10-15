@@ -44,6 +44,9 @@ import { AcademyProgramCertificateStorageService } from './programs/services/aca
 import { AcademyProgramCoverStorageService } from './programs/services/academy-program-cover-storage.service';
 import { AcademyProgramTargetLearnerAlertService } from './programs/services/academy-program-target-learner-alert.service';
 import { ManageAdminAcademyEnrollmentAccountUseCase } from './programs/use-cases/manage-admin-academy-enrollment-account.use-case';
+import { ConfirmAdminAcademyProgramEnrollmentPaymentUseCase } from './programs/use-cases/confirm-admin-academy-program-enrollment-payment.use-case';
+import { AcademyRegistrationAttemptService } from './services/academy-registration-attempt.service';
+import { ListAdminAcademyRegistrationAttemptsUseCase } from './programs/use-cases/list-admin-academy-registration-attempts.use-case';
 
 @Module({
   imports: [PaymentsModule, PatientsModule, NotificationsModule, AuthModule, ConfigModule],
@@ -56,6 +59,7 @@ import { ManageAdminAcademyEnrollmentAccountUseCase } from './programs/use-cases
     JwtAccessAuthGuard,
     RolesGuard,
     AcademyLearnerResolverService,
+    AcademyRegistrationAttemptService,
     AcademyProgramPresenter,
     AcademyProgramRepository,
     AcademyProgramEnrollmentPresenter,
@@ -77,6 +81,7 @@ import { ManageAdminAcademyEnrollmentAccountUseCase } from './programs/use-cases
     GetAdminAcademyProgramUseCase,
     GetAdminAcademyProgramAttendanceUseCase,
     ListAdminAcademyProgramEnrollmentsUseCase,
+    ListAdminAcademyRegistrationAttemptsUseCase,
     ListPatientAcademyProgramEnrollmentsUseCase,
     GetAdminAcademyProgramEnrollmentUseCase,
     ManageAdminAcademyProgramEnrollmentsUseCase,
@@ -90,6 +95,7 @@ import { ManageAdminAcademyEnrollmentAccountUseCase } from './programs/use-cases
     CreateAcademyProgramSessionUseCase,
     UpdateAcademyProgramSessionUseCase,
     ManageAdminAcademyEnrollmentAccountUseCase,
+    ConfirmAdminAcademyProgramEnrollmentPaymentUseCase,
   ],
 })
 export class AcademyModule {}

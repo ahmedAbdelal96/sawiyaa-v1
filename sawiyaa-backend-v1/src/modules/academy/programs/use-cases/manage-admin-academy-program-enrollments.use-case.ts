@@ -35,6 +35,7 @@ export class ManageAdminAcademyProgramEnrollmentsUseCase {
       sortBy: input.sortBy,
       sortDir: input.sortDir,
       q: input.q,
+      segment: input.segment,
     });
 
     return {

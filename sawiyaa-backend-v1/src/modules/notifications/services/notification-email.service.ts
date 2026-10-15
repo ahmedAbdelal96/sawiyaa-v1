@@ -23,6 +23,8 @@ export type SendEmailInput = {
   html?: string;
   notificationId?: string;
   isOtp: boolean;
+  operationKey?: string;
+  idempotencyKey?: string;
 };
 
 /**
@@ -53,6 +55,10 @@ export class NotificationEmailService {
     @Inject(EMAIL_PROVIDER)
     private readonly emailProvider: EmailProviderAdapter,
   ) {}
+
+  get providerName(): string {
+    return this.emailProvider.name.toUpperCase();
+  }
 
   private normalizeTarget(target: string): string {
     return target.trim();
@@ -143,6 +149,15 @@ export class NotificationEmailService {
     delivered: boolean;
     deliveryTarget: string;
     error?: string;
+    provider?: string;
+    providerMessageId?: string;
+    providerOutcome?: 'ACCEPTED' | 'FAILED' | 'UNKNOWN' | 'PARTIAL';
+    httpStatus?: number;
+    providerRespondedAt?: string;
+    errorCategory?: import('./notification-provider-outcome').NotificationProviderErrorCategory;
+    providerErrorCode?: string;
+    retryAfterMs?: number;
+    responsePayload?: Record<string, unknown>;
   }> {
     const normalizedTarget = this.normalizeTarget(input.to);
     if (!normalizedTarget) {
@@ -182,6 +197,8 @@ export class NotificationEmailService {
       body: input.body,
       ...(input.html ? { html: input.html } : {}),
       isOtp: input.isOtp,
+      ...(input.operationKey ? { operationKey: input.operationKey } : {}),
+      ...(input.idempotencyKey ? { idempotencyKey: input.idempotencyKey } : {}),
     });
 
     if (result.delivered) {
@@ -195,6 +212,19 @@ export class NotificationEmailService {
       return {
         delivered: true,
         deliveryTarget: result.deliveryTarget,
+        ...(input.operationKey
+          ? {
+              provider: this.emailProvider.name.toUpperCase(),
+              providerMessageId: result.providerMessageId,
+              providerOutcome: result.providerOutcome ?? 'ACCEPTED',
+              httpStatus: result.httpStatus,
+              providerRespondedAt: result.providerRespondedAt,
+              errorCategory: result.errorCategory,
+              providerErrorCode: result.providerErrorCode,
+              retryAfterMs: result.retryAfterMs,
+              responsePayload: result.responsePayload,
+            }
+          : {}),
       };
     }
 
@@ -218,6 +248,18 @@ export class NotificationEmailService {
       delivered: false,
       deliveryTarget: result.deliveryTarget,
       error: result.error,
+      ...(input.operationKey
+        ? {
+            provider: this.emailProvider.name.toUpperCase(),
+            providerOutcome: result.providerOutcome ?? 'FAILED',
+            httpStatus: result.httpStatus,
+            providerRespondedAt: result.providerRespondedAt,
+            errorCategory: result.errorCategory,
+            providerErrorCode: result.providerErrorCode,
+            retryAfterMs: result.retryAfterMs,
+            responsePayload: result.responsePayload,
+          }
+        : {}),
     };
   }
 }

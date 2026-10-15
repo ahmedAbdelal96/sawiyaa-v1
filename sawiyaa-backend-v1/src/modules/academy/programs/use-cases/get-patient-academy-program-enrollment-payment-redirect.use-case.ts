@@ -8,11 +8,13 @@ import { toGatewayMinorUnits } from '@modules/payments/utils/money-units.util';
 import { PaymentRepository } from '@modules/payments/repositories/payment.repository';
 import {
   PaymentEventType,
+  PaymentProvider,
   PaymentPurpose,
   PaymentStatus,
   Prisma,
   AcademyProgramEnrollmentStatus,
 } from '@prisma/client';
+import { resolveProviderForCurrency } from '@common/payments/payment-region.resolver';
 import { SupportedLocale } from '@common/i18n/types/locale.types';
 import { AcademyProgramEnrollmentRepository } from '../repositories/academy-program-enrollment.repository';
 import { PaymentProviderRegistryService } from '@modules/payments/services/payment-provider-registry.service';
@@ -85,108 +87,207 @@ export class GetPatientAcademyProgramEnrollmentPaymentRedirectUseCase {
       };
     }
 
-    const currentPayment =
-      enrollment.payment ?? enrollment.paymentAttempts?.[0] ?? null;
-
-    if (!currentPayment) {
-      return {
-        redirectUrl: this.appendRedirectStatus(
-          safeReturnUrl,
-          'payment_unavailable',
-        ),
-      };
-    }
-
+    const now = new Date();
     if (
-      currentPayment.status === PaymentStatus.AUTHORIZED ||
-      currentPayment.status === PaymentStatus.CAPTURED
+      enrollment.seatReservationExpiresAt &&
+      enrollment.seatReservationExpiresAt <= now
     ) {
       return {
-        redirectUrl: this.appendRedirectStatus(safeReturnUrl, 'succeeded'),
+        redirectUrl: this.appendRedirectStatus(safeReturnUrl, 'payment_expired'),
       };
     }
 
-    let paymentId: string | null = null;
+    let targetPayment = enrollment.payment ?? null;
     let paymentAttemptId: string | null = null;
+    let gatewayProvider: PaymentProvider | null = null;
 
-    try {
-      const createdPayment = await this.prisma.$transaction(async (tx) => {
-        const payment = await this.paymentRepository.createPayment(
-          {
-            sessionId: null,
-            patientId: null,
-            practitionerId: null,
-            paymentPurpose: PaymentPurpose.ACADEMY_PROGRAM_ENROLLMENT,
-            provider: currentPayment.provider,
-            status: PaymentStatus.CREATED,
-            amountSubtotal: new Prisma.Decimal(
-              currentPayment.amountSubtotal.toString(),
-            ),
-            amountDiscount: new Prisma.Decimal(
-              currentPayment.amountDiscount.toString(),
-            ),
-            amountTotal: new Prisma.Decimal(
-              currentPayment.amountTotal.toString(),
-            ),
-            amountFromWallet: new Prisma.Decimal(0),
-            amountFromGateway: new Prisma.Decimal(
-              currentPayment.amountTotal.toString(),
-            ),
-            currencyCode: currentPayment.currencyCode,
-            metadataJson: {
-              source: 'academy-program-enrollment',
-              academyProgramId: enrollment.academyProgram.id,
-              academyProgramEnrollmentId: enrollment.id,
-              learnerId: enrollment.academyLearner.id,
-            },
-          },
-          tx,
-        );
+    if (targetPayment) {
+      if (
+        targetPayment.status === PaymentStatus.AUTHORIZED ||
+        targetPayment.status === PaymentStatus.CAPTURED
+      ) {
+        return {
+          redirectUrl: this.appendRedirectStatus(safeReturnUrl, 'succeeded'),
+        };
+      }
 
-        const attempt =
-          await this.academyProgramEnrollmentRepository.createPaymentAttempt(
+      if (targetPayment.provider === PaymentProvider.MANUAL) {
+        return {
+          redirectUrl: this.appendRedirectStatus(
+            safeReturnUrl,
+            'payment_unavailable',
+          ),
+        };
+      }
+
+      gatewayProvider = targetPayment.provider;
+      const metadata = (targetPayment.metadataJson ?? {}) as Record<string, unknown>;
+      const existingCheckoutUrl =
+        typeof metadata.checkoutUrl === 'string' && metadata.checkoutUrl.trim().length > 0
+          ? metadata.checkoutUrl.trim()
+          : (enrollment.paymentAttempts?.[0]?.checkoutUrl ?? null);
+
+      if (
+        existingCheckoutUrl &&
+        targetPayment.status !== PaymentStatus.FAILED &&
+        targetPayment.status !== PaymentStatus.EXPIRED &&
+        targetPayment.status !== PaymentStatus.CANCELLED
+      ) {
+        return { redirectUrl: existingCheckoutUrl };
+      }
+
+      paymentAttemptId = enrollment.paymentAttempts?.[0]?.id ?? null;
+    }
+
+    if (!targetPayment) {
+      const resolvedProvider = resolveProviderForCurrency(
+        enrollment.selectedCurrencyCode,
+      );
+      if (!resolvedProvider) {
+        return {
+          redirectUrl: this.appendRedirectStatus(
+            safeReturnUrl,
+            'payment_unavailable',
+          ),
+        };
+      }
+      gatewayProvider = resolvedProvider;
+
+      try {
+        const createResult = await this.prisma.$transaction(async (tx) => {
+          await tx.$executeRaw`SELECT id FROM "AcademyProgramEnrollment" WHERE id = ${enrollment.id}::uuid FOR UPDATE`;
+
+          const lockedEnrollment =
+            await tx.academyProgramEnrollment.findUnique({
+              where: { id: enrollment.id },
+              include: {
+                academyProgram: true,
+                academyLearner: true,
+                payment: true,
+                paymentAttempts: { orderBy: { createdAt: 'desc' }, take: 1 },
+              },
+            });
+
+          if (!lockedEnrollment) {
+            throw new Error('ENROLLMENT_NOT_FOUND');
+          }
+
+          if (
+            lockedEnrollment.status !==
+              AcademyProgramEnrollmentStatus.PENDING_PAYMENT ||
+            (lockedEnrollment.seatReservationExpiresAt &&
+              lockedEnrollment.seatReservationExpiresAt <= new Date())
+          ) {
+            throw new Error('ENROLLMENT_RESERVATION_EXPIRED');
+          }
+
+          if (lockedEnrollment.paymentId && lockedEnrollment.payment) {
+            if (lockedEnrollment.payment.provider === PaymentProvider.MANUAL) {
+              throw new Error('ENROLLMENT_ALREADY_MANUAL');
+            }
+            return {
+              payment: lockedEnrollment.payment,
+              attemptId: lockedEnrollment.paymentAttempts[0]?.id ?? null,
+            };
+          }
+
+          const amountTotal = lockedEnrollment.selectedAmountSnapshot;
+          const currencyCode = lockedEnrollment.selectedCurrencyCode;
+
+          const createdPayment = await this.paymentRepository.createPayment(
             {
-              academyProgramId: enrollment.academyProgram.id,
-              academyProgramEnrollmentId: enrollment.id,
-              paymentId: payment.id,
-              provider: currentPayment.provider,
+              sessionId: null,
+              patientId: null,
+              practitionerId: null,
+              paymentPurpose: PaymentPurpose.ACADEMY_PROGRAM_ENROLLMENT,
+              provider: gatewayProvider!,
               status: PaymentStatus.CREATED,
-              amountSubtotal: new Prisma.Decimal(
-                currentPayment.amountSubtotal.toString(),
-              ),
-              amountDiscount: new Prisma.Decimal(
-                currentPayment.amountDiscount.toString(),
-              ),
-              amountTotal: new Prisma.Decimal(
-                currentPayment.amountTotal.toString(),
-              ),
-              currencyCode: currentPayment.currencyCode,
+              amountSubtotal: new Prisma.Decimal(amountTotal.toString()),
+              amountDiscount: new Prisma.Decimal(0),
+              amountTotal: new Prisma.Decimal(amountTotal.toString()),
+              amountFromWallet: new Prisma.Decimal(0),
+              amountFromGateway: new Prisma.Decimal(amountTotal.toString()),
+              currencyCode,
+              metadataJson: {
+                source: 'academy-program-enrollment',
+                academyProgramId: lockedEnrollment.academyProgram.id,
+                academyProgramEnrollmentId: lockedEnrollment.id,
+                learnerId: lockedEnrollment.academyLearner.id,
+              },
             },
             tx,
           );
 
-        await this.academyProgramEnrollmentRepository.updateEnrollment(
-          enrollment.id,
-          {
-            paymentId: payment.id,
-            status: AcademyProgramEnrollmentStatus.PENDING_PAYMENT,
-            paymentStatus: PaymentStatus.CREATED,
-            confirmedAt: null,
-            cancelledAt: null,
-            expiredAt: null,
-            seatReservationExpiresAt: new Date(Date.now() + 15 * 60 * 1000),
-          },
-          tx,
-        );
+          await this.paymentRepository.createEvent(
+            {
+              paymentId: createdPayment.id,
+              eventType: PaymentEventType.PAYMENT_CREATED,
+              payloadJson: {
+                source: 'academy-program-enrollment',
+                academyProgramEnrollmentId: lockedEnrollment.id,
+                provider: gatewayProvider!,
+              },
+            },
+            tx,
+          );
 
-        paymentId = payment.id;
-        paymentAttemptId = attempt.id;
+          const attempt =
+            await this.academyProgramEnrollmentRepository.createPaymentAttempt(
+              {
+                academyProgramId: lockedEnrollment.academyProgram.id,
+                academyProgramEnrollmentId: lockedEnrollment.id,
+                paymentId: createdPayment.id,
+                provider: gatewayProvider!,
+                status: PaymentStatus.CREATED,
+                amountSubtotal: new Prisma.Decimal(amountTotal.toString()),
+                amountDiscount: new Prisma.Decimal(0),
+                amountTotal: new Prisma.Decimal(amountTotal.toString()),
+                currencyCode,
+              },
+              tx,
+            );
 
-        return payment;
-      });
+          await this.academyProgramEnrollmentRepository.updateEnrollment(
+            lockedEnrollment.id,
+            {
+              paymentId: createdPayment.id,
+              status: AcademyProgramEnrollmentStatus.PENDING_PAYMENT,
+              paymentStatus: PaymentStatus.CREATED,
+              confirmedAt: null,
+              cancelledAt: null,
+              expiredAt: null,
+            },
+            tx,
+          );
 
+          return { payment: createdPayment, attemptId: attempt.id };
+        });
+
+        targetPayment = createResult.payment;
+        paymentAttemptId = createResult.attemptId;
+      } catch (err: any) {
+        if (err?.message === 'ENROLLMENT_RESERVATION_EXPIRED') {
+          return {
+            redirectUrl: this.appendRedirectStatus(
+              safeReturnUrl,
+              'payment_expired',
+            ),
+          };
+        }
+        return {
+          redirectUrl: this.appendRedirectStatus(
+            safeReturnUrl,
+            'payment_unavailable',
+          ),
+        };
+      }
+    }
+
+    const paymentId = targetPayment.id;
+
+    try {
       const providerAdapter = this.paymentProviderRegistryService.get(
-        currentPayment.provider,
+        gatewayProvider!,
         {
           checkoutCountryIsoCode:
             enrollment.academyLearner.countryCode ?? null,
@@ -196,9 +297,9 @@ export class GetPatientAcademyProgramEnrollmentPaymentRedirectUseCase {
       );
 
       const providerResult = await providerAdapter.initiateSessionPayment({
-        paymentId: createdPayment.id,
-        amountMinor: toGatewayMinorUnits(createdPayment.amountTotal, createdPayment.currencyCode),
-        currency: createdPayment.currencyCode,
+        paymentId: targetPayment.id,
+        amountMinor: toGatewayMinorUnits(targetPayment.amountTotal, targetPayment.currencyCode),
+        currency: targetPayment.currencyCode,
         description: `Academy program enrollment payment: ${enrollment.academyProgram.slug}`,
         sessionId: enrollment.academyProgram.id,
         patientEmail: enrollment.academyLearner.email ?? null,
@@ -214,20 +315,20 @@ export class GetPatientAcademyProgramEnrollmentPaymentRedirectUseCase {
       }
 
       this.validatePaymentStatusTransitionService.assertCanTransition(
-        createdPayment.status,
+        targetPayment.status,
         providerResult.status,
       );
 
       await this.prisma.$transaction(async (tx) => {
         const updatedPayment = await this.paymentRepository.updateStatus(
-          createdPayment.id,
+          targetPayment!.id,
           {
             status: providerResult.status,
             providerPaymentRef: providerResult.providerPaymentRef,
             providerOrderRef: providerResult.providerOrderRef ?? null,
             providerCustomerRef: providerResult.providerCustomerRef ?? null,
             metadataJson: {
-              ...(createdPayment.metadataJson as Record<string, unknown>),
+              ...((targetPayment!.metadataJson as Record<string, unknown>) ?? {}),
               source: 'academy-program-enrollment',
               checkoutUrl,
               clientSecret: providerResult.clientSecret ?? null,
@@ -242,11 +343,11 @@ export class GetPatientAcademyProgramEnrollmentPaymentRedirectUseCase {
 
         await this.paymentRepository.createEvent(
           {
-            paymentId: createdPayment.id,
+            paymentId: targetPayment!.id,
             eventType: PaymentEventType.PROVIDER_CHECKOUT_CREATED,
             providerEventRef: providerResult.providerPaymentRef,
             payloadJson: {
-              provider: currentPayment.provider,
+              provider: gatewayProvider!,
               checkoutUrl,
               clientSecret: providerResult.clientSecret ? 'present' : null,
               source: 'academy-program-enrollment-payment-redirect',

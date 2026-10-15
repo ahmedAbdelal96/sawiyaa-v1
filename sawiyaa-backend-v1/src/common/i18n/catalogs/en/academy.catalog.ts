@@ -12,6 +12,10 @@ export const enAcademyCatalog = {
         'Training enrollment is available only to patients and practitioners',
       learnerContactAlreadyExists:
         'This phone number, WhatsApp number, or email is already linked to another trainee',
+      learnerEmailAlreadyExists:
+        'This email is already linked to an account. Please sign in first, then book the course from your account',
+      registrationAttemptConflict:
+        'This registration attempt cannot continue. Please reopen the course page and try again',
       enrollmentAlreadyExists:
         'Enrollment already exists for this training program and trainee',
       enrollmentCancellationReasonRequired:
@@ -63,6 +67,8 @@ export const enAcademyCatalog = {
       'Training enrollment is available only to patients and practitioners',
     learnerContactAlreadyExists:
       'This phone number, WhatsApp number, or email is already linked to another trainee',
+    learnerEmailAlreadyExists:
+      'This email is already linked to an account. Please sign in first, then book the course from your account',
     enrollmentAlreadyExists:
       'Enrollment already exists for this course and trainee',
     legacyEnrollmentDisabled: 'Legacy training enrollment is disabled',

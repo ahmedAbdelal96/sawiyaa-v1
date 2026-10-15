@@ -81,13 +81,16 @@ import { UpdateAcademyProgramUseCase } from '../use-cases/update-academy-program
 import { UpdateAdminAcademyProgramEnrollmentLearnerUseCase } from '../use-cases/update-admin-academy-program-enrollment-learner.use-case';
 import { AcademyProgramCoverStorageService } from '../services/academy-program-cover-storage.service';
 import { ManageAdminAcademyEnrollmentAccountUseCase } from '../use-cases/manage-admin-academy-enrollment-account.use-case';
+import { ConfirmAdminAcademyProgramEnrollmentPaymentUseCase } from '../use-cases/confirm-admin-academy-program-enrollment-payment.use-case';
+import { ConfirmAdminAcademyProgramEnrollmentPaymentDto } from '../dto/confirm-admin-academy-program-enrollment-payment.dto';
+import { ListAdminAcademyRegistrationAttemptsUseCase } from '../use-cases/list-admin-academy-registration-attempts.use-case';
 
 const MAX_COVER_IMAGE_BYTES = 10 * 1024 * 1024;
 
 @ApiTags('Academy')
 @UseGuards(JwtAccessAuthGuard, RolesGuard, PermissionsGuard)
 @RequireAccountStates(AccountStateRequirement.ACTIVE_ACCOUNT)
-@Roles(AppRole.ADMIN, AppRole.SUPER_ADMIN)
+@Roles(AppRole.ADMIN, AppRole.SUPER_ADMIN, AppRole.MARKETING_STAFF)
 @Controller('admin/academy')
 export class AdminAcademyProgramsController {
   constructor(
@@ -111,6 +114,8 @@ export class AdminAcademyProgramsController {
     private readonly academyProgramCoverStorageService: AcademyProgramCoverStorageService,
     private readonly securityAuditService: SecurityAuditService,
     private readonly manageAdminAcademyEnrollmentAccountUseCase: ManageAdminAcademyEnrollmentAccountUseCase,
+    private readonly confirmAdminAcademyProgramEnrollmentPaymentUseCase: ConfirmAdminAcademyProgramEnrollmentPaymentUseCase,
+    private readonly listAdminAcademyRegistrationAttemptsUseCase: ListAdminAcademyRegistrationAttemptsUseCase,
   ) {}
 
   @Get('program-enrollments/:id/account/status')
@@ -260,6 +265,25 @@ export class AdminAcademyProgramsController {
     });
   }
 
+  @Get('programs/:id/registration-attempts')
+  @Permissions(PermissionKey.ACADEMY_READ)
+  @ApiOperation({ summary: 'List unconverted academy registration attempts' })
+  listProgramRegistrationAttempts(
+    @Param('id') academyProgramId: string,
+    @Query('page') page = '1',
+    @Query('limit') limit = '12',
+    @Query('q') q?: string,
+    @Query('status') status?: 'REQUIRES_LOGIN' | 'SUBMITTED' | 'PAYMENT_ISSUE',
+  ) {
+    return this.listAdminAcademyRegistrationAttemptsUseCase.execute({
+      academyProgramId,
+      page: Math.max(1, Number(page) || 1),
+      limit: Math.min(100, Math.max(1, Number(limit) || 12)),
+      q,
+      status,
+    });
+  }
+
   @Get('programs/:id/attendance')
   @Permissions(PermissionKey.ACADEMY_READ)
   @ApiOperation({
@@ -340,6 +364,24 @@ export class AdminAcademyProgramsController {
     @CurrentUser() currentUser: AuthenticatedUser,
   ) {
     return this.updateAdminAcademyProgramEnrollmentLearnerUseCase.execute({
+      enrollmentId,
+      locale,
+      actorUserId: currentUser.id,
+      actorRoles: currentUser.roles,
+      payload: body,
+    });
+  }
+
+  @Post('program-enrollments/:id/payment/confirm-manual')
+  @Permissions(PermissionKey.ACADEMY_MANAGE)
+  @ApiOperation({ summary: 'Confirm an academy enrollment payment manually' })
+  confirmProgramEnrollmentManualPayment(
+    @Param('id') enrollmentId: string,
+    @Body() body: ConfirmAdminAcademyProgramEnrollmentPaymentDto,
+    @CurrentLocale() locale: 'ar' | 'en',
+    @CurrentUser() currentUser: AuthenticatedUser,
+  ) {
+    return this.confirmAdminAcademyProgramEnrollmentPaymentUseCase.execute({
       enrollmentId,
       locale,
       actorUserId: currentUser.id,

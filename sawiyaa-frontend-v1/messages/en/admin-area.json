@@ -472,17 +472,43 @@
       "detailDescription": "Edit one assessment definition with lifecycle-safe admin controls."
     },
     "list": {
-      "title": "Assessments",
-      "note": "Create drafts, review lifecycle state, and open the editor for structured authoring."
+      "eyebrow": "Clinical Content Management",
+      "title": "Assessments & Clinical Tools",
+      "note": "Manage psychological assessments, scoring thresholds, questions, and publication state for patients."
+    },
+    "stats": {
+      "total": "Total Assessments",
+      "totalHint": "Configured in system",
+      "published": "Published Assessments",
+      "publishedHint": "Live & accessible to patients",
+      "drafts": "Drafts in Progress",
+      "draftsHint": "Under editing & authoring",
+      "categories": "Clinical Categories",
+      "categoriesHint": "Distinct specialized domains"
+    },
+    "categories": {
+      "all": "All Categories",
+      "burnout": "Burnout",
+      "sleep": "Sleep Health",
+      "depression": "Depression",
+      "anxiety": "Anxiety",
+      "stress": "Stress",
+      "general": "General Wellbeing"
     },
     "table": {
-      "title": "Title",
+      "title": "Assessment & Slug",
       "category": "Category",
       "status": "Status",
       "version": "Version",
       "updatedAt": "Updated",
       "createdAt": "Created",
-      "actions": "Actions"
+      "actions": "Actions",
+      "sectionTitle": "Assessments Catalog",
+      "sectionSubtitle": "{count} assessments registered",
+      "slug": "Slug:",
+      "duration": "{minutes} mins",
+      "openEditor": "Open Editor",
+      "previewPatient": "Patient View"
     },
     "statuses": {
       "DRAFT": "Draft",
@@ -494,16 +520,18 @@
       "inactive": "Not published"
     },
     "filters": {
+      "title": "Filter & Search Assessments",
       "search": "Search",
-      "searchPlaceholder": "Search by title, slug, or category",
+      "searchPlaceholder": "Search by title, slug, or category...",
       "status": "Status",
       "allStatuses": "All statuses",
       "publishState": "Publish state",
       "allPublishStates": "All publish states",
+      "category": "Clinical Category",
       "clear": "Clear filters"
     },
     "actions": {
-      "create": "Create draft",
+      "create": "New Assessment",
       "creating": "Creating...",
       "open": "Open editor",
       "backToList": "Back to assessments",

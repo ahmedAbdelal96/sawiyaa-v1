@@ -38,7 +38,7 @@ export class VerificationNotificationRepository {
         data.relatedEntityType !== 'OTP_CHALLENGE'
       ) {
         void this.notificationQueue
-          ?.enqueueNotification(notification.id)
+          ?.enqueueNotification(notification.id, { channel: data.channel })
           .catch(() => undefined);
       }
       return notification;

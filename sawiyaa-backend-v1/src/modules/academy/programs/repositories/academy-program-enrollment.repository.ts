@@ -5,6 +5,7 @@ import {
   Prisma,
 } from '@prisma/client';
 import { PrismaService } from '@common/prisma/prisma.service';
+import type { AcademyProgramEnrollmentSegment } from '../dto/list-admin-academy-program-enrollments.dto';
 
 type DbClient = PrismaService | Prisma.TransactionClient;
 
@@ -136,6 +137,7 @@ export class AcademyProgramEnrollmentRepository {
       where: {
         academyProgramId,
         status: AcademyProgramEnrollmentStatus.CONFIRMED,
+        paymentStatus: PaymentStatus.CAPTURED,
       },
       include: this.enrollmentInclude(),
       orderBy: [{ contactFullName: 'asc' }, { registeredAt: 'asc' }],
@@ -182,6 +184,7 @@ export class AcademyProgramEnrollmentRepository {
     sortBy?: 'registeredAt' | 'name';
     sortDir?: Prisma.SortOrder;
     q?: string;
+    segment?: AcademyProgramEnrollmentSegment;
     tx?: Prisma.TransactionClient;
   }) {
     const skip = (input.page - 1) * input.limit;
@@ -191,7 +194,16 @@ export class AcademyProgramEnrollmentRepository {
       paymentStatus: input.paymentStatus,
       country: input.country,
       q: input.q,
+      segment: input.segment,
     });
+
+    const baseInput = {
+      academyProgramId: input.academyProgramId,
+      status: input.status,
+      paymentStatus: input.paymentStatus,
+      country: input.country,
+      q: input.q,
+    };
 
     return Promise.all([
       this.getDb(input.tx).academyProgramEnrollment.findMany({
@@ -202,7 +214,91 @@ export class AcademyProgramEnrollmentRepository {
         orderBy: this.resolveAdminSortOrder(input.sortBy, input.sortDir),
       }),
       this.getDb(input.tx).academyProgramEnrollment.count({ where }),
+      this.getAdminEnrollmentSummary(baseInput, input.tx),
     ]);
+  }
+
+  listAdminRegistrationAttempts(input: {
+    academyProgramId: string;
+    page: number;
+    limit: number;
+    q?: string;
+    status?: 'REQUIRES_LOGIN' | 'SUBMITTED' | 'PAYMENT_ISSUE';
+    tx?: Prisma.TransactionClient;
+  }) {
+    const skip = (input.page - 1) * input.limit;
+    const conditions: Prisma.AcademyRegistrationAttemptWhereInput[] = [
+      { academyProgramId: input.academyProgramId },
+    ];
+
+    if (input.status) {
+      conditions.push({ status: input.status });
+    }
+
+    const trimmed = input.q?.trim();
+    if (trimmed) {
+      conditions.push({
+        OR: [
+          { fullName: { contains: trimmed, mode: 'insensitive' } },
+          { phoneNumber: { contains: trimmed, mode: 'insensitive' } },
+          { email: { contains: trimmed, mode: 'insensitive' } },
+        ],
+      });
+    }
+
+    const where: Prisma.AcademyRegistrationAttemptWhereInput = {
+      AND: conditions,
+    };
+
+    return Promise.all([
+      this.getDb(input.tx).academyRegistrationAttempt.findMany({
+        where,
+        skip,
+        take: input.limit,
+        orderBy: [{ createdAt: 'desc' }],
+      }),
+      this.getDb(input.tx).academyRegistrationAttempt.count({ where }),
+    ]);
+  }
+
+  private async getAdminEnrollmentSummary(
+    input: {
+      academyProgramId: string;
+      status?: AcademyProgramEnrollmentStatus;
+      paymentStatus?: PaymentStatus;
+      country?: string;
+      q?: string;
+    },
+    tx?: Prisma.TransactionClient,
+  ) {
+    const db = this.getDb(tx).academyProgramEnrollment;
+    const base = this.buildAdminWhere(input);
+    const registrationAttemptDb = this.getDb(tx).academyRegistrationAttempt;
+    const registrationAttemptWhere: Prisma.AcademyRegistrationAttemptWhereInput = {
+      academyProgramId: input.academyProgramId,
+      status: 'REQUIRES_LOGIN',
+    };
+    const trimmedQuery = input.q?.trim();
+    if (trimmedQuery) {
+      registrationAttemptWhere.OR = [
+        { fullName: { contains: trimmedQuery, mode: 'insensitive' } },
+        { phoneNumber: { contains: trimmedQuery, mode: 'insensitive' } },
+        { email: { contains: trimmedQuery, mode: 'insensitive' } },
+      ];
+    }
+
+    const [total, followUp, requiresLogin, paymentIssues, confirmed, completed, cancelled] =
+      await Promise.all([
+        db.count({ where: base }),
+        db.count({ where: this.buildAdminWhere({ ...input, segment: 'FOLLOW_UP' }) }),
+        registrationAttemptDb.count({ where: registrationAttemptWhere }),
+        db.count({ where: this.buildAdminWhere({ ...input, segment: 'PAYMENT_ISSUES' }) }),
+        db.count({ where: this.buildAdminWhere({ ...input, segment: 'CONFIRMED' }) }),
+        db.count({ where: this.buildAdminWhere({ ...input, segment: 'COMPLETED' }) }),
+        db.count({ where: this.buildAdminWhere({ ...input, segment: 'CANCELLED' }) }),
+      ]);
+
+    return { total, followUp, requiresLogin, paymentIssues, confirmed, completed, cancelled };
   }
 
   findAdminEnrollmentsForExport(input: {
@@ -213,6 +309,7 @@ export class AcademyProgramEnrollmentRepository {
     sortBy?: 'registeredAt' | 'name';
     sortDir?: Prisma.SortOrder;
     q?: string;
+    segment?: AcademyProgramEnrollmentSegment;
     tx?: Prisma.TransactionClient;
   }) {
     return this.getDb(input.tx).academyProgramEnrollment.findMany({
@@ -222,6 +319,7 @@ export class AcademyProgramEnrollmentRepository {
         paymentStatus: input.paymentStatus,
         country: input.country,
         q: input.q,
+        segment: input.segment,
       }),
       include: this.enrollmentInclude(),
       orderBy: this.resolveAdminSortOrder(input.sortBy, input.sortDir),
@@ -254,6 +352,7 @@ export class AcademyProgramEnrollmentRepository {
         OR: [
           {
             status: AcademyProgramEnrollmentStatus.CONFIRMED,
+            paymentStatus: PaymentStatus.CAPTURED,
           },
           {
             status: AcademyProgramEnrollmentStatus.PENDING_PAYMENT,
@@ -290,6 +389,7 @@ export class AcademyProgramEnrollmentRepository {
         OR: [
           {
             status: AcademyProgramEnrollmentStatus.CONFIRMED,
+            paymentStatus: PaymentStatus.CAPTURED,
           },
           {
             status: AcademyProgramEnrollmentStatus.PENDING_PAYMENT,
@@ -427,6 +527,17 @@ export class AcademyProgramEnrollmentRepository {
         orderBy: [{ createdAt: 'desc' }],
         take: 1,
       },
+      registrationAttempts: {
+        orderBy: [{ createdAt: 'desc' }],
+        take: 1,
+        select: {
+          id: true,
+          status: true,
+          resolution: true,
+          createdAt: true,
+          convertedAt: true,
+        },
+      },
     };
   }
 
@@ -453,6 +564,7 @@ export class AcademyProgramEnrollmentRepository {
     paymentStatus?: PaymentStatus;
     country?: string;
     q?: string;
+    segment?: AcademyProgramEnrollmentSegment;
   }): Prisma.AcademyProgramEnrollmentWhereInput {
     const conditions: Prisma.AcademyProgramEnrollmentWhereInput[] = [
       { academyProgramId: input.academyProgramId },
@@ -464,6 +576,67 @@ export class AcademyProgramEnrollmentRepository {
 
     if (input.paymentStatus) {
       conditions.push({ paymentStatus: input.paymentStatus });
+    }
+
+    switch (input.segment) {
+      case 'FOLLOW_UP':
+        conditions.push({
+          OR: [
+            {
+              status: AcademyProgramEnrollmentStatus.PENDING_PAYMENT,
+              paymentStatus: {
+                in: [
+                  PaymentStatus.CREATED,
+                  PaymentStatus.PENDING,
+                  PaymentStatus.REQUIRES_ACTION,
+                  PaymentStatus.FAILED,
+                  PaymentStatus.EXPIRED,
+                ],
+              },
+            },
+            {
+              status: AcademyProgramEnrollmentStatus.CONFIRMED,
+              paymentStatus: { not: PaymentStatus.CAPTURED },
+            },
+          ],
+        });
+        break;
+      case 'PAYMENT_ISSUES':
+        conditions.push({
+          status: AcademyProgramEnrollmentStatus.PENDING_PAYMENT,
+          paymentStatus: { in: [PaymentStatus.FAILED, PaymentStatus.EXPIRED] },
+        });
+        break;
+      case 'REQUIRES_LOGIN':
+        conditions.push({
+          registrationAttempts: {
+            some: { status: 'REQUIRES_LOGIN' },
+          },
+        });
+        break;
+      case 'CONFIRMED':
+        conditions.push({
+          status: AcademyProgramEnrollmentStatus.CONFIRMED,
+          paymentStatus: PaymentStatus.CAPTURED,
+        });
+        break;
+      case 'COMPLETED':
+        conditions.push({
+          status: AcademyProgramEnrollmentStatus.CONFIRMED,
+          paymentStatus: PaymentStatus.CAPTURED,
+          completedAt: { not: null },
+        });
+        break;
+      case 'CANCELLED':
+        conditions.push({
+          status: {
+            in: [AcademyProgramEnrollmentStatus.CANCELLED, AcademyProgramEnrollmentStatus.EXPIRED],
+          },
+        });
+        break;
+      case 'ALL':
+      case undefined:
+        break;
     }
 
     const trimmedCountry = input.country?.trim().toUpperCase();

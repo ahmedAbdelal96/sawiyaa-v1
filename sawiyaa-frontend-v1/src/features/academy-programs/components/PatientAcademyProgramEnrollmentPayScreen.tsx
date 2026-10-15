@@ -1,24 +1,52 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useId, useMemo, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
-import { AlertCircle, ExternalLink, Loader2, BadgeCheck, Clock3, ReceiptText } from "lucide-react";
+import {
+  AlertCircle,
+  ArrowLeft,
+  BadgeCheck,
+  Check,
+  CheckCircle2,
+  Clock3,
+  Copy,
+  CreditCard,
+  ExternalLink,
+  Globe,
+  Landmark,
+  Loader2,
+  ReceiptText,
+  ShieldCheck,
+  Smartphone,
+  Upload,
+  Wallet,
+} from "lucide-react";
 import { StateCard } from "@/components/shared/ContentStates";
-import { usePatientAcademyProgramEnrollment } from "../hooks/use-academy-programs";
+import {
+  usePatientAcademyProgramEnrollment,
+  usePublicAcademyProgramEnrollment,
+} from "../hooks/use-academy-programs";
 import {
   buildPatientAcademyProgramPaymentRedirectUrl,
   buildPatientAcademyProgramPaymentReturnUrl,
+  buildPublicAcademyProgramPaymentRedirectUrl,
 } from "../lib/academy-program-navigation";
+import { resolveAcademyProgramLocalizedValue } from "../lib/academy-program-localization";
 import {
-  resolveAcademyProgramEnrollmentStatusLabel,
-  resolveAcademyProgramLocalizedValue,
-  resolveAcademyProgramPaymentStatusLabel,
-} from "../lib/academy-program-localization";
-import { getManualPaymentMethods, getManualPaymentSubmissions, submitManualPaymentProof } from "../api/manual-payments.api";
-import type { ManualPaymentMethod, ManualPaymentSubmission } from "../types/academy-programs.types";
+  getManualPaymentMethods,
+  getManualPaymentSubmissions,
+  submitManualPaymentProof,
+} from "../api/manual-payments.api";
+import type {
+  AcademyProgramEnrollmentItem,
+  ManualPaymentMethod,
+  ManualPaymentSubmission,
+} from "../types/academy-programs.types";
 
-function formatMoney(amount: string | null, currency: string | null, locale: string) {
+const CARD_METHOD_KEY = "__card__";
+
+function formatMoney(amount: string | null | undefined, currency: string | null | undefined, locale: string) {
   if (!amount || !currency) {
     return null;
   }
@@ -39,77 +67,178 @@ function formatMoney(amount: string | null, currency: string | null, locale: str
   }
 }
 
-function resolvePaymentStateKey(input: {
-  enrollmentStatus: string;
-  paymentStatus: string;
-}) {
-  if (input.enrollmentStatus === "CONFIRMED" || input.paymentStatus === "CAPTURED") {
-    return "confirmed";
+function getMethodIcon(type: string) {
+  switch (type.toUpperCase()) {
+    case "INSTAPAY":
+      return <Smartphone className="h-5 w-5" />;
+    case "PAYPAL":
+      return <Globe className="h-5 w-5" />;
+    case "ELECTRONIC_WALLET":
+      return <Wallet className="h-5 w-5" />;
+    default:
+      return <Landmark className="h-5 w-5" />;
   }
-
-  if (input.enrollmentStatus === "PENDING_PAYMENT") {
-    if (input.paymentStatus === "FAILED") {
-      return "failed";
-    }
-
-    if (input.paymentStatus === "EXPIRED") {
-      return "expired";
-    }
-
-    if (input.paymentStatus === "CANCELLED") {
-      return "cancelled";
-    }
-
-    if (input.paymentStatus === "PENDING" || input.paymentStatus === "CREATED") {
-      return "pending";
-    }
-
-    return "payable";
-  }
-
-  if (input.enrollmentStatus === "CANCELLED") {
-    return "cancelled";
-  }
-
-  if (input.enrollmentStatus === "EXPIRED") {
-    return "expired";
-  }
-
-  return "unavailable";
 }
 
 export default function PatientAcademyProgramEnrollmentPayScreen({
   enrollmentId,
+  token,
+  initialEnrollment = null,
 }: {
   enrollmentId: string;
+  token?: string;
+  initialEnrollment?: AcademyProgramEnrollmentItem | null;
 }) {
   const t = useTranslations("academy");
   const locale = useLocale();
+  const fileInputId = useId();
+  const normalizedToken = token?.trim() ?? "";
+  const usePublicQuery = Boolean(normalizedToken);
+
+  const patientEnrollmentQuery = usePatientAcademyProgramEnrollment(
+    !usePublicQuery && !initialEnrollment ? enrollmentId : null,
+  );
+  const publicEnrollmentQuery = usePublicAcademyProgramEnrollment(
+    usePublicQuery && !initialEnrollment ? enrollmentId : null,
+    usePublicQuery && !initialEnrollment ? normalizedToken : null,
+  );
+
+  const enrollment =
+    initialEnrollment ??
+    (usePublicQuery
+      ? (publicEnrollmentQuery.data ?? null)
+      : (patientEnrollmentQuery.data?.item ?? null));
+  const isLoading =
+    !initialEnrollment &&
+    (usePublicQuery ? publicEnrollmentQuery.isLoading : patientEnrollmentQuery.isLoading);
+  const isError =
+    !initialEnrollment &&
+    (usePublicQuery ? publicEnrollmentQuery.isError : patientEnrollmentQuery.isError);
+  const refetch = usePublicQuery ? publicEnrollmentQuery.refetch : patientEnrollmentQuery.refetch;
+
   const [isRedirecting, setIsRedirecting] = useState(false);
+  const [methodsLoading, setMethodsLoading] = useState(true);
   const [manualMethods, setManualMethods] = useState<ManualPaymentMethod[]>([]);
+  const [manualMethodsError, setManualMethodsError] = useState(false);
   const [manualSubmissions, setManualSubmissions] = useState<ManualPaymentSubmission[]>([]);
-  const [manualMethodId, setManualMethodId] = useState("");
+  const [manualSubmissionsError, setManualSubmissionsError] = useState(false);
+  const [selectedMethodKey, setSelectedMethodKey] = useState<string>("");
   const [senderAccountName, setSenderAccountName] = useState("");
   const [manualNotes, setManualNotes] = useState("");
   const [manualProof, setManualProof] = useState<File | null>(null);
   const [manualSubmitting, setManualSubmitting] = useState(false);
-  const [manualFeedback, setManualFeedback] = useState<string | null>(null);
-  const { data: enrollmentResponse, isLoading, isError, refetch } =
-    usePatientAcademyProgramEnrollment(enrollmentId);
-  const enrollment = enrollmentResponse?.item ?? null;
+  const [manualFeedback, setManualFeedback] = useState<{
+    tone: "error" | "success";
+    message: string;
+  } | null>(null);
+  const [copiedIdentifier, setCopiedIdentifier] = useState(false);
 
-  const isManualPayment = enrollment?.payment?.provider === "MANUAL";
+  const effectiveToken = normalizedToken || enrollment?.publicAccessToken || "";
 
   useEffect(() => {
-    if (!isManualPayment) return;
-    void getManualPaymentMethods().then((methods) => {
-      setManualMethods(methods);
-      setManualMethodId((current) => current || methods[0]?.id || "");
-    }).catch(() => setManualFeedback(t("patient.pay.manual.loadFailed")));
-    if (enrollment?.publicAccessToken) {
-      void getManualPaymentSubmissions(enrollment.id, enrollment.publicAccessToken).then(setManualSubmissions).catch(() => undefined);
+    let active = true;
+
+    getManualPaymentMethods()
+      .then((methods) => {
+        if (!active) return;
+        const enabled = Array.isArray(methods)
+          ? methods.filter((method) => method.isEnabled !== false)
+          : [];
+        setManualMethods(enabled);
+        setManualMethodsError(false);
+      })
+      .catch(() => {
+        if (!active) return;
+        setManualMethods([]);
+        setManualMethodsError(true);
+      })
+      .finally(() => {
+        if (active) {
+          setMethodsLoading(false);
+        }
+      });
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!enrollment?.id) return;
+    let active = true;
+
+    getManualPaymentSubmissions(enrollment.id, effectiveToken || undefined)
+      .then((items) => {
+        if (!active) return;
+        setManualSubmissions(Array.isArray(items) ? items : []);
+        setManualSubmissionsError(false);
+      })
+      .catch(() => {
+        if (!active) return;
+        setManualSubmissions([]);
+        setManualSubmissionsError(true);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [effectiveToken, enrollment?.id]);
+
+  const gatewayAvailable = useMemo(() => {
+    if (typeof enrollment?.gatewayAvailable === "boolean") {
+      return enrollment.gatewayAvailable;
     }
-  }, [enrollment?.id, enrollment?.publicAccessToken, isManualPayment, t]);
+    if (typeof enrollment?.payment?.gatewayAvailable === "boolean") {
+      return enrollment.payment.gatewayAvailable;
+    }
+    if (!enrollment?.payment) {
+      return false;
+    }
+    return Boolean(
+      enrollment.payment.checkoutUrl || enrollment.payment.provider !== "MANUAL",
+    );
+  }, [enrollment?.gatewayAvailable, enrollment?.payment]);
+
+  const latestManualSubmission = manualSubmissions[0] ?? null;
+  const isReviewPending = latestManualSubmission?.status === "UNDER_REVIEW";
+  const isRejectedSubmission = latestManualSubmission?.status === "REJECTED";
+
+  const activeMethodKey = useMemo(() => {
+    const validKeys = new Set<string>();
+    if (gatewayAvailable) {
+      validKeys.add(CARD_METHOD_KEY);
+    }
+    for (const method of manualMethods) {
+      validKeys.add(method.id);
+    }
+
+    if (selectedMethodKey && validKeys.has(selectedMethodKey)) {
+      return selectedMethodKey;
+    }
+
+    const rejectedMethodId =
+      latestManualSubmission?.methodId ?? latestManualSubmission?.method?.id;
+    if (isRejectedSubmission && rejectedMethodId && validKeys.has(rejectedMethodId)) {
+      return rejectedMethodId;
+    }
+
+    if (gatewayAvailable) {
+      return CARD_METHOD_KEY;
+    }
+
+    if (manualMethods.length > 0) {
+      return manualMethods[0].id;
+    }
+
+    return "";
+  }, [
+    gatewayAvailable,
+    isRejectedSubmission,
+    latestManualSubmission?.method?.id,
+    latestManualSubmission?.methodId,
+    manualMethods,
+    selectedMethodKey,
+  ]);
 
   const returnUrl = useMemo(() => {
     if (typeof window === "undefined") {
@@ -120,19 +249,28 @@ export default function PatientAcademyProgramEnrollmentPayScreen({
       locale,
       enrollmentId,
       origin: window.location.origin,
+      token: effectiveToken || undefined,
     });
-  }, [enrollmentId, locale]);
+  }, [effectiveToken, enrollmentId, locale]);
 
   const redirectUrl = useMemo(() => {
     if (!returnUrl) {
       return "";
     }
 
+    if (effectiveToken) {
+      return buildPublicAcademyProgramPaymentRedirectUrl({
+        enrollmentId,
+        token: effectiveToken,
+        returnUrl,
+      });
+    }
+
     return buildPatientAcademyProgramPaymentRedirectUrl({
       enrollmentId,
       returnUrl,
     });
-  }, [enrollmentId, returnUrl]);
+  }, [effectiveToken, enrollmentId, returnUrl]);
 
   const title = enrollment
     ? resolveAcademyProgramLocalizedValue({
@@ -142,74 +280,112 @@ export default function PatientAcademyProgramEnrollmentPayScreen({
         fallback: enrollment.program.title ?? enrollment.program.slug,
       })
     : "";
-  const enrollmentStatusLabel = enrollment
-    ? resolveAcademyProgramEnrollmentStatusLabel(enrollment.status, t)
-    : "";
-  const paymentStatusLabel = enrollment
-    ? resolveAcademyProgramPaymentStatusLabel(enrollment.paymentStatus, t)
-    : "";
-  const amountLabel =
-    enrollment
-      ? formatMoney(
-          enrollment.payment?.amountTotal ?? enrollment.selectedAmountSnapshot,
-          enrollment.payment?.currencyCode ?? enrollment.selectedCurrencyCode,
-          locale,
-        ) ?? t("public.detail.free")
-      : t("public.detail.free");
-  const paymentStateKey = enrollment
-    ? resolvePaymentStateKey({
-        enrollmentStatus: enrollment.status,
-        paymentStatus: enrollment.paymentStatus,
-      })
-    : "unavailable";
-  const paymentStateTitle = t(`patient.pay.state.${paymentStateKey}.title`);
-  const paymentStateNote = t(`patient.pay.state.${paymentStateKey}.note`);
-  const actionLabel = t(`patient.pay.state.${paymentStateKey}.cta`);
-  const canPay = Boolean(enrollment && !isManualPayment && enrollment.status === "PENDING_PAYMENT" && enrollment.payment);
-  const latestManualSubmission = manualSubmissions[0] ?? null;
-  const canSubmitManualProof = latestManualSubmission?.status !== "UNDER_REVIEW" && latestManualSubmission?.status !== "APPROVED";
 
-  const handleManualSubmit = async () => {
-    if (!enrollment || !manualMethodId || !senderAccountName.trim() || !manualProof) {
-      setManualFeedback(t("patient.pay.manual.required"));
-      return;
-    }
-    if (manualProof.size > 5 * 1024 * 1024 || !["image/jpeg", "image/png", "image/webp"].includes(manualProof.type)) {
-      setManualFeedback(t("patient.pay.manual.invalidFile"));
-      return;
-    }
-    setManualSubmitting(true);
-    setManualFeedback(null);
+  const amountLabel = enrollment
+    ? formatMoney(
+        enrollment.payment?.amountTotal ?? enrollment.selectedAmountSnapshot,
+        enrollment.payment?.currencyCode ?? enrollment.selectedCurrencyCode,
+        locale,
+      ) ?? t("public.detail.free")
+    : t("public.detail.free");
+
+  const isConfirmed =
+    enrollment?.status === "CONFIRMED" ||
+    enrollment?.paymentStatus === "CAPTURED" ||
+    manualSubmissions[0]?.status === "APPROVED";
+  const isCancelledOrExpired =
+    enrollment?.status === "CANCELLED" || enrollment?.status === "EXPIRED";
+
+  const selectedManualMethod = useMemo(
+    () => manualMethods.find((method) => method.id === activeMethodKey) ?? null,
+    [activeMethodKey, manualMethods],
+  );
+
+  const hasAnyPaymentMethod = gatewayAvailable || manualMethods.length > 0;
+  const programHref = enrollment?.program?.slug
+    ? `/${locale}/academy/${enrollment.program.slug}`
+    : `/${locale}/academy`;
+
+  const handleCopyIdentifier = async (value: string) => {
     try {
-      await submitManualPaymentProof({
-        enrollmentId: enrollment.id,
-        token: enrollment.publicAccessToken,
-        methodId: manualMethodId,
-        senderAccountName,
-        notes: manualNotes,
-        proof: manualProof,
-      });
-      setManualSubmissions(enrollment.publicAccessToken ? await getManualPaymentSubmissions(enrollment.id, enrollment.publicAccessToken) : []);
-      setManualFeedback(t("patient.pay.manual.success"));
+      await navigator.clipboard.writeText(value);
+      setCopiedIdentifier(true);
+      setTimeout(() => setCopiedIdentifier(false), 2000);
     } catch {
-      setManualFeedback(t("patient.pay.manual.failed"));
-    } finally {
-      setManualSubmitting(false);
+      // Clipboard API may be unavailable in some environments
     }
   };
-  const handleContinue = () => {
-    if (!redirectUrl) {
+
+  const handleCardCheckout = () => {
+    const directCheckoutUrl = enrollment?.payment?.checkoutUrl?.trim() ?? "";
+    const targetUrl = directCheckoutUrl || redirectUrl;
+    if (!targetUrl) {
       return;
     }
 
     setIsRedirecting(true);
-    window.location.assign(redirectUrl);
+    window.location.assign(targetUrl);
+  };
+
+  const handleManualSubmit = async () => {
+    if (!enrollment || !selectedManualMethod || !senderAccountName.trim() || !manualProof) {
+      setManualFeedback({
+        tone: "error",
+        message: t("patient.pay.manual.required"),
+      });
+      return;
+    }
+
+    if (
+      manualProof.size > 5 * 1024 * 1024 ||
+      !["image/jpeg", "image/png", "image/webp"].includes(manualProof.type)
+    ) {
+      setManualFeedback({
+        tone: "error",
+        message: t("patient.pay.manual.invalidFile"),
+      });
+      return;
+    }
+
+    setManualSubmitting(true);
+    setManualFeedback(null);
+
+    try {
+      const response = await submitManualPaymentProof({
+        enrollmentId: enrollment.id,
+        token: effectiveToken || undefined,
+        methodId: selectedManualMethod.id,
+        senderAccountName: senderAccountName.trim(),
+        notes: manualNotes.trim() || undefined,
+        proof: manualProof,
+      });
+
+      const refreshed = await getManualPaymentSubmissions(
+        enrollment.id,
+        effectiveToken || undefined,
+      ).catch(() => [response]);
+
+      setManualSubmissions(
+        Array.isArray(refreshed) && refreshed.length > 0 ? refreshed : [response],
+      );
+      setManualFeedback({
+        tone: "success",
+        message: t("patient.pay.manual.success"),
+      });
+    } catch {
+      setManualFeedback({
+        tone: "error",
+        message: t("patient.pay.manual.failed"),
+      });
+    } finally {
+      setManualSubmitting(false);
+    }
   };
 
   if (isLoading) {
     return (
-      <div className="mx-auto max-w-3xl px-4 py-6 sm:py-10">
-        <div className="h-72 animate-pulse rounded-[28px] border border-border-light bg-surface-tertiary" />
+      <div className="mx-auto max-w-5xl px-4 py-6 sm:py-10">
+        <div className="h-80 animate-pulse rounded-2xl border border-border-light bg-surface-tertiary" />
       </div>
     );
   }
@@ -225,156 +401,581 @@ export default function PatientAcademyProgramEnrollmentPayScreen({
             label: t("patient.pay.error.retry"),
             onClick: () => refetch(),
           }}
-          className="rounded-[28px]"
+          className="rounded-2xl"
         />
       </div>
     );
   }
 
   return (
-    <div className="mx-auto max-w-3xl px-4 py-6 sm:py-10">
-      <section className="rounded-[28px] border border-border-light bg-white p-5 shadow-[0_16px_40px_-32px_rgba(31,42,45,0.18)] sm:p-6">
-        <div className="space-y-4">
-          <div className="inline-flex items-center gap-1.5 rounded-full border border-primary/20 bg-primary-light/40 px-3.5 py-1.5 text-xs font-semibold text-primary">
-            <Loader2 className="h-3.5 w-3.5" />
-            {t("patient.pay.badge")}
-          </div>
+    <div className="mx-auto max-w-5xl space-y-6 px-4 py-6 sm:py-10">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <Link
+          href={programHref}
+          className="inline-flex items-center gap-2 rounded-full border border-border-light bg-white px-4 py-2 text-sm font-medium text-text-secondary transition hover:border-primary/30 hover:text-primary"
+        >
+          <ArrowLeft className="h-4 w-4 rtl:rotate-180" />
+          <span>{t("return.backToProgram")}</span>
+        </Link>
+      </div>
 
+      {/* Top Header & Registration Summary */}
+      <section className="app-panel rounded-2xl border border-border-light bg-white p-5 sm:p-6">
+        <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
           <div className="space-y-2">
-            <h1 className="text-2xl font-bold tracking-tight text-text-primary sm:text-[2.4rem]">
-              {t("patient.pay.title")}
+            <div className="inline-flex items-center gap-1.5 rounded-full border border-primary/20 bg-primary-light/40 px-3 py-1 text-xs font-semibold text-primary">
+              <BadgeCheck className="h-3.5 w-3.5" />
+              <span>{t("patient.pay.badge")}</span>
+            </div>
+            <h1 className="text-xl font-bold tracking-tight text-text-primary sm:text-2xl">
+              {isConfirmed
+                ? t("patient.pay.state.confirmed.title")
+                : isReviewPending
+                  ? t("patient.pay.manual.reviewPending")
+                  : t("patient.pay.title")}
             </h1>
-            <p className="max-w-2xl text-sm leading-relaxed text-text-secondary sm:text-base">
-              {t("patient.pay.note")}
+            <p className="max-w-2xl text-sm leading-relaxed text-text-secondary">
+              {isConfirmed
+                ? t("patient.pay.state.confirmed.note")
+                : isReviewPending
+                  ? t("patient.pay.manual.reviewPendingNote")
+                  : t("patient.pay.note")}
             </p>
           </div>
-        </div>
 
-        <div className="mt-6 grid gap-3 sm:grid-cols-2">
-          <div className="rounded-[20px] border border-border-light bg-surface-tertiary px-4 py-4">
-            <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider text-text-muted">
-              <ReceiptText className="h-3.5 w-3.5 text-primary" />
-              <span>{t("patient.pay.summary.program")}</span>
-            </div>
-            <div className="mt-1.5 text-sm font-bold leading-relaxed text-text-primary">
-              {title}
-            </div>
-          </div>
-          <div className="rounded-[20px] border border-border-light bg-surface-tertiary px-4 py-4">
-            <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider text-text-muted">
-              <BadgeCheck className="h-3.5 w-3.5 text-primary" />
-              <span>{t("patient.pay.summary.amount")}</span>
-            </div>
-            <div className="mt-1.5 text-sm font-bold leading-relaxed text-text-primary" dir="ltr">
-              {amountLabel}
-            </div>
-          </div>
-          <div className="rounded-[20px] border border-border-light bg-surface-tertiary px-4 py-4">
-            <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider text-text-muted">
-              <BadgeCheck className="h-3.5 w-3.5 text-primary" />
-              <span>{t("patient.pay.summary.enrollmentStatus")}</span>
-            </div>
-            <div className="mt-1.5 text-sm font-bold leading-relaxed text-text-primary">
-              {enrollmentStatusLabel}
-            </div>
-          </div>
-          <div className="rounded-[20px] border border-border-light bg-surface-tertiary px-4 py-4">
-            <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider text-text-muted">
-              <Clock3 className="h-3.5 w-3.5 text-primary" />
-              <span>{t("patient.pay.summary.paymentStatus")}</span>
-            </div>
-            <div className="mt-1.5 text-sm font-bold leading-relaxed text-text-primary">
-              {paymentStatusLabel}
-            </div>
-          </div>
-        </div>
-
-        <section className="mt-6 rounded-[24px] border border-border-light bg-surface-tertiary p-5 sm:p-6">
-          <div className="flex flex-wrap items-start justify-between gap-4">
-            <div className="space-y-2">
-              <div className="inline-flex items-center gap-2 rounded-full border border-border-light bg-white px-3 py-1.5 text-xs font-semibold text-text-secondary">
-                <span className="h-2 w-2 rounded-full bg-primary" />
-                {paymentStateTitle}
+          <div className="flex flex-wrap items-stretch gap-3 sm:flex-nowrap">
+            <div className="min-w-[180px] flex-1 rounded-xl border border-border-light bg-surface-tertiary px-4 py-3">
+              <div className="flex items-center gap-1.5 text-xs font-medium text-text-muted">
+                <ReceiptText className="h-3.5 w-3.5 text-primary" />
+                <span>{t("patient.pay.summary.program")}</span>
               </div>
-              <h2 className="text-lg font-bold text-text-primary sm:text-xl">
-                {paymentStateTitle}
-              </h2>
-              <p className="max-w-2xl text-sm leading-relaxed text-text-secondary">
-                {paymentStateNote}
-              </p>
+              <div className="mt-1 text-sm font-bold text-text-primary">{title}</div>
             </div>
 
-            {isManualPayment ? (
-              <span className="inline-flex items-center rounded-[14px] border border-primary/20 bg-primary/5 px-4 py-3 text-sm font-semibold text-primary">
-                {t("patient.pay.manual.reviewPending")}
-              </span>
-            ) : canPay ? (
-              <button
-                type="button"
-                onClick={handleContinue}
-                disabled={isRedirecting}
-                className="inline-flex w-full items-center justify-center gap-2 rounded-[14px] bg-primary px-5 py-3 text-sm font-semibold text-white transition hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-70 sm:w-auto"
-              >
-                {isRedirecting ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <ExternalLink className="h-4 w-4" />
-                )}
-                {actionLabel}
-              </button>
-            ) : (
-              <Link
-                href={`/patient/academy/program-enrollments/${enrollment.id}`}
-                className="inline-flex w-full items-center justify-center rounded-[14px] border border-primary/15 bg-white px-5 py-3 text-sm font-semibold text-primary transition hover:bg-primary-light/30 sm:w-auto"
-              >
-                {actionLabel}
-              </Link>
-            )}
+            <div className="min-w-[140px] rounded-xl border border-primary/20 bg-primary-light/20 px-4 py-3">
+              <div className="text-xs font-medium text-text-secondary">
+                {t("patient.pay.summary.amount")}
+              </div>
+              <div className="mt-1 text-base font-bold text-primary" dir="ltr">
+                {amountLabel}
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Confirmed State */}
+      {isConfirmed ? (
+        <section className="app-panel rounded-2xl border border-success/25 bg-white p-6 text-center sm:p-8">
+          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-success-light text-success">
+            <CheckCircle2 className="h-7 w-7" />
+          </div>
+          <h2 className="mt-4 text-lg font-bold text-text-primary sm:text-xl">
+            {t("patient.pay.state.confirmed.title")}
+          </h2>
+          <p className="mx-auto mt-2 max-w-xl text-sm leading-relaxed text-text-secondary">
+            {t("patient.pay.state.confirmed.note")}
+          </p>
+          <div className="mt-6 flex justify-center">
+            <Link
+              href={programHref}
+              className="inline-flex items-center justify-center rounded-xl bg-primary px-6 py-3 text-sm font-semibold text-white transition hover:bg-primary-hover"
+            >
+              {t("patient.pay.state.confirmed.cta")}
+            </Link>
           </div>
         </section>
-
-        {isManualPayment ? (
-          <section className="mt-5 rounded-[24px] border border-primary/20 bg-primary/5 p-5 sm:p-6">
-            <div className="space-y-1">
-              <h2 className="text-lg font-bold text-text-primary">{t("patient.pay.manual.title")}</h2>
-              <p className="text-sm leading-relaxed text-text-secondary">{t("patient.pay.manual.note")}</p>
-            </div>
-            {latestManualSubmission?.status === "UNDER_REVIEW" ? <p className="mt-4 text-sm font-semibold text-primary">{t("patient.pay.manual.reviewPending")}</p> : null}
-            {latestManualSubmission?.status === "REJECTED" ? <p className="mt-4 text-sm font-semibold text-error-600">{t("patient.pay.manual.rejected", { reason: latestManualSubmission.rejectionReason ?? "" })}</p> : null}
-            {canSubmitManualProof && manualMethods.length ? (
-              <div className="mt-4 space-y-3">
-                <label className="block text-sm font-semibold text-text-secondary">
-                  {t("patient.pay.manual.method")}
-                  <select value={manualMethodId} onChange={(event) => setManualMethodId(event.target.value)} className="mt-1.5 h-11 w-full rounded-[12px] border border-border-light bg-white px-3 text-sm text-text-primary">
-                    {manualMethods.map((method) => <option key={method.id} value={method.id}>{locale === "ar" ? method.displayNameAr : method.displayNameEn}</option>)}
-                  </select>
-                </label>
-                {manualMethods.filter((method) => method.id === manualMethodId).map((method) => (
-                  <div key={method.id} className="rounded-[16px] border border-border-light bg-white p-4 text-sm text-text-secondary">
-                    <div>{t("patient.pay.manual.accountHolder")}: <strong>{method.accountHolderName}</strong></div>
-                    <div dir="ltr">{t("patient.pay.manual.accountIdentifier")}: <strong>{method.accountIdentifier}</strong></div>
-                    <p className="mt-2 whitespace-pre-wrap leading-relaxed">{locale === "ar" ? method.instructionsAr : method.instructionsEn}</p>
-                  </div>
-                ))}
-                <input value={senderAccountName} onChange={(event) => setSenderAccountName(event.target.value)} placeholder={t("patient.pay.manual.senderName")} className="h-11 w-full rounded-[12px] border border-border-light bg-white px-3 text-sm" />
-                <textarea value={manualNotes} onChange={(event) => setManualNotes(event.target.value)} placeholder={t("patient.pay.manual.notes")} className="min-h-20 w-full rounded-[12px] border border-border-light bg-white px-3 py-2 text-sm" />
-                <input type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => setManualProof(event.target.files?.[0] ?? null)} className="block w-full text-sm" />
-                <button type="button" disabled={manualSubmitting} onClick={handleManualSubmit} className="inline-flex w-full items-center justify-center rounded-[14px] bg-primary px-5 py-3 text-sm font-semibold text-white disabled:opacity-60">
-                  {manualSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : t("patient.pay.manual.submit")}
-                </button>
-                {manualFeedback ? <p className="text-xs font-semibold text-text-secondary">{manualFeedback}</p> : null}
-              </div>
-            ) : <p className="mt-4 text-sm text-text-secondary">{t("patient.pay.manual.unavailable")}</p>}
-          </section>
-        ) : null}
-
-        <div className="mt-5 rounded-[20px] border border-border-light bg-white px-4 py-4">
-          <p className="text-xs font-medium leading-relaxed text-text-secondary">
-            {t("patient.pay.hostedCheckoutNote")}
+      ) : isCancelledOrExpired ? (
+        <section className="app-panel rounded-2xl border border-border-light bg-white p-6 text-center sm:p-8">
+          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-surface-tertiary text-text-muted">
+            <Clock3 className="h-7 w-7" />
+          </div>
+          <h2 className="mt-4 text-lg font-bold text-text-primary sm:text-xl">
+            {t("patient.pay.state.cancelled.title")}
+          </h2>
+          <p className="mx-auto mt-2 max-w-xl text-sm leading-relaxed text-text-secondary">
+            {t("patient.pay.state.cancelled.note")}
           </p>
-        </div>
+          <div className="mt-6 flex justify-center">
+            <Link
+              href={programHref}
+              className="inline-flex items-center justify-center rounded-xl bg-primary px-6 py-3 text-sm font-semibold text-white transition hover:bg-primary-hover"
+            >
+              {t("patient.pay.state.cancelled.cta")}
+            </Link>
+          </div>
+        </section>
+      ) : isReviewPending ? (
+        /* Proof Received & Under Review State */
+        <section className="app-panel rounded-2xl border border-primary/25 bg-white p-6 sm:p-8">
+          <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center">
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-primary-light/40 text-primary">
+              <Clock3 className="h-6 w-6" />
+            </div>
+            <div className="space-y-1.5">
+              <h2 className="text-lg font-bold text-text-primary">
+                {t("patient.pay.manual.reviewPending")}
+              </h2>
+              <p className="text-sm leading-relaxed text-text-secondary">
+                {t("patient.pay.manual.reviewPendingNote")}
+              </p>
+            </div>
+          </div>
+        </section>
+      ) : (
+        /* Active Payment Method Selection Workspace */
+        <>
+          {manualSubmissionsError ? (
+            <div
+              role="alert"
+              className="rounded-2xl border border-error-500/30 bg-error-50 px-5 py-4 text-sm font-medium text-error-700"
+            >
+              {t("patient.pay.manual.submissionsLoadFailed")}
+            </div>
+          ) : null}
 
-      </section>
+          {manualMethodsError ? (
+            <div
+              role="alert"
+              className="rounded-2xl border border-error-500/30 bg-error-50 px-5 py-4 text-sm font-medium text-error-700"
+            >
+              {t("patient.pay.manual.loadFailed")}
+            </div>
+          ) : null}
+
+          {isRejectedSubmission ? (
+            <div className="rounded-2xl border border-error-500/30 bg-error-50 px-5 py-4 text-sm font-medium text-error-700">
+              {t("patient.pay.manual.rejected", {
+                reason: latestManualSubmission?.rejectionReason ?? "",
+              })}
+            </div>
+          ) : null}
+
+          {methodsLoading ? (
+            <div className="grid gap-6 lg:grid-cols-[300px_1fr]">
+              <div className="h-64 animate-pulse rounded-2xl border border-border-light bg-surface-tertiary" />
+              <div className="h-80 animate-pulse rounded-2xl border border-border-light bg-surface-tertiary" />
+            </div>
+          ) : !hasAnyPaymentMethod ? (
+            <section className="app-panel rounded-2xl border border-border-light bg-white p-6 text-center sm:p-8">
+              <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-surface-tertiary text-text-muted">
+                <AlertCircle className="h-6 w-6" />
+              </div>
+              <h2 className="mt-4 text-lg font-bold text-text-primary">
+                {t("patient.pay.state.unavailable.title")}
+              </h2>
+              <p className="mx-auto mt-2 max-w-lg text-sm leading-relaxed text-text-secondary">
+                {t("patient.pay.manual.unavailable")}
+              </p>
+            </section>
+          ) : (
+            <div className="grid gap-6 lg:grid-cols-[300px_1fr] lg:items-start">
+              {/* Payment Method Cards Area (Right side in RTL, Left side in LTR, Top on Mobile) */}
+              <aside className="app-panel rounded-2xl border border-border-light bg-white p-4 sm:p-5">
+                <div className="mb-3.5 space-y-1">
+                  <h2 className="text-base font-bold text-text-primary">
+                    {t("patient.pay.methods.title")}
+                  </h2>
+                  <p className="text-xs text-text-secondary">
+                    {t("patient.pay.methods.subtitle")}
+                  </p>
+                </div>
+
+                <div
+                  role="radiogroup"
+                  aria-label={t("patient.pay.methods.title")}
+                  className="space-y-2.5"
+                >
+                  {gatewayAvailable ? (
+                    <button
+                      type="button"
+                      role="radio"
+                      aria-checked={activeMethodKey === CARD_METHOD_KEY}
+                      onClick={() => {
+                        setSelectedMethodKey(CARD_METHOD_KEY);
+                        setManualFeedback(null);
+                      }}
+                      className={`flex w-full items-center justify-between gap-3 rounded-xl border p-3.5 text-start transition focus:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
+                        activeMethodKey === CARD_METHOD_KEY
+                          ? "border-2 border-primary bg-primary-light/25 shadow-sm"
+                          : "border-border-light bg-white hover:border-primary/40 hover:bg-surface-tertiary/60"
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div
+                          className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${
+                            activeMethodKey === CARD_METHOD_KEY
+                              ? "bg-primary text-white"
+                              : "bg-surface-tertiary text-text-secondary"
+                          }`}
+                        >
+                          <CreditCard className="h-5 w-5" />
+                        </div>
+                        <div>
+                          <div className="text-sm font-bold text-text-primary">
+                            {t("patient.pay.methods.cardTitle")}
+                          </div>
+                          <div className="mt-0.5 text-xs text-text-secondary">
+                            {t("patient.pay.methods.cardSubtitle")}
+                          </div>
+                        </div>
+                      </div>
+                      <span
+                        className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border ${
+                          activeMethodKey === CARD_METHOD_KEY
+                            ? "border-primary bg-primary text-white"
+                            : "border-border-light bg-white"
+                        }`}
+                      >
+                        {activeMethodKey === CARD_METHOD_KEY ? (
+                          <Check className="h-3 w-3" />
+                        ) : null}
+                      </span>
+                    </button>
+                  ) : null}
+
+                  {manualMethods.map((method) => {
+                    const methodName =
+                      locale === "ar" ? method.displayNameAr : method.displayNameEn;
+                    const isSelected = activeMethodKey === method.id;
+
+                    return (
+                      <button
+                        key={method.id}
+                        type="button"
+                        role="radio"
+                        aria-checked={isSelected}
+                        onClick={() => {
+                          setSelectedMethodKey(method.id);
+                          setManualFeedback(null);
+                        }}
+                        className={`flex w-full items-center justify-between gap-3 rounded-xl border p-3.5 text-start transition focus:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
+                          isSelected
+                            ? "border-2 border-primary bg-primary-light/25 shadow-sm"
+                            : "border-border-light bg-white hover:border-primary/40 hover:bg-surface-tertiary/60"
+                        }`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <div
+                            className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${
+                              isSelected
+                                ? "bg-primary text-white"
+                                : "bg-surface-tertiary text-text-secondary"
+                            }`}
+                          >
+                            {getMethodIcon(method.type)}
+                          </div>
+                          <div>
+                            <div className="text-sm font-bold text-text-primary">
+                              {methodName}
+                            </div>
+                            <div className="mt-0.5 text-xs text-text-secondary">
+                              {t("patient.pay.methods.transferSubtitle")}
+                            </div>
+                          </div>
+                        </div>
+                        <span
+                          className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border ${
+                            isSelected
+                              ? "border-primary bg-primary text-white"
+                              : "border-border-light bg-white"
+                          }`}
+                        >
+                          {isSelected ? <Check className="h-3 w-3" /> : null}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </aside>
+
+              {/* Selected Payment Method Details Panel (Left/Main side in RTL, Right side in LTR, Bottom on Mobile) */}
+              <div className="app-panel rounded-2xl border border-border-light bg-white p-5 sm:p-6">
+                {activeMethodKey === CARD_METHOD_KEY && gatewayAvailable ? (
+                  <div className="space-y-6">
+                    <div className="flex flex-wrap items-start justify-between gap-4 border-b border-border-light pb-5">
+                      <div className="flex items-center gap-3.5">
+                        <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary-light/40 text-primary">
+                          <CreditCard className="h-6 w-6" />
+                        </div>
+                        <div>
+                          <h3 className="text-lg font-bold text-text-primary">
+                            {t("patient.pay.methods.cardTitle")}
+                          </h3>
+                          <p className="mt-0.5 text-xs text-text-secondary">
+                            {t("patient.pay.methods.cardSubtitle")}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="rounded-xl border border-primary/20 bg-primary-light/20 px-4 py-2.5 text-end">
+                        <div className="text-[11px] font-medium text-text-secondary">
+                          {t("patient.pay.amount")}
+                        </div>
+                        <div className="text-lg font-bold text-primary" dir="ltr">
+                          {amountLabel}
+                        </div>
+                      </div>
+                    </div>
+
+                    <p className="text-sm leading-relaxed text-text-secondary">
+                      {t("patient.pay.methods.cardDescription")}
+                    </p>
+
+                    <div className="flex items-start gap-3 rounded-xl border border-border-light bg-surface-tertiary p-4">
+                      <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
+                      <p className="text-xs leading-relaxed text-text-secondary">
+                        {t("patient.pay.methods.cardTrust")}
+                      </p>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={handleCardCheckout}
+                      disabled={isRedirecting}
+                      className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-6 py-3.5 text-sm font-semibold text-white shadow-sm transition hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-70"
+                    >
+                      {isRedirecting ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <ExternalLink className="h-4 w-4" />
+                      )}
+                      <span>{t("patient.pay.methods.cardCta")}</span>
+                    </button>
+                  </div>
+                ) : selectedManualMethod ? (
+                  <div className="space-y-6">
+                    {(() => {
+                      const methodDisplayName =
+                        locale === "ar"
+                          ? selectedManualMethod.displayNameAr
+                          : selectedManualMethod.displayNameEn;
+                      const methodInstructions =
+                        locale === "ar"
+                          ? selectedManualMethod.instructionsAr
+                          : selectedManualMethod.instructionsEn;
+
+                      return (
+                        <>
+                          {/* Method Header & Amount */}
+                          <div className="flex flex-wrap items-start justify-between gap-4 border-b border-border-light pb-5">
+                            <div className="flex items-center gap-3.5">
+                              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary-light/40 text-primary">
+                                {getMethodIcon(selectedManualMethod.type)}
+                              </div>
+                              <div>
+                                <h3 className="text-lg font-bold text-text-primary">
+                                  {methodDisplayName}
+                                </h3>
+                                <p className="mt-0.5 text-xs text-text-secondary">
+                                  {t("patient.pay.manual.title")}
+                                </p>
+                              </div>
+                            </div>
+
+                            <div className="rounded-xl border border-primary/20 bg-primary-light/20 px-4 py-2.5 text-end">
+                              <div className="text-[11px] font-medium text-text-secondary">
+                                {t("patient.pay.amount")}
+                              </div>
+                              <div className="text-lg font-bold text-primary" dir="ltr">
+                                {amountLabel}
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Destination Account Info */}
+                          <div className="grid gap-3 sm:grid-cols-2">
+                            <div className="rounded-xl border border-primary/20 bg-primary-light/15 p-4">
+                              <div className="text-xs font-medium text-text-secondary">
+                                {t("patient.pay.manual.accountIdentifier")}
+                              </div>
+                              <div className="mt-1.5 flex items-center justify-between gap-2">
+                                <span
+                                  className="break-all font-mono text-base font-bold text-text-primary"
+                                  dir="ltr"
+                                >
+                                  {selectedManualMethod.accountIdentifier}
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    void handleCopyIdentifier(
+                                      selectedManualMethod.accountIdentifier,
+                                    )
+                                  }
+                                  className="inline-flex shrink-0 items-center gap-1 rounded-lg border border-border-light bg-white px-2.5 py-1 text-xs font-semibold text-text-secondary transition hover:border-primary/30 hover:text-primary"
+                                >
+                                  {copiedIdentifier ? (
+                                    <>
+                                      <Check className="h-3.5 w-3.5 text-success" />
+                                      <span>{t("patient.pay.methods.copied")}</span>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Copy className="h-3.5 w-3.5" />
+                                      <span>{t("patient.pay.methods.copy")}</span>
+                                    </>
+                                  )}
+                                </button>
+                              </div>
+                            </div>
+
+                            <div className="rounded-xl border border-border-light bg-surface-tertiary p-4">
+                              <div className="text-xs font-medium text-text-secondary">
+                                {t("patient.pay.manual.accountHolder")}
+                              </div>
+                              <div className="mt-1.5 text-base font-bold text-text-primary">
+                                {selectedManualMethod.accountHolderName}
+                              </div>
+                            </div>
+                          </div>
+
+                          {methodInstructions ? (
+                            <div className="rounded-xl border border-border-light bg-surface-tertiary p-4 text-sm leading-relaxed text-text-secondary whitespace-pre-wrap">
+                              {methodInstructions}
+                            </div>
+                          ) : null}
+
+                          {/* Clear Next Steps */}
+                          <div className="rounded-xl border border-border-light bg-surface-tertiary/70 p-4">
+                            <h4 className="text-xs font-bold uppercase tracking-wider text-text-primary">
+                              {t("patient.pay.manual.stepsTitle")}
+                            </h4>
+                            <ol className="mt-3 space-y-2 text-sm text-text-secondary">
+                              <li className="flex items-start gap-2.5">
+                                <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/15 text-xs font-bold text-primary">
+                                  1
+                                </span>
+                                <span>
+                                  {t("patient.pay.manual.step1", {
+                                    method: methodDisplayName,
+                                  })}
+                                </span>
+                              </li>
+                              <li className="flex items-start gap-2.5">
+                                <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/15 text-xs font-bold text-primary">
+                                  2
+                                </span>
+                                <span>{t("patient.pay.manual.step2")}</span>
+                              </li>
+                              <li className="flex items-start gap-2.5">
+                                <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/15 text-xs font-bold text-primary">
+                                  3
+                                </span>
+                                <span>{t("patient.pay.manual.step3")}</span>
+                              </li>
+                              <li className="flex items-start gap-2.5">
+                                <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/15 text-xs font-bold text-primary">
+                                  4
+                                </span>
+                                <span>{t("patient.pay.manual.step4")}</span>
+                              </li>
+                            </ol>
+                          </div>
+
+                          {/* Proof Upload Form */}
+                          <div className="space-y-4 border-t border-border-light pt-5">
+                            <div>
+                              <label className="mb-1.5 block text-xs font-semibold text-text-primary">
+                                {t("patient.pay.manual.senderName")}
+                              </label>
+                              <input
+                                value={senderAccountName}
+                                onChange={(event) => setSenderAccountName(event.target.value)}
+                                placeholder={t("patient.pay.manual.senderName")}
+                                className="h-11 w-full rounded-xl border border-border-light bg-white px-3.5 text-sm text-text-primary focus:border-primary focus:outline-none"
+                              />
+                            </div>
+
+                            <div>
+                              <label
+                                htmlFor={fileInputId}
+                                className="mb-1.5 block text-xs font-semibold text-text-primary"
+                              >
+                                {t("patient.pay.manual.proofLabel")}
+                              </label>
+                              <label
+                                htmlFor={fileInputId}
+                                className="flex cursor-pointer items-center justify-between gap-3 rounded-xl border border-dashed border-border-light bg-surface-tertiary/60 px-4 py-3.5 text-sm transition hover:border-primary/40 hover:bg-primary-light/10"
+                              >
+                                <div className="flex items-center gap-3 min-w-0">
+                                  <Upload className="h-4 w-4 shrink-0 text-primary" />
+                                  <span className="truncate font-medium text-text-primary">
+                                    {manualProof
+                                      ? manualProof.name
+                                      : t("patient.pay.manual.chooseFile")}
+                                  </span>
+                                </div>
+                                <span className="shrink-0 rounded-lg border border-border-light bg-white px-3 py-1 text-xs font-semibold text-primary">
+                                  {manualProof
+                                    ? t("patient.pay.manual.changeFile")
+                                    : t("patient.pay.manual.chooseFile")}
+                                </span>
+                              </label>
+                              <input
+                                id={fileInputId}
+                                type="file"
+                                accept="image/jpeg,image/png,image/webp"
+                                onChange={(event) =>
+                                  setManualProof(event.target.files?.[0] ?? null)
+                                }
+                                className="sr-only"
+                              />
+                              <p className="mt-1 text-xs text-text-muted">
+                                {t("patient.pay.manual.proofHint")}
+                              </p>
+                            </div>
+
+                            <div>
+                              <label className="mb-1.5 block text-xs font-semibold text-text-primary">
+                                {t("patient.pay.manual.notes")}
+                              </label>
+                              <textarea
+                                value={manualNotes}
+                                onChange={(event) => setManualNotes(event.target.value)}
+                                placeholder={t("patient.pay.manual.notes")}
+                                className="min-h-20 w-full rounded-xl border border-border-light bg-white px-3.5 py-2.5 text-sm text-text-primary focus:border-primary focus:outline-none"
+                              />
+                            </div>
+
+                            {manualFeedback ? (
+                              <div
+                                className={`rounded-xl border px-4 py-3 text-xs font-semibold ${
+                                  manualFeedback.tone === "error"
+                                    ? "border-error-500/30 bg-error-50 text-error-700"
+                                    : "border-success/30 bg-success-light text-success"
+                                }`}
+                              >
+                                {manualFeedback.message}
+                              </div>
+                            ) : null}
+
+                            <button
+                              type="button"
+                              disabled={manualSubmitting}
+                              onClick={() => void handleManualSubmit()}
+                              className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-6 py-3.5 text-sm font-semibold text-white shadow-sm transition hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-60"
+                            >
+                              {manualSubmitting ? (
+                                <>
+                                  <Loader2 className="h-4 w-4 animate-spin" />
+                                  <span>{t("patient.pay.manual.submitting")}</span>
+                                </>
+                              ) : (
+                                <span>{t("patient.pay.manual.submit")}</span>
+                              )}
+                            </button>
+                          </div>
+                        </>
+                      );
+                    })()}
+                  </div>
+                ) : null}
+              </div>
+            </div>
+          )}
+        </>
+      )}
     </div>
   );
 }

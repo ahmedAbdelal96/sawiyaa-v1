@@ -85,6 +85,13 @@ describe('NotificationQueueService', () => {
         attempts: 1,
       }),
     );
+    await service.enqueueNotification('email-1', { channel: 'EMAIL' });
+    await service.enqueueNotification('push-1', { channel: 'PUSH' });
+    expect(Queue).toHaveBeenCalledWith(
+      'notifications-email',
+      expect.anything(),
+    );
+    expect(Queue).toHaveBeenCalledWith('notifications-push', expect.anything());
     expect(result).toEqual({
       enqueued: true,
       notificationId: 'n1',
@@ -135,11 +142,11 @@ describe('NotificationQueueService', () => {
         redis: 'AVAILABLE',
         worker: 'AVAILABLE',
         counts: {
-          waiting: 3,
-          active: 1,
-          completed: 8,
-          failed: 2,
-          delayed: 4,
+          waiting: 9,
+          active: 3,
+          completed: 24,
+          failed: 6,
+          delayed: 12,
         },
       }),
     );

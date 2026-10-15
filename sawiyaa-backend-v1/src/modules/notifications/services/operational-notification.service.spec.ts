@@ -9,6 +9,7 @@ describe('OperationalNotificationService', () => {
     emailEnabled?: boolean;
     pushEnabled?: boolean;
     locale?: 'en' | 'ar';
+    creationState?: boolean;
   }) {
     const findPatientRecipient = jest.fn().mockResolvedValue({
       user: {
@@ -47,6 +48,15 @@ describe('OperationalNotificationService', () => {
     });
     const findPreference = jest.fn().mockResolvedValue(null);
     const createNotification = jest.fn().mockResolvedValue({ id: 'notif_1' });
+    const createNotificationWithCreationState = jest
+      .fn()
+      .mockImplementation(async (data: Record<string, unknown>) => ({
+        notification: await createNotification(data),
+        created: true,
+      }));
+    const notificationRealtimePublisher = {
+      publish: jest.fn(),
+    };
     const updateNotificationStatus = jest.fn().mockResolvedValue({});
     const scheduleMany = jest.fn().mockResolvedValue({ count: 4 });
     const cancelFutureBySessionId = jest.fn().mockResolvedValue({ count: 1 });
@@ -59,6 +69,7 @@ describe('OperationalNotificationService', () => {
       findPreference,
       createNotification,
       updateNotificationStatus,
+      createNotificationWithCreationState,
     } as unknown as OperationalNotificationRepository;
     const sessionReminderQueueRepository = {
       scheduleMany,
@@ -122,6 +133,7 @@ describe('OperationalNotificationService', () => {
       sessionReminderQueueRepository,
       i18nService,
       sessionSchedulePolicyService,
+      input?.creationState ? notificationRealtimePublisher : undefined,
     );
 
     return {
@@ -132,10 +144,62 @@ describe('OperationalNotificationService', () => {
       findPreference,
       createNotification,
       updateNotificationStatus,
+      createNotificationWithCreationState,
+      notificationRealtimePublisher,
       scheduleMany,
       cancelFutureBySessionId,
     };
   }
+
+  it('publishes realtime once when an idempotent in-app replay finds the existing row', async () => {
+    const setup = buildService({ emailEnabled: false, creationState: true });
+    setup.createNotificationWithCreationState
+      .mockResolvedValueOnce({
+        notification: {
+          id: 'notif_1',
+          createdAt: new Date('2026-01-01T00:00:00.000Z'),
+        },
+        created: true,
+      })
+      .mockResolvedValueOnce({
+        notification: {
+          id: 'notif_1',
+          createdAt: new Date('2026-01-01T00:00:00.000Z'),
+        },
+        created: false,
+      });
+
+    const sendBySlug = (
+      setup.service as unknown as {
+        sendBySlug: (input: Record<string, unknown>) => Promise<void>;
+      }
+    ).sendBySlug;
+    const input = {
+      recipient: {
+        userId: 'user_1',
+        displayName: 'Patient One',
+        locale: 'en',
+        email: 'patient@example.com',
+        timezone: 'UTC',
+      },
+      slug: 'sessions.session-reminder-before-start',
+      titleKey: 'sessions.notifications.sessionReminderBeforeStartTitle',
+      bodyKey: 'sessions.notifications.sessionReminderBeforeStartBody',
+      relatedEntityType: 'SESSION',
+      relatedEntityId: 'session_1',
+      category: 'SESSION',
+      idempotencyKey: 'reminder-replay:in-app',
+      payload: {},
+    };
+
+    await sendBySlug.call(setup.service, input);
+    await sendBySlug.call(setup.service, input);
+
+    expect(setup.createNotificationWithCreationState).toHaveBeenCalledTimes(2);
+    expect(setup.notificationRealtimePublisher.publish).toHaveBeenCalledTimes(
+      1,
+    );
+  });
 
   it('queues in-app and email notifications without calling the email provider synchronously', async () => {
     const setup = buildService({ emailEnabled: true });

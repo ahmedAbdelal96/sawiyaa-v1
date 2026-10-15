@@ -1,15 +1,22 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import PublicAcademyProgramDetailScreen from "./PublicAcademyDetailScreen";
 
 const mocks = vi.hoisted(() => ({
-  getManualPaymentMethods: vi.fn(),
   usePublicAcademyProgram: vi.fn(),
   createEnrollment: vi.fn(),
+  getPublicAcademyProgramErrorKey: vi.fn(),
+  routerPush: vi.fn(),
 }));
 
 vi.mock("next-intl", () => ({
   useTranslations: () => (key: string) => key,
+}));
+
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({
+    push: mocks.routerPush,
+  }),
 }));
 
 vi.mock("next/link", () => ({
@@ -34,10 +41,6 @@ vi.mock("@/features/academy-programs/hooks/use-academy-programs", () => ({
   }),
 }));
 
-vi.mock("@/features/academy-programs/api/manual-payments.api", () => ({
-  getManualPaymentMethods: mocks.getManualPaymentMethods,
-}));
-
 vi.mock("@/components/form/input/InputField", () => ({
   default: ({ error: _error, ...props }: Record<string, unknown>) => <input {...props} />,
 }));
@@ -60,7 +63,7 @@ vi.mock("@/components/ui/data-table", () => ({
 }));
 
 vi.mock("@/components/money/PriceDisplay", () => ({
-  PriceDisplay: () => <span>100 EGP</span>,
+  PriceDisplay: () => <span>150 EGP</span>,
 }));
 
 vi.mock("@/features/academy-programs/lib/academy-program-localization", () => ({
@@ -73,7 +76,7 @@ vi.mock("@/features/academy-programs/lib/academy-program-localization", () => ({
 }));
 
 vi.mock("@/features/academy-programs/lib/academy-program-errors", () => ({
-  getPublicAcademyProgramErrorKey: () => "errors.generic",
+  getPublicAcademyProgramErrorKey: mocks.getPublicAcademyProgramErrorKey,
 }));
 
 vi.mock("@/lib/api/http-client", () => ({
@@ -81,7 +84,7 @@ vi.mock("@/lib/api/http-client", () => ({
 }));
 
 vi.mock("../lib/academy-public-price", () => ({
-  mapAcademyPublicPrice: () => ({ amount: "100", currencyCode: "EGP" }),
+  mapAcademyPublicPrice: () => ({ amount: "150", currencyCode: "EGP" }),
 }));
 
 const program = {
@@ -94,7 +97,7 @@ const program = {
   coverImageUrl: null,
   categoryId: null,
   priceStatus: "PAID",
-  priceAmount: "100",
+  priceAmount: "150",
   currencyCode: "EGP",
   registrationOpen: true,
   maxSeats: null,
@@ -109,15 +112,7 @@ const program = {
   sessions: [],
 };
 
-function renderScreen() {
-  return render(<PublicAcademyProgramDetailScreen locale="ar" slug="tdryb1dh" />);
-}
-
-function manualOption() {
-  return screen.queryByRole("option", { name: "public.form.manualPayment" });
-}
-
-describe("Academy customer manual payment availability", () => {
+describe("PublicAcademyProgramDetailScreen — Step 1 Registration", () => {
   beforeEach(() => {
     mocks.usePublicAcademyProgram.mockReturnValue({
       data: program,
@@ -125,48 +120,152 @@ describe("Academy customer manual payment availability", () => {
       isError: false,
       refetch: vi.fn(),
     });
-    mocks.createEnrollment.mockResolvedValue({});
-    mocks.getManualPaymentMethods.mockReset();
+    mocks.createEnrollment.mockReset();
+    mocks.getPublicAcademyProgramErrorKey.mockReturnValue("errors.generic");
+    mocks.routerPush.mockReset();
   });
 
-  it("fails closed while the eligibility request is loading", () => {
-    mocks.getManualPaymentMethods.mockReturnValue(new Promise(() => undefined));
+  it("renders registration fields and price without any payment method dropdown or internal payment terms", () => {
+    render(<PublicAcademyProgramDetailScreen locale="ar" slug="tdryb1dh" />);
 
-    renderScreen();
+    expect(screen.getByPlaceholderText("public.form.fullName")).toBeInTheDocument();
+    expect(screen.getByPlaceholderText("public.form.phoneNumber")).toBeInTheDocument();
+    expect(screen.getByPlaceholderText("public.form.whatsappNumber")).toBeInTheDocument();
+    expect(screen.getByPlaceholderText("public.form.email")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "public.form.submit" })).toBeInTheDocument();
 
-    expect(screen.getByRole("option", { name: "public.form.gatewayPayment" })).toBeInTheDocument();
-    expect(manualOption()).not.toBeInTheDocument();
+    expect(screen.queryByRole("combobox")).not.toBeInTheDocument();
+    expect(screen.queryByRole("option", { name: "public.form.gatewayPayment" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("option", { name: "public.form.manualPayment" })).not.toBeInTheDocument();
   });
 
-  it("shows Manual when the public endpoint returns eligible methods", async () => {
-    mocks.getManualPaymentMethods.mockResolvedValue([{ id: "method-1" }]);
+  it("submits registration without paymentMethod and routes to the dedicated payment step without exposing publicAccessToken", async () => {
+    mocks.createEnrollment.mockResolvedValue({
+      id: "enr-123",
+      publicAccessToken: "secret-token-uuid-999",
+      status: "PENDING_PAYMENT",
+      paymentStatus: "PENDING",
+      program: {
+        id: "program-1",
+        slug: "tdryb1dh",
+        title: "برنامج تجريبي",
+        titleAr: "برنامج تجريبي",
+        titleEn: "Test program",
+      },
+      payment: {
+        id: "pay-1",
+        provider: "PAYMOB",
+        status: "CREATED",
+        amountTotal: "150",
+        currencyCode: "EGP",
+        checkoutUrl: "https://checkout.example/pay",
+        gatewayAvailable: true,
+      },
+    });
 
-    renderScreen();
+    render(<PublicAcademyProgramDetailScreen locale="ar" slug="tdryb1dh" />);
 
-    expect(await screen.findByRole("option", { name: "public.form.manualPayment" })).toBeInTheDocument();
+    fireEvent.change(screen.getByPlaceholderText("public.form.fullName"), {
+      target: { value: "سارة أحمد" },
+    });
+    fireEvent.change(screen.getByPlaceholderText("public.form.phoneNumber"), {
+      target: { value: "+201012345678" },
+    });
+    fireEvent.change(screen.getByPlaceholderText("public.form.email"), {
+      target: { value: "sara@example.com" },
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "public.form.submit" }));
+
+    await waitFor(() => {
+      expect(mocks.createEnrollment).toHaveBeenCalledWith({
+        slug: "tdryb1dh",
+        input: {
+          idempotencyKey: expect.any(String),
+          fullName: "سارة أحمد",
+          phoneNumber: "+201012345678",
+          whatsappNumber: undefined,
+          email: "sara@example.com",
+          sourceLabel: "public-academy-program",
+        },
+      });
+    });
+
+    expect(mocks.routerPush).toHaveBeenCalledWith(
+      "/ar/academy/program-enrollments/enr-123/pay?token=secret-token-uuid-999",
+    );
+    expect(screen.getByText("public.form.success")).toBeInTheDocument();
+    expect(screen.queryByText("secret-token-uuid-999")).not.toBeInTheDocument();
+    expect(screen.queryByText("PENDING_PAYMENT")).not.toBeInTheDocument();
   });
 
-  it("hides Manual when the public endpoint returns no eligible methods", async () => {
-    mocks.getManualPaymentMethods.mockResolvedValue([]);
+  it("explains that an existing email requires sign-in and preserves the course callback", async () => {
+    mocks.getPublicAcademyProgramErrorKey.mockReturnValue(
+      "public.errors.learnerEmailAlreadyExists",
+    );
+    mocks.createEnrollment.mockRejectedValue(new Error("EMAIL_ALREADY_EXISTS"));
 
-    renderScreen();
+    render(<PublicAcademyProgramDetailScreen locale="ar" slug="tdryb1dh" />);
 
-    await waitFor(() => expect(manualOption()).not.toBeInTheDocument());
+    fireEvent.change(screen.getByPlaceholderText("public.form.fullName"), {
+      target: { value: "سارة أحمد" },
+    });
+    fireEvent.change(screen.getByPlaceholderText("public.form.phoneNumber"), {
+      target: { value: "+201012345678" },
+    });
+    fireEvent.change(screen.getByPlaceholderText("public.form.email"), {
+      target: { value: "existing@example.com" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "public.form.submit" }));
+
+    await waitFor(() => {
+      expect(screen.getByText("public.errors.learnerEmailAlreadyExists")).toBeInTheDocument();
+    });
+
+    expect(
+      screen.getByRole("link", { name: "public.errors.loginToContinue" }),
+    ).toHaveAttribute(
+      "href",
+      "/ar/signin/patient?callbackUrl=%2Far%2Facademy%2Ftdryb1dh",
+    );
   });
 
-  it("hides Manual when the backend reports that the Academy domain is disabled", async () => {
-    mocks.getManualPaymentMethods.mockRejectedValue(new Error("MANUAL_PAYMENT_DOMAIN_DISABLED"));
+  it("renders lecture schedule details in a readable mobile card layout", () => {
+    mocks.usePublicAcademyProgram.mockReturnValue({
+      data: {
+        ...program,
+        sessions: [
+          {
+            id: "session-1",
+            programId: "program-1",
+            titleAr: "المحاضرة القادمة",
+            titleEn: "Next lecture",
+            descriptionAr: null,
+            descriptionEn: null,
+            startsAt: "2026-10-30T12:19:00.000Z",
+            endsAt: "2026-10-30T13:49:00.000Z",
+            deliveryMethod: "IN_PERSON",
+            internalDeliveryNote: null,
+            internalDeliveryLink: null,
+            sortOrder: 1,
+            isPublished: true,
+            publishedAt: "2026-10-01T00:00:00.000Z",
+          },
+        ],
+      },
+      isLoading: false,
+      isError: false,
+      refetch: vi.fn(),
+    });
 
-    renderScreen();
+    render(<PublicAcademyProgramDetailScreen locale="ar" slug="tdryb1dh" />);
 
-    await waitFor(() => expect(manualOption()).not.toBeInTheDocument());
-  });
-
-  it("hides Manual when the public eligibility endpoint fails", async () => {
-    mocks.getManualPaymentMethods.mockRejectedValue(new Error("network unavailable"));
-
-    renderScreen();
-
-    await waitFor(() => expect(manualOption()).not.toBeInTheDocument());
+    expect(screen.getByRole("heading", { name: "المحاضرة القادمة" })).toBeInTheDocument();
+    expect(screen.getByText("public.detail.schedule.columns.date")).toBeInTheDocument();
+    expect(screen.getByText("public.detail.schedule.columns.time")).toBeInTheDocument();
+    expect(screen.getByText("public.detail.schedule.columns.deliveryMethod")).toBeInTheDocument();
+    expect(screen.getByText("public.detail.schedule.columns.duration")).toBeInTheDocument();
+    expect(screen.getAllByText("IN_PERSON")).toHaveLength(2);
+    expect(screen.getByText("٩٠ دقيقة")).toBeInTheDocument();
   });
 });

@@ -276,11 +276,11 @@ export const academySeedModule: SeedModule = {
           academyLearnerId: enrollment.academyLearnerId,
           userId: enrollment.userId,
           publicAccessToken: enrollment.token,
-          status: enrollment.paymentStatus === PaymentStatus.PENDING
-            ? AcademyProgramEnrollmentStatus.PENDING_PAYMENT
-            : AcademyProgramEnrollmentStatus.CONFIRMED,
+          status: enrollment.paymentStatus === PaymentStatus.CAPTURED
+            ? AcademyProgramEnrollmentStatus.CONFIRMED
+            : AcademyProgramEnrollmentStatus.PENDING_PAYMENT,
           paymentStatus: enrollment.paymentStatus,
-          confirmedAt: enrollment.paymentStatus === PaymentStatus.PENDING ? null : now,
+          confirmedAt: enrollment.paymentStatus === PaymentStatus.CAPTURED ? now : null,
           selectedCurrencyCode: 'EGP',
           selectedAmountSnapshot: enrollment.amount,
           submittedCountry: 'EG',
@@ -294,11 +294,11 @@ export const academySeedModule: SeedModule = {
           academyLearnerId: enrollment.academyLearnerId,
           userId: enrollment.userId,
           publicAccessToken: enrollment.token,
-          status: enrollment.paymentStatus === PaymentStatus.PENDING
-            ? AcademyProgramEnrollmentStatus.PENDING_PAYMENT
-            : AcademyProgramEnrollmentStatus.CONFIRMED,
+          status: enrollment.paymentStatus === PaymentStatus.CAPTURED
+            ? AcademyProgramEnrollmentStatus.CONFIRMED
+            : AcademyProgramEnrollmentStatus.PENDING_PAYMENT,
           paymentStatus: enrollment.paymentStatus,
-          confirmedAt: enrollment.paymentStatus === PaymentStatus.PENDING ? null : now,
+          confirmedAt: enrollment.paymentStatus === PaymentStatus.CAPTURED ? now : null,
           selectedCurrencyCode: 'EGP',
           selectedAmountSnapshot: enrollment.amount,
           submittedCountry: 'EG',

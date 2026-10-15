@@ -24,6 +24,8 @@ import { NotificationPushExecutionService } from '@modules/notifications/service
 import { NotificationRealtimePublisher } from '@modules/notifications/services/notification-realtime.publisher';
 import { NotificationRetryPolicyService } from '@modules/notifications/services/notification-retry-policy.service';
 import { NotificationSchedulerCoreService } from '@modules/notifications/services/notification-scheduler-core.service';
+import { ProviderCapacityService } from '@modules/notifications/services/provider-capacity.service';
+import { GlobalProviderCapacityCoordinator } from '@modules/notifications/services/global-provider-capacity-coordinator.service';
 import { NotificationQueueWorkerService } from './notification-worker.service';
 import { DailyAttendanceQueueWorkerService } from './daily-attendance-worker.service';
 import { SessionCodeGeneratorService } from '@modules/sessions/services/session-code-generator.service';
@@ -71,6 +73,8 @@ import videoConfig from '@config/video.config';
     NotificationRealtimePublisher,
     NotificationRetryPolicyService,
     NotificationSchedulerCoreService,
+    GlobalProviderCapacityCoordinator,
+    ProviderCapacityService,
     NotificationQueueWorkerService,
     SessionCodeGeneratorService,
     SessionRepository,

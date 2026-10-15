@@ -10,6 +10,19 @@ export const ACADEMY_PROGRAM_ENROLLMENT_SORT_FIELDS = [
 export type AcademyProgramEnrollmentSortField =
   (typeof ACADEMY_PROGRAM_ENROLLMENT_SORT_FIELDS)[number];
 
+export const ACADEMY_PROGRAM_ENROLLMENT_SEGMENTS = [
+  'ALL',
+  'FOLLOW_UP',
+  'REQUIRES_LOGIN',
+  'PAYMENT_ISSUES',
+  'CONFIRMED',
+  'COMPLETED',
+  'CANCELLED',
+] as const;
+
+export type AcademyProgramEnrollmentSegment =
+  (typeof ACADEMY_PROGRAM_ENROLLMENT_SEGMENTS)[number];
+
 export class ListAdminAcademyProgramEnrollmentsDto {
   @IsOptional()
   @Type(() => Number)
@@ -24,6 +37,10 @@ export class ListAdminAcademyProgramEnrollmentsDto {
   @Min(1)
   @Max(100)
   limit?: number = 12;
+
+  @IsOptional()
+  @IsIn(ACADEMY_PROGRAM_ENROLLMENT_SEGMENTS)
+  segment?: AcademyProgramEnrollmentSegment = 'ALL';
 
   @IsOptional()
   @IsEnum(AcademyProgramEnrollmentStatus)

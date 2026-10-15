@@ -4,8 +4,10 @@
     "publicDescription": "Browse the platform's training courses and enroll in a course that fits your goals.",
     "publicDetailTitle": "Training course details",
     "publicDetailDescription": "Review the course details, then complete your registration in a few quick steps.",
-    "publicPaymentReturnTitle": "Training payment return",
-    "publicPaymentReturnDescription": "We will confirm your enrollment with the backend before showing the final result.",
+    "publicPaymentReturnTitle": "Payment and registration status",
+    "publicPaymentReturnDescription": "Verifying your payment and confirming your training registration.",
+    "publicPaymentTitle": "Choose a payment method",
+    "publicPaymentDescription": "Choose a payment method to complete your training registration.",
     "adminTitle": "Training management",
     "adminDescription": "Create and manage public courses, enrollments, and payment follow-up.",
     "adminDetailTitle": "Training course management",
@@ -22,8 +24,8 @@
     "patientDescription": "View your Training course enrollments and their current status.",
     "patientDetailTitle": "Training enrollment details",
     "patientDetailDescription": "Review your enrollment, schedule, attendance, and certificate status.",
-    "patientPayTitle": "Continue Training payment",
-    "patientPayDescription": "Continue a pending Training course payment securely."
+    "patientPayTitle": "Complete training payment",
+    "patientPayDescription": "Choose a payment method to complete your training registration."
   },
   "errors": {
     "generic": "Something went wrong while processing your request.",
@@ -48,21 +50,21 @@
       "PRIVATE": "Private"
     },
     "enrollment": {
-      "PENDING_PAYMENT": "Pending payment",
+      "PENDING_PAYMENT": "Awaiting payment",
       "PAID": "Paid",
       "CONFIRMED": "Confirmed",
-      "PAYMENT_FAILED": "Payment failed",
+      "PAYMENT_FAILED": "Payment incomplete",
       "CANCELLED": "Cancelled",
       "REFUNDED": "Refunded",
       "UNKNOWN": "Unknown status"
     },
     "payment": {
-      "CREATED": "Created",
-      "PENDING": "Pending",
-      "REQUIRES_ACTION": "Requires action",
+      "CREATED": "Awaiting payment",
+      "PENDING": "Under review",
+      "REQUIRES_ACTION": "Awaiting payment",
       "AUTHORIZED": "Authorized",
-      "CAPTURED": "Captured",
-      "FAILED": "Failed",
+      "CAPTURED": "Paid",
+      "FAILED": "Payment incomplete",
       "CANCELLED": "Cancelled",
       "EXPIRED": "Expired",
       "REFUND_PENDING": "Refund pending",
@@ -77,11 +79,13 @@
       "generic": "Something went wrong while loading this course.",
       "notFound": "The selected course could not be found.",
       "registrationClosed": "Registration is currently closed for this course.",
-      "capacityReached": "This course has reached its target trainee count.",
+      "capacityReached": "This course has reached its available seat capacity.",
       "missingPricing": "This course is missing pricing information right now.",
       "unsupportedCurrency": "This course is not available in the selected currency.",
-      "alreadyEnrolled": "This trainee is already enrolled in the course.",
-      "paymentUnavailable": "Payment provider is temporarily unavailable. Please try again later."
+      "alreadyEnrolled": "You are already enrolled in this course.",
+      "learnerEmailAlreadyExists": "This email is already linked to an account. Sign in first, then book the course from your account.",
+      "loginToContinue": "Sign in to continue",
+      "paymentUnavailable": "Payment service is temporarily unavailable. Please try again later."
     },
     "hero": {
       "title": "Training courses",
@@ -120,10 +124,10 @@
       "startsAt": "Starts at",
       "endsAt": "Ends at",
       "lectures": "{count} lectures",
-      "seats": "{count} target trainees",
-      "noSeatsLimit": "No target set",
-      "targetLearners": "{count} target trainees",
-      "noTargetSet": "No target set",
+      "seats": "{count} seats",
+      "noSeatsLimit": "Open for registration",
+      "targetLearners": "{count} seats",
+      "noTargetSet": "Open for registration",
       "noEnrollments": "No enrollments yet"
     },
     "empty": {
@@ -138,7 +142,7 @@
       "badge": "Training course",
       "noShortDescription": "No short description available.",
       "noFullDescription": "No detailed description available.",
-      "noDate": "Date not set",
+      "noDate": "Coming soon",
       "free": "Free",
       "notFound": {
         "title": "Training course not found",
@@ -146,8 +150,8 @@
         "back": "Back to training courses"
       },
       "summary": {
-        "title": "Training course summary",
-        "price": "Price",
+        "title": "Training details",
+        "price": "Registration fee",
         "status": "Status",
         "published": "Published",
         "draft": "Draft",
@@ -163,29 +167,29 @@
         "deliveryMethod": "Delivery method",
         "startDate": "Start date",
         "endDate": "End date",
-        "targetLearners": "Target trainees",
+        "targetLearners": "{count} seats",
         "notSet": "Not set"
       },
       "schedule": {
         "title": "Lecture schedule",
-        "subtitle": "Review the saved lecture timings before you register.",
+        "subtitle": "Review the scheduled lecture dates and delivery format.",
         "count": "{count} lecture(s)",
         "columns": {
           "order": "#",
           "title": "Lecture",
-          "deliveryMethod": "Delivery method",
+          "deliveryMethod": "Format",
           "date": "Date",
           "time": "Time",
           "duration": "Duration"
         },
         "empty": {
-          "heading": "No lecture schedule yet",
-          "note": "The course is still being prepared. Check back once the full schedule is ready."
+          "heading": "Lecture schedule coming soon",
+          "note": "Detailed lecture timings for this training are currently being prepared."
         },
-        "targetLearners": "Target trainees: {count}",
+        "targetLearners": "Available seats: {count}",
         "item": {
           "order": "Lecture {order}",
-          "noTitle": "Untitled lecture",
+          "noTitle": "Training lecture",
           "startsAt": "Starts at",
           "endsAt": "Ends at"
         }
@@ -194,54 +198,54 @@
         "enrollments": "{count} enrollment(s)"
       },
       "howItWorks": {
-        "title": "How it works",
-        "step1": "Fill in the registration form with the basic contact details.",
-        "step2": "Complete the payment step if the course is paid.",
-        "step3": "Use the enrollment reference to follow up with the training team."
+        "title": "Registration steps",
+        "step1": "Enter your basic contact details and press “Register now”.",
+        "step2": "Choose your preferred payment method in the next step.",
+        "step3": "Complete payment to confirm your seat in the training."
       }
     },
     "form": {
-      "title": "Complete registration",
-      "subtitle": "Keep the form short and simple so registration stays fast.",
-      "identityNote": "If you are signed in, we will reuse your saved account details where available.",
-      "restricted": "Admin accounts cannot enroll as trainees. Please use a patient or practitioner account.",
+      "title": "Register for the training",
+      "subtitle": "Enter your details to reserve your seat and proceed to choose a payment method.",
+      "identityNote": "We pre-filled your saved account details where available.",
+      "restricted": "Admin accounts cannot enroll as trainees. Please use a standard account.",
       "fullName": "Full name",
       "phoneNumber": "Phone number",
-      "whatsappNumber": "WhatsApp number",
-      "email": "Email address",
+      "whatsappNumber": "WhatsApp number (optional)",
+      "email": "Email address (optional)",
       "paymentMethod": "Payment method",
-      "gatewayPayment": "Secure online payment",
-      "manualPayment": "Manual payment",
+      "gatewayPayment": "Bank card",
+      "manualPayment": "Direct transfer",
       "submit": "Register now",
-      "submitting": "Registering...",
-      "priceLabel": "Subscription price",
+      "submitting": "Saving your details...",
+      "priceLabel": "Training price",
       "priceEgp": "Price in EGP",
       "priceUsd": "Price in USD",
       "closed": "Registration is closed for this course.",
       "closedTitle": "Registration closed",
       "closedNote": "This course is not currently accepting new enrollments.",
-      "noteTitle": "Automatic pricing",
-      "noteBody": "The platform resolves one final price for your account on the server. You do not need to choose a country here.",
+      "noteTitle": "Training fee",
+      "noteBody": "After saving your details, you will choose your preferred payment method to complete registration.",
       "validation": {
-        "required": "Please enter your name and phone number first."
+        "required": "Please enter your full name and phone number to continue."
       },
-      "success": "Your registration has been created successfully."
+      "success": "Your details have been saved. Choose a payment method to complete your registration."
     },
     "result": {
-      "eyebrow": "Registration created",
-      "title": "Registration result",
+      "eyebrow": "Next step",
+      "title": "Your details have been saved. Choose a payment method to complete your registration.",
       "status": "Current status: {status}",
-      "reference": "Reference",
-      "payNow": "Pay now",
-      "waiting": "Your registration is being prepared.",
+      "reference": "Registration",
+      "payNow": "Choose payment method",
+      "waiting": "Waiting for payment completion to confirm your seat.",
       "paymentStatus": "Payment status",
       "program": "Training course",
-      "continuePayment": "Continue to payment",
-      "continueManualPayment": "Open manual payment instructions",
-      "preSubmitTitle": "Registration will be created after submission",
-      "preSubmitNote": "You will receive a secure payment step after the backend creates your enrollment.",
-      "pendingState": "Pending submission",
-      "automatic": "Automatic",
+      "continuePayment": "Choose payment method",
+      "continueManualPayment": "Choose payment method",
+      "preSubmitTitle": "Two steps to complete registration",
+      "preSubmitNote": "Register your details first, then select your preferred payment method on the next screen.",
+      "pendingState": "Next step",
+      "automatic": "Available after registration",
       "joinAccess": {
         "title": "Join access",
         "meeting": "Open meeting link",
@@ -253,49 +257,49 @@
     "error": {
       "heading": "We could not verify this payment",
       "note": "Please return to the course page and try again.",
-      "missing": "The enrollment details are missing."
+      "missing": "The enrollment details are incomplete."
     },
     "verifying": {
-      "heading": "Checking your payment...",
-      "note": "We are confirming the latest backend status before showing the final result.",
-      "polling": "The backend is still updating the enrollment status. Please wait a moment."
+      "heading": "Verifying your payment...",
+      "note": "Please wait a moment while we confirm your payment status.",
+      "polling": "Updating your registration status, please wait a moment..."
     },
     "pending": {
-      "heading": "Your payment is still being reviewed",
-      "note": "If the payment was just completed, please refresh the page or try again from the course page."
+      "heading": "Your payment is being reviewed",
+      "note": "If you just completed payment, please refresh in a moment or return to choose a payment method."
     },
     "confirmed": {
-      "heading": "Enrollment confirmed",
-      "note": "Your payment has been confirmed by the backend.",
-      "cta": "Enrollment confirmed"
+      "heading": "Your registration is confirmed",
+      "note": "Your payment has been received and your seat in the training is confirmed.",
+      "cta": "Registration confirmed"
     },
     "failed": {
-      "heading": "Payment could not be confirmed",
-      "note": "You can try the payment again or return to the course details."
+      "heading": "Payment was not completed",
+      "note": "You can choose another payment method or try again to complete your registration."
     },
     "canceled": {
       "heading": "Payment was canceled",
-      "note": "You can return to the course page and continue when you're ready."
+      "note": "You can still choose a payment method and complete your registration."
     },
     "expired": {
-      "heading": "The payment lecture expired",
-      "note": "Please start the payment again to continue your enrollment."
+      "heading": "Payment session expired",
+      "note": "Please try again to complete payment and confirm your registration."
     },
     "unavailable": {
-      "heading": "Payment link unavailable",
-      "note": "We could not load a valid payment link for this enrollment."
+      "heading": "Payment service unavailable",
+      "note": "Please try again or choose another payment method."
     },
     "details": {
       "program": "Training course",
       "reference": "Reference",
-      "enrollmentStatus": "Enrollment status",
+      "enrollmentStatus": "Registration status",
       "paymentStatus": "Payment status",
-      "providerReference": "Provider reference",
+      "providerReference": "Transaction number",
       "unknown": "Unknown"
     },
     "backToAcademy": "Back to training courses",
-    "backToProgram": "Back to course",
-    "retryPayment": "Retry payment",
+    "backToProgram": "Back to course page",
+    "retryPayment": "Choose payment method",
     "refresh": "Refresh status"
   },
   "programs": {
@@ -406,6 +410,7 @@
       "archiveReasonRequired": "Please enter a reason before archiving the course.",
       "enrollmentAlreadyExists": "This trainee is already enrolled in the course.",
       "learnerContactAlreadyExists": "This trainee contact is already linked to another trainee.",
+      "learnerEmailAlreadyExists": "This email is already linked to an account. Sign in first, then book the course from your account.",
       "coverFileRequired": "Please choose a cover image before uploading.",
       "coverInvalidType": "Only JPG, PNG, or WebP cover images are allowed.",
       "coverFileTooLarge": "The cover image file is too large. Maximum size is 10 MB.",
@@ -629,11 +634,22 @@
       "export": "Export",
       "addLearner": "Add trainee",
       "summary": {
-        "total": "Total enrollments",
+        "total": "Total enrolled",
+        "confirmed": "Confirmed enrolled",
+        "pending": "Awaiting payment/review",
+        "requiresLogin": "Needs sign-in",
+        "target": "Target & capacity",
         "page": "Current page",
         "selected": "Selected rows"
       },
       "selectionCount": "{count} selected",
+      "openDetail": "View details",
+      "registrationAttempts": {
+        "title": "Registration attempts that need sign-in",
+        "note": "These attempts are saved for follow-up. They are not confirmed enrollments and do not reserve a course seat.",
+        "empty": "No registration attempts need sign-in.",
+        "source": "Source"
+      },
       "filters": {
         "all": "All",
         "search": "Search",
@@ -641,6 +657,15 @@
         "enrollmentStatus": "Enrollment status",
         "paymentStatus": "Payment status",
         "country": "Country"
+      },
+      "segments": {
+        "ALL": "All registrations",
+        "FOLLOW_UP": "Needs follow-up",
+        "REQUIRES_LOGIN": "Needs sign-in",
+        "PAYMENT_ISSUES": "Payment issues",
+        "CONFIRMED": "Confirmed",
+        "COMPLETED": "Completed",
+        "CANCELLED": "Cancelled or expired"
       },
       "columns": {
         "fullName": "Trainee",
@@ -761,7 +786,11 @@
         "edit": "Edit trainee",
         "complete": "Mark completed",
         "certify": "Issue certificate",
-        "cancel": "Cancel enrollment"
+        "cancel": "Cancel enrollment",
+        "confirmPayment": "Confirm payment"
+      },
+      "confirmPayment": {
+        "confirm": "This will record the payment and confirm the enrollment under your current account. Confirm that payment was actually received?"
       },
       "drawer": {
         "eyebrow": "Trainee details",
@@ -786,6 +815,7 @@
         "completeSuccess": "Enrollment marked as completed.",
         "certifySuccess": "Certificate issued successfully.",
         "manualCreateSuccess": "Manual enrollment created successfully.",
+        "confirmPaymentSuccess": "Payment confirmed and enrollment updated under your current account.",
         "manualCreateFailure": "We could not create the manual enrollment right now.",
         "bulkCancelSuccess": "Selected enrollments were cancelled.",
         "bulkCompleteSuccess": "Selected enrollments were marked completed.",
@@ -1268,6 +1298,13 @@
           "CANCELLED": "Cancelled",
           "EXPIRED": "Expired"
         },
+        "registrationStatuses": {
+          "PENDING_PAYMENT": "Awaiting payment",
+          "REQUIRES_LOGIN": "Needs sign-in",
+          "PAYMENT_ISSUE": "Payment issue",
+          "CONVERTED": "Converted to confirmed trainee",
+          "DUPLICATE": "Duplicate registration"
+        },
         "certificateStatuses": {
           "NOT_ISSUED": "Not issued",
           "ISSUED": "Issued",
@@ -1503,86 +1540,111 @@
       }
     },
     "pay": {
-      "badge": "Payment",
-      "title": "Continue your training payment",
-      "note": "We will confirm the latest backend state before opening the hosted checkout.",
-      "program": "Training course",
-      "status": "Enrollment status",
+      "badge": "Complete registration",
+      "title": "Choose a payment method",
+      "note": "Your details have been saved. Choose a payment method to complete your registration.",
+      "program": "Training program",
+      "status": "Registration status",
       "paymentStatus": "Payment status",
-      "amount": "Amount",
-      "hostedCheckoutNote": "This opens the secure payment flow provided by the backend.",
-      "manual": {
-        "title": "Pay by bank transfer",
-        "note": "Use the account details below, then upload one clear proof image. Your enrollment stays reserved while the team reviews it.",
-        "method": "Payment method",
-        "accountHolder": "Account holder",
-        "accountIdentifier": "Account or wallet",
-        "senderName": "Sender account name",
-        "notes": "Optional note",
-        "submit": "Submit proof",
-        "reviewPending": "Proof review is in progress",
-        "rejected": "Your proof was rejected. Reason: {reason} You may submit a new proof if the payment window is still open.",
-        "success": "Proof submitted. Your enrollment remains reserved while it is reviewed.",
-        "failed": "We could not submit the proof right now.",
-        "required": "Choose a method, enter the sender name, and attach a proof image.",
-        "invalidFile": "Use one JPG, PNG, or WebP image up to 5 MB.",
-        "loadFailed": "Manual payment methods could not be loaded.",
-        "unavailable": "No manual payment method is available for your country."
+      "amount": "Amount to pay",
+      "hostedCheckoutNote": "All transactions are encrypted and processed through a secure banking checkout.",
+      "methods": {
+        "title": "Payment method",
+        "subtitle": "Select your preferred payment option",
+        "cardTitle": "Bank card",
+        "cardSubtitle": "Visa / Mastercard / Debit or credit card",
+        "cardDescription": "Pay securely using your bank card to confirm your seat in the training immediately.",
+        "cardTrust": "Encrypted and secure card payment — your registration is confirmed as soon as payment completes.",
+        "cardCta": "Pay by card",
+        "transferSubtitle": "Direct transfer and receipt upload",
+        "copy": "Copy",
+        "copied": "Copied"
       },
-      "openCheckout": "Open checkout",
+      "manual": {
+        "title": "Transfer details",
+        "note": "Transfer the required amount to the destination account below, then upload a screenshot or photo of your transfer receipt for review.",
+        "method": "Payment method",
+        "accountHolder": "Account holder name",
+        "accountIdentifier": "Transfer amount to",
+        "stepsTitle": "Next steps to complete payment",
+        "step1": "Open {method}.",
+        "step2": "Transfer the shown amount to the account above.",
+        "step3": "Keep a screenshot or photo of your transfer receipt.",
+        "step4": "Upload the transfer receipt below to send it for review.",
+        "senderName": "Sender name or account",
+        "notes": "Additional notes (optional)",
+        "proofLabel": "Payment proof image",
+        "proofHint": "JPG, PNG, or WebP image up to 5 MB",
+        "chooseFile": "Choose receipt image",
+        "changeFile": "Change image",
+        "submit": "Send payment proof",
+        "submitting": "Sending proof...",
+        "reviewPending": "Your payment proof has been received and will be reviewed.",
+        "reviewPendingNote": "Your transfer proof has been saved and your seat remains reserved while our team reviews and confirms your payment.",
+        "rejected": "Your previous payment proof could not be accepted. Reason: {reason} You can upload a clearer transfer receipt below.",
+        "success": "Your payment proof has been received and will be reviewed.",
+        "failed": "We could not send your payment proof right now. Please try again.",
+        "submissionsLoadFailed": "We could not refresh the payment proof status right now. You can continue choosing a payment method and try again.",
+        "required": "Please enter the sender name and attach your payment proof image.",
+        "invalidFile": "Please select a JPG, PNG, or WebP image up to 5 MB.",
+        "loadFailed": "Some payment methods could not be loaded.",
+        "unavailable": "No payment methods are currently available for this training. Please try again later or contact support."
+      },
+      "openCheckout": "Pay by card",
       "error": {
-        "title": "Could not load payment details",
-        "note": "We could not reach the payment service right now.",
+        "title": "Could not load registration details",
+        "note": "We could not load the payment page right now. Please try again.",
         "retry": "Retry"
       },
       "notPayable": {
-        "title": "Payment is not available",
-        "note": "This enrollment is not currently waiting for payment.",
-        "back": "Back to enrollment"
+        "title": "Payment is not currently required",
+        "note": "This registration does not require a payment right now.",
+        "back": "Back to training"
       },
       "summary": {
-        "title": "Payment summary",
-        "description": "Review the course, amount, and payment state before you continue.",
-        "program": "Training course",
-        "enrollmentStatus": "Enrollment status",
+        "title": "Registration summary",
+        "description": "Review the training details and required amount before completing payment.",
+        "program": "Training program",
+        "enrollmentStatus": "Registration status",
         "paymentStatus": "Payment status",
-        "amount": "Amount"
+        "amount": "Amount to pay",
+        "learner": "Participant"
       },
       "state": {
         "payable": {
-          "title": "Payment is ready",
-          "note": "Your registration is still waiting. Continue to secure checkout to complete payment.",
-          "cta": "Continue to checkout"
+          "title": "Choose a payment method",
+          "note": "Your details have been saved. Choose a payment method to complete your registration.",
+          "cta": "Pay by card"
         },
         "confirmed": {
-          "title": "Payment already confirmed",
-          "note": "This enrollment is already confirmed in the backend. You can return to the enrollment details.",
-          "cta": "Back to enrollment"
+          "title": "Your training registration is confirmed",
+          "note": "Your payment is complete and your seat in this training is confirmed.",
+          "cta": "Back to training"
         },
         "pending": {
-          "title": "Payment is still pending",
-          "note": "The backend is still reviewing the latest payment status. Refresh or try again if needed.",
-          "cta": "Try again"
+          "title": "Your details have been saved. Choose a payment method to complete your registration.",
+          "note": "Select your preferred payment method from the list to complete your registration.",
+          "cta": "Pay by card"
         },
         "failed": {
-          "title": "Payment failed",
-          "note": "The last payment attempt did not complete. You can try again from the secure checkout.",
-          "cta": "Try again"
+          "title": "Previous payment attempt did not complete",
+          "note": "You can try paying by card again or select another available payment method.",
+          "cta": "Pay by card"
         },
         "expired": {
-          "title": "Payment lecture expired",
-          "note": "The payment link is no longer valid. Refresh the page to get a new checkout link.",
-          "cta": "Refresh status"
+          "title": "Previous payment session expired",
+          "note": "You can continue now to start a new payment session.",
+          "cta": "Pay by card"
         },
         "cancelled": {
-          "title": "Payment was cancelled",
-          "note": "You can return to the enrollment and continue when you are ready.",
-          "cta": "Back to enrollment"
+          "title": "This registration was cancelled",
+          "note": "You can return to the training page to register again.",
+          "cta": "Back to training"
         },
         "unavailable": {
-          "title": "Payment is unavailable",
-          "note": "This enrollment cannot continue to checkout right now.",
-          "cta": "Back to enrollment"
+          "title": "No payment methods currently available",
+          "note": "No enabled payment methods are available for this training right now. Please try again later.",
+          "cta": "Back to training"
         }
       }
     }

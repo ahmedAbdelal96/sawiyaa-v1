@@ -5,6 +5,7 @@ import PatientAcademyProgramEnrollmentPayScreen from "@/features/academy-program
 
 type Props = {
   params: Promise<{ locale: string; id: string }>;
+  searchParams?: Promise<{ token?: string }>;
 };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
@@ -19,9 +20,18 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   });
 }
 
-export default async function PatientAcademyProgramEnrollmentPayPage({ params }: Props) {
+export default async function PatientAcademyProgramEnrollmentPayPage({
+  params,
+  searchParams,
+}: Props) {
   const { locale, id } = await params;
+  const resolvedSearchParams = searchParams ? await searchParams : undefined;
   setRequestLocale(locale);
 
-  return <PatientAcademyProgramEnrollmentPayScreen enrollmentId={id} />;
+  return (
+    <PatientAcademyProgramEnrollmentPayScreen
+      enrollmentId={id}
+      token={resolvedSearchParams?.token}
+    />
+  );
 }

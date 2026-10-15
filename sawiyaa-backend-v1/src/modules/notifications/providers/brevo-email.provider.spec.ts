@@ -77,6 +77,46 @@ describe('BrevoEmailProvider', () => {
       expect(parsed).not.toHaveProperty('text');
     });
 
+    it('reuses the deterministic idempotency key and exposes accepted provider metadata', async () => {
+      fetchMock.mockResolvedValueOnce({
+        ok: true,
+        status: 201,
+        json: () => Promise.resolve({ messageId: 'brevo-idempotent-1' }),
+      } as unknown as Response);
+
+      const provider = makeProvider({
+        'notification.mail.from': 'no-reply@fayed.dev',
+        'notification.brevo.apiKey': 'xkeys-test-12345',
+        'notification.brevo.apiUrl': 'https://api.brevo.com',
+      });
+
+      const result = await provider.sendEmail({
+        to: 'practitioner@fayed.local',
+        subject: 'Replay-safe notification',
+        body: 'Body',
+        operationKey: 'notification:notification-1',
+        idempotencyKey: 'notification-1',
+      });
+
+      expect(result).toEqual(
+        expect.objectContaining({
+          delivered: true,
+          providerMessageId: 'brevo-idempotent-1',
+          providerOutcome: 'ACCEPTED',
+          httpStatus: 201,
+          responsePayload: expect.objectContaining({
+            messageId: 'brevo-idempotent-1',
+          }),
+        }),
+      );
+      const calledWith = fetchMock.mock.calls[0]?.[1] as { body?: string };
+      expect(JSON.parse(calledWith.body!)).toEqual(
+        expect.objectContaining({
+          headers: { 'Idempotency-Key': 'notification-1' },
+        }),
+      );
+    });
+
     it('sends htmlContent when html body is provided', async () => {
       fetchMock.mockResolvedValueOnce({
         ok: true,
@@ -326,6 +366,64 @@ describe('BrevoEmailProvider', () => {
         deliveryTarget: 'practitioner@fayed.local',
         error: 'BREVO_SEND_FAILED',
       });
+    });
+
+    it('classifies an operation-context network failure as UNKNOWN', async () => {
+      fetchMock.mockRejectedValueOnce(new Error('AbortError'));
+
+      const provider = makeProvider({
+        'notification.mail.from': 'no-reply@fayed.dev',
+        'notification.brevo.apiKey': 'xkeys-test-12345',
+        'notification.brevo.apiUrl': 'https://api.brevo.com',
+      });
+
+      const result = await provider.sendEmail({
+        to: 'practitioner@fayed.local',
+        subject: 'Uncertain notification',
+        body: 'Body',
+        operationKey: 'notification:notification-2',
+        idempotencyKey: 'notification-2',
+      });
+
+      expect(result).toEqual(
+        expect.objectContaining({
+          delivered: false,
+          error: 'BREVO_SEND_FAILED',
+          providerOutcome: 'UNKNOWN',
+        }),
+      );
+    });
+
+    it('classifies Brevo 429 and preserves Retry-After metadata', async () => {
+      fetchMock.mockResolvedValueOnce({
+        ok: false,
+        status: 429,
+        headers: {
+          get: (name: string) => (name === 'retry-after' ? '45' : null),
+        },
+        text: () => Promise.resolve('{"code":"rate_limit"}'),
+      } as unknown as Response);
+
+      const provider = makeProvider({
+        'notification.mail.from': 'no-reply@fayed.dev',
+        'notification.brevo.apiKey': 'xkeys-test-12345',
+      });
+      const result = await provider.sendEmail({
+        to: 'practitioner@fayed.local',
+        subject: 'Rate limited',
+        body: 'Body',
+        operationKey: 'notification:rate-limited',
+      });
+
+      expect(result).toEqual(
+        expect.objectContaining({
+          providerOutcome: 'FAILED',
+          errorCategory: 'RATE_LIMITED',
+          providerErrorCode: 'rate_limit',
+          retryAfterMs: 45_000,
+          httpStatus: 429,
+        }),
+      );
     });
   });
 

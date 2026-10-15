@@ -35,6 +35,10 @@ export async function listManualPaymentSubmissions() {
   const response = await httpClient.get<ApiPayload<{ items: ManualAdminSubmission[] }>>("/manual-payments/admin/submissions", { params: { status: "UNDER_REVIEW" } });
   return extractData(response.data).items;
 }
+export async function viewManualPaymentProof(id: string) {
+  const response = await httpClient.get<Blob>(`/manual-payments/admin/submissions/${id}/proof`, { responseType: "blob" });
+  return response.data;
+}
 export async function approveManualPayment(id: string) {
   const response = await httpClient.post<ApiPayload<{ item: ManualAdminSubmission }>>(`/manual-payments/admin/submissions/${id}/approve`);
   return extractData(response.data).item;

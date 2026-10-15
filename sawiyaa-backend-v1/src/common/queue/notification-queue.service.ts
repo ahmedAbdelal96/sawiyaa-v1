@@ -9,13 +9,14 @@ import {
   Queue,
   Worker,
   type ConnectionOptions,
-  type Job,
   type Processor,
   type WorkerOptions,
 } from 'bullmq';
 import {
   NOTIFICATION_DELIVERY_JOB_NAME,
-  NOTIFICATIONS_QUEUE_NAME,
+  notificationQueueLaneForChannel,
+  notificationQueueName,
+  type NotificationQueueLane,
   notificationJobId,
   type NotificationDeliveryJobData,
   type NotificationQueuePublishResult,
@@ -51,7 +52,10 @@ type QueueRuntimeState = {
 @Injectable()
 export class NotificationQueueService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(NotificationQueueService.name);
-  private queue: Queue<NotificationDeliveryJobData> | null = null;
+  private readonly queues = new Map<
+    NotificationQueueLane,
+    Queue<NotificationDeliveryJobData>
+  >();
   private connection: ConnectionOptions | null = null;
   private readonly runtimeState: QueueRuntimeState = {
     lastEnqueuedAt: null,
@@ -64,7 +68,9 @@ export class NotificationQueueService implements OnModuleInit, OnModuleDestroy {
 
   onModuleInit(): void {
     if (!this.isEnabled()) {
-      this.logger.log('Notification BullMQ queue is disabled; DB fallback remains active');
+      this.logger.log(
+        'Notification BullMQ queue is disabled; DB fallback remains active',
+      );
       return;
     }
 
@@ -78,29 +84,32 @@ export class NotificationQueueService implements OnModuleInit, OnModuleDestroy {
     // Producers/health checks fail fast when Redis is unavailable. Workers use
     // their own connection with BullMQ's required unlimited request retry mode.
     this.connection = this.buildConnection(redisUrl, 1);
-    this.queue = new Queue<NotificationDeliveryJobData>(
-      NOTIFICATIONS_QUEUE_NAME,
-      {
-        connection: this.connection,
-        prefix: this.prefix(),
-        skipWaitingForReady: true,
-        defaultJobOptions: {
-          // Provider/domain retry policy remains in the Notification row. A
-          // BullMQ retry is reserved for an infrastructure exception only.
-          attempts: 1,
-          removeOnComplete: { age: 86_400, count: 10_000 },
-          removeOnFail: { age: 604_800, count: 10_000 },
+    for (const lane of ['DEFAULT', 'EMAIL', 'PUSH'] as const) {
+      const queue = new Queue<NotificationDeliveryJobData>(
+        notificationQueueName(lane),
+        {
+          connection: this.connection,
+          prefix: this.prefix(),
+          skipWaitingForReady: true,
+          defaultJobOptions: {
+            // Provider/domain retry policy remains in the Notification row. A
+            // BullMQ retry is reserved for an infrastructure exception only.
+            attempts: 1,
+            removeOnComplete: { age: 86_400, count: 10_000 },
+            removeOnFail: { age: 604_800, count: 10_000 },
+          },
         },
-      },
-    );
-    this.queue.on('error', (error) => {
-      this.recordWorkerError(error);
-      this.logger.warn(
-        `Notification queue connection is degraded; DB fallback remains active (${this.safeErrorMessage(error)})`,
       );
-    });
+      queue.on('error', (error) => {
+        this.recordWorkerError(error);
+        this.logger.warn(
+          `Notification queue connection is degraded; DB fallback remains active (${this.safeErrorMessage(error)})`,
+        );
+      });
+      this.queues.set(lane, queue);
+    }
     this.logger.log(
-      `Notification BullMQ queue configured (queue=${NOTIFICATIONS_QUEUE_NAME}, prefix=${this.prefix()}, concurrency=${this.workerConcurrency()})`,
+      `Notification BullMQ queues configured (lanes=EMAIL,PUSH,DEFAULT, prefix=${this.prefix()}, concurrency=${this.workerConcurrency()})`,
     );
   }
 
@@ -109,12 +118,14 @@ export class NotificationQueueService implements OnModuleInit, OnModuleDestroy {
   }
 
   isEnabled(): boolean {
-    return Boolean(this.configService.get<boolean>('notificationQueue.enabled'));
+    return Boolean(
+      this.configService.get<boolean>('notificationQueue.enabled'),
+    );
   }
 
   async enqueueNotification(
     notificationId: string,
-    metadata?: { correlationId?: string },
+    metadata?: { correlationId?: string; channel?: string | null },
   ): Promise<NotificationQueuePublishResult> {
     if (!this.isEnabled()) {
       return {
@@ -133,7 +144,9 @@ export class NotificationQueueService implements OnModuleInit, OnModuleDestroy {
     };
 
     try {
-      const queue = this.getQueue();
+      const queue = this.getQueue(
+        notificationQueueLaneForChannel(metadata?.channel),
+      );
       await queue.add(NOTIFICATION_DELIVERY_JOB_NAME, data, {
         jobId,
         attempts: 1,
@@ -153,36 +166,42 @@ export class NotificationQueueService implements OnModuleInit, OnModuleDestroy {
     }
   }
 
-  createWorker<TResult>(
+  createWorkers<TResult>(
     processor: Processor<NotificationDeliveryJobData, TResult>,
-  ): Worker<NotificationDeliveryJobData, TResult> {
+  ): Array<Worker<NotificationDeliveryJobData, TResult>> {
     if (!this.isEnabled()) {
-      throw new Error('Cannot create the notification worker while the queue is disabled');
+      throw new Error(
+        'Cannot create the notification worker while the queue is disabled',
+      );
     }
 
-    const connection = this.buildConnection(this.redisUrlOrThrow(), null);
-    return new Worker<NotificationDeliveryJobData, TResult>(
-      NOTIFICATIONS_QUEUE_NAME,
-      processor,
-      {
-        connection,
-        prefix: this.prefix(),
-        name: 'sawiyaa-notification-worker',
-        concurrency: this.workerConcurrency(),
-        // Keep stalled recovery bounded. The job itself is idempotently
-        // claimed in PostgreSQL before the delivery engine is invoked.
-        maxStalledCount: 1,
-        removeOnComplete: { age: 86_400, count: 10_000 },
-        removeOnFail: { age: 604_800, count: 10_000 },
-      } satisfies WorkerOptions,
-    );
+    return (['DEFAULT', 'EMAIL', 'PUSH'] as const).map((lane) => {
+      const connection = this.buildConnection(this.redisUrlOrThrow(), null);
+      return new Worker<NotificationDeliveryJobData, TResult>(
+        notificationQueueName(lane),
+        processor,
+        {
+          connection,
+          prefix: this.prefix(),
+          name: `sawiyaa-notification-worker-${lane.toLowerCase()}`,
+          concurrency: this.laneWorkerConcurrency(lane),
+          // Keep stalled recovery bounded. The job itself is idempotently
+          // claimed in PostgreSQL before the delivery engine is invoked.
+          maxStalledCount: 1,
+          removeOnComplete: { age: 86_400, count: 10_000 },
+          removeOnFail: { age: 604_800, count: 10_000 },
+        } satisfies WorkerOptions,
+      );
+    });
   }
 
   recordWorkerHeartbeat(): void {
     this.runtimeState.lastWorkerHeartbeatAt = new Date();
-    if (!this.queue) return;
+    if (this.queues.size === 0) return;
 
-    void this.queue.client
+    const queue = this.queues.get('DEFAULT');
+    if (!queue) return;
+    void queue.client
       .then((client) =>
         (
           client as unknown as {
@@ -220,8 +239,8 @@ export class NotificationQueueService implements OnModuleInit, OnModuleDestroy {
       return base;
     }
 
-    const queue = this.queue;
-    if (!queue) {
+    const queues = [...this.queues.values()];
+    if (queues.length === 0) {
       return {
         ...base,
         status: 'DEGRADED',
@@ -231,14 +250,22 @@ export class NotificationQueueService implements OnModuleInit, OnModuleDestroy {
     }
 
     try {
-      const counts = await queue.getJobCounts(
-        'waiting',
-        'active',
-        'completed',
-        'failed',
-        'delayed',
+      const counts = await Promise.all(
+        queues.map((queue) =>
+          queue.getJobCounts(
+            'waiting',
+            'active',
+            'completed',
+            'failed',
+            'delayed',
+          ),
+        ),
       );
-      const waitingJobs = await queue.getJobs(['waiting'], 0, 49, true);
+      const waitingJobs = (
+        await Promise.all(
+          queues.map((queue) => queue.getJobs(['waiting'], 0, 49, true)),
+        )
+      ).flat();
       const oldestWaitingTimestamp = waitingJobs.reduce<number | null>(
         (oldest, job) =>
           oldest === null ? job.timestamp : Math.min(oldest, job.timestamp),
@@ -254,11 +281,26 @@ export class NotificationQueueService implements OnModuleInit, OnModuleDestroy {
         lastWorkerHeartbeatAt:
           this.runtimeState.lastWorkerHeartbeatAt?.toISOString() ?? null,
         counts: {
-          waiting: counts.waiting ?? 0,
-          active: counts.active ?? 0,
-          completed: counts.completed ?? 0,
-          failed: counts.failed ?? 0,
-          delayed: counts.delayed ?? 0,
+          waiting: counts.reduce(
+            (total, count) => total + (count.waiting ?? 0),
+            0,
+          ),
+          active: counts.reduce(
+            (total, count) => total + (count.active ?? 0),
+            0,
+          ),
+          completed: counts.reduce(
+            (total, count) => total + (count.completed ?? 0),
+            0,
+          ),
+          failed: counts.reduce(
+            (total, count) => total + (count.failed ?? 0),
+            0,
+          ),
+          delayed: counts.reduce(
+            (total, count) => total + (count.delayed ?? 0),
+            0,
+          ),
         },
         oldestWaitingJobAgeMs:
           oldestWaitingTimestamp === null
@@ -278,16 +320,18 @@ export class NotificationQueueService implements OnModuleInit, OnModuleDestroy {
   }
 
   async close(): Promise<void> {
-    if (!this.queue) return;
-    await this.queue.close();
-    this.queue = null;
+    await Promise.all([...this.queues.values()].map((queue) => queue.close()));
+    this.queues.clear();
   }
 
-  private getQueue(): Queue<NotificationDeliveryJobData> {
-    if (!this.queue) {
+  private getQueue(
+    lane: NotificationQueueLane,
+  ): Queue<NotificationDeliveryJobData> {
+    const queue = this.queues.get(lane);
+    if (!queue) {
       throw new Error('Notification BullMQ queue is not initialized');
     }
-    return this.queue;
+    return queue;
   }
 
   private baseHealthSnapshot(): NotificationQueueHealthSnapshot {
@@ -296,7 +340,7 @@ export class NotificationQueueService implements OnModuleInit, OnModuleDestroy {
       status: this.isEnabled() ? 'DEGRADED' : 'DISABLED',
       redis: this.isEnabled() ? 'UNAVAILABLE' : 'NOT_REQUIRED',
       worker: this.isEnabled() ? 'UNKNOWN' : 'NOT_REQUIRED',
-      queueName: NOTIFICATIONS_QUEUE_NAME,
+      queueName: notificationQueueName('DEFAULT'),
       counts: {
         waiting: 0,
         active: 0,
@@ -342,13 +386,40 @@ export class NotificationQueueService implements OnModuleInit, OnModuleDestroy {
     return Math.min(20, Math.max(1, configured ?? 2));
   }
 
+  private laneWorkerConcurrency(lane: NotificationQueueLane): number {
+    if (lane === 'EMAIL') {
+      return this.readConfiguredConcurrency(
+        'notificationQueue.emailWorkerConcurrency',
+        1,
+      );
+    }
+    if (lane === 'PUSH') {
+      return this.readConfiguredConcurrency(
+        'notificationQueue.pushWorkerConcurrency',
+        1,
+      );
+    }
+    return this.workerConcurrency();
+  }
+
+  private readConfiguredConcurrency(key: string, fallback: number): number {
+    const configured = this.configService.get<number>(key);
+    return typeof configured === 'number' && Number.isFinite(configured)
+      ? Math.min(20, Math.max(1, Math.floor(configured)))
+      : fallback;
+  }
+
   private buildConnection(
     redisUrl: string,
     maxRetriesPerRequest: number | null,
   ): ConnectionOptions {
     const parsed = new URL(redisUrl);
-    const username = parsed.username ? decodeURIComponent(parsed.username) : undefined;
-    const password = parsed.password ? decodeURIComponent(parsed.password) : undefined;
+    const username = parsed.username
+      ? decodeURIComponent(parsed.username)
+      : undefined;
+    const password = parsed.password
+      ? decodeURIComponent(parsed.password)
+      : undefined;
     const database = parsed.pathname.replace(/^\//, '');
     const connection = {
       host: parsed.hostname,
@@ -359,8 +430,9 @@ export class NotificationQueueService implements OnModuleInit, OnModuleDestroy {
       ...(parsed.protocol === 'rediss:' ? { tls: {} } : {}),
       connectTimeout: Math.max(
         100,
-        this.configService.get<number>('notificationQueue.connectionTimeoutMs') ??
-          10_000,
+        this.configService.get<number>(
+          'notificationQueue.connectionTimeoutMs',
+        ) ?? 10_000,
       ),
       maxRetriesPerRequest,
       retryStrategy: (times: number) => Math.min(times * 250, 5_000),
@@ -377,10 +449,11 @@ export class NotificationQueueService implements OnModuleInit, OnModuleDestroy {
   }
 
   private async readWorkerHeartbeat(): Promise<'AVAILABLE' | 'UNKNOWN'> {
-    if (!this.queue) return 'UNKNOWN';
+    const queue = this.queues.get('DEFAULT');
+    if (!queue) return 'UNKNOWN';
 
     try {
-      const client = await this.queue.client;
+      const client = await queue.client;
       const value = await (
         client as unknown as {
           get: (key: string) => Promise<string | null>;

@@ -1,6 +1,8 @@
 import { Injectable, Optional } from '@nestjs/common';
+import { randomUUID } from 'node:crypto';
 import {
   AuditEventSource,
+  Notification,
   NotificationCategory,
   NotificationChannel,
   NotificationStatus,
@@ -38,6 +40,17 @@ type AdminAuditTimelineRow = {
   updatedAt: Date;
   actorUser: AdminAuditActorSummary | null;
 };
+
+export type NotificationExecutionClaim = {
+  notificationId: string;
+  claimToken: string;
+  claimedAt: Date;
+  claimUntil: Date;
+};
+
+function toUtcTimestamp(date: Date): string {
+  return date.toISOString().slice(0, -1).replace('T', ' ');
+}
 
 @Injectable()
 export class OperationalNotificationRepository {
@@ -146,7 +159,18 @@ export class OperationalNotificationRepository {
   }
 
   createNotification(data: Prisma.NotificationUncheckedCreateInput) {
-    return this.inTransaction(async (tx) => {
+    return this.createNotificationWithCreationState(data).then(
+      ({ notification }) => notification,
+    );
+  }
+
+  async createNotificationWithCreationState(
+    data: Prisma.NotificationUncheckedCreateInput,
+  ): Promise<{
+    notification: Notification;
+    created: boolean;
+  }> {
+    const result = await this.inTransaction(async (tx) => {
       if (data.idempotencyKey) {
         const existing = await this.findExistingNotificationByIdempotencyKey(
           tx,
@@ -159,14 +183,14 @@ export class OperationalNotificationRepository {
         );
 
         if (existing) {
-          return existing;
+          return { notification: existing, created: false };
         }
       }
 
       try {
         const created = await tx.notification.create({ data });
         await this.upsertAuditEventFromNotification(tx, created.id);
-        return created;
+        return { notification: created, created: true };
       } catch (error) {
         if (data.idempotencyKey && this.isIdempotencyConflict(error)) {
           const existing = await this.findExistingNotificationByIdempotencyKey(
@@ -180,16 +204,18 @@ export class OperationalNotificationRepository {
           );
 
           if (existing) {
-            return existing;
+            return { notification: existing, created: false };
           }
         }
 
         throw error;
       }
-    }).then((notification) => {
-      this.publishIfEligible(notification?.id, data);
-      return notification;
     });
+
+    if (result.created) {
+      this.publishIfEligible(result.notification?.id, data);
+    }
+    return result;
   }
 
   private publishIfEligible(
@@ -205,7 +231,7 @@ export class OperationalNotificationRepository {
     }
 
     void this.notificationQueue
-      ?.enqueueNotification(notificationId)
+      ?.enqueueNotification(notificationId, { channel: data.channel })
       .catch(() => undefined);
   }
 
@@ -243,35 +269,113 @@ export class OperationalNotificationRepository {
     });
   }
 
-  claimNotificationForExecution(input: { notificationId: string; now: Date }) {
-    return this.inTransaction(async (tx) => {
-      const updated = await tx.notification.updateMany({
-        where: {
-          id: input.notificationId,
-          status: NotificationStatus.PENDING,
-          scheduledFor: {
-            not: null,
-            lte: input.now,
-          },
+  listStaleQueuedNotificationIds(input: { now: Date; limit: number }) {
+    return this.prisma.notification.findMany({
+      where: {
+        status: NotificationStatus.QUEUED,
+        claimUntil: {
+          not: null,
+          lte: input.now,
         },
-        data: {
-          status: NotificationStatus.QUEUED,
-        },
-      });
-
-      if (updated.count > 0) {
-        await this.upsertAuditEventFromNotification(tx, input.notificationId);
-      }
-
-      return updated;
+        OR: [{ scheduledFor: null }, { scheduledFor: { lte: input.now } }],
+      },
+      orderBy: [{ claimUntil: 'asc' }, { updatedAt: 'asc' }],
+      take: input.limit,
+      select: {
+        id: true,
+      },
     });
   }
 
-  findQueuedNotificationForExecution(notificationId: string) {
+  findOldestQueuedCreatedAt() {
+    return this.prisma.notification.findFirst({
+      where: { status: NotificationStatus.QUEUED },
+      orderBy: { createdAt: 'asc' },
+      select: { createdAt: true },
+    });
+  }
+
+  async claimNotificationForExecution(input: {
+    notificationId: string;
+    now: Date;
+    leaseDurationMs?: number;
+  }): Promise<NotificationExecutionClaim | null> {
+    const claimToken = randomUUID();
+    const claimedAt = input.now;
+    const claimUntil = new Date(
+      input.now.getTime() + Math.max(1_000, input.leaseDurationMs ?? 300_000),
+    );
+    const nowUtcTimestamp = toUtcTimestamp(input.now);
+
+    return this.inTransaction(async (tx) => {
+      const candidates = await tx.$queryRaw<
+        Array<{ id: string; status: NotificationStatus }>
+      >(Prisma.sql`
+        SELECT "id", "status"
+        FROM "Notification"
+        WHERE "id" = ${input.notificationId}::uuid
+          AND (
+            (
+              "status" = CAST(${NotificationStatus.PENDING} AS "NotificationStatus")
+              AND "scheduledFor" IS NOT NULL
+              AND "scheduledFor" <= ${nowUtcTimestamp}::timestamp
+            )
+            OR (
+              "status" = CAST(${NotificationStatus.QUEUED} AS "NotificationStatus")
+              AND "claimUntil" IS NOT NULL
+              AND "claimUntil" <= ${nowUtcTimestamp}::timestamp
+              AND ("scheduledFor" IS NULL OR "scheduledFor" <= ${nowUtcTimestamp}::timestamp)
+            )
+          )
+        FOR UPDATE SKIP LOCKED
+      `);
+
+      if (candidates.length === 0) {
+        return null;
+      }
+
+      const updated = await tx.notification.updateMany({
+        where: {
+          id: input.notificationId,
+          status: candidates[0].status,
+        },
+        data: {
+          status: NotificationStatus.QUEUED,
+          claimToken,
+          claimedAt,
+          claimUntil,
+        },
+      });
+
+      if (updated.count === 0) {
+        return null;
+      }
+
+      await this.upsertAuditEventFromNotification(tx, input.notificationId);
+      return {
+        notificationId: input.notificationId,
+        claimToken,
+        claimedAt,
+        claimUntil,
+      };
+    });
+  }
+
+  findQueuedNotificationForExecution(
+    input: string | { notificationId: string; claimToken: string; now: Date },
+  ) {
+    const notificationId =
+      typeof input === 'string' ? input : input.notificationId;
     return this.prisma.notification.findFirst({
       where: {
         id: notificationId,
         status: NotificationStatus.QUEUED,
+        ...(typeof input === 'string'
+          ? {}
+          : {
+              claimToken: input.claimToken,
+              claimUntil: { gt: input.now },
+            }),
       },
       select: {
         id: true,
@@ -282,6 +386,7 @@ export class OperationalNotificationRepository {
         titleSnapshot: true,
         subjectSnapshot: true,
         bodySnapshot: true,
+        scheduledFor: true,
         payloadJson: true,
         relatedEntityType: true,
         relatedEntityId: true,
@@ -305,6 +410,57 @@ export class OperationalNotificationRepository {
     return this.prisma.notificationDeliveryAttempt.create({ data });
   }
 
+  findLatestDeliveryAttempt(notificationId: string) {
+    return this.prisma.notificationDeliveryAttempt.findFirst({
+      where: { notificationId },
+      orderBy: [{ attemptNumber: 'desc' }, { createdAt: 'desc' }],
+      select: {
+        id: true,
+        notificationId: true,
+        provider: true,
+        attemptNumber: true,
+        status: true,
+        providerMessageRef: true,
+        requestPayload: true,
+        responsePayload: true,
+        errorCode: true,
+        errorMessage: true,
+        attemptedAt: true,
+      },
+    });
+  }
+
+  async createDeliveryAttemptWithNextNumber(
+    data: Prisma.NotificationDeliveryAttemptCreateInput,
+  ) {
+    for (let attempt = 0; attempt < 3; attempt += 1) {
+      try {
+        return await this.inTransaction(async (tx) => {
+          const previous = await tx.notificationDeliveryAttempt.findFirst({
+            where: {
+              notificationId: data.notification?.connect?.id,
+            },
+            orderBy: { attemptNumber: 'desc' },
+            select: { attemptNumber: true },
+          });
+
+          return tx.notificationDeliveryAttempt.create({
+            data: {
+              ...data,
+              attemptNumber: (previous?.attemptNumber ?? 0) + 1,
+            },
+          });
+        });
+      } catch (error) {
+        if (!this.isIdempotencyConflict(error) || attempt === 2) {
+          throw error;
+        }
+      }
+    }
+
+    throw new Error('Unable to allocate notification delivery attempt number');
+  }
+
   updateDeliveryAttempt(
     attemptId: string,
     data: Prisma.NotificationDeliveryAttemptUpdateInput,
@@ -315,16 +471,62 @@ export class OperationalNotificationRepository {
     });
   }
 
-  markQueuedNotificationSent(input: { notificationId: string; sentAt: Date }) {
+  async updateDeliveryAttemptWithClaim(input: {
+    attemptId: string;
+    notificationId: string;
+    claimToken: string;
+    now: Date;
+    data: Prisma.NotificationDeliveryAttemptUpdateInput;
+  }) {
+    return this.inTransaction(async (tx) => {
+      // Lock the ownership row while validating it. A plain findFirst followed
+      // by updateMany leaves a race where a reclaim can commit between the
+      // validation and the attempt update.
+      const nowUtcTimestamp = toUtcTimestamp(input.now);
+      const owner = await tx.$queryRaw<Array<{ id: string }>>(Prisma.sql`
+        SELECT "id"
+        FROM "Notification"
+        WHERE "id" = ${input.notificationId}::uuid
+          AND "status" = CAST(${NotificationStatus.QUEUED} AS "NotificationStatus")
+          AND "claimToken" = ${input.claimToken}
+          AND "claimUntil" > ${nowUtcTimestamp}::timestamp
+        FOR UPDATE
+      `);
+      if (owner.length === 0) return { count: 0 };
+
+      return tx.notificationDeliveryAttempt.updateMany({
+        where: {
+          id: input.attemptId,
+          notificationId: input.notificationId,
+        },
+        data: input.data,
+      });
+    });
+  }
+
+  markQueuedNotificationSent(input: {
+    notificationId: string;
+    sentAt: Date;
+    claimToken?: string;
+  }) {
     return this.inTransaction(async (tx) => {
       const updated = await tx.notification.updateMany({
         where: {
           id: input.notificationId,
           status: NotificationStatus.QUEUED,
+          ...(input.claimToken
+            ? {
+                claimToken: input.claimToken,
+                claimUntil: { gt: input.sentAt },
+              }
+            : {}),
         },
         data: {
           status: NotificationStatus.SENT,
           scheduledFor: null,
+          ...(input.claimToken
+            ? { claimToken: null, claimedAt: null, claimUntil: null }
+            : {}),
           sentAt: input.sentAt,
           failedAt: null,
           suppressedReason: null,
@@ -342,15 +544,26 @@ export class OperationalNotificationRepository {
   rescheduleQueuedNotificationForRetry(input: {
     notificationId: string;
     retryAt: Date;
+    claimToken?: string;
+    now?: Date;
   }) {
     return this.inTransaction(async (tx) => {
       const updated = await tx.notification.updateMany({
         where: {
           id: input.notificationId,
           status: NotificationStatus.QUEUED,
+          ...(input.claimToken
+            ? {
+                claimToken: input.claimToken,
+                claimUntil: { gt: input.now ?? new Date() },
+              }
+            : {}),
         },
         data: {
           status: NotificationStatus.PENDING,
+          ...(input.claimToken
+            ? { claimToken: null, claimedAt: null, claimUntil: null }
+            : {}),
           scheduledFor: input.retryAt,
           failedAt: null,
         },
@@ -368,16 +581,26 @@ export class OperationalNotificationRepository {
     notificationId: string;
     failedAt: Date;
     reason: string;
+    claimToken?: string;
   }) {
     return this.inTransaction(async (tx) => {
       const updated = await tx.notification.updateMany({
         where: {
           id: input.notificationId,
           status: NotificationStatus.QUEUED,
+          ...(input.claimToken
+            ? {
+                claimToken: input.claimToken,
+                claimUntil: { gt: input.failedAt },
+              }
+            : {}),
         },
         data: {
           status: NotificationStatus.FAILED,
           scheduledFor: null,
+          ...(input.claimToken
+            ? { claimToken: null, claimedAt: null, claimUntil: null }
+            : {}),
           failedAt: input.failedAt,
           suppressedReason: input.reason.slice(0, 500),
         },
@@ -394,16 +617,27 @@ export class OperationalNotificationRepository {
   markQueuedNotificationSuppressed(input: {
     notificationId: string;
     reason: string;
+    claimToken?: string;
+    now?: Date;
   }) {
     return this.inTransaction(async (tx) => {
       const updated = await tx.notification.updateMany({
         where: {
           id: input.notificationId,
           status: NotificationStatus.QUEUED,
+          ...(input.claimToken
+            ? {
+                claimToken: input.claimToken,
+                claimUntil: { gt: input.now ?? new Date() },
+              }
+            : {}),
         },
         data: {
           status: NotificationStatus.SUPPRESSED,
           scheduledFor: null,
+          ...(input.claimToken
+            ? { claimToken: null, claimedAt: null, claimUntil: null }
+            : {}),
           suppressedReason: input.reason.slice(0, 500),
         },
       });

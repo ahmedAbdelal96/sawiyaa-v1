@@ -1112,6 +1112,8 @@ exports.Prisma.SessionReminderQueueScalarFieldEnum = {
   dueAt: 'dueAt',
   sentAt: 'sentAt',
   cancelledAt: 'cancelledAt',
+  claimToken: 'claimToken',
+  claimUntil: 'claimUntil',
   idempotencyKey: 'idempotencyKey',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
@@ -1319,6 +1321,61 @@ exports.Prisma.PaymentScalarFieldEnum = {
   cancelledAt: 'cancelledAt',
   expiredAt: 'expiredAt',
   metadataJson: 'metadataJson',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.ManualPaymentMethodScalarFieldEnum = {
+  id: 'id',
+  code: 'code',
+  type: 'type',
+  displayNameAr: 'displayNameAr',
+  displayNameEn: 'displayNameEn',
+  accountHolderName: 'accountHolderName',
+  accountIdentifier: 'accountIdentifier',
+  instructionsAr: 'instructionsAr',
+  instructionsEn: 'instructionsEn',
+  availabilityMode: 'availabilityMode',
+  isEnabled: 'isEnabled',
+  sortOrder: 'sortOrder',
+  createdByUserId: 'createdByUserId',
+  updatedByUserId: 'updatedByUserId',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt',
+  disabledAt: 'disabledAt'
+};
+
+exports.Prisma.ManualPaymentMethodCountryScalarFieldEnum = {
+  id: 'id',
+  manualPaymentMethodId: 'manualPaymentMethodId',
+  countryIsoCode: 'countryIsoCode',
+  createdAt: 'createdAt'
+};
+
+exports.Prisma.ManualPaymentSubmissionScalarFieldEnum = {
+  id: 'id',
+  paymentId: 'paymentId',
+  manualPaymentMethodId: 'manualPaymentMethodId',
+  attemptNumber: 'attemptNumber',
+  status: 'status',
+  senderAccountName: 'senderAccountName',
+  proofStoredFileId: 'proofStoredFileId',
+  notes: 'notes',
+  submittedAt: 'submittedAt',
+  reviewedAt: 'reviewedAt',
+  reviewedByUserId: 'reviewedByUserId',
+  rejectionReason: 'rejectionReason',
+  resubmitUntil: 'resubmitUntil',
+  paymentAmountSnapshot: 'paymentAmountSnapshot',
+  paymentCurrencySnapshot: 'paymentCurrencySnapshot',
+  methodTypeSnapshot: 'methodTypeSnapshot',
+  methodDisplayNameArSnapshot: 'methodDisplayNameArSnapshot',
+  methodDisplayNameEnSnapshot: 'methodDisplayNameEnSnapshot',
+  accountHolderSnapshot: 'accountHolderSnapshot',
+  accountIdentifierSnapshot: 'accountIdentifierSnapshot',
+  instructionsArSnapshot: 'instructionsArSnapshot',
+  instructionsEnSnapshot: 'instructionsEnSnapshot',
+  countrySnapshot: 'countrySnapshot',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 };
@@ -2336,6 +2393,9 @@ exports.Prisma.NotificationScalarFieldEnum = {
   relatedEntityId: 'relatedEntityId',
   idempotencyKey: 'idempotencyKey',
   scheduledFor: 'scheduledFor',
+  claimToken: 'claimToken',
+  claimedAt: 'claimedAt',
+  claimUntil: 'claimUntil',
   sentAt: 'sentAt',
   deliveredAt: 'deliveredAt',
   readAt: 'readAt',
@@ -2654,6 +2714,28 @@ exports.Prisma.AcademyProgramEnrollmentScalarFieldEnum = {
   updatedAt: 'updatedAt'
 };
 
+exports.Prisma.AcademyRegistrationAttemptScalarFieldEnum = {
+  id: 'id',
+  academyProgramId: 'academyProgramId',
+  academyLearnerId: 'academyLearnerId',
+  academyEnrollmentId: 'academyEnrollmentId',
+  userId: 'userId',
+  idempotencyKey: 'idempotencyKey',
+  fullName: 'fullName',
+  phoneNumber: 'phoneNumber',
+  normalizedPhoneNumber: 'normalizedPhoneNumber',
+  whatsappNumber: 'whatsappNumber',
+  email: 'email',
+  normalizedEmail: 'normalizedEmail',
+  sourceLabel: 'sourceLabel',
+  paymentMethod: 'paymentMethod',
+  status: 'status',
+  resolution: 'resolution',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt',
+  convertedAt: 'convertedAt'
+};
+
 exports.Prisma.AcademyProgramSessionAttendanceScalarFieldEnum = {
   id: 'id',
   academyProgramSessionId: 'academyProgramSessionId',
@@ -2895,7 +2977,8 @@ exports.StoredFilePurpose = exports.$Enums.StoredFilePurpose = {
   PAYOUT_PROOF: 'PAYOUT_PROOF',
   ARTICLE_COVER: 'ARTICLE_COVER',
   ACADEMY_PROGRAM_COVER: 'ACADEMY_PROGRAM_COVER',
-  ACADEMY_CERTIFICATE: 'ACADEMY_CERTIFICATE'
+  ACADEMY_CERTIFICATE: 'ACADEMY_CERTIFICATE',
+  MANUAL_PAYMENT_PROOF: 'MANUAL_PAYMENT_PROOF'
 };
 
 exports.StoredFileStatus = exports.$Enums.StoredFileStatus = {
@@ -3481,7 +3564,8 @@ exports.PaymentPurpose = exports.$Enums.PaymentPurpose = {
 exports.PaymentProvider = exports.$Enums.PaymentProvider = {
   STRIPE: 'STRIPE',
   PAYMOB: 'PAYMOB',
-  INTERNAL_WALLET: 'INTERNAL_WALLET'
+  INTERNAL_WALLET: 'INTERNAL_WALLET',
+  MANUAL: 'MANUAL'
 };
 
 exports.PaymentStatus = exports.$Enums.PaymentStatus = {
@@ -3496,6 +3580,25 @@ exports.PaymentStatus = exports.$Enums.PaymentStatus = {
   REFUND_PENDING: 'REFUND_PENDING',
   PARTIALLY_REFUNDED: 'PARTIALLY_REFUNDED',
   REFUNDED: 'REFUNDED'
+};
+
+exports.ManualPaymentMethodType = exports.$Enums.ManualPaymentMethodType = {
+  INSTAPAY: 'INSTAPAY',
+  PAYPAL: 'PAYPAL',
+  ELECTRONIC_WALLET: 'ELECTRONIC_WALLET',
+  CUSTOM: 'CUSTOM'
+};
+
+exports.ManualPaymentAvailabilityMode = exports.$Enums.ManualPaymentAvailabilityMode = {
+  ALL: 'ALL',
+  SELECTED: 'SELECTED'
+};
+
+exports.ManualPaymentSubmissionStatus = exports.$Enums.ManualPaymentSubmissionStatus = {
+  UNDER_REVIEW: 'UNDER_REVIEW',
+  APPROVED: 'APPROVED',
+  REJECTED: 'REJECTED',
+  EXPIRED: 'EXPIRED'
 };
 
 exports.PaymentOperationalExceptionType = exports.$Enums.PaymentOperationalExceptionType = {
@@ -4164,6 +4267,26 @@ exports.AcademyProgramEnrollmentStatus = exports.$Enums.AcademyProgramEnrollment
   EXPIRED: 'EXPIRED'
 };
 
+exports.AcademyRegistrationAttemptStatus = exports.$Enums.AcademyRegistrationAttemptStatus = {
+  SUBMITTED: 'SUBMITTED',
+  REQUIRES_LOGIN: 'REQUIRES_LOGIN',
+  PENDING_PAYMENT: 'PENDING_PAYMENT',
+  PAYMENT_ISSUE: 'PAYMENT_ISSUE',
+  CONVERTED: 'CONVERTED',
+  DUPLICATE: 'DUPLICATE',
+  EXPIRED: 'EXPIRED',
+  CANCELLED: 'CANCELLED'
+};
+
+exports.AcademyRegistrationAttemptResolution = exports.$Enums.AcademyRegistrationAttemptResolution = {
+  NEW_GUEST: 'NEW_GUEST',
+  EXISTING_LEARNER: 'EXISTING_LEARNER',
+  AUTHENTICATED_ACCOUNT: 'AUTHENTICATED_ACCOUNT',
+  EXISTING_ACCOUNT_REQUIRES_LOGIN: 'EXISTING_ACCOUNT_REQUIRES_LOGIN',
+  EXISTING_ENROLLMENT: 'EXISTING_ENROLLMENT',
+  CONFLICT: 'CONFLICT'
+};
+
 exports.AcademyProgramSessionAttendanceStatus = exports.$Enums.AcademyProgramSessionAttendanceStatus = {
   PRESENT: 'PRESENT',
   ABSENT: 'ABSENT'
@@ -4321,6 +4444,9 @@ exports.Prisma.ModelName = {
   SessionAdminDecision: 'SessionAdminDecision',
   InstantBookingRequest: 'InstantBookingRequest',
   Payment: 'Payment',
+  ManualPaymentMethod: 'ManualPaymentMethod',
+  ManualPaymentMethodCountry: 'ManualPaymentMethodCountry',
+  ManualPaymentSubmission: 'ManualPaymentSubmission',
   PaymentOperationalException: 'PaymentOperationalException',
   PaymentWebhookReceipt: 'PaymentWebhookReceipt',
   PaymentEvent: 'PaymentEvent',
@@ -4399,6 +4525,7 @@ exports.Prisma.ModelName = {
   AcademyProgram: 'AcademyProgram',
   AcademyProgramSession: 'AcademyProgramSession',
   AcademyProgramEnrollment: 'AcademyProgramEnrollment',
+  AcademyRegistrationAttempt: 'AcademyRegistrationAttempt',
   AcademyProgramSessionAttendance: 'AcademyProgramSessionAttendance',
   AcademyProgramPaymentAttempt: 'AcademyProgramPaymentAttempt',
   SecurityAuditLog: 'SecurityAuditLog',

@@ -50,6 +50,37 @@ function createUseCase(program = paidProgram) {
     status: PaymentStatus.CREATED,
     providerPaymentRef: 'provider-payment-1',
   });
+  const paymentProviderRegistryService = {
+    get: jest.fn().mockReturnValue({ initiateSessionPayment }),
+  };
+  const paymentProviderResolverService = {
+    resolveRoute: jest.fn().mockReturnValue({
+      currencyCode: 'USD',
+      paymentMethod: 'CARD',
+      provider: PaymentProvider.PAYMOB,
+      integrationKey: 'paymob-usd-card',
+      environment: 'development',
+      enabled: true,
+      priority: 100,
+      source: 'DATABASE',
+    }),
+  };
+  const academyProgramEnrollmentPresenter = {
+    presentEnrollmentItem: jest.fn().mockReturnValue({ id: 'enrollment-1' }),
+  };
+  const academyRegistrationAttemptService = {
+    start: jest.fn().mockResolvedValue({
+      id: 'registration-attempt-1',
+      status: 'SUBMITTED',
+      resolution: 'NEW_GUEST',
+      academyEnrollmentId: null,
+    }),
+    markLearnerResolved: jest.fn().mockResolvedValue(undefined),
+    markPendingPayment: jest.fn().mockResolvedValue(undefined),
+    markPaymentIssue: jest.fn().mockResolvedValue(undefined),
+    markDuplicate: jest.fn().mockResolvedValue(undefined),
+    markRequiresLogin: jest.fn().mockResolvedValue(undefined),
+  };
   const useCase = new CreateAcademyProgramEnrollmentUseCase(
     { get: jest.fn().mockReturnValue(15) } as never,
     { getJson: jest.fn().mockResolvedValue(['ACADEMY']) } as never,
@@ -60,21 +91,8 @@ function createUseCase(program = paidProgram) {
     {
       buildCountrySnapshot: jest.fn().mockReturnValue({}),
     } as never,
-    {
-      resolveRoute: jest.fn().mockReturnValue({
-        currencyCode: 'USD',
-        paymentMethod: 'CARD',
-        provider: PaymentProvider.PAYMOB,
-        integrationKey: 'paymob-usd-card',
-        environment: 'development',
-        enabled: true,
-        priority: 100,
-        source: 'DATABASE',
-      }),
-    } as never,
-    {
-      get: jest.fn().mockReturnValue({ initiateSessionPayment }),
-    } as never,
+    paymentProviderResolverService as never,
+    paymentProviderRegistryService as never,
     {
       getAppBaseUrl: jest.fn().mockReturnValue('https://web.example/'),
       resolveTrustedReturnUrlBase: jest.fn().mockReturnValue(null),
@@ -92,8 +110,9 @@ function createUseCase(program = paidProgram) {
         },
       }),
     } as never,
-    { presentEnrollmentItem: jest.fn().mockReturnValue({ id: 'enrollment-1' }) } as never,
+    academyProgramEnrollmentPresenter as never,
     { notifyIfTargetExceeded: jest.fn() } as never,
+    academyRegistrationAttemptService as never,
   );
 
   return {
@@ -104,6 +123,10 @@ function createUseCase(program = paidProgram) {
     programRepository,
     transactionClient,
     initiateSessionPayment,
+    paymentProviderResolverService,
+    paymentProviderRegistryService,
+    academyProgramEnrollmentPresenter,
+    academyRegistrationAttemptService,
   };
 }
 
@@ -136,10 +159,68 @@ describe('CreateAcademyProgramEnrollmentUseCase pricing', () => {
     expect(prisma.$transaction).not.toHaveBeenCalled();
   });
 
-  it('creates a paid enrollment and payment from the selected USD amount and currency', async () => {
+  it('defers payment creation when paymentMethod is omitted', async () => {
+    const {
+      useCase,
+      enrollmentRepository,
+      paymentRepository,
+      initiateSessionPayment,
+      paymentProviderResolverService,
+      academyProgramEnrollmentPresenter,
+    } = createUseCase();
+    paymentProviderResolverService.resolveRoute.mockImplementation(() => {
+      throw new Error('PAYMENT_PROVIDER_UNAVAILABLE');
+    });
+
+    const result = await useCase.execute(input);
+
+    expect(enrollmentRepository.createEnrollment).toHaveBeenCalledWith(
+      expect.objectContaining({
+        status: AcademyProgramEnrollmentStatus.PENDING_PAYMENT,
+        paymentStatus: PaymentStatus.CREATED,
+        selectedAmountSnapshot: '20.00',
+        selectedCurrencyCode: 'USD',
+      }),
+      expect.anything(),
+    );
+    expect(paymentRepository.createPayment).not.toHaveBeenCalled();
+    expect(initiateSessionPayment).not.toHaveBeenCalled();
+    expect(paymentProviderResolverService.resolveRoute).not.toHaveBeenCalled();
+    expect(academyProgramEnrollmentPresenter.presentEnrollmentItem).toHaveBeenCalledWith(
+      expect.anything(),
+      'en',
+      { resolveGatewayAvailability: false },
+    );
+    expect(result.item).toEqual({ id: 'enrollment-1' });
+  });
+
+  it('allows the same attempt to continue after the learner signs in', async () => {
+    const { useCase, academyRegistrationAttemptService, enrollmentRepository } = createUseCase();
+    academyRegistrationAttemptService.start.mockResolvedValue({
+      id: 'registration-attempt-1',
+      status: 'REQUIRES_LOGIN',
+      resolution: 'EXISTING_ACCOUNT_REQUIRES_LOGIN',
+      academyEnrollmentId: null,
+    });
+
+    await expect(useCase.execute(input)).resolves.toEqual({
+      item: { id: 'enrollment-1' },
+    });
+
+    expect(enrollmentRepository.createEnrollment).toHaveBeenCalled();
+    expect(academyRegistrationAttemptService.markLearnerResolved).toHaveBeenCalled();
+  });
+
+  it('creates payment and initiates checkout when paymentMethod is explicitly GATEWAY', async () => {
     const { useCase, enrollmentRepository, paymentRepository, initiateSessionPayment } = createUseCase();
 
-    await useCase.execute(input);
+    await useCase.execute({
+      ...input,
+      payload: {
+        ...input.payload,
+        paymentMethod: 'GATEWAY',
+      },
+    });
 
     expect(enrollmentRepository.createEnrollment).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -162,6 +243,33 @@ describe('CreateAcademyProgramEnrollmentUseCase pricing', () => {
     expect(initiateSessionPayment).toHaveBeenCalledWith(
       expect.objectContaining({ routeIntegrationKey: 'paymob-usd-card' }),
     );
+  });
+
+  it('does not reuse an older payment when paymentMethod is omitted on retry', async () => {
+    const {
+      useCase,
+      enrollmentRepository,
+      paymentRepository,
+      initiateSessionPayment,
+      paymentProviderResolverService,
+      paymentProviderRegistryService,
+    } = createUseCase();
+    const existingEnrollment = {
+      id: 'enrollment-1',
+      status: AcademyProgramEnrollmentStatus.PENDING_PAYMENT,
+      payment: { provider: PaymentProvider.PAYMOB },
+    };
+    enrollmentRepository.findEnrollmentByProgramAndLearner.mockResolvedValue(
+      existingEnrollment,
+    );
+    enrollmentRepository.updateEnrollment.mockResolvedValue(existingEnrollment);
+
+    await useCase.execute(input);
+
+    expect(paymentRepository.createPayment).not.toHaveBeenCalled();
+    expect(initiateSessionPayment).not.toHaveBeenCalled();
+    expect(paymentProviderResolverService.resolveRoute).not.toHaveBeenCalled();
+    expect(paymentProviderRegistryService.get).not.toHaveBeenCalled();
   });
 
   it('rejects a new enrollment when the locked program row is at capacity', async () => {

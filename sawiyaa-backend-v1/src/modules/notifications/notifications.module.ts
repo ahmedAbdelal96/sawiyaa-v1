@@ -40,6 +40,10 @@ import { RegisterNotificationDeviceUseCase } from './use-cases/register-notifica
 import { RevokeNotificationDeviceUseCase } from './use-cases/revoke-notification-device.use-case';
 import { NotificationContextEnrichmentService } from './services/notification-context-enrichment.service';
 import { NotificationRealtimePublisher } from './services/notification-realtime.publisher';
+import { NotificationDeliveryResilienceMetricsService } from './services/notification-delivery-resilience-metrics.service';
+import { NotificationStaleQueuedReconcilerService } from './services/notification-stale-queued-reconciler.service';
+import { ProviderCapacityService } from './services/provider-capacity.service';
+import { GlobalProviderCapacityCoordinator } from './services/global-provider-capacity-coordinator.service';
 import { NotificationsGateway } from './gateways/notifications.gateway';
 import { EMAIL_PROVIDER } from './providers/email-provider.token';
 import { EmailProviderAdapter } from './providers/email-provider.adapter';
@@ -107,6 +111,10 @@ import { NotificationQueueModule } from '@common/queue/notification-queue.module
     ListAdminActionCenterItemsUseCase,
     GetAdminOperationalNotificationDetailsUseCase,
     NotificationDeliveryAttemptEngineService,
+    NotificationDeliveryResilienceMetricsService,
+    NotificationStaleQueuedReconcilerService,
+    GlobalProviderCapacityCoordinator,
+    ProviderCapacityService,
     OperationalNotificationService,
     ListMyNotificationsUseCase,
     GetMyUnreadNotificationCountUseCase,
@@ -118,6 +126,7 @@ import { NotificationQueueModule } from '@common/queue/notification-queue.module
     ListMyNotificationDevicesUseCase,
   ],
   exports: [
+    ProviderCapacityService,
     NotificationEmailService,
     NotificationSchedulerCoreService,
     NotificationDeliveryRunnerService,

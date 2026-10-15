@@ -6,6 +6,11 @@ import { OperationsQueueService } from '@common/queue/operations-queue.service';
 import type { OperationsQueueHealthSnapshot } from '@common/queue/operations-queue.service';
 import { PaymentProviderRecoveryService } from '@modules/payments/services/payment-provider-recovery.service';
 import { AccountingReconciliationSchedulerService } from '@modules/financial-operations/services/accounting-reconciliation-scheduler.service';
+import { SessionReminderQueueService } from '@common/queue/session-reminder-queue.service';
+import type { SessionReminderQueueHealthSnapshot } from '@common/queue/session-reminder-queue.service';
+import { ProviderCapacityService } from '@modules/notifications/services/provider-capacity.service';
+import type { ProviderCapacitySnapshot } from '@modules/notifications/services/provider-capacity.service';
+import type { ProviderCapacityMetric } from '@modules/notifications/services/provider-capacity.service';
 
 export type ReadinessState = 'READY' | 'DEGRADED' | 'NOT_READY';
 
@@ -44,6 +49,15 @@ export type ReadinessSnapshot = {
       counts: NotificationQueueHealthSnapshot['counts'];
       oldestWaitingJobAgeMs: number | null;
     };
+    notificationCapacity: {
+      status: ReadinessState;
+      detail: string;
+      mode: ProviderCapacitySnapshot['mode'];
+      globalRateAdmission: ProviderCapacitySnapshot['globalRateAdmission'];
+      globalCoordinator: ProviderCapacitySnapshot['globalCoordinator'];
+      metrics: ProviderCapacityMetric[];
+      providers: ProviderCapacitySnapshot['providers'];
+    };
     operationsQueue: {
       status: ReadinessState;
       detail: string;
@@ -52,6 +66,21 @@ export type ReadinessSnapshot = {
       worker: OperationsQueueHealthSnapshot['worker'];
       counts: OperationsQueueHealthSnapshot['counts'];
       oldestWaitingJobAgeMs: number | null;
+    };
+    sessionReminderRedis: {
+      status: ReadinessState;
+      detail: string;
+      enabled: boolean;
+      mode: string;
+      redis: SessionReminderQueueHealthSnapshot['redis'];
+      worker: SessionReminderQueueHealthSnapshot['worker'];
+      counts: SessionReminderQueueHealthSnapshot['counts'];
+      oldestDelayedOrWaitingJobAgeMs: number | null;
+      lastStageSuccessAt: string | null;
+      lastStageFailureAt: string | null;
+      lastExecutionSuccessAt: string | null;
+      lastRedisErrorAt: string | null;
+      lastError: string | null;
     };
   };
   warnings: string[];
@@ -67,6 +96,10 @@ export class ReadinessService {
     private readonly providerRecovery?: PaymentProviderRecoveryService,
     @Optional()
     private readonly accountingScheduler?: AccountingReconciliationSchedulerService,
+    @Optional()
+    private readonly sessionReminderQueue?: SessionReminderQueueService,
+    @Optional()
+    private readonly providerCapacity?: ProviderCapacityService,
   ) {}
 
   async getSnapshot(): Promise<ReadinessSnapshot> {
@@ -147,6 +180,33 @@ export class ReadinessService {
         `Notification queue is degraded; PostgreSQL DB runner fallback remains active${notificationQueue.lastError ? ` (${notificationQueue.lastError})` : ''}.`,
       );
     }
+    const notificationCapacity = this.providerCapacity?.getSnapshot() ?? {
+      mode: 'METRICS_ONLY' as const,
+      globalRateAdmission: 'DISABLED' as const,
+      globalCoordinator: {
+        mode: 'METRICS_ONLY' as const,
+        configured: false,
+        redisUrlConfigured: false,
+        redisReady: false,
+        health: 'NOT_REQUIRED' as const,
+        keyPrefix: 'sawiyaa:notification-capacity',
+        stateTtlMs: 120_000,
+        providers: {
+          BREVO: { ratePerSecond: null, burst: null },
+          EXPO: { ratePerSecond: null, burst: null },
+          SMTP: { ratePerSecond: null, burst: null },
+        },
+        allowedTotal: 0,
+        throttledTotal: 0,
+        shadowWouldThrottleTotal: 0,
+        coordinatorErrors: 0,
+        failClosedDeferrals: 0,
+        cooldownEvents: 0,
+        lastError: null,
+      },
+      metrics: [],
+      providers: {} as ProviderCapacitySnapshot['providers'],
+    };
     const operationsQueue = this.operationsQueue
       ? await this.operationsQueue.getHealthSnapshot()
       : ({
@@ -173,6 +233,50 @@ export class ReadinessService {
     if (operationsQueue.status === 'DEGRADED') {
       warnings.push(
         `Daily attendance operations queue is degraded; eligible sessions remain recoverable by the next sweep${operationsQueue.lastError ? ` (${operationsQueue.lastError})` : ''}.`,
+      );
+    }
+    const sessionReminderRedis = this.sessionReminderQueue
+      ? await this.sessionReminderQueue.getHealthSnapshot()
+      : ({
+          enabled: false,
+          mode: 'DB_ONLY',
+          status: 'DISABLED' as const,
+          redis: 'NOT_REQUIRED' as const,
+          worker: 'NOT_REQUIRED' as const,
+          queueName: 'session-reminder-execution',
+          counts: {
+            waiting: 0,
+            active: 0,
+            completed: 0,
+            failed: 0,
+            delayed: 0,
+          },
+          oldestDelayedOrWaitingJobAgeMs: null,
+          lastStageSuccessAt: null,
+          lastStageFailureAt: null,
+          lastExecutionSuccessAt: null,
+          lastRedisErrorAt: null,
+          lastWorkerHeartbeatAt: null,
+          lastError: null,
+          metrics: {
+            candidates: 0,
+            staged: 0,
+            duplicateStage: 0,
+            executions: 0,
+            noops: 0,
+            stale: 0,
+            recovery: 0,
+            stageFailures: 0,
+            workerFailures: 0,
+          },
+        } satisfies SessionReminderQueueHealthSnapshot);
+    const sessionReminderRedisStatus: ReadinessState =
+      sessionReminderRedis.enabled && sessionReminderRedis.status === 'DEGRADED'
+        ? 'DEGRADED'
+        : 'READY';
+    if (sessionReminderRedis.status === 'DEGRADED') {
+      warnings.push(
+        'Session reminder Redis staging is degraded; PostgreSQL reminder recovery remains active.',
       );
     }
     const attendanceStatus: ReadinessState = attendanceEnabled
@@ -248,6 +352,15 @@ export class ReadinessService {
       );
     }
 
+    const notificationCapacityNotReady =
+      notificationCapacity.mode === 'ENFORCED' &&
+      notificationCapacity.globalCoordinator.health === 'UNAVAILABLE';
+    if (notificationCapacityNotReady) {
+      warnings.push(
+        'Notification external provider capacity is not ready; ENFORCED delivery is failing closed while PostgreSQL remains authoritative.',
+      );
+    }
+
     const statuses = [
       attendanceStatus,
       dailyStatus,
@@ -256,6 +369,8 @@ export class ReadinessService {
       reconciliationStatus,
       notificationQueueStatus,
       operationsQueueStatus,
+      sessionReminderRedisStatus,
+      ...(notificationCapacityNotReady ? (['NOT_READY'] as const) : []),
     ];
     const status: ReadinessState = statuses.includes('NOT_READY')
       ? 'NOT_READY'
@@ -318,6 +433,16 @@ export class ReadinessService {
           counts: notificationQueue.counts,
           oldestWaitingJobAgeMs: notificationQueue.oldestWaitingJobAgeMs,
         },
+        notificationCapacity: {
+          status: notificationCapacityNotReady ? 'NOT_READY' : 'READY',
+          detail:
+            notificationCapacity.mode === 'METRICS_ONLY'
+              ? 'Provider capacity instrumentation is active; global admission is disabled by default.'
+              : notificationCapacity.mode === 'SHADOW'
+                ? 'Global provider admission is calculated in shadow mode; provider calls are not blocked.'
+                : 'Global provider admission is enforced with fail-closed coordinator behavior.',
+          ...notificationCapacity,
+        },
         operationsQueue: {
           status: operationsQueueStatus,
           detail:
@@ -331,6 +456,27 @@ export class ReadinessService {
           worker: operationsQueue.worker,
           counts: operationsQueue.counts,
           oldestWaitingJobAgeMs: operationsQueue.oldestWaitingJobAgeMs,
+        },
+        sessionReminderRedis: {
+          status: sessionReminderRedisStatus,
+          detail:
+            sessionReminderRedis.status === 'DISABLED'
+              ? 'Redis reminder staging is disabled; PostgreSQL is authoritative.'
+              : sessionReminderRedis.status === 'READY'
+                ? 'Near-term reminder staging is available; PostgreSQL remains authoritative.'
+                : 'Redis reminder staging is degraded; PostgreSQL recovery remains active.',
+          enabled: sessionReminderRedis.enabled,
+          mode: sessionReminderRedis.mode,
+          redis: sessionReminderRedis.redis,
+          worker: sessionReminderRedis.worker,
+          counts: sessionReminderRedis.counts,
+          oldestDelayedOrWaitingJobAgeMs:
+            sessionReminderRedis.oldestDelayedOrWaitingJobAgeMs,
+          lastStageSuccessAt: sessionReminderRedis.lastStageSuccessAt,
+          lastStageFailureAt: sessionReminderRedis.lastStageFailureAt,
+          lastExecutionSuccessAt: sessionReminderRedis.lastExecutionSuccessAt,
+          lastRedisErrorAt: sessionReminderRedis.lastRedisErrorAt,
+          lastError: sessionReminderRedis.lastError,
         },
       },
       warnings,

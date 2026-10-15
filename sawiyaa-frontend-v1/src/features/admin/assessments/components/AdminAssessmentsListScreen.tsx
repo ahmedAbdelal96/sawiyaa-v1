@@ -4,7 +4,21 @@ import { useEffect, useMemo, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { usePathname, useRouter } from "@/i18n/navigation";
 import { useSearchParams } from "next/navigation";
-import { ClipboardCheck, Loader2, Plus, Search } from "lucide-react";
+import {
+  Brain,
+  CheckCircle2,
+  ClipboardCheck,
+  Clock,
+  ExternalLink,
+  Eye,
+  EyeOff,
+  FileEdit,
+  Loader2,
+  Pencil,
+  Plus,
+  Search,
+  Sparkles,
+} from "lucide-react";
 import { DataTable } from "@/components/ui/data-table";
 import type { ColumnDef, SortConfig } from "@/components/ui/data-table";
 import {
@@ -15,21 +29,32 @@ import {
 } from "@/components/ui/data-table";
 import { FormModal } from "@/components/ui/modal";
 import Button from "@/components/ui/button/Button";
+import InputField from "@/components/form/input/InputField";
+import Select from "@/components/form/Select";
+import FilterClearButton from "@/components/ui/filters/FilterClearButton";
 import AdminOperationalListShell, { AdminSummaryCard } from "@/components/shared/admin/AdminOperationalListShell";
 import { DEFAULT_PAGE_LIMIT, DEFAULT_PAGE_SIZE_OPTIONS } from "@/constants/pagination";
 import { useDebouncedValue } from "@/hooks/use-debounce";
-import { ADMIN_ASSESSMENT_STATUS_STYLES, getAdminAssessmentsErrorKey } from "../lib/admin-assessments";
+import {
+  ADMIN_ASSESSMENT_STATUS_STYLES,
+  ASSESSMENT_CATEGORY_CONFIG,
+  getAdminAssessmentsErrorKey,
+  getAssessmentCategoryInfo,
+} from "../lib/admin-assessments";
 import { useAdminAssessmentsList, useCreateAdminAssessment } from "../hooks/use-admin-assessments";
 import type { AdminAssessmentDefinition, AdminAssessmentStatus } from "../types/admin-assessments.types";
 
-const STATUS_OPTIONS: Array<AdminAssessmentStatus | "ALL"> = ["ALL", "DRAFT", "ACTIVE", "INACTIVE"];
+const STATUS_OPTIONS: Array<AdminAssessmentStatus | "ALL"> = ["ALL", "ACTIVE", "DRAFT", "INACTIVE"];
 const PUBLISHED_OPTIONS: Array<"ALL" | "TRUE" | "FALSE"> = ["ALL", "TRUE", "FALSE"];
 const SORTABLE_COLUMNS = ["title", "slug", "status", "version", "updatedAt", "createdAt"] as const;
 type SortableAssessmentsColumn = (typeof SORTABLE_COLUMNS)[number];
 const PAGE_SIZE_OPTIONS = DEFAULT_PAGE_SIZE_OPTIONS;
 
-function formatDate(value: string, locale: string) {
-  return new Date(value).toLocaleDateString(locale === "ar" ? "ar-SA" : "en-US", {
+function formatDate(value: string | null | undefined, locale: string) {
+  if (!value) return "—";
+  const d = new Date(value);
+  if (isNaN(d.getTime())) return "—";
+  return d.toLocaleDateString(locale === "ar" ? "ar-SA" : "en-US", {
     year: "numeric",
     month: "short",
     day: "numeric",
@@ -69,6 +94,8 @@ export default function AdminAssessmentsListScreen() {
     PUBLISHED_OPTIONS,
     "ALL",
   );
+  const categoryFilter = searchParams.get("category") || "ALL";
+
   const page = parsePositiveIntParam(searchParams.get("page"), 1, { min: 1 });
   const limit = parsePositiveIntParam(searchParams.get("limit"), DEFAULT_PAGE_LIMIT, {
     min: 1,
@@ -89,8 +116,10 @@ export default function AdminAssessmentsListScreen() {
 
   const [form, setForm] = useState({
     title: "",
-    category: "",
+    category: "depression",
     customCategory: "",
+    description: "",
+    estimatedDurationMinutes: 5,
   });
   const [useCustomCategory, setUseCustomCategory] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<Record<string, boolean>>({});
@@ -109,6 +138,12 @@ export default function AdminAssessmentsListScreen() {
     router.push(query ? `${pathname}?${query}` : pathname, { scroll: false });
   }, [debouncedSearch, pathname, router, searchFilter, searchParams]);
 
+  const updateFilters = (updates: Record<string, string | number | null | undefined>) => {
+    const next = buildUpdatedSearchParams(new URLSearchParams(searchParams.toString()), updates);
+    const query = next.toString();
+    router.push(query ? `${pathname}?${query}` : pathname, { scroll: false });
+  };
+
   const params = useMemo(() => {
     return {
       page,
@@ -123,15 +158,33 @@ export default function AdminAssessmentsListScreen() {
   const listQuery = useAdminAssessmentsList(params);
   const createMutation = useCreateAdminAssessment();
   const data = listQuery.data;
+
+  // Categories available in current dataset + presets
   const availableCategories = useMemo(() => {
-    const categories = new Set<string>();
+    const categories = new Set<string>(Object.keys(ASSESSMENT_CATEGORY_CONFIG));
     for (const item of data?.items ?? []) {
-      const category = item.category.trim();
-      if (category.length > 0) categories.add(category);
+      const category = item.category?.trim().toLowerCase();
+      if (category && category.length > 0) categories.add(category);
     }
     return Array.from(categories).sort((a, b) => a.localeCompare(b));
   }, [data?.items]);
+
+  // Client-side category filtering if active
+  const displayedItems = useMemo(() => {
+    const rawItems = data?.items ?? [];
+    if (categoryFilter === "ALL") return rawItems;
+    return rawItems.filter(
+      (item) => item.category?.trim().toLowerCase() === categoryFilter.trim().toLowerCase(),
+    );
+  }, [categoryFilter, data?.items]);
+
   const totalItems = data?.pagination.totalItems ?? 0;
+  const publishedCount = useMemo(() => {
+    return (data?.items ?? []).filter((item) => item.isPublished).length;
+  }, [data?.items]);
+  const draftsCount = useMemo(() => {
+    return (data?.items ?? []).filter((item) => item.status === "DRAFT").length;
+  }, [data?.items]);
 
   const columns = useMemo<ColumnDef<AdminAssessmentDefinition>[]>(() => [
     {
@@ -140,9 +193,26 @@ export default function AdminAssessmentsListScreen() {
       accessor: (row) => row.title,
       sortable: true,
       cell: (row) => (
-        <div>
-          <p className="text-sm font-semibold text-text-primary dark:text-white/95">{row.title}</p>
-          <p className="mt-1 font-mono text-xs text-text-muted">{row.slug}</p>
+        <div className="flex items-center gap-2 py-0.5 text-start">
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              router.push(`/admin/assessments/${row.id}` as never);
+            }}
+            className="font-semibold text-xs md:text-sm text-text-primary hover:text-primary transition-colors text-start dark:text-white"
+          >
+            {row.title}
+          </button>
+          <span className="font-mono text-[10px] text-text-muted bg-surface-tertiary px-1.5 py-0.5 rounded border border-border-light/70 dark:bg-surface-tertiary/60 shrink-0">
+            {row.slug}
+          </span>
+          {row.estimatedDurationMinutes ? (
+            <span className="inline-flex items-center gap-1 text-[10px] text-text-muted shrink-0">
+              <Clock className="h-2.5 w-2.5 text-text-muted" />
+              <span>{t("assessmentsAdmin.table.duration", { minutes: row.estimatedDurationMinutes })}</span>
+            </span>
+          ) : null}
         </div>
       ),
     },
@@ -150,6 +220,15 @@ export default function AdminAssessmentsListScreen() {
       id: "category",
       header: t("assessmentsAdmin.table.category"),
       accessor: (row) => row.category,
+      cell: (row) => {
+        const catInfo = getAssessmentCategoryInfo(row.category, locale);
+        return (
+          <span className={`inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-[11px] font-semibold whitespace-nowrap ${catInfo.badgeClass}`}>
+            <span className={`h-1.5 w-1.5 rounded-full ${catInfo.dotClass}`} />
+            <span>{catInfo.label}</span>
+          </span>
+        );
+      },
     },
     {
       id: "status",
@@ -157,17 +236,40 @@ export default function AdminAssessmentsListScreen() {
       accessor: (row) => row.status,
       sortable: true,
       cell: (row) => (
-        <div className="space-y-1">
+        <div className="flex items-center gap-1.5 text-start whitespace-nowrap">
           <span
-            className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${ADMIN_ASSESSMENT_STATUS_STYLES[row.status]}`}
+            className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold ${ADMIN_ASSESSMENT_STATUS_STYLES[row.status]}`}
           >
+            <span
+              className={`h-1.5 w-1.5 rounded-full ${
+                row.status === "ACTIVE"
+                  ? "bg-emerald-500"
+                  : row.status === "DRAFT"
+                    ? "bg-amber-500"
+                    : "bg-slate-400"
+              }`}
+            />
             {t(`assessmentsAdmin.statuses.${row.status}` as Parameters<typeof t>[0])}
           </span>
-          <p className="text-xs text-text-muted">
-            {row.isPublished
-              ? t("assessmentsAdmin.published.active")
-              : t("assessmentsAdmin.published.inactive")}
-          </p>
+          <span
+            className={`inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[10px] font-medium ${
+              row.isPublished
+                ? "bg-emerald-50 text-emerald-700 border border-emerald-200/60 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800"
+                : "bg-surface-tertiary text-text-muted border border-border-light"
+            }`}
+          >
+            {row.isPublished ? (
+              <>
+                <CheckCircle2 className="h-2.5 w-2.5 text-emerald-600" />
+                {t("assessmentsAdmin.published.active")}
+              </>
+            ) : (
+              <>
+                <EyeOff className="h-2.5 w-2.5 text-text-muted" />
+                {t("assessmentsAdmin.published.inactive")}
+              </>
+            )}
+          </span>
         </div>
       ),
     },
@@ -177,6 +279,11 @@ export default function AdminAssessmentsListScreen() {
       accessor: (row) => String(row.version),
       align: "center",
       sortable: true,
+      cell: (row) => (
+        <span className="inline-flex items-center rounded border border-border-light bg-surface-tertiary px-1.5 py-0.5 font-mono text-[11px] font-semibold text-text-primary dark:text-white">
+          v{row.version}
+        </span>
+      ),
     },
     {
       id: "updatedAt",
@@ -184,7 +291,11 @@ export default function AdminAssessmentsListScreen() {
       accessor: (row) => new Date(row.updatedAt).getTime(),
       hideOnMobile: true,
       sortable: true,
-      cell: (row) => formatDate(row.updatedAt, locale),
+      cell: (row) => (
+        <span className="text-xs text-text-secondary whitespace-nowrap">
+          {formatDate(row.updatedAt, locale)}
+        </span>
+      ),
     },
     {
       id: "createdAt",
@@ -192,9 +303,13 @@ export default function AdminAssessmentsListScreen() {
       accessor: (row) => new Date(row.createdAt).getTime(),
       hideOnMobile: true,
       sortable: true,
-      cell: (row) => formatDate(row.createdAt, locale),
+      cell: (row) => (
+        <span className="text-xs text-text-muted whitespace-nowrap">
+          {formatDate(row.createdAt, locale)}
+        </span>
+      ),
     },
-  ], [locale, t]);
+  ], [locale, router, t]);
 
   const handleCreate = async () => {
     const resolvedCategory = useCustomCategory ? form.customCategory.trim() : form.category.trim();
@@ -214,6 +329,8 @@ export default function AdminAssessmentsListScreen() {
         title: form.title.trim(),
         slug: resolvedSlug,
         category: resolvedCategory,
+        description: form.description.trim() || undefined,
+        estimatedDurationMinutes: Number(form.estimatedDurationMinutes) || 5,
       });
       setFeedback({ tone: "success", message: t("assessmentsAdmin.feedback.createSuccess") });
       setIsCreateModalOpen(false);
@@ -227,15 +344,31 @@ export default function AdminAssessmentsListScreen() {
   };
 
   const hasActiveFilters =
-    Boolean(searchFilter.trim()) || statusFilter !== "ALL" || publishedFilter !== "ALL";
+    Boolean(searchFilter.trim()) ||
+    statusFilter !== "ALL" ||
+    publishedFilter !== "ALL" ||
+    categoryFilter !== "ALL";
+
+  const clearAllFilters = () => {
+    setSearchInput("");
+    router.push(pathname, { scroll: false });
+  };
 
   return (
     <AdminOperationalListShell
+      eyebrow={t("assessmentsAdmin.list.eyebrow")}
       title={t("assessmentsAdmin.list.title")}
+      description={t("assessmentsAdmin.list.note")}
       actions={
         <Button
           onClick={() => {
-            setForm({ title: "", category: "", customCategory: "" });
+            setForm({
+              title: "",
+              category: availableCategories[0] || "depression",
+              customCategory: "",
+              description: "",
+              estimatedDurationMinutes: 5,
+            });
             setUseCustomCategory(false);
             setFieldErrors({});
             setIsCreateModalOpen(true);
@@ -248,7 +381,7 @@ export default function AdminAssessmentsListScreen() {
       notice={
         feedback ? (
           <div
-            className={`rounded-2xl border px-4 py-3 text-sm ${
+            className={`rounded-xl border px-4 py-3 text-sm font-medium ${
               feedback.tone === "success"
                 ? "border-primary/20 bg-primary-light text-text-brand dark:border-primary/30 dark:bg-primary/10 dark:text-primary-light"
                 : "border-error-200 bg-error-50 text-error-700 dark:border-error-500/25 dark:bg-error-500/10 dark:text-error-300"
@@ -259,96 +392,153 @@ export default function AdminAssessmentsListScreen() {
         ) : null
       }
       summaryCards={
-        <AdminSummaryCard
-          metricKey="assessments.total"
-          label={t("assessmentsAdmin.table.title")}
-          value={typeof totalItems === "number" ? totalItems : "..."}
-          tone="primary"
-        />
+        <>
+          <AdminSummaryCard
+            label={t("assessmentsAdmin.stats.total")}
+            value={typeof totalItems === "number" ? totalItems : "..."}
+            tone="primary"
+            icon={<ClipboardCheck className="h-4 w-4" />}
+            hint={t("assessmentsAdmin.stats.totalHint")}
+          />
+          <AdminSummaryCard
+            label={t("assessmentsAdmin.stats.published")}
+            value={publishedCount}
+            tone="success"
+            icon={<CheckCircle2 className="h-4 w-4" />}
+            hint={t("assessmentsAdmin.stats.publishedHint")}
+          />
+          <AdminSummaryCard
+            label={t("assessmentsAdmin.stats.drafts")}
+            value={draftsCount}
+            tone="warning"
+            icon={<FileEdit className="h-4 w-4" />}
+            hint={t("assessmentsAdmin.stats.draftsHint")}
+          />
+          <AdminSummaryCard
+            label={t("assessmentsAdmin.stats.categories")}
+            value={availableCategories.length}
+            tone="info"
+            icon={<Sparkles className="h-4 w-4" />}
+            hint={t("assessmentsAdmin.stats.categoriesHint")}
+          />
+        </>
       }
+      filtersTitle={t("assessmentsAdmin.filters.title")}
       filters={
-        <div className="grid gap-3 md:grid-cols-4">
-          <label className="block md:col-span-2">
-            <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-text-muted">
-              {t("assessmentsAdmin.filters.search")}
-            </span>
-            <div className="relative">
-              <Search className="pointer-events-none absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-text-muted" />
-              <input
-                value={searchInput}
-                onChange={(event) => setSearchInput(event.target.value)}
-                placeholder={t("assessmentsAdmin.filters.searchPlaceholder")}
-                className="app-control w-full py-3 pe-4 ps-10"
+        <div className="space-y-3">
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            {/* Search Input */}
+            <div className="sm:col-span-2 lg:col-span-2">
+              <span className="text-text-secondary mb-1.5 block text-xs font-semibold tracking-wider uppercase">
+                {t("assessmentsAdmin.filters.search")}
+              </span>
+              <div className="relative">
+                <Search className="pointer-events-none absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-text-muted" />
+                <InputField
+                  value={searchInput}
+                  onChange={(event) => setSearchInput(event.target.value)}
+                  placeholder={t("assessmentsAdmin.filters.searchPlaceholder")}
+                  className="ps-9"
+                />
+              </div>
+            </div>
+
+            {/* Status Select */}
+            <div>
+              <span className="text-text-secondary mb-1.5 block text-xs font-semibold tracking-wider uppercase">
+                {t("assessmentsAdmin.filters.status")}
+              </span>
+              <Select
+                defaultValue={statusFilter}
+                onChange={(value) =>
+                  updateFilters({
+                    status: value === "ALL" ? null : value,
+                    page: 1,
+                  })
+                }
+                options={[
+                  { value: "ALL", label: t("assessmentsAdmin.filters.allStatuses") },
+                  ...STATUS_OPTIONS.filter((s) => s !== "ALL").map((status) => ({
+                    value: status,
+                    label: t(`assessmentsAdmin.statuses.${status}` as Parameters<typeof t>[0]),
+                  })),
+                ]}
               />
             </div>
-          </label>
 
-          <label className="block">
-            <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-text-muted">
-              {t("assessmentsAdmin.filters.status")}
-            </span>
-            <select
-              value={statusFilter}
-              onChange={(event) =>
-                router.push(
-                  `${pathname}?${buildUpdatedSearchParams(new URLSearchParams(searchParams.toString()), {
-                    status: event.target.value === "ALL" ? null : event.target.value,
+            {/* Publish State Select */}
+            <div>
+              <span className="text-text-secondary mb-1.5 block text-xs font-semibold tracking-wider uppercase">
+                {t("assessmentsAdmin.filters.publishState")}
+              </span>
+              <Select
+                defaultValue={publishedFilter}
+                onChange={(value) =>
+                  updateFilters({
+                    published: value === "ALL" ? null : value,
                     page: 1,
-                  }).toString()}`,
-                  { scroll: false },
-                )
-              }
-              className="app-control w-full px-4 py-3"
-            >
-              <option value="ALL">{t("assessmentsAdmin.filters.allStatuses")}</option>
-              {STATUS_OPTIONS.filter((item) => item !== "ALL").map((status) => (
-                <option key={status} value={status}>
-                  {t(`assessmentsAdmin.statuses.${status}` as Parameters<typeof t>[0])}
-                </option>
-              ))}
-            </select>
-          </label>
-
-          <label className="block">
-            <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-text-muted">
-              {t("assessmentsAdmin.filters.publishState")}
-            </span>
-            <select
-              value={publishedFilter}
-              onChange={(event) =>
-                router.push(
-                  `${pathname}?${buildUpdatedSearchParams(new URLSearchParams(searchParams.toString()), {
-                    published: event.target.value === "ALL" ? null : event.target.value,
-                    page: 1,
-                  }).toString()}`,
-                  { scroll: false },
-                )
-              }
-              className="app-control w-full px-4 py-3"
-            >
-              <option value="ALL">{t("assessmentsAdmin.filters.allPublishStates")}</option>
-              <option value="TRUE">{t("assessmentsAdmin.published.active")}</option>
-              <option value="FALSE">{t("assessmentsAdmin.published.inactive")}</option>
-            </select>
-          </label>
-
-          {hasActiveFilters ? (
-            <div className="flex items-end md:col-span-4">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => router.push(pathname, { scroll: false })}
-              >
-                {t("assessmentsAdmin.filters.clear")}
-              </Button>
+                  })
+                }
+                options={[
+                  { value: "ALL", label: t("assessmentsAdmin.filters.allPublishStates") },
+                  { value: "TRUE", label: t("assessmentsAdmin.published.active") },
+                  { value: "FALSE", label: t("assessmentsAdmin.published.inactive") },
+                ]}
+              />
             </div>
-          ) : null}
+          </div>
+
+          {/* Quick Category Chips + Reset button row */}
+          <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-border-light/60">
+            <div className="flex flex-wrap items-center gap-1.5">
+              <span className="text-xs text-text-muted me-1">
+                {t("assessmentsAdmin.filters.category")}:
+              </span>
+              <button
+                type="button"
+                onClick={() => updateFilters({ category: null, page: 1 })}
+                className={`rounded-lg px-2.5 py-1 text-xs font-semibold transition-colors ${
+                  categoryFilter === "ALL"
+                    ? "bg-primary text-white shadow-2xs"
+                    : "bg-surface-tertiary text-text-secondary hover:bg-border-light/70"
+                }`}
+              >
+                {t("assessmentsAdmin.categories.all")}
+              </button>
+              {availableCategories.map((catKey) => {
+                const info = getAssessmentCategoryInfo(catKey, locale);
+                const isSelected = categoryFilter.toLowerCase() === catKey.toLowerCase();
+                return (
+                  <button
+                    key={catKey}
+                    type="button"
+                    onClick={() => updateFilters({ category: catKey, page: 1 })}
+                    className={`rounded-lg px-2.5 py-1 text-xs font-semibold transition-colors flex items-center gap-1.5 ${
+                      isSelected
+                        ? "bg-primary text-white shadow-2xs"
+                        : "bg-surface-tertiary text-text-secondary hover:bg-border-light/70"
+                    }`}
+                  >
+                    <span className={`h-1.5 w-1.5 rounded-full ${isSelected ? "bg-white" : info.dotClass}`} />
+                    <span>{info.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+
+            <FilterClearButton
+              disabled={!hasActiveFilters}
+              onClick={clearAllFilters}
+            />
+          </div>
         </div>
       }
+      tableTitle={t("assessmentsAdmin.table.sectionTitle")}
+      tableSubtitle={t("assessmentsAdmin.table.sectionSubtitle", { count: totalItems })}
     >
-
       <DataTable
-        data={data?.items ?? []}
+        size="sm"
+        data={displayedItems}
         columns={columns}
         getRowId={(row) => row.id}
         loading={listQuery.isLoading}
@@ -363,12 +553,10 @@ export default function AdminAssessmentsListScreen() {
         }}
         sortConfig={sortConfig}
         onSortChange={(nextSort) => {
-          const next = buildUpdatedSearchParams(new URLSearchParams(searchParams.toString()), {
+          updateFilters({
             sortBy: nextSort.column,
             sortDir: nextSort.direction,
           });
-          const query = next.toString();
-          router.push(query ? `${pathname}?${query}` : pathname, { scroll: false });
         }}
         onRowClick={(row) => router.push(`/admin/assessments/${row.id}` as never)}
         pagination={
@@ -383,36 +571,37 @@ export default function AdminAssessmentsListScreen() {
               }
             : undefined
         }
-        onPageChange={(nextPage) =>
-          router.push(
-            `${pathname}?${buildUpdatedSearchParams(new URLSearchParams(searchParams.toString()), {
-              page: nextPage,
-            }).toString()}`,
-            { scroll: false },
-          )
-        }
-        onPageSizeChange={(nextLimit) =>
-          router.push(
-            `${pathname}?${buildUpdatedSearchParams(new URLSearchParams(searchParams.toString()), {
-              limit: nextLimit,
-              page: 1,
-            }).toString()}`,
-            { scroll: false },
-          )
-        }
+        onPageChange={(nextPage) => updateFilters({ page: nextPage })}
+        onPageSizeChange={(nextLimit) => updateFilters({ limit: nextLimit, page: 1 })}
         pageSizeOptions={PAGE_SIZE_OPTIONS}
         rowActionsHeader={t("assessmentsAdmin.table.actions")}
         rowActions={(row) => (
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => router.push(`/admin/assessments/${row.id}` as never)}
-          >
-            {t("assessmentsAdmin.actions.open")}
-          </Button>
+          <div className="flex items-center gap-1.5 justify-end py-0.5">
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-7 px-2.5 text-xs font-medium"
+              startIcon={<Pencil className="h-3 w-3" />}
+              onClick={() => router.push(`/admin/assessments/${row.id}` as never)}
+            >
+              {t("assessmentsAdmin.actions.open")}
+            </Button>
+            {row.isPublished ? (
+              <a
+                href={`/${locale}/patient/assessments/${row.slug}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={(e) => e.stopPropagation()}
+                className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-border-light bg-surface-primary text-text-muted hover:text-primary hover:border-primary/40 transition-colors shadow-2xs"
+                title={t("assessmentsAdmin.table.previewPatient")}
+              >
+                <ExternalLink className="h-3 w-3" />
+              </a>
+            ) : null}
+          </div>
         )}
         emptyState={{
-          icon: <ClipboardCheck className="h-6 w-6 text-primary" />,
+          icon: <ClipboardCheck className="h-8 w-8 text-primary" />,
           title: t("assessmentsAdmin.states.empty.heading"),
           description: hasActiveFilters
             ? t("assessmentsAdmin.states.empty.filtered")
@@ -449,13 +638,14 @@ export default function AdminAssessmentsListScreen() {
         }
         cancelLabel={t("assessmentsAdmin.actions.cancel")}
       >
-        <div className="grid gap-4">
+        <div className="grid gap-4 text-start">
           <label className="block">
-            <span className="mb-2 block text-sm font-medium text-text-primary dark:text-white/90">
-              {t("assessmentsAdmin.form.title")}
+            <span className="mb-1.5 block text-xs font-semibold text-text-primary dark:text-white/90">
+              {t("assessmentsAdmin.form.title")} *
             </span>
-            <input
+            <InputField
               value={form.title}
+              placeholder="مثال: مقياس اضطراب النوم (ISI) أو فحص الاكتئاب"
               onChange={(event) => {
                 setForm((current) => ({
                   ...current,
@@ -463,54 +653,101 @@ export default function AdminAssessmentsListScreen() {
                 }));
                 setFieldErrors((current) => ({ ...current, title: false }));
               }}
-              className={`app-control w-full px-4 py-3 ${fieldErrors.title ? "border-error-500" : ""}`}
+              error={fieldErrors.title}
             />
           </label>
-          <div className="rounded-xl border border-border-light bg-surface-secondary/50 px-3 py-2 text-xs text-text-muted">
-            {t("assessmentsAdmin.form.slugAutoLine", { slug: slugify(form.title) || "-" })}
-          </div>
-          <label className="block">
-            <span className="mb-2 block text-sm font-medium text-text-primary dark:text-white/90">
-              {t("assessmentsAdmin.form.category")}
+
+          <div className="rounded-xl border border-border-light bg-surface-secondary/70 px-3.5 py-2 text-xs text-text-muted flex items-center justify-between">
+            <span className="font-mono text-[11px]">
+              {t("assessmentsAdmin.form.slugAutoLine", { slug: slugify(form.title) || "-" })}
             </span>
-            <select
-              value={useCustomCategory ? "__custom__" : form.category}
-              onChange={(event) => {
-                if (event.target.value === "__custom__") {
-                  setUseCustomCategory(true);
-                  setForm((current) => ({ ...current, category: "" }));
-                } else {
-                  setUseCustomCategory(false);
-                  setForm((current) => ({ ...current, category: event.target.value }));
+            <span className="text-[10px] text-text-muted uppercase tracking-wider">URL SLUG</span>
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div>
+              <span className="mb-1.5 block text-xs font-semibold text-text-primary dark:text-white/90">
+                {t("assessmentsAdmin.form.category")} *
+              </span>
+              <Select
+                defaultValue={useCustomCategory ? "__custom__" : form.category}
+                onChange={(value) => {
+                  if (value === "__custom__") {
+                    setUseCustomCategory(true);
+                    setForm((current) => ({ ...current, category: "" }));
+                  } else {
+                    setUseCustomCategory(false);
+                    setForm((current) => ({ ...current, category: value }));
+                  }
+                  setFieldErrors((current) => ({ ...current, category: false }));
+                }}
+                options={[
+                  ...availableCategories.map((category) => {
+                    const info = getAssessmentCategoryInfo(category, locale);
+                    return {
+                      value: category,
+                      label: `${info.label} (${category})`,
+                    };
+                  }),
+                  { value: "__custom__", label: t("assessmentsAdmin.form.customCategoryOption") },
+                ]}
+                error={fieldErrors.category}
+              />
+            </div>
+
+            <div>
+              <span className="mb-1.5 block text-xs font-semibold text-text-primary dark:text-white/90">
+                {t("assessmentsAdmin.form.estimatedDuration")}
+              </span>
+              <InputField
+                type="number"
+                min="1"
+                max="60"
+                value={form.estimatedDurationMinutes}
+                onChange={(event) =>
+                  setForm((current) => ({
+                    ...current,
+                    estimatedDurationMinutes: Number(event.target.value) || 5,
+                  }))
                 }
-                setFieldErrors((current) => ({ ...current, category: false }));
-              }}
-              className={`app-control w-full px-4 py-3 ${fieldErrors.category ? "border-error-500" : ""}`}
-            >
-              <option value="">{t("assessmentsAdmin.form.categoryPlaceholder")}</option>
-              {availableCategories.map((category) => (
-                <option key={category} value={category}>
-                  {category}
-                </option>
-              ))}
-              <option value="__custom__">{t("assessmentsAdmin.form.customCategoryOption")}</option>
-            </select>
-          </label>
+              />
+            </div>
+          </div>
+
           {useCustomCategory ? (
             <label className="block">
-              <span className="mb-2 block text-sm font-medium text-text-primary dark:text-white/90">
-                {t("assessmentsAdmin.form.customCategoryLabel")}
+              <span className="mb-1.5 block text-xs font-semibold text-text-primary dark:text-white/90">
+                {t("assessmentsAdmin.form.customCategoryLabel")} *
               </span>
-              <input
+              <InputField
                 value={form.customCategory}
+                placeholder="مثال: adhd أو trauma"
                 onChange={(event) => {
                   setForm((current) => ({ ...current, customCategory: event.target.value }));
                   setFieldErrors((current) => ({ ...current, category: false }));
                 }}
-                className={`app-control w-full px-4 py-3 ${fieldErrors.category ? "border-error-500" : ""}`}
+                error={fieldErrors.category}
               />
             </label>
           ) : null}
+
+          <label className="block">
+            <span className="mb-1.5 block text-xs font-semibold text-text-primary dark:text-white/90">
+              {t("assessmentsAdmin.form.description")} (اختياري)
+            </span>
+            <textarea
+              value={form.description}
+              rows={3}
+              placeholder="وصف موجز يوضح للمريض هدف التقييم ومجاله..."
+              onChange={(event) =>
+                setForm((current) => ({
+                  ...current,
+                  description: event.target.value,
+                }))
+              }
+              className="app-control w-full p-3 text-xs md:text-sm"
+            />
+          </label>
         </div>
       </FormModal>
     </AdminOperationalListShell>

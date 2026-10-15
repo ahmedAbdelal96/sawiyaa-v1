@@ -10,7 +10,11 @@ describe('SessionReminderNotificationSweeperService', () => {
       sessionId: string;
       recipientUserId: string;
       recipientRole: 'PATIENT' | 'PRACTITIONER';
-      reminderType: 'REMINDER_60' | 'REMINDER_15';
+      reminderType:
+        | 'REMINDER_60'
+        | 'REMINDER_15'
+        | 'STARTING_NOW'
+        | 'LATE_JOIN';
       dueAt: Date;
       idempotencyKey: string;
       session: {
@@ -22,15 +26,41 @@ describe('SessionReminderNotificationSweeperService', () => {
       };
     }>;
   }) {
-    const listDueReminders = jest.fn(() =>
-      Promise.resolve(options?.candidates ?? []),
+    let didClaim = false;
+    const claimDueReminders = jest.fn(({ now }: { now: Date }) => {
+      const claimToken = 'claim_1';
+      const claimUntil = new Date(now.getTime() + 60_000);
+      if (didClaim) {
+        return Promise.resolve({
+          claimToken,
+          claimUntil,
+          reminders: [],
+        });
+      }
+      didClaim = true;
+      return Promise.resolve({
+        claimToken,
+        claimUntil,
+        reminders: (options?.candidates ?? []).map((candidate) => ({
+          ...candidate,
+          claimToken,
+          claimUntil,
+        })),
+      });
+    });
+    const findClaimedReminder = jest.fn(({ reminderId }: { reminderId: string }) =>
+      Promise.resolve(
+        (options?.candidates ?? []).find((candidate) => candidate.id === reminderId) ??
+          null,
+      ),
     );
     const markSent = jest.fn().mockResolvedValue({ count: 1 });
     const cancelFutureBySessionId = jest.fn().mockResolvedValue({ count: 1 });
     const cancelReminder = jest.fn().mockResolvedValue({ count: 1 });
 
     const sessionReminderQueueRepository = {
-      listDueReminders,
+      claimDueReminders,
+      findClaimedReminder,
       markSent,
       cancelFutureBySessionId,
       cancelReminder,
@@ -45,6 +75,7 @@ describe('SessionReminderNotificationSweeperService', () => {
 
     const logger = {
       error: jest.fn(),
+      warn: jest.fn(),
     } as unknown as AppLoggerService;
 
     const service = new SessionReminderNotificationSweeperService(
@@ -55,7 +86,7 @@ describe('SessionReminderNotificationSweeperService', () => {
 
     return {
       service,
-      listDueReminders,
+      claimDueReminders,
       markSent,
       cancelFutureBySessionId,
       cancelReminder,
@@ -91,9 +122,10 @@ describe('SessionReminderNotificationSweeperService', () => {
       new Date('2026-08-02T11:00:00.000Z'),
     );
 
-    expect(setup.listDueReminders).toHaveBeenCalledWith({
+    expect(setup.claimDueReminders).toHaveBeenCalledWith({
       now: new Date('2026-08-02T11:00:00.000Z'),
-      limit: 50,
+      limit: 100,
+      leaseDurationMs: 60_000,
     });
     expect(setup.dispatchScheduledSessionReminder).toHaveBeenCalledWith({
       reminder: expect.objectContaining({
@@ -104,6 +136,7 @@ describe('SessionReminderNotificationSweeperService', () => {
     expect(setup.markSent).toHaveBeenCalledWith({
       reminderId: 'reminder_1',
       sentAt: new Date('2026-08-02T11:00:00.000Z'),
+      claimToken: 'claim_1',
     });
     expect(handled).toBe(1);
   });
@@ -258,6 +291,7 @@ describe('SessionReminderNotificationSweeperService', () => {
     expect(setup.cancelReminder).toHaveBeenCalledWith({
       reminderId: 'reminder_3',
       cancelledAt: new Date('2026-08-02T11:00:00.000Z'),
+      claimToken: 'claim_1',
     });
   });
 
@@ -292,5 +326,46 @@ describe('SessionReminderNotificationSweeperService', () => {
 
     expect(handled).toBe(0);
     expect(setup.logger.error).toHaveBeenCalled();
+  });
+
+  it('suppresses a stale starting-now reminder instead of marking it sent', async () => {
+    const now = new Date('2026-08-02T11:02:00.000Z');
+    const setup = buildService({
+      candidates: [
+        {
+          id: 'reminder_stale_start',
+          sessionId: 'session_stale_start',
+          recipientUserId: 'user_stale_start',
+          recipientRole: 'PATIENT',
+          reminderType: 'STARTING_NOW',
+          dueAt: new Date('2026-08-02T11:00:00.000Z'),
+          idempotencyKey: 'sessions.session-starting-now:stale',
+          session: {
+            id: 'session_stale_start',
+            status: 'UPCOMING',
+            scheduledStartAt: new Date('2026-08-02T11:00:00.000Z'),
+            patient: {
+              id: 'patient_stale_start',
+              user: { id: 'user_stale_start' },
+            },
+            practitioner: {
+              id: 'pr_stale_start',
+              user: { id: 'user_pr_stale_practitioner' },
+            },
+          },
+        },
+      ],
+    });
+
+    const handled = await setup.service.sweepOnce(now);
+
+    expect(handled).toBe(0);
+    expect(setup.dispatchScheduledSessionReminder).not.toHaveBeenCalled();
+    expect(setup.markSent).not.toHaveBeenCalled();
+    expect(setup.cancelReminder).toHaveBeenCalledWith({
+      reminderId: 'reminder_stale_start',
+      cancelledAt: now,
+      claimToken: 'claim_1',
+    });
   });
 });

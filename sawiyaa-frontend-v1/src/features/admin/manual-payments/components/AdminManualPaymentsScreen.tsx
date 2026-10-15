@@ -5,7 +5,6 @@ import { Check, ExternalLink, Pencil, Plus, X } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { useCurrentUserPermissions } from "@/features/users/hooks/use-users";
 import { hasPermission, PermissionKey } from "@/lib/auth/permissions";
-import { API_BASE_URL } from "@/config/api";
 import {
   approveManualPayment,
   createManualPaymentMethod,
@@ -14,6 +13,7 @@ import {
   rejectManualPayment,
   setManualPaymentMethodEnabled,
   updateManualPaymentMethod,
+  viewManualPaymentProof,
 } from "../api/manual-payments.api";
 import type {
   ManualAdminMethod,
@@ -58,6 +58,7 @@ export default function AdminManualPaymentsScreen({
   const [submissions, setSubmissions] = useState<ManualAdminSubmission[]>([]);
   const [editor, setEditor] = useState<ManualAdminMethodInput | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [openingProofId, setOpeningProofId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const refresh = useCallback(async () => {
@@ -121,7 +122,34 @@ export default function AdminManualPaymentsScreen({
     }
   };
 
-  const proofBaseUrl = `${API_BASE_URL.replace(/\/$/, "")}/manual-payments`;
+  const openProof = async (submissionId: string) => {
+    if (openingProofId) return;
+
+    const previewWindow = window.open("", "_blank");
+    if (!previewWindow) {
+      setError(t("actionFailed"));
+      return;
+    }
+    previewWindow.opener = null;
+    setOpeningProofId(submissionId);
+    setError(null);
+    let objectUrl: string | null = null;
+
+    try {
+      const blob = await viewManualPaymentProof(submissionId);
+      objectUrl = URL.createObjectURL(blob);
+      previewWindow.location.href = objectUrl;
+      const previewUrl = objectUrl;
+      window.setTimeout(() => URL.revokeObjectURL(previewUrl), 60_000);
+    } catch {
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+      previewWindow.close();
+      setError(t("actionFailed"));
+    } finally {
+      setOpeningProofId(null);
+    }
+  };
+
   const editorTitle = useMemo(
     () => (editingId ? t("editMethod") : t("newMethod")),
     [editingId, t],
@@ -377,15 +405,15 @@ export default function AdminManualPaymentsScreen({
                 </p>
               </div>
               <div className="flex flex-wrap items-center gap-2">
-                <a
+                <button
+                  type="button"
+                  onClick={() => void openProof(submission.id)}
+                  disabled={openingProofId === submission.id}
                   className="inline-flex items-center gap-1 rounded-lg border border-border-light px-3 py-2 text-xs font-semibold"
-                  href={`${proofBaseUrl}/admin/submissions/${submission.id}/proof`}
-                  target="_blank"
-                  rel="noreferrer"
                 >
                   <ExternalLink className="h-3.5 w-3.5" />
                   {t("proof")}
-                </a>
+                </button>
                 {submission.status === "UNDER_REVIEW" ? (
                   <>
                     <button

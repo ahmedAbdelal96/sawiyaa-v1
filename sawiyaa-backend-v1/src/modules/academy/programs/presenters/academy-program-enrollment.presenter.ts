@@ -1,22 +1,28 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Optional } from '@nestjs/common';
 import { SupportedLocale } from '@common/i18n/types/locale.types';
 import { AcademyProgramPresenter } from './academy-program.presenter';
-import { AcademyProgramEnrollmentStatus, PaymentStatus } from '@prisma/client';
+import { AcademyProgramEnrollmentStatus, MarketType, PaymentStatus } from '@prisma/client';
+import { PaymentProviderResolverService } from '@modules/payments/services/payment-provider-resolver.service';
 
 @Injectable()
 export class AcademyProgramEnrollmentPresenter {
-  constructor(private readonly academyProgramPresenter: AcademyProgramPresenter) {}
+  constructor(
+    private readonly academyProgramPresenter: AcademyProgramPresenter,
+    @Optional()
+    private readonly paymentProviderResolverService?: PaymentProviderResolverService,
+  ) {}
 
   /** Lean projection for the paginated Admin participants table. */
   presentAdminEnrollmentListItem(input: any, locale: SupportedLocale) {
     const item = this.presentEnrollmentItem(input, locale);
+    const adminStatus = this.resolveAdminEnrollmentStatus(item);
     return {
       id: item.id,
       userId: item.userId,
-      status: item.status,
+      status: adminStatus,
       paymentStatus: item.paymentStatus,
       registeredAt: item.registeredAt,
-      confirmedAt: item.confirmedAt,
+      confirmedAt: adminStatus === AcademyProgramEnrollmentStatus.CONFIRMED ? item.confirmedAt : null,
       completedAt: item.completedAt,
       contactCountry: item.contactCountry,
       submittedCountry: item.submittedCountry,
@@ -57,18 +63,56 @@ export class AcademyProgramEnrollmentPresenter {
         downloadAvailable: item.certificate.downloadAvailable,
       },
       account: { status: item.user ? 'EXISTING' : 'NONE' },
+      registration: this.presentRegistrationAttempt(input, adminStatus),
+    };
+  }
+
+  presentAdminRegistrationAttempt(input: {
+    id: string;
+    academyProgramId: string;
+    academyLearnerId: string | null;
+    academyEnrollmentId: string | null;
+    userId: string | null;
+    fullName: string;
+    phoneNumber: string;
+    whatsappNumber: string | null;
+    email: string | null;
+    sourceLabel: string | null;
+    paymentMethod: string | null;
+    status: string;
+    resolution: string;
+    createdAt: Date;
+    updatedAt: Date;
+  }) {
+    return {
+      id: input.id,
+      academyProgramId: input.academyProgramId,
+      academyLearnerId: input.academyLearnerId,
+      academyEnrollmentId: input.academyEnrollmentId,
+      userId: input.userId,
+      fullName: input.fullName,
+      phoneNumber: input.phoneNumber,
+      whatsappNumber: input.whatsappNumber,
+      email: input.email,
+      sourceLabel: input.sourceLabel,
+      paymentMethod: input.paymentMethod,
+      status: input.status,
+      resolution: input.resolution,
+      createdAt: input.createdAt.toISOString(),
+      updatedAt: input.updatedAt.toISOString(),
     };
   }
 
   /** Dedicated Admin detail projection; never exposes public tokens or payment-provider secrets. */
   presentAdminEnrollmentDetail(input: any, locale: SupportedLocale) {
     const item = this.presentEnrollmentItem(input, locale);
+    const adminStatus = this.resolveAdminEnrollmentStatus(item);
     return {
       id: item.id,
-      status: item.status,
+      status: adminStatus,
       paymentStatus: item.paymentStatus,
       registeredAt: item.registeredAt,
-      confirmedAt: item.confirmedAt,
+      confirmedAt: adminStatus === AcademyProgramEnrollmentStatus.CONFIRMED ? item.confirmedAt : null,
       completedAt: item.completedAt,
       contactCountry: item.contactCountry,
       submittedCountry: item.submittedCountry,
@@ -107,6 +151,7 @@ export class AcademyProgramEnrollmentPresenter {
       account: item.user
         ? { status: 'EXISTING', name: item.user.displayName, email: null }
         : { status: 'NONE', name: null, email: null },
+      registration: this.presentRegistrationAttempt(input, adminStatus),
     };
   }
 
@@ -204,12 +249,29 @@ export class AcademyProgramEnrollmentPresenter {
       attendanceSummarySnapshot?: unknown;
     },
     locale: SupportedLocale,
+    options: { resolveGatewayAvailability?: boolean } = {},
   ) {
     const latestAttempt = input.paymentAttempts?.[0] ?? null;
     const paymentMetadata = (input.payment?.metadataJson ?? {}) as Record<
       string,
       unknown
     >;
+    const checkoutUrl =
+      typeof paymentMetadata.checkoutUrl === 'string'
+        ? paymentMetadata.checkoutUrl
+        : (latestAttempt?.checkoutUrl ?? null);
+    const gatewayAvailable =
+      options.resolveGatewayAvailability === false
+        ? false
+        : this.resolveGatewayAvailability({
+            currencyCode: input.selectedCurrencyCode,
+            learnerCountryIsoCode: input.academyLearner.countryCode ?? null,
+            fallbackAvailable: Boolean(
+              checkoutUrl ||
+                (input.payment && input.payment.provider !== 'MANUAL') ||
+                (latestAttempt && latestAttempt.provider !== 'MANUAL'),
+            ),
+          });
     const attendanceSummary = this.resolveAttendanceSummary(input);
 
     return {
@@ -239,6 +301,7 @@ export class AcademyProgramEnrollmentPresenter {
       contactWhatsapp: input.contactWhatsapp,
       contactCountry: input.contactCountry,
       contactNotes: input.contactNotes,
+      gatewayAvailable,
       user: input.user
         ? {
             id: input.user.id,
@@ -280,14 +343,12 @@ export class AcademyProgramEnrollmentPresenter {
             amountDiscount: input.payment.amountDiscount.toString(),
             amountTotal: input.payment.amountTotal.toString(),
             currencyCode: input.payment.currencyCode,
-            checkoutUrl:
-              typeof paymentMetadata.checkoutUrl === 'string'
-                ? paymentMetadata.checkoutUrl
-                : (latestAttempt?.checkoutUrl ?? null),
+            checkoutUrl,
             clientSecret:
               typeof paymentMetadata.clientSecret === 'string'
                 ? paymentMetadata.clientSecret
                 : (latestAttempt?.clientSecret ?? null),
+            gatewayAvailable,
           }
         : latestAttempt
           ? {
@@ -300,6 +361,7 @@ export class AcademyProgramEnrollmentPresenter {
               currencyCode: latestAttempt.currencyCode,
               checkoutUrl: latestAttempt.checkoutUrl,
               clientSecret: latestAttempt.clientSecret,
+              gatewayAvailable,
             }
           : null,
       attendanceSummary,
@@ -310,6 +372,74 @@ export class AcademyProgramEnrollmentPresenter {
         fileName: input.certificateFileName,
         downloadAvailable: Boolean(input.certificateFileStoragePath),
       },
+    };
+  }
+
+  private resolveGatewayAvailability(input: {
+    currencyCode: string;
+    learnerCountryIsoCode: string | null;
+    fallbackAvailable: boolean;
+  }): boolean {
+    if (!this.paymentProviderResolverService) {
+      return input.fallbackAvailable;
+    }
+
+    try {
+      const normalizedCurrencyCode = input.currencyCode.trim().toUpperCase();
+      this.paymentProviderResolverService.resolveRoute({
+        currencyCode: normalizedCurrencyCode === 'USD' ? 'USD' : 'EGP',
+        commissionMarketType:
+          normalizedCurrencyCode === 'USD'
+            ? MarketType.CROSS_BORDER
+            : MarketType.LOCAL,
+        operatingCountryIsoCode:
+          normalizedCurrencyCode === 'USD' ? null : input.learnerCountryIsoCode,
+        checkoutCountryIsoCode: input.learnerCountryIsoCode,
+      });
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  private resolveAdminEnrollmentStatus(input: {
+    status: AcademyProgramEnrollmentStatus | string;
+    paymentStatus: PaymentStatus | string;
+    selectedAmountSnapshot: string;
+  }) {
+    if (
+      input.status === AcademyProgramEnrollmentStatus.CONFIRMED &&
+      input.paymentStatus !== PaymentStatus.CAPTURED &&
+      Number(input.selectedAmountSnapshot) > 0
+    ) {
+      return AcademyProgramEnrollmentStatus.PENDING_PAYMENT;
+    }
+
+    return input.status;
+  }
+
+  private presentRegistrationAttempt(
+    input: {
+      registrationAttempts?: Array<{
+        status: string;
+        resolution: string;
+        createdAt: Date;
+        convertedAt: Date | null;
+      }>;
+    },
+    adminStatus: AcademyProgramEnrollmentStatus | string,
+  ) {
+    const latest = input.registrationAttempts?.[0] ?? null;
+    const status =
+      adminStatus === AcademyProgramEnrollmentStatus.CONFIRMED
+        ? 'CONVERTED'
+        : latest?.status ?? 'PENDING_PAYMENT';
+
+    return {
+      status,
+      resolution: latest?.resolution ?? null,
+      lastAttemptAt: latest?.createdAt?.toISOString() ?? null,
+      convertedAt: latest?.convertedAt?.toISOString() ?? null,
     };
   }
 

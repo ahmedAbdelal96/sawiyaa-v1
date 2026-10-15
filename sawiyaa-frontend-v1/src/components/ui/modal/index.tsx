@@ -223,7 +223,7 @@ function OverlayBackdrop({
   return (
     <div
       aria-hidden="true"
-      className={`absolute inset-0 h-full w-full bg-[rgba(25,52,57,0.18)] backdrop-blur-[10px] ${className ?? ""}`}
+      className={`absolute inset-0 h-full w-full bg-slate-950/45 backdrop-blur-sm transition-opacity duration-200 animate-in fade-in ${className ?? ""}`}
       // Click handling is done on the overlay wrapper so the backdrop can't be "covered" by layout containers.
       onClick={onClick}
       onPointerDown={onClick}
@@ -236,15 +236,15 @@ function OverlayCloseButton({ onClose }: { onClose: () => void }) {
     <button
       type="button"
       onClick={onClose}
-      className="absolute end-4 top-4 z-10 flex h-10 w-10 items-center justify-center rounded-full border border-border-light bg-surface-secondary text-text-muted transition hover:border-border-strong hover:bg-surface-tertiary hover:text-text-primary sm:end-5 sm:top-5"
+      className="absolute end-4 top-4 z-20 flex h-9 w-9 items-center justify-center rounded-xl border border-border-light/80 bg-surface-primary/95 text-text-muted shadow-xs transition hover:border-border-strong hover:bg-surface-tertiary hover:text-text-primary active:scale-95 sm:end-5 sm:top-5"
     >
-      <X className="h-5 w-5" />
+      <X className="h-4.5 w-4.5" />
     </button>
   );
 }
 
 function panelShellClassName(extra?: string) {
-  return `relative overflow-hidden rounded-[32px] border border-border-light bg-surface-secondary shadow-lg ${extra ?? ""}`;
+  return `relative overflow-hidden rounded-2xl border border-border-light bg-surface-primary shadow-2xl shadow-slate-950/15 ${extra ?? ""}`;
 }
 
 export function Modal({
@@ -330,17 +330,17 @@ export function ModalHeader({
   const { titleId, descriptionId } = useModalContext();
 
   return (
-    <div className={`border-b border-border-light bg-surface-secondary px-6 pb-5 pt-6 sm:px-7 sm:pb-6 sm:pt-7 ${className ?? ""}`}>
+    <div className={`border-b border-border-light/80 bg-surface-secondary/40 px-6 pb-5 pt-6 pe-14 sm:px-7 sm:pb-6 sm:pt-6 sm:pe-16 ${className ?? ""}`}>
       {eyebrow ? (
-        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">{eyebrow}</p>
+        <p className="text-xs font-semibold uppercase tracking-[0.14em] text-primary">{eyebrow}</p>
       ) : null}
       {title ? (
-        <h2 id={titleId} className="mt-2 text-xl font-semibold text-text-primary">
+        <h2 id={titleId} className="mt-1.5 text-lg font-bold tracking-tight text-text-primary sm:text-xl">
           {title}
         </h2>
       ) : null}
       {description ? (
-        <p id={descriptionId} className="mt-2 text-sm leading-6 text-text-secondary">
+        <p id={descriptionId} className="mt-1.5 text-sm leading-relaxed text-text-secondary">
           {description}
         </p>
       ) : null}
@@ -359,8 +359,8 @@ export function ModalBody({ children, className }: ModalSectionProps) {
 
 export function ModalFooter({ children, className }: ModalSectionProps) {
   return (
-    <div className={`border-t border-border-light bg-surface-secondary px-6 py-4 sm:px-7 ${className ?? ""}`}>
-      <div className="flex flex-wrap justify-end gap-2">{children}</div>
+    <div className={`border-t border-border-light/80 bg-surface-secondary/40 px-6 py-4 sm:px-7 ${className ?? ""}`}>
+      <div className="flex flex-wrap items-center justify-end gap-2.5">{children}</div>
     </div>
   );
 }
@@ -508,7 +508,7 @@ export function Drawer({
   initialFocusRef,
   ariaLabel,
   showHandle = true,
-  inset = true,
+  inset = false,
   backdropClassName,
 }: DrawerProps) {
   const panelRef = useRef<HTMLDivElement>(null);
@@ -531,25 +531,23 @@ export function Drawer({
 
   const layoutClass = (() => {
     if (side === "bottom") return inset ? "items-end justify-center p-0 sm:p-4" : "items-end justify-center p-0";
-    if (side === "left") return inset ? "items-stretch justify-start p-0 sm:p-4" : "items-stretch justify-start p-0";
-    return inset ? "items-stretch justify-end p-0 sm:p-4" : "items-stretch justify-end p-0";
+    if (side === "left") return inset ? "items-stretch justify-start p-0 sm:p-3" : "items-stretch justify-start p-0";
+    return inset ? "items-stretch justify-end p-0 sm:p-3" : "items-stretch justify-end p-0";
   })();
 
   const panelClass = (() => {
     if (side === "bottom") {
-      return `${panelShellClassName(
-        inset
-          ? "max-h-[88vh] w-full rounded-b-none sm:max-w-2xl sm:rounded-[32px]"
-          : "max-h-[88vh] w-full rounded-b-none",
-      )} ${className ?? ""}`;
+      return inset
+        ? `relative max-h-[88vh] w-full rounded-2xl border border-border-light bg-surface-primary shadow-2xl sm:max-w-2xl sm:mb-4 ${className ?? ""}`
+        : `relative max-h-[90vh] w-full rounded-t-2xl border-t border-border-light bg-surface-primary shadow-2xl ${className ?? ""}`;
     }
 
-    // Side drawers: edge-to-edge on mobile app surfaces when inset=false.
     if (!inset) {
-      return `relative h-[100dvh] w-full max-w-xl overflow-hidden rounded-none bg-surface-secondary shadow-2xl ${className ?? ""}`;
+      const borderClass = side === "left" ? "border-e border-border-light" : "border-s border-border-light";
+      return `relative h-[100dvh] w-full max-w-xl lg:max-w-2xl overflow-hidden rounded-none ${borderClass} bg-surface-primary shadow-2xl ${className ?? ""}`;
     }
 
-    return `${panelShellClassName("h-full w-full max-w-xl rounded-none sm:h-[calc(100vh-2rem)] sm:rounded-[32px]")} ${className ?? ""}`;
+    return `relative h-full w-full max-w-xl lg:max-w-2xl overflow-hidden rounded-2xl border border-border-light bg-surface-primary shadow-2xl sm:my-3 sm:h-[calc(100vh-1.5rem)] ${className ?? ""}`;
   })();
 
   return createPortal(

@@ -8,6 +8,7 @@ describe('ListAdminAcademyProgramEnrollmentsUseCase', () => {
           { id: 'enrollment-a', status: 'CONFIRMED', paymentStatus: 'CAPTURED' },
         ],
         1,
+        { total: 1, followUp: 0, paymentIssues: 0, confirmed: 1, completed: 0, cancelled: 0 },
       ]),
     };
     const presenter = {
@@ -56,6 +57,7 @@ describe('ListAdminAcademyProgramEnrollmentsUseCase', () => {
       q: 'Mona',
     });
     expect(result.items).toHaveLength(1);
+    expect(result.summary).toEqual(expect.objectContaining({ confirmed: 1 }));
     expect(result.items[0]).toEqual(
       expect.objectContaining({
         learner: expect.objectContaining({
@@ -74,6 +76,7 @@ describe('ListAdminAcademyProgramEnrollmentsUseCase', () => {
       listAdminEnrollments: jest.fn().mockResolvedValue([
         [{ id: 'enrollment-cancelled', status: 'CANCELLED', paymentStatus: 'REFUNDED' }],
         1,
+        { total: 1, followUp: 0, paymentIssues: 0, confirmed: 0, completed: 0, cancelled: 1 },
       ]),
     };
     const presenter = {

@@ -17,7 +17,7 @@ export class ListAdminAcademyProgramEnrollmentsUseCase {
     academyProgramId: string;
     locale: SupportedLocale;
   }) {
-    const [items, totalItems] =
+    const [items, totalItems, summary] =
       await this.academyProgramEnrollmentRepository.listAdminEnrollments({
         academyProgramId: input.academyProgramId,
         page: input.page ?? 1,
@@ -28,6 +28,7 @@ export class ListAdminAcademyProgramEnrollmentsUseCase {
         sortBy: input.sortBy,
         sortDir: input.sortDir,
         q: input.q,
+        segment: input.segment,
       });
 
     return {
@@ -42,6 +43,7 @@ export class ListAdminAcademyProgramEnrollmentsUseCase {
         limit: input.limit ?? 12,
         totalItems,
       }),
+      summary,
     };
   }
 }

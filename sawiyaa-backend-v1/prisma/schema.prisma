@@ -1601,6 +1601,7 @@ model User {
   uploadedFiles                          StoredFile[]                        @relation("StoredFileUploadedByUser")
   academyLearner                         AcademyLearner?
   academyProgramEnrollments              AcademyProgramEnrollment[]
+  academyRegistrationAttempts            AcademyRegistrationAttempt[]
   academyProgramCertificatesUploaded     AcademyProgramEnrollment[]          @relation("AcademyProgramEnrollmentCertificateUploadedByUser")
   academyProgramSessionAttendancesMarked AcademyProgramSessionAttendance[]   @relation("AcademyProgramSessionAttendanceMarkedByUser")
   sessionReviewsModerated                SessionReview[]                     @relation("SessionReviewModeratedByUser")
@@ -3013,6 +3014,8 @@ model SessionReminderQueue {
   dueAt                     DateTime
   sentAt                    DateTime?
   cancelledAt               DateTime?
+  claimToken                String?              @db.VarChar(64)
+  claimUntil                DateTime?
   idempotencyKey            String              @unique @db.VarChar(191)
   createdAt                 DateTime            @default(now())
   updatedAt                 DateTime            @updatedAt
@@ -3021,6 +3024,7 @@ model SessionReminderQueue {
   recipientUser User    @relation(fields: [recipientUserId], references: [id], onDelete: Cascade)
 
   @@index([dueAt, sentAt, cancelledAt])
+  @@index([dueAt, sentAt, cancelledAt, claimUntil])
   @@index([sessionId])
 }
 
@@ -5035,6 +5039,9 @@ model Notification {
   idempotencyKey    String? @db.VarChar(191)
 
   scheduledFor     DateTime?
+  claimToken       String?   @db.VarChar(64)
+  claimedAt        DateTime?
+  claimUntil       DateTime?
   sentAt           DateTime?
   deliveredAt      DateTime?
   readAt           DateTime?
@@ -5056,6 +5063,7 @@ model Notification {
   @@index([userId, channel, createdAt])
   @@index([notificationTypeId, channel, createdAt])
   @@index([scheduledFor, status])
+  @@index([status, claimUntil, scheduledFor, createdAt])
   @@index([relatedEntityType, relatedEntityId])
   @@index([readAt])
   @@index([failedAt])
@@ -5118,6 +5126,7 @@ model NotificationDeliveryAttempt {
   notification Notification @relation(fields: [notificationId], references: [id], onDelete: Cascade)
 
   @@index([notificationId, attemptNumber])
+  @@unique([notificationId, attemptNumber])
   @@index([provider, status, attemptedAt])
   @@index([providerMessageRef])
 }
@@ -5424,6 +5433,7 @@ model AcademyLearner {
 
   user                      User?                      @relation(fields: [userId], references: [id], onDelete: SetNull)
   academyProgramEnrollments AcademyProgramEnrollment[]
+  registrationAttempts      AcademyRegistrationAttempt[]
 
   @@index([fullName])
   @@index([sourceLabel])
@@ -5458,6 +5468,7 @@ model AcademyProgram {
   sessions        AcademyProgramSession[]
   enrollments     AcademyProgramEnrollment[]
   paymentAttempts AcademyProgramPaymentAttempt[]
+  registrationAttempts AcademyRegistrationAttempt[]
 
   @@index([status, publishedAt])
   @@index([categoryId, status])
@@ -5541,6 +5552,7 @@ model AcademyProgramEnrollment {
   certificateUploadedByUser User?                             @relation("AcademyProgramEnrollmentCertificateUploadedByUser", fields: [certificateUploadedByUserId], references: [id], onDelete: SetNull)
   payment                   Payment?                          @relation("AcademyProgramEnrollmentPayment", fields: [paymentId], references: [id], onDelete: SetNull)
   paymentAttempts           AcademyProgramPaymentAttempt[]
+  registrationAttempts     AcademyRegistrationAttempt[]
   attendanceRecords         AcademyProgramSessionAttendance[]
 
   @@unique([academyProgramId, academyLearnerId])
@@ -5550,6 +5562,59 @@ model AcademyProgramEnrollment {
   @@index([userId, status])
   @@index([paymentStatus])
   @@index([paymentId])
+}
+
+enum AcademyRegistrationAttemptStatus {
+  SUBMITTED
+  REQUIRES_LOGIN
+  PENDING_PAYMENT
+  PAYMENT_ISSUE
+  CONVERTED
+  DUPLICATE
+  EXPIRED
+  CANCELLED
+}
+
+enum AcademyRegistrationAttemptResolution {
+  NEW_GUEST
+  EXISTING_LEARNER
+  AUTHENTICATED_ACCOUNT
+  EXISTING_ACCOUNT_REQUIRES_LOGIN
+  EXISTING_ENROLLMENT
+  CONFLICT
+}
+
+model AcademyRegistrationAttempt {
+  id                    String                                  @id @default(uuid()) @db.Uuid
+  academyProgramId      String                                  @db.Uuid
+  academyLearnerId      String?                                 @db.Uuid
+  academyEnrollmentId   String?                                 @db.Uuid
+  userId                String?                                 @db.Uuid
+  idempotencyKey        String                                  @unique @db.VarChar(120)
+  fullName              String                                  @db.VarChar(191)
+  phoneNumber           String                                  @db.VarChar(50)
+  normalizedPhoneNumber String                                  @db.VarChar(50)
+  whatsappNumber        String?                                 @db.VarChar(50)
+  email                 String?                                 @db.VarChar(191)
+  normalizedEmail      String?                                 @db.VarChar(191)
+  sourceLabel           String?                                 @db.VarChar(191)
+  paymentMethod        String?                                 @db.VarChar(30)
+  status                AcademyRegistrationAttemptStatus       @default(SUBMITTED)
+  resolution            AcademyRegistrationAttemptResolution   @default(NEW_GUEST)
+  createdAt             DateTime                                @default(now())
+  updatedAt             DateTime                                @updatedAt
+  convertedAt           DateTime?
+
+  academyProgram        AcademyProgram          @relation(fields: [academyProgramId], references: [id], onDelete: Cascade)
+  academyLearner        AcademyLearner?         @relation(fields: [academyLearnerId], references: [id], onDelete: SetNull)
+  academyEnrollment     AcademyProgramEnrollment? @relation(fields: [academyEnrollmentId], references: [id], onDelete: SetNull)
+  user                  User?                   @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([academyProgramId, status, createdAt])
+  @@index([academyProgramId, normalizedEmail])
+  @@index([academyProgramId, normalizedPhoneNumber])
+  @@index([academyLearnerId, createdAt])
+  @@index([academyEnrollmentId, createdAt])
 }
 
 model AcademyProgramSessionAttendance {

@@ -436,6 +436,8 @@ export const rolePermissionBundles: Array<{
       'notification-ops.read',
       'featured-practitioners.read',
       'featured-practitioners.manage',
+      'academy.read',
+      'academy.manage',
     ],
   },
   {

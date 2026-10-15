@@ -1,5 +1,17 @@
 import { registerAs } from '@nestjs/config';
 
+function readInteger(name: string, fallback: number): number {
+  const value = Number.parseInt(process.env[name] ?? '', 10);
+  return Number.isFinite(value) ? value : fallback;
+}
+
+function readOptionalNumber(name: string): number | null {
+  const raw = process.env[name]?.trim();
+  if (!raw) return null;
+  const value = Number(raw);
+  return Number.isFinite(value) ? value : null;
+}
+
 export default registerAs('notification', () => ({
   web: {
     // Development is an explicit local-testing environment. Every deployed
@@ -28,5 +40,38 @@ export default registerAs('notification', () => ({
   brevo: {
     apiKey: process.env.BREVO_API_KEY,
     apiUrl: process.env.BREVO_API_URL ?? 'https://api.brevo.com',
+  },
+  capacity: {
+    mode: process.env.NOTIFICATION_CAPACITY_MODE ?? 'METRICS_ONLY',
+    brevoMaxConcurrency: readInteger('NOTIFICATION_BREVO_MAX_CONCURRENCY', 1),
+    expoMaxConcurrency: readInteger('NOTIFICATION_EXPO_MAX_CONCURRENCY', 1),
+    smtpMaxConcurrency: readInteger('NOTIFICATION_SMTP_MAX_CONCURRENCY', 1),
+    coordinator: {
+      redisUrl: process.env.NOTIFICATION_CAPACITY_REDIS_URL,
+      keyPrefix:
+        process.env.NOTIFICATION_CAPACITY_KEY_PREFIX ??
+        'sawiyaa:notification-capacity',
+      connectionTimeoutMs: readInteger(
+        'NOTIFICATION_CAPACITY_REDIS_CONNECTION_TIMEOUT_MS',
+        1_000,
+      ),
+      stateTtlMs: readInteger('NOTIFICATION_CAPACITY_STATE_TTL_MS', 120_000),
+      maxCooldownMs: readInteger(
+        'NOTIFICATION_CAPACITY_MAX_COOLDOWN_MS',
+        3_600_000,
+      ),
+      brevoRequestsPerSecond: readOptionalNumber(
+        'NOTIFICATION_BREVO_REQUESTS_PER_SECOND',
+      ),
+      brevoBurst: readOptionalNumber('NOTIFICATION_BREVO_BURST'),
+      expoMessagesPerSecond: readOptionalNumber(
+        'NOTIFICATION_EXPO_MESSAGES_PER_SECOND',
+      ),
+      expoBurst: readOptionalNumber('NOTIFICATION_EXPO_BURST'),
+      smtpSendsPerSecond: readOptionalNumber(
+        'NOTIFICATION_SMTP_SENDS_PER_SECOND',
+      ),
+      smtpBurst: readOptionalNumber('NOTIFICATION_SMTP_BURST'),
+    },
   },
 }));

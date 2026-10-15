@@ -6,7 +6,7 @@ import { NotificationQueueWorkerService } from './notification-worker.service';
 describe('NotificationQueueWorkerService', () => {
   const claimNotificationById = jest.fn();
   const executeClaimedNotification = jest.fn();
-  const createWorker = jest.fn();
+  const createWorkers = jest.fn();
   const closeQueue = jest.fn();
 
   const queueService = {
@@ -14,7 +14,7 @@ describe('NotificationQueueWorkerService', () => {
     getWorkerHeartbeatIntervalMs: jest.fn(() => 10_000),
     recordWorkerHeartbeat: jest.fn(),
     recordWorkerError: jest.fn(),
-    createWorker,
+    createWorkers,
     close: closeQueue,
   } as unknown as NotificationQueueService;
   const scheduler = {
@@ -83,12 +83,12 @@ describe('NotificationQueueWorkerService', () => {
 
   it('closes the BullMQ worker during graceful shutdown', async () => {
     const workerClose = jest.fn().mockResolvedValue(undefined);
-    createWorker.mockImplementation((processor: unknown) => {
+    createWorkers.mockImplementation((processor: unknown) => {
       expect(typeof processor).toBe('function');
-      return {
+      return Array.from({ length: 3 }, () => ({
         on: jest.fn(),
         close: workerClose,
-      };
+      }));
     });
 
     const service = new NotificationQueueWorkerService(
@@ -99,6 +99,6 @@ describe('NotificationQueueWorkerService', () => {
     service.onModuleInit();
     await service.onModuleDestroy();
 
-    expect(workerClose).toHaveBeenCalledTimes(1);
+    expect(workerClose).toHaveBeenCalledTimes(3);
   });
 });

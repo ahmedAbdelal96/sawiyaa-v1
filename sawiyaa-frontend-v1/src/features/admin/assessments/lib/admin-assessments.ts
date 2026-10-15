@@ -5,10 +5,73 @@ import type {
 } from "../types/admin-assessments.types";
 
 export const ADMIN_ASSESSMENT_STATUS_STYLES: Record<AdminAssessmentStatus, string> = {
-  DRAFT: "bg-amber-50 text-amber-700 dark:bg-amber-500/15 dark:text-amber-200",
-  ACTIVE: "bg-emerald-50 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-200",
-  INACTIVE: "bg-slate-100 text-slate-700 dark:bg-slate-600/25 dark:text-slate-200",
+  DRAFT: "border border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-800/60 dark:bg-amber-950/40 dark:text-amber-300",
+  ACTIVE: "border border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-800/60 dark:bg-emerald-950/40 dark:text-emerald-300",
+  INACTIVE: "border border-slate-200 bg-slate-100 text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300",
 };
+
+export type AssessmentCategoryInfo = {
+  key: string;
+  labelAr: string;
+  labelEn: string;
+  badgeClass: string;
+  dotClass: string;
+};
+
+export const ASSESSMENT_CATEGORY_CONFIG: Record<string, AssessmentCategoryInfo> = {
+  burnout: {
+    key: "burnout",
+    labelAr: "الاحتراق النفسي",
+    labelEn: "Burnout",
+    badgeClass: "bg-amber-50 text-amber-700 border-amber-200/90 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800",
+    dotClass: "bg-amber-500",
+  },
+  sleep: {
+    key: "sleep",
+    labelAr: "اضطرابات النوم",
+    labelEn: "Sleep Health",
+    badgeClass: "bg-indigo-50 text-indigo-700 border-indigo-200/90 dark:bg-indigo-950/40 dark:text-indigo-300 dark:border-indigo-800",
+    dotClass: "bg-indigo-500",
+  },
+  depression: {
+    key: "depression",
+    labelAr: "الاكتئاب والمزاج",
+    labelEn: "Depression",
+    badgeClass: "bg-blue-50 text-blue-700 border-blue-200/90 dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-800",
+    dotClass: "bg-blue-500",
+  },
+  anxiety: {
+    key: "anxiety",
+    labelAr: "القلق والتوتر",
+    labelEn: "Anxiety",
+    badgeClass: "bg-rose-50 text-rose-700 border-rose-200/90 dark:bg-rose-950/40 dark:text-rose-300 dark:border-rose-800",
+    dotClass: "bg-rose-500",
+  },
+  stress: {
+    key: "stress",
+    labelAr: "الضغوط النفسية",
+    labelEn: "Stress",
+    badgeClass: "bg-teal-50 text-teal-700 border-teal-200/90 dark:bg-teal-950/40 dark:text-teal-300 dark:border-teal-800",
+    dotClass: "bg-teal-500",
+  },
+};
+
+export function getAssessmentCategoryInfo(category: string, locale: string = "ar") {
+  const normalized = category.trim().toLowerCase();
+  const found = ASSESSMENT_CATEGORY_CONFIG[normalized];
+  if (found) {
+    return {
+      label: locale === "ar" ? found.labelAr : found.labelEn,
+      badgeClass: found.badgeClass,
+      dotClass: found.dotClass,
+    };
+  }
+  return {
+    label: category,
+    badgeClass: "bg-slate-50 text-slate-700 border-slate-200 dark:bg-slate-800/80 dark:text-slate-300 dark:border-slate-700",
+    dotClass: "bg-slate-400",
+  };
+}
 
 export const ADMIN_ASSESSMENT_BAND_ORDER: AdminAssessmentResultBand[] = [
   "LOW",

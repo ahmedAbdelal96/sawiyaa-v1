@@ -2,6 +2,7 @@ import {
   Body,
   Controller,
   Get,
+  Headers,
   NotFoundException,
   Param,
   Post,
@@ -106,12 +107,14 @@ export class PublicAcademyProgramsController {
     @CurrentLocale() locale: SupportedLocale,
     @Body() body: CreateAcademyProgramEnrollmentDto,
     @CurrentUser() currentUser: AuthenticatedUser | null,
+    @Headers('idempotency-key') idempotencyKey: string | undefined,
     @Req() request: Request,
   ) {
     return this.createAcademyProgramEnrollmentUseCase.execute({
       slug,
       locale,
       currentUser: currentUser ?? null,
+      idempotencyKey,
       payload: body,
       requestCountryIsoCode: resolveCountryFromRequest(request).countryCode,
     });

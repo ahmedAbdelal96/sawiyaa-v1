@@ -87,6 +87,15 @@ export type AcademyProgramEnrollmentStatus =
   | "EXPIRED"
   | string;
 
+export type AcademyProgramEnrollmentSegment =
+  | "ALL"
+  | "FOLLOW_UP"
+  | "REQUIRES_LOGIN"
+  | "PAYMENT_ISSUES"
+  | "CONFIRMED"
+  | "COMPLETED"
+  | "CANCELLED";
+
 export type AcademyProgramEnrollmentPaymentStatus =
   | "CREATED"
   | "PENDING"
@@ -172,6 +181,7 @@ export type AcademyProgramEnrollmentItem = {
   contactWhatsapp: string | null;
   contactCountry: string | null;
   contactNotes: string | null;
+  gatewayAvailable?: boolean;
   program: AcademyProgramItem;
   learner: AcademyProgramEnrollmentLearner;
   payment:
@@ -185,10 +195,17 @@ export type AcademyProgramEnrollmentItem = {
         currencyCode?: string;
         checkoutUrl?: string | null;
         clientSecret?: string | null;
+        gatewayAvailable?: boolean;
       }
     | null;
   attendanceSummary: AcademyProgramEnrollmentAttendanceSummary;
   certificate: AcademyProgramEnrollmentCertificate;
+  registration?: {
+    status: string;
+    resolution: string | null;
+    lastAttemptAt: string | null;
+    convertedAt: string | null;
+  };
 };
 
 export type AcademyAdminEnrollmentAccountStatus = {
@@ -237,6 +254,38 @@ export type AcademyProgramEnrollmentAttendanceDetail = {
 export type AcademyProgramEnrollmentsListData = {
   items: AcademyProgramEnrollmentItem[];
   pagination: AcademyProgramPagination;
+  summary?: {
+    total: number;
+    followUp: number;
+    requiresLogin: number;
+    paymentIssues: number;
+    confirmed: number;
+    completed: number;
+    cancelled: number;
+  };
+};
+
+export type AcademyRegistrationAttemptItem = {
+  id: string;
+  academyProgramId: string;
+  academyLearnerId: string | null;
+  academyEnrollmentId: string | null;
+  userId: string | null;
+  fullName: string;
+  phoneNumber: string;
+  whatsappNumber: string | null;
+  email: string | null;
+  sourceLabel: string | null;
+  paymentMethod: string | null;
+  status: string;
+  resolution: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type AcademyRegistrationAttemptsListData = {
+  items: AcademyRegistrationAttemptItem[];
+  pagination: AcademyProgramPagination;
 };
 
 export type AcademyProgramEnrollmentResponse = {
@@ -278,6 +327,7 @@ export type CreateAcademyProgramInput = {
 };
 
 export type CreateAcademyProgramEnrollmentInput = {
+  idempotencyKey?: string;
   paymentMethod?: "GATEWAY" | "MANUAL";
   fullName: string;
   phoneNumber: string;
@@ -378,6 +428,12 @@ export type ListAdminAcademyProgramEnrollmentsParams = {
   q?: string;
   sortBy?: "registeredAt" | "name";
   sortDir?: "asc" | "desc";
+  segment?: AcademyProgramEnrollmentSegment;
+};
+
+export type ConfirmAdminAcademyProgramEnrollmentPaymentInput = {
+  paymentReference?: string;
+  notes?: string;
 };
 
 export type UpdateAcademyProgramEnrollmentLearnerInput = {
